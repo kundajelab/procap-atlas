@@ -1,0 +1,3465 @@
+# Auto-generated from ENCODE PRO-cap atlas data manifests by src/preprocess/generate_config.py
+experiments:
+  ENCSR882DWM:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: CoPRO experiment. A run-on assay was performed on captured nascent
+      RNA with cap state selection. In this experiment, only uncapped nascent RNA
+      was selected and no PCR amplification was done.
+    lab: John Lis, Cornell
+    library_construction: uncapped RNA enrichment,PCR-free
+    peaks:
+    - ENCFF681WCY.bed.gz
+    pl_bigwigs:
+    - ENCFF620GJD.bigWig
+    - ENCFF650OXQ.bigWig
+    - ENCFF313UWT.bigWig
+    - ENCFF970BJP.bigWig
+    mn_bigwigs:
+    - ENCFF745CSK.bigWig
+    - ENCFF809FNB.bigWig
+    - ENCFF191LBI.bigWig
+    - ENCFF754VDR.bigWig
+  ENCSR114HGS:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: CoPRO experiment. A run-on assay was performed on captured nascent
+      RNA with cap state selection. In this experiment, only uncapped nascent RNA
+      was selected and PCR amplification was performed before sequencing.
+    lab: John Lis, Cornell
+    library_construction: uncapped RNA enrichment
+    peaks:
+    - ENCFF507WDG.bed.gz
+    pl_bigwigs:
+    - ENCFF085GRM.bigWig
+    - ENCFF428RUF.bigWig
+    mn_bigwigs:
+    - ENCFF755OQZ.bigWig
+    - ENCFF529MUW.bigWig
+  ENCSR165QKR:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens CTCF
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in CTCF_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF627FNF.bed.gz
+    pl_bigwigs:
+    - ENCFF440UVY.bigWig
+    - ENCFF078CJH.bigWig
+    mn_bigwigs:
+    - ENCFF103FBH.bigWig
+    - ENCFF907PJM.bigWig
+  ENCSR197JLW:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens POLR2A treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid\
+      \ for 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in POLR2A_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF094YRK.bed.gz
+    pl_bigwigs:
+    - ENCFF678VYA.bigWig
+    - ENCFF870YWE.bigWig
+    mn_bigwigs:
+    - ENCFF236NNV.bigWig
+    - ENCFF301JHR.bigWig
+  ENCSR100EDZ:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens RAD21 treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid for\
+      \ 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in RAD21_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF188VWY.bed.gz
+    pl_bigwigs:
+    - ENCFF479ISE.bigWig
+    - ENCFF331NCH.bigWig
+    mn_bigwigs:
+    - ENCFF811NQO.bigWig
+    - ENCFF482VJL.bigWig
+  ENCSR273ORE:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens BRD4 treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid for\
+      \ 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in BRD4_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF483XCM.bed.gz
+    pl_bigwigs:
+    - ENCFF903ERZ.bigWig
+    - ENCFF877KYO.bigWig
+    mn_bigwigs:
+    - ENCFF230CJC.bigWig
+    - ENCFF641FTA.bigWig
+  ENCSR124RWD:
+    biosample: right ventricle myocardium
+    biosample_summary: Homo sapiens right ventricle myocardium tissue male adult (37
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right ventricle myocardium
+      superior of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF524JBL.bed.gz
+    pl_bigwigs:
+    - ENCFF868VIN.bigWig
+    - ENCFF520SBM.bigWig
+    mn_bigwigs:
+    - ENCFF933IAZ.bigWig
+    - ENCFF222UYK.bigWig
+  ENCSR178XKL:
+    biosample: WTC11
+    biosample_summary: Homo sapiens WTC11
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in WTC11.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF187HGX.bed.gz
+    pl_bigwigs:
+    - ENCFF847SPM.bigWig
+    - ENCFF496HVY.bigWig
+    - ENCFF665CWV.bigWig
+    - ENCFF082DRL.bigWig
+    mn_bigwigs:
+    - ENCFF545EDQ.bigWig
+    - ENCFF679AYV.bigWig
+    - ENCFF107OAK.bigWig
+    - ENCFF813TZR.bigWig
+  ENCSR720EXP:
+    biosample: Metastatic Liver Carcinoma in the Lung
+    biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Lung tissue
+      female adult (62 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic liver cancer
+      to lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF206ZRD.bed.gz
+    pl_bigwigs:
+    - ENCFF436KTP.bigWig
+    mn_bigwigs:
+    - ENCFF560UXJ.bigWig
+  ENCSR753TEA:
+    biosample: liver
+    biosample_summary: Homo sapiens liver tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF643VRF.bed.gz
+    pl_bigwigs:
+    - ENCFF530CWG.bigWig
+    mn_bigwigs:
+    - ENCFF898WWI.bigWig
+  ENCSR961UBB:
+    biosample: heart left ventricle
+    biosample_summary: Homo sapiens heart left ventricle tissue female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF131FTI.bed.gz
+    pl_bigwigs:
+    - ENCFF655LBA.bigWig
+    - ENCFF652SOY.bigWig
+    mn_bigwigs:
+    - ENCFF125EBR.bigWig
+    - ENCFF367UXU.bigWig
+  ENCSR796JNK:
+    biosample: LUHMES
+    biosample_summary: Homo sapiens LUHMES
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Mesencephalic neuronal
+      cell line.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF005ANN.bed.gz
+    pl_bigwigs:
+    - ENCFF354QUW.bigWig
+    - ENCFF028JYM.bigWig
+    mn_bigwigs:
+    - ENCFF959MFT.bigWig
+    - ENCFF047KUB.bigWig
+  ENCSR784YIV:
+    biosample: colonic mucosa
+    biosample_summary: Homo sapiens colonic mucosa tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Colonic mucosa.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF217QAF.bed.gz
+    pl_bigwigs:
+    - ENCFF135RXP.bigWig
+    - ENCFF641BHY.bigWig
+    mn_bigwigs:
+    - ENCFF281JZE.bigWig
+    - ENCFF917MYT.bigWig
+  ENCSR478DAN:
+    biosample: upper lobe of left lung
+    biosample_summary: Homo sapiens upper lobe of left lung tissue female adult (61
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Upper lobe of left lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF639TIL.bed.gz
+    pl_bigwigs:
+    - ENCFF440SLB.bigWig
+    - ENCFF835BYO.bigWig
+    mn_bigwigs:
+    - ENCFF781MJM.bigWig
+    - ENCFF423VFN.bigWig
+  ENCSR666GXV:
+    biosample: Colon Carcinoma Metastatic in the Lung
+    biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Lung tissue
+      female adult (73 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic colon cancer
+      to lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF304LFN.bed.gz
+    pl_bigwigs:
+    - ENCFF778MOH.bigWig
+    mn_bigwigs:
+    - ENCFF353XVZ.bigWig
+  ENCSR520PUD:
+    biosample: HEK293
+    biosample_summary: Homo sapiens HEK293
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Embryonic kidney cell line.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF243HMV.bed.gz
+    pl_bigwigs:
+    - ENCFF305ZQS.bigWig
+    - ENCFF762BKL.bigWig
+    mn_bigwigs:
+    - ENCFF757CGN.bigWig
+    - ENCFF367WUV.bigWig
+  ENCSR417NJC:
+    biosample: spleen
+    biosample_summary: Homo sapiens spleen tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Spleen.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF815LNX.bed.gz
+    pl_bigwigs:
+    - ENCFF137UCG.bigWig
+    - ENCFF902OMA.bigWig
+    mn_bigwigs:
+    - ENCFF158QFB.bigWig
+    - ENCFF607ASO.bigWig
+  ENCSR215OJB:
+    biosample: GM23338
+    biosample_summary: Homo sapiens GM23338
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PGP-1 iPSCs via Sendai-viral
+      Yamanaka factors.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF260PDH.bed.gz
+    pl_bigwigs:
+    - ENCFF132GLO.bigWig
+    - ENCFF426MUR.bigWig
+    - ENCFF030IJD.bigWig
+    - ENCFF159MOF.bigWig
+    mn_bigwigs:
+    - ENCFF729RDA.bigWig
+    - ENCFF556DSS.bigWig
+    - ENCFF930IUB.bigWig
+    - ENCFF106GTA.bigWig
+  ENCSR053UMZ:
+    biosample: cerebellum
+    biosample_summary: Homo sapiens cerebellum tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Cerebellum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF803FRQ.bed.gz
+    pl_bigwigs:
+    - ENCFF917ZTH.bigWig
+    mn_bigwigs:
+    - ENCFF311FGM.bigWig
+  ENCSR867EQV:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens SUPT16H treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid\
+      \ for 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SUPT16H_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF812OKN.bed.gz
+    pl_bigwigs:
+    - ENCFF065MPR.bigWig
+    - ENCFF177PKJ.bigWig
+    mn_bigwigs:
+    - ENCFF702DZE.bigWig
+    - ENCFF464MTI.bigWig
+  ENCSR386RDW:
+    biosample: subcutaneous adipose tissue
+    biosample_summary: Homo sapiens subcutaneous adipose tissue tissue female adult
+      (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Subcutaneous adipose tissue.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF638VIQ.bed.gz
+    pl_bigwigs:
+    - ENCFF570TTV.bigWig
+    - ENCFF196QVR.bigWig
+    mn_bigwigs:
+    - ENCFF376QOD.bigWig
+    - ENCFF740QNR.bigWig
+  ENCSR694RPO:
+    biosample: right lobe of liver
+    biosample_summary: Homo sapiens right lobe of liver tissue female adult (47 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right lobe of liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF686OLC.bed.gz
+    pl_bigwigs:
+    - ENCFF288OYX.bigWig
+    - ENCFF636HEH.bigWig
+    mn_bigwigs:
+    - ENCFF589KYQ.bigWig
+    - ENCFF319LIA.bigWig
+  ENCSR248SVP:
+    biosample: osteocyte
+    biosample_summary: Homo sapiens osteocyte
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 derived osteocytes.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF272AMU.bed.gz
+    pl_bigwigs:
+    - ENCFF419UUO.bigWig
+    - ENCFF983WCN.bigWig
+    mn_bigwigs:
+    - ENCFF412QOP.bigWig
+    - ENCFF238ROQ.bigWig
+  ENCSR992HBP:
+    biosample: right lobe of liver
+    biosample_summary: Homo sapiens right lobe of liver tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right lobe of liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF781EHB.bed.gz
+    pl_bigwigs:
+    - ENCFF137JZT.bigWig
+    - ENCFF525SQD.bigWig
+    mn_bigwigs:
+    - ENCFF496UYH.bigWig
+    - ENCFF036GII.bigWig
+  ENCSR967RHN:
+    biosample: lower lobe of left lung
+    biosample_summary: Homo sapiens lower lobe of left lung tissue female adult (59
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Lower lobe of left lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF260EHS.bed.gz
+    pl_bigwigs:
+    - ENCFF185YJE.bigWig
+    - ENCFF530DZY.bigWig
+    mn_bigwigs:
+    - ENCFF409PEB.bigWig
+    - ENCFF994WDH.bigWig
+  ENCSR757HMG:
+    biosample: Peyer's patch
+    biosample_summary: Homo sapiens Peyer's patch tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Peyer's patch.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF459FDH.bed.gz
+    pl_bigwigs:
+    - ENCFF209SYW.bigWig
+    - ENCFF257XAJ.bigWig
+    mn_bigwigs:
+    - ENCFF027XYV.bigWig
+    - ENCFF885FKZ.bigWig
+  ENCSR983JFU:
+    biosample: REH cell
+    biosample_summary: Homo sapiens REH cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in REH.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF626PVW.bed.gz
+    pl_bigwigs:
+    - ENCFF270RXC.bigWig
+    - ENCFF791FYW.bigWig
+    mn_bigwigs:
+    - ENCFF734PBI.bigWig
+    - ENCFF361BKO.bigWig
+  ENCSR644TYW:
+    biosample: Colon Carcinoma Metastatic in the Brain
+    biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Brain tissue
+      male adult (56 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic colon cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF140EOA.bed.gz
+    pl_bigwigs:
+    - ENCFF509HVZ.bigWig
+    mn_bigwigs:
+    - ENCFF114QCE.bigWig
+  ENCSR542IVL:
+    biosample: testis
+    biosample_summary: Homo sapiens testis tissue male
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Testis.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF705ZJJ.bed.gz
+    pl_bigwigs:
+    - ENCFF746UZX.bigWig
+    - ENCFF764AZO.bigWig
+    mn_bigwigs:
+    - ENCFF319JXY.bigWig
+    - ENCFF189ANN.bigWig
+  ENCSR821MIF:
+    biosample: spleen
+    biosample_summary: Homo sapiens spleen tissue female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Spleen.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF692RGG.bed.gz
+    pl_bigwigs:
+    - ENCFF687NHN.bigWig
+    - ENCFF993EGJ.bigWig
+    mn_bigwigs:
+    - ENCFF569QSJ.bigWig
+    - ENCFF748TYK.bigWig
+  ENCSR970ACM:
+    biosample: adrenal gland
+    biosample_summary: Homo sapiens adrenal gland tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Adrenal gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF318UJU.bed.gz
+    pl_bigwigs:
+    - ENCFF871LST.bigWig
+    - ENCFF585AZR.bigWig
+    mn_bigwigs:
+    - ENCFF163BBJ.bigWig
+    - ENCFF224LQG.bigWig
+  ENCSR484CAZ:
+    biosample: cardiac septum
+    biosample_summary: Homo sapiens cardiac septum tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Septum of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF346LRC.bed.gz
+    pl_bigwigs:
+    - ENCFF816YJP.bigWig
+    - ENCFF806QBP.bigWig
+    mn_bigwigs:
+    - ENCFF104VVG.bigWig
+    - ENCFF598EMW.bigWig
+  ENCSR074XYR:
+    biosample: Colon Carcinoma Metastatic in the Brain
+    biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Brain tissue
+      male adult (50 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic colon cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF195SBF.bed.gz
+    pl_bigwigs:
+    - ENCFF382OAC.bigWig
+    mn_bigwigs:
+    - ENCFF675TNC.bigWig
+  ENCSR636RVF:
+    biosample: skeletal muscle tissue
+    biosample_summary: Homo sapiens skeletal muscle tissue tissue female adult (42
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Skeletal muscle of leg.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF786OQI.bed.gz
+    pl_bigwigs:
+    - ENCFF775SQJ.bigWig
+    - ENCFF325ZCL.bigWig
+    mn_bigwigs:
+    - ENCFF563XEO.bigWig
+    - ENCFF254NUA.bigWig
+  ENCSR122BHP:
+    biosample: colic lymph node
+    biosample_summary: Homo sapiens colic lymph node tissue female adult (50 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pericolonic lymph node.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF777INX.bed.gz
+    pl_bigwigs:
+    - ENCFF802EAY.bigWig
+    - ENCFF553DRY.bigWig
+    mn_bigwigs:
+    - ENCFF191DNC.bigWig
+    - ENCFF305OOT.bigWig
+  ENCSR282COG:
+    biosample: gallbladder
+    biosample_summary: Homo sapiens gallbladder tissue male adult (40 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Gallbladder.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF778UFP.bed.gz
+    pl_bigwigs:
+    - ENCFF271FZJ.bigWig
+    - ENCFF808JYT.bigWig
+    mn_bigwigs:
+    - ENCFF364AKU.bigWig
+    - ENCFF339KZC.bigWig
+  ENCSR618ZHM:
+    biosample: ileum
+    biosample_summary: Homo sapiens ileum tissue female adult (62 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ileum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF193ATM.bed.gz
+    pl_bigwigs:
+    - ENCFF384IMY.bigWig
+    - ENCFF518CJB.bigWig
+    mn_bigwigs:
+    - ENCFF779ZTK.bigWig
+    - ENCFF044IRT.bigWig
+  ENCSR940QKZ:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF466NZR.bed.gz
+    pl_bigwigs:
+    - ENCFF970JQJ.bigWig
+    - ENCFF595SVE.bigWig
+    mn_bigwigs:
+    - ENCFF029LEX.bigWig
+    - ENCFF862XFV.bigWig
+  ENCSR093JST:
+    biosample: monocyte
+    biosample_summary: Homo sapiens monocyte
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Monocytes.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF400JLN.bed.gz
+    pl_bigwigs:
+    - ENCFF202ODO.bigWig
+    - ENCFF777KQL.bigWig
+    mn_bigwigs:
+    - ENCFF238NLM.bigWig
+    - ENCFF921WDX.bigWig
+  ENCSR331QXJ:
+    biosample: Colon Carcinoma Metastatic in the Lung
+    biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Lung tissue
+      female adult (72 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic colon cancer
+      to lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF134CFZ.bed.gz
+    pl_bigwigs:
+    - ENCFF365WMY.bigWig
+    mn_bigwigs:
+    - ENCFF462MKZ.bigWig
+  ENCSR575NNF:
+    biosample: right lobe of liver
+    biosample_summary: Homo sapiens right lobe of liver tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right lobe of liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF963XGA.bed.gz
+    pl_bigwigs:
+    - ENCFF625IVE.bigWig
+    - ENCFF211MKD.bigWig
+    mn_bigwigs:
+    - ENCFF523UUP.bigWig
+    - ENCFF718JLW.bigWig
+  ENCSR915VCN:
+    biosample: cerebral cortex
+    biosample_summary: Homo sapiens cerebral cortex tissue female adult (49 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Temporal lobe of cerebral
+      cortex.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF849MNJ.bed.gz
+    pl_bigwigs:
+    - ENCFF788MWR.bigWig
+    - ENCFF958TDP.bigWig
+    mn_bigwigs:
+    - ENCFF238YIB.bigWig
+    - ENCFF958MEN.bigWig
+  ENCSR766KPR:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (61 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF952RBD.bed.gz
+    pl_bigwigs:
+    - ENCFF554UYR.bigWig
+    - ENCFF197ABL.bigWig
+    mn_bigwigs:
+    - ENCFF858WVO.bigWig
+    - ENCFF153UJC.bigWig
+  ENCSR399LAD:
+    biosample: uterus
+    biosample_summary: Homo sapiens uterus tissue female adult (46 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Uterus.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF371QWD.bed.gz
+    pl_bigwigs:
+    - ENCFF169KOV.bigWig
+    - ENCFF745MSK.bigWig
+    mn_bigwigs:
+    - ENCFF567EMR.bigWig
+    - ENCFF553VSU.bigWig
+  ENCSR756CCD:
+    biosample: thyroid gland
+    biosample_summary: Homo sapiens thyroid gland tissue male adult (49 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Thyroid gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF995DWR.bed.gz
+    pl_bigwigs:
+    - ENCFF847YJP.bigWig
+    - ENCFF133IYB.bigWig
+    mn_bigwigs:
+    - ENCFF631VBY.bigWig
+    - ENCFF980XQW.bigWig
+  ENCSR023NXW:
+    biosample: right common carotid artery plus branches
+    biosample_summary: Homo sapiens right common carotid artery plus branches tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right carotid artery.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF159MOJ.bed.gz
+    pl_bigwigs:
+    - ENCFF905JJI.bigWig
+    - ENCFF198PRH.bigWig
+    mn_bigwigs:
+    - ENCFF673DSF.bigWig
+    - ENCFF833CZC.bigWig
+  ENCSR266TET:
+    biosample: bronchial lymph node
+    biosample_summary: Homo sapiens bronchial lymph node tissue female adult (63 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Peribronchial lymph node.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF929IBL.bed.gz
+    pl_bigwigs:
+    - ENCFF978XNZ.bigWig
+    - ENCFF019DXQ.bigWig
+    mn_bigwigs:
+    - ENCFF963WQQ.bigWig
+    - ENCFF119CQF.bigWig
+  ENCSR045XAW:
+    biosample: urinary bladder
+    biosample_summary: Homo sapiens urinary bladder tissue female adult (67 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Bladder.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF172FOK.bed.gz
+    pl_bigwigs:
+    - ENCFF193AMF.bigWig
+    - ENCFF221NSR.bigWig
+    mn_bigwigs:
+    - ENCFF859XQD.bigWig
+    - ENCFF326MZI.bigWig
+  ENCSR934ZMQ:
+    biosample: Metastatic Breast Carcinoma in the Ovary
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Ovary tissue
+      female adult (43 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF700UEQ.bed.gz
+    pl_bigwigs:
+    - ENCFF229PNB.bigWig
+    - ENCFF760OPC.bigWig
+    mn_bigwigs:
+    - ENCFF918IJP.bigWig
+    - ENCFF362VID.bigWig
+  ENCSR118KGX:
+    biosample: T-cell
+    biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
+      (32 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in T cells from T1D donor.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF870ANA.bed.gz
+    pl_bigwigs:
+    - ENCFF246KDC.bigWig
+    mn_bigwigs:
+    - ENCFF298UGL.bigWig
+  ENCSR296MTV:
+    biosample: left common carotid artery plus branches
+    biosample_summary: Homo sapiens left common carotid artery plus branches tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left carotid artery.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF753JQF.bed.gz
+    pl_bigwigs:
+    - ENCFF047ATS.bigWig
+    - ENCFF118UEF.bigWig
+    mn_bigwigs:
+    - ENCFF301ATR.bigWig
+    - ENCFF763TUC.bigWig
+  ENCSR212GWU:
+    biosample: breast
+    biosample_summary: Homo sapiens breast tissue female adult (39 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Breast mammary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF284VUS.bed.gz
+    pl_bigwigs:
+    - ENCFF334NMW.bigWig
+    - ENCFF151EUI.bigWig
+    mn_bigwigs:
+    - ENCFF792ZQD.bigWig
+    - ENCFF163LJV.bigWig
+  ENCSR408RHY:
+    biosample: adrenal gland
+    biosample_summary: Homo sapiens adrenal gland tissue female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Adrenal gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF775RYJ.bed.gz
+    pl_bigwigs:
+    - ENCFF766FVB.bigWig
+    - ENCFF106SJR.bigWig
+    mn_bigwigs:
+    - ENCFF119HBC.bigWig
+    - ENCFF723AUV.bigWig
+  ENCSR594WJV:
+    biosample: cytotoxic T cell
+    biosample_summary: Homo sapiens cytotoxic T cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Cytotoxic T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF339VHB.bed.gz
+    pl_bigwigs:
+    - ENCFF800JUY.bigWig
+    - ENCFF295FNK.bigWig
+    mn_bigwigs:
+    - ENCFF167IBF.bigWig
+    - ENCFF214DBJ.bigWig
+  ENCSR797AOQ:
+    biosample: spleen
+    biosample_summary: Homo sapiens spleen tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Spleen.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF677NOJ.bed.gz
+    pl_bigwigs:
+    - ENCFF488UTK.bigWig
+    - ENCFF420SWY.bigWig
+    mn_bigwigs:
+    - ENCFF914OVT.bigWig
+    - ENCFF865ANZ.bigWig
+  ENCSR675RBN:
+    biosample: cerebral cortex
+    biosample_summary: Homo sapiens cerebral cortex tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left frontal of cerebral
+      cortex.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF900KSM.bed.gz
+    pl_bigwigs:
+    - ENCFF601NFZ.bigWig
+    - ENCFF003TZY.bigWig
+    mn_bigwigs:
+    - ENCFF031GQY.bigWig
+    - ENCFF361MGW.bigWig
+  ENCSR812JCT:
+    biosample: heart left ventricle
+    biosample_summary: Homo sapiens heart left ventricle tissue female adult (46 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF767IFY.bed.gz
+    pl_bigwigs:
+    - ENCFF982VAA.bigWig
+    - ENCFF445YTY.bigWig
+    mn_bigwigs:
+    - ENCFF054BGT.bigWig
+    - ENCFF353SVC.bigWig
+  ENCSR740DLY:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF279XAA.bed.gz
+    pl_bigwigs:
+    - ENCFF255LKE.bigWig
+    - ENCFF029KOW.bigWig
+    mn_bigwigs:
+    - ENCFF262NUC.bigWig
+    - ENCFF998DWH.bigWig
+  ENCSR964OON:
+    biosample: sternocleidomastoid
+    biosample_summary: Homo sapiens sternocleidomastoid tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Sternocleidomastoid muscle.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF498PQI.bed.gz
+    pl_bigwigs:
+    - ENCFF727TWX.bigWig
+    - ENCFF466DGA.bigWig
+    mn_bigwigs:
+    - ENCFF025EGE.bigWig
+    - ENCFF603TDX.bigWig
+  ENCSR883PPD:
+    biosample: right cardiac atrium
+    biosample_summary: Homo sapiens right cardiac atrium tissue female adult (46 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right atrium of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF727HKF.bed.gz
+    pl_bigwigs:
+    - ENCFF558AKT.bigWig
+    - ENCFF454BBU.bigWig
+    mn_bigwigs:
+    - ENCFF068IWI.bigWig
+    - ENCFF393QMT.bigWig
+  ENCSR784FKF:
+    biosample: vermiform appendix
+    biosample_summary: Homo sapiens vermiform appendix tissue male adult (56 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Appendix.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF922ZHM.bed.gz
+    pl_bigwigs:
+    - ENCFF874GPR.bigWig
+    - ENCFF046QUU.bigWig
+    mn_bigwigs:
+    - ENCFF516NXU.bigWig
+    - ENCFF444GIW.bigWig
+  ENCSR273JQN:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens SUPT16H
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SUPT16H_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF358OXF.bed.gz
+    pl_bigwigs:
+    - ENCFF702ZUJ.bigWig
+    - ENCFF375JEC.bigWig
+    mn_bigwigs:
+    - ENCFF323ZMX.bigWig
+    - ENCFF578FCY.bigWig
+  ENCSR074XOP:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens POLR2A
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in POLR2A_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF850UAY.bed.gz
+    pl_bigwigs:
+    - ENCFF067ZFN.bigWig
+    - ENCFF194FJR.bigWig
+    mn_bigwigs:
+    - ENCFF892ADK.bigWig
+    - ENCFF851IEE.bigWig
+  ENCSR635SXX:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens RAD21
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in RAD21_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF346ZKW.bed.gz
+    pl_bigwigs:
+    - ENCFF710UKX.bigWig
+    - ENCFF693CBG.bigWig
+    mn_bigwigs:
+    - ENCFF513IVI.bigWig
+    - ENCFF517PLA.bigWig
+  ENCSR990FJB:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens CDK7
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in CDK7_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF797RQJ.bed.gz
+    pl_bigwigs:
+    - ENCFF692QPR.bigWig
+    - ENCFF260QCB.bigWig
+    mn_bigwigs:
+    - ENCFF050BQZ.bigWig
+    - ENCFF887JVU.bigWig
+  ENCSR261OWE:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens CTCF treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid for\
+      \ 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in CTCF_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF450UBV.bed.gz
+    pl_bigwigs:
+    - ENCFF516CIY.bigWig
+    - ENCFF719EOH.bigWig
+    mn_bigwigs:
+    - ENCFF687NPB.bigWig
+    - ENCFF312IWO.bigWig
+  ENCSR932TRR:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens SMARCA5
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SMARCA5_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF214LDX.bed.gz
+    pl_bigwigs:
+    - ENCFF963NDK.bigWig
+    - ENCFF138ZSL.bigWig
+    mn_bigwigs:
+    - ENCFF670EXD.bigWig
+    - ENCFF337QIN.bigWig
+  ENCSR604EBH:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: CoPRO experiment. A run-on assay was performed on captured nascent
+      RNA with cap state selection. In this experiment, only capped nascent RNA was
+      selected and no PCR amplification was done.
+    lab: John Lis, Cornell
+    library_construction: capped RNA enrichment,PCR-free
+    peaks:
+    - ENCFF227JQX.bed.gz
+    pl_bigwigs:
+    - ENCFF929BQB.bigWig
+    - ENCFF303RQD.bigWig
+    - ENCFF183SSA.bigWig
+    - ENCFF526DGX.bigWig
+    mn_bigwigs:
+    - ENCFF806IHJ.bigWig
+    - ENCFF461WON.bigWig
+    - ENCFF538JPG.bigWig
+    - ENCFF900CHQ.bigWig
+  ENCSR124AWE:
+    biosample: SUDHL5
+    biosample_summary: Homo sapiens SUDHL5
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SU-DHL-5.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF942OPG.bed.gz
+    pl_bigwigs:
+    - ENCFF378UKN.bigWig
+    - ENCFF264SFZ.bigWig
+    mn_bigwigs:
+    - ENCFF981PND.bigWig
+    - ENCFF797USK.bigWig
+  ENCSR548GOG:
+    biosample: stomach
+    biosample_summary: Homo sapiens stomach tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Stomach.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF648KZI.bed.gz
+    pl_bigwigs:
+    - ENCFF217VGJ.bigWig
+    - ENCFF037TGI.bigWig
+    mn_bigwigs:
+    - ENCFF219LDS.bigWig
+    - ENCFF851NUQ.bigWig
+  ENCSR973QQI:
+    biosample: ReNcell CX
+    biosample_summary: Homo sapiens ReNcell CX
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Neural progenitor cell
+      line.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF499TTD.bed.gz
+    pl_bigwigs:
+    - ENCFF392OKR.bigWig
+    - ENCFF396ZBP.bigWig
+    mn_bigwigs:
+    - ENCFF773MMG.bigWig
+    - ENCFF944VIF.bigWig
+  ENCSR473KVF:
+    biosample: HEK293T
+    biosample_summary: Homo sapiens HEK293T genetically modified (insertion) using
+      CRISPR targeting H. sapiens ZNF143
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in ZNF143_U cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF707DRY.bed.gz
+    pl_bigwigs:
+    - ENCFF592ZIW.bigWig
+    - ENCFF122LLU.bigWig
+    mn_bigwigs:
+    - ENCFF748BAF.bigWig
+    - ENCFF236QNQ.bigWig
+  ENCSR382HFH:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF230VMX.bed.gz
+    pl_bigwigs:
+    - ENCFF942ZED.bigWig
+    - ENCFF899CIQ.bigWig
+    mn_bigwigs:
+    - ENCFF653GEU.bigWig
+    - ENCFF969NXK.bigWig
+  ENCSR624CVP:
+    biosample: peritoneum
+    biosample_summary: Homo sapiens peritoneum tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Peritoneum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF789WJU.bed.gz
+    pl_bigwigs:
+    - ENCFF309LIZ.bigWig
+    - ENCFF786NRN.bigWig
+    mn_bigwigs:
+    - ENCFF721NEX.bigWig
+    - ENCFF760FVH.bigWig
+  ENCSR575EOB:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF436CNJ.bed.gz
+    pl_bigwigs:
+    - ENCFF121MGB.bigWig
+    - ENCFF152ZRN.bigWig
+    mn_bigwigs:
+    - ENCFF783ELT.bigWig
+    - ENCFF398ZGQ.bigWig
+  ENCSR701MOE:
+    biosample: T-cell
+    biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
+      (19 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in T cells from T1D donor.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF489GXH.bed.gz
+    pl_bigwigs:
+    - ENCFF224WRP.bigWig
+    mn_bigwigs:
+    - ENCFF248NZO.bigWig
+  ENCSR657PSE:
+    biosample: aorta
+    biosample_summary: Homo sapiens aorta tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Aorta.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF165ICR.bed.gz
+    pl_bigwigs:
+    - ENCFF181BIF.bigWig
+    - ENCFF781AVI.bigWig
+    mn_bigwigs:
+    - ENCFF045RVO.bigWig
+    - ENCFF236DMO.bigWig
+  ENCSR472ETC:
+    biosample: fallopian tube
+    biosample_summary: Homo sapiens fallopian tube tissue female adult (46 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Fallopian tube.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF966LIU.bed.gz
+    pl_bigwigs:
+    - ENCFF100LON.bigWig
+    - ENCFF897POV.bigWig
+    mn_bigwigs:
+    - ENCFF791SXO.bigWig
+    - ENCFF759JAR.bigWig
+  ENCSR077MAX:
+    biosample: tibial nerve
+    biosample_summary: Homo sapiens tibial nerve tissue male adult (37 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Tibial nerve.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF927RRT.bed.gz
+    pl_bigwigs:
+    - ENCFF983ETN.bigWig
+    - ENCFF534YXP.bigWig
+    mn_bigwigs:
+    - ENCFF622ABN.bigWig
+    - ENCFF923UFT.bigWig
+  ENCSR426RMA:
+    biosample: heart left ventricle
+    biosample_summary: Homo sapiens heart left ventricle tissue male adult (40 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF625DUV.bed.gz
+    pl_bigwigs:
+    - ENCFF057YUL.bigWig
+    - ENCFF842VJY.bigWig
+    mn_bigwigs:
+    - ENCFF369UUR.bigWig
+    - ENCFF731YCW.bigWig
+  ENCSR489FZB:
+    biosample: T-cell
+    biosample_summary: Homo sapiens T-cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pan T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF360ZAN.bed.gz
+    pl_bigwigs:
+    - ENCFF678TOK.bigWig
+    - ENCFF474OLX.bigWig
+    mn_bigwigs:
+    - ENCFF759MHE.bigWig
+    - ENCFF718SOM.bigWig
+  ENCSR683FOJ:
+    biosample: mesenteric fat pad
+    biosample_summary: Homo sapiens mesenteric fat pad tissue female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Mesenteric fat pad.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF543SDK.bed.gz
+    pl_bigwigs:
+    - ENCFF049CPX.bigWig
+    - ENCFF672FFB.bigWig
+    mn_bigwigs:
+    - ENCFF402EFB.bigWig
+    - ENCFF635IKU.bigWig
+  ENCSR683YVU:
+    biosample: helper T cell
+    biosample_summary: Homo sapiens helper T cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Helper T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF454ZGK.bed.gz
+    pl_bigwigs:
+    - ENCFF198LRK.bigWig
+    - ENCFF345VXE.bigWig
+    mn_bigwigs:
+    - ENCFF334LNW.bigWig
+    - ENCFF149SDN.bigWig
+  ENCSR574ZMF:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF224OLF.bed.gz
+    pl_bigwigs:
+    - ENCFF496NGC.bigWig
+    - ENCFF939MIJ.bigWig
+    mn_bigwigs:
+    - ENCFF416IGU.bigWig
+    - ENCFF833UDI.bigWig
+  ENCSR245UIS:
+    biosample: Karpas-422
+    biosample_summary: Homo sapiens Karpas-422
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in KARPAS-422.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF261DHR.bed.gz
+    pl_bigwigs:
+    - ENCFF790UTG.bigWig
+    - ENCFF154LAF.bigWig
+    mn_bigwigs:
+    - ENCFF126ZBC.bigWig
+    - ENCFF382EUX.bigWig
+  ENCSR836XBB:
+    biosample: rectum
+    biosample_summary: Homo sapiens rectum tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Rectum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF407YYL.bed.gz
+    pl_bigwigs:
+    - ENCFF662ZMW.bigWig
+    - ENCFF077BMQ.bigWig
+    mn_bigwigs:
+    - ENCFF937HSR.bigWig
+    - ENCFF878ZES.bigWig
+  ENCSR526QVD:
+    biosample: ureter
+    biosample_summary: Homo sapiens ureter tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ureter.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF855BUW.bed.gz
+    pl_bigwigs:
+    - ENCFF923IQF.bigWig
+    - ENCFF996NXR.bigWig
+    mn_bigwigs:
+    - ENCFF015HOZ.bigWig
+    - ENCFF744ZAH.bigWig
+  ENCSR876AEQ:
+    biosample: Metastatic Liver Carcinoma in the Adrenal Gland
+    biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Adrenal Gland
+      tissue female adult (30 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic liver cancer
+      to adrenal gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF358TBT.bed.gz
+    pl_bigwigs:
+    - ENCFF165NZD.bigWig
+    mn_bigwigs:
+    - ENCFF498JCP.bigWig
+  ENCSR229XTQ:
+    biosample: skeletal muscle tissue
+    biosample_summary: Homo sapiens skeletal muscle tissue tissue male adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Skeletal muscle of leg.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF703JTP.bed.gz
+    pl_bigwigs:
+    - ENCFF090LFK.bigWig
+    - ENCFF980EBT.bigWig
+    mn_bigwigs:
+    - ENCFF191TIR.bigWig
+    - ENCFF258BKO.bigWig
+  ENCSR659YNL:
+    biosample: left lung
+    biosample_summary: Homo sapiens left lung tissue male adult (40 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF261DRW.bed.gz
+    pl_bigwigs:
+    - ENCFF675AQH.bigWig
+    - ENCFF672HAC.bigWig
+    mn_bigwigs:
+    - ENCFF690WCT.bigWig
+    - ENCFF133HUW.bigWig
+  ENCSR282IJP:
+    biosample: neutrophil
+    biosample_summary: Homo sapiens neutrophil
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Neutrophils.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF045CDF.bed.gz
+    pl_bigwigs:
+    - ENCFF752CNO.bigWig
+    - ENCFF202HXX.bigWig
+    mn_bigwigs:
+    - ENCFF267WPQ.bigWig
+    - ENCFF662RXL.bigWig
+  ENCSR888DKJ:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (67 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF554JUS.bed.gz
+    pl_bigwigs:
+    - ENCFF723MKO.bigWig
+    - ENCFF775CRX.bigWig
+    mn_bigwigs:
+    - ENCFF769IGI.bigWig
+    - ENCFF067NMD.bigWig
+  ENCSR754LBG:
+    biosample: duodenum
+    biosample_summary: Homo sapiens duodenum tissue female adult (70 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Duodenum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF386AAF.bed.gz
+    pl_bigwigs:
+    - ENCFF410HCA.bigWig
+    - ENCFF860LNL.bigWig
+    mn_bigwigs:
+    - ENCFF330APO.bigWig
+    - ENCFF242XXV.bigWig
+  ENCSR250REI:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF262LYL.bed.gz
+    pl_bigwigs:
+    - ENCFF886XFP.bigWig
+    - ENCFF786MWN.bigWig
+    mn_bigwigs:
+    - ENCFF232QGY.bigWig
+    - ENCFF621BGR.bigWig
+  ENCSR180NBV:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (71 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF218HXB.bed.gz
+    pl_bigwigs:
+    - ENCFF987XPA.bigWig
+    - ENCFF861BFJ.bigWig
+    mn_bigwigs:
+    - ENCFF745ZQQ.bigWig
+    - ENCFF970IFE.bigWig
+  ENCSR739MOQ:
+    biosample: body of pancreas
+    biosample_summary: Homo sapiens body of pancreas tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Body of pancreas.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF211ELC.bed.gz
+    pl_bigwigs:
+    - ENCFF678CKL.bigWig
+    - ENCFF254EBK.bigWig
+    mn_bigwigs:
+    - ENCFF114QKA.bigWig
+    - ENCFF068BOD.bigWig
+  ENCSR117JKC:
+    biosample: trachea
+    biosample_summary: Homo sapiens trachea tissue male adult (54 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Trachea.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF757LKT.bed.gz
+    pl_bigwigs:
+    - ENCFF205FFQ.bigWig
+    - ENCFF132UQF.bigWig
+    mn_bigwigs:
+    - ENCFF867VHZ.bigWig
+    - ENCFF235ZNX.bigWig
+  ENCSR008TSD:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (42 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF591RHY.bed.gz
+    pl_bigwigs:
+    - ENCFF259HSJ.bigWig
+    - ENCFF874YTX.bigWig
+    mn_bigwigs:
+    - ENCFF936QNE.bigWig
+    - ENCFF855VJO.bigWig
+  ENCSR723JIC:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF725IBR.bed.gz
+    pl_bigwigs:
+    - ENCFF574JPC.bigWig
+    - ENCFF708LNZ.bigWig
+    mn_bigwigs:
+    - ENCFF291LMW.bigWig
+    - ENCFF283MOB.bigWig
+  ENCSR980TGS:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (51 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF935PUI.bed.gz
+    pl_bigwigs:
+    - ENCFF377DCZ.bigWig
+    - ENCFF059AZM.bigWig
+    mn_bigwigs:
+    - ENCFF996HWK.bigWig
+    - ENCFF468DVE.bigWig
+  ENCSR083AMN:
+    biosample: B cell
+    biosample_summary: Homo sapiens B cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in B cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF656RWQ.bed.gz
+    pl_bigwigs:
+    - ENCFF746KYF.bigWig
+    - ENCFF812MRP.bigWig
+    mn_bigwigs:
+    - ENCFF408NIK.bigWig
+    - ENCFF074SSA.bigWig
+  ENCSR756TPG:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: CoPRO experiment. A run-on assay was performed on captured nascent
+      RNA with cap state selection. In this experiment, both capped and uncapped nascent
+      RNA was selected and no PCR amplification was done.
+    lab: John Lis, Cornell
+    library_construction: capped RNA enrichment,uncapped RNA enrichment,PCR-free
+    peaks:
+    - ENCFF106YWP.bed.gz
+    pl_bigwigs:
+    - ENCFF823JCH.bigWig
+    - ENCFF633USA.bigWig
+    - ENCFF384ZQJ.bigWig
+    - ENCFF366DPV.bigWig
+    mn_bigwigs:
+    - ENCFF253KQJ.bigWig
+    - ENCFF658HRY.bigWig
+    - ENCFF848KKP.bigWig
+    - ENCFF182HUP.bigWig
+  ENCSR089CQL:
+    biosample: T-cell
+    biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
+      (29 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in T cells from T1D donor.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF508DPZ.bed.gz
+    pl_bigwigs:
+    - ENCFF761RFA.bigWig
+    mn_bigwigs:
+    - ENCFF481YXT.bigWig
+  ENCSR294JPW:
+    biosample: left ventricle myocardium
+    biosample_summary: Homo sapiens left ventricle myocardium tissue male adult (37
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle myocardium
+      inferior of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF186IJY.bed.gz
+    pl_bigwigs:
+    - ENCFF815EOY.bigWig
+    - ENCFF697YHC.bigWig
+    mn_bigwigs:
+    - ENCFF667XMA.bigWig
+    - ENCFF522YDK.bigWig
+  ENCSR321WCE:
+    biosample: neural crest cell
+    biosample_summary: Homo sapiens neural crest cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 derived neural crest
+      cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF012HQG.bed.gz
+    pl_bigwigs:
+    - ENCFF343BAM.bigWig
+    - ENCFF450XIM.bigWig
+    mn_bigwigs:
+    - ENCFF635TCW.bigWig
+    - ENCFF113WQI.bigWig
+  ENCSR357VUN:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (45 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF523LHA.bed.gz
+    pl_bigwigs:
+    - ENCFF435OOB.bigWig
+    - ENCFF455FKB.bigWig
+    mn_bigwigs:
+    - ENCFF588HBC.bigWig
+    - ENCFF376ZPG.bigWig
+  ENCSR393PGX:
+    biosample: breast epithelium
+    biosample_summary: Homo sapiens breast epithelium tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Breast epithelium.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF833XPI.bed.gz
+    pl_bigwigs:
+    - ENCFF992WRX.bigWig
+    mn_bigwigs:
+    - ENCFF440ZTM.bigWig
+  ENCSR489BCG:
+    biosample: pancreas
+    biosample_summary: Homo sapiens pancreas organoid
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pancreas.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF634NSC.bed.gz
+    pl_bigwigs:
+    - ENCFF729QOS.bigWig
+    mn_bigwigs:
+    - ENCFF090RRR.bigWig
+  ENCSR243MVI:
+    biosample: liver
+    biosample_summary: Homo sapiens liver tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF074ANE.bed.gz
+    pl_bigwigs:
+    - ENCFF314IXN.bigWig
+    mn_bigwigs:
+    - ENCFF908GQE.bigWig
+  ENCSR104MSL:
+    biosample: pancreas
+    biosample_summary: Homo sapiens pancreas organoid
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pancreas.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF066NYJ.bed.gz
+    pl_bigwigs:
+    - ENCFF984XGZ.bigWig
+    - ENCFF952KNP.bigWig
+    mn_bigwigs:
+    - ENCFF352IXG.bigWig
+    - ENCFF268DZY.bigWig
+  ENCSR928ZWP:
+    biosample: lower leg skin
+    biosample_summary: Homo sapiens lower leg skin tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Lower leg skin.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF460EXO.bed.gz
+    pl_bigwigs:
+    - ENCFF292WHE.bigWig
+    - ENCFF652RQR.bigWig
+    mn_bigwigs:
+    - ENCFF115MBG.bigWig
+    - ENCFF226CFV.bigWig
+  ENCSR331UGM:
+    biosample: liver
+    biosample_summary: Homo sapiens liver tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF333JKA.bed.gz
+    pl_bigwigs:
+    - ENCFF981WFL.bigWig
+    - ENCFF468COZ.bigWig
+    mn_bigwigs:
+    - ENCFF354GOW.bigWig
+    - ENCFF759QBY.bigWig
+  ENCSR149WMX:
+    biosample: Metastatic Liver Carcinoma in the Lung
+    biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Lung tissue
+      female adult (62 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic liver cancer
+      to lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF198PAN.bed.gz
+    pl_bigwigs:
+    - ENCFF275RVY.bigWig
+    mn_bigwigs:
+    - ENCFF073DQK.bigWig
+  ENCSR633OWM:
+    biosample: pulmonary lymph node
+    biosample_summary: Homo sapiens pulmonary lymph node tissue female adult (58 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pulmonary lymph node.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF271MUZ.bed.gz
+    pl_bigwigs:
+    - ENCFF316BDZ.bigWig
+    - ENCFF107UYX.bigWig
+    mn_bigwigs:
+    - ENCFF771XPV.bigWig
+    - ENCFF950NUQ.bigWig
+  ENCSR384HWB:
+    biosample: ascending aorta
+    biosample_summary: Homo sapiens ascending aorta tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ascending aorta.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF069YES.bed.gz
+    pl_bigwigs:
+    - ENCFF605FIB.bigWig
+    - ENCFF443NSY.bigWig
+    mn_bigwigs:
+    - ENCFF715UJT.bigWig
+    - ENCFF217JZT.bigWig
+  ENCSR347PQY:
+    biosample: upper lobe of left lung
+    biosample_summary: Homo sapiens upper lobe of left lung tissue female adult (53
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Upper lobe of left lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF258GSU.bed.gz
+    pl_bigwigs:
+    - ENCFF382MZM.bigWig
+    - ENCFF335HZP.bigWig
+    mn_bigwigs:
+    - ENCFF450MXC.bigWig
+    - ENCFF699XWT.bigWig
+  ENCSR335ZMZ:
+    biosample: OCI-LY7
+    biosample_summary: Homo sapiens OCI-LY7
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in OCI-LY7.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF238BNA.bed.gz
+    pl_bigwigs:
+    - ENCFF062OCA.bigWig
+    - ENCFF244COZ.bigWig
+    mn_bigwigs:
+    - ENCFF122BGE.bigWig
+    - ENCFF117YRS.bigWig
+  ENCSR657RPS:
+    biosample: uterus
+    biosample_summary: Homo sapiens uterus tissue female adult (38 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Uterus.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF502DAR.bed.gz
+    pl_bigwigs:
+    - ENCFF470SOA.bigWig
+    - ENCFF137GPQ.bigWig
+    mn_bigwigs:
+    - ENCFF292OUX.bigWig
+    - ENCFF455JXC.bigWig
+  ENCSR149ZRX:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: CoPRO experiment. A run-on assay was performed on captured nascent
+      RNA with cap state selection. In this experiment, both capped and uncapped nascent
+      RNA was selected and PCR amplification was performed before sequencing.
+    lab: John Lis, Cornell
+    library_construction: capped RNA enrichment,uncapped RNA enrichment
+    peaks:
+    - ENCFF446NQE.bed.gz
+    pl_bigwigs:
+    - ENCFF990LRK.bigWig
+    - ENCFF177SYN.bigWig
+    mn_bigwigs:
+    - ENCFF258ZIO.bigWig
+    - ENCFF952YCN.bigWig
+  ENCSR834OVY:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF910BOJ.bed.gz
+    pl_bigwigs:
+    - ENCFF928OWF.bigWig
+    - ENCFF808BAY.bigWig
+    mn_bigwigs:
+    - ENCFF296TBC.bigWig
+    - ENCFF990ETZ.bigWig
+  ENCSR262PWK:
+    biosample: type B pancreatic cell
+    biosample_summary: Homo sapiens type B pancreatic cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 derived insulin producing
+      beta-like cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF228HSL.bed.gz
+    pl_bigwigs:
+    - ENCFF557XZG.bigWig
+    - ENCFF068RQW.bigWig
+    mn_bigwigs:
+    - ENCFF115FJX.bigWig
+    - ENCFF966LRS.bigWig
+  ENCSR300AAD:
+    biosample: Metastatic Liver Carcinoma in the Adrenal Gland
+    biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Adrenal Gland
+      tissue female adult (30 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic liver cancer
+      to adrenal gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF396KSJ.bed.gz
+    pl_bigwigs:
+    - ENCFF648RXB.bigWig
+    mn_bigwigs:
+    - ENCFF074QXQ.bigWig
+  ENCSR900SLO:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens MED14
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in MED14_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF429GEI.bed.gz
+    pl_bigwigs:
+    - ENCFF647FVM.bigWig
+    - ENCFF039IDP.bigWig
+    mn_bigwigs:
+    - ENCFF067EBR.bigWig
+    - ENCFF593BHS.bigWig
+  ENCSR687HZX:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF144RYB.bed.gz
+    pl_bigwigs:
+    - ENCFF056WDZ.bigWig
+    - ENCFF108GJA.bigWig
+    mn_bigwigs:
+    - ENCFF958CFG.bigWig
+    - ENCFF495CDY.bigWig
+  ENCSR997YHR:
+    biosample: lung
+    biosample_summary: Homo sapiens lung tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF286SNP.bed.gz
+    pl_bigwigs:
+    - ENCFF294ZUZ.bigWig
+    - ENCFF843FTM.bigWig
+    mn_bigwigs:
+    - ENCFF607PRT.bigWig
+    - ENCFF943ACS.bigWig
+  ENCSR744JVA:
+    biosample: pancreas
+    biosample_summary: Homo sapiens pancreas organoid
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pancreas.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF523FVP.bed.gz
+    pl_bigwigs:
+    - ENCFF489SBW.bigWig
+    - ENCFF129SLB.bigWig
+    mn_bigwigs:
+    - ENCFF667ZIG.bigWig
+    - ENCFF772FDR.bigWig
+  ENCSR338WJS:
+    biosample: pancreas
+    biosample_summary: Homo sapiens pancreas organoid
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pancreas.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF894LUR.bed.gz
+    pl_bigwigs:
+    - ENCFF790VDO.bigWig
+    - ENCFF501UJX.bigWig
+    mn_bigwigs:
+    - ENCFF703BZM.bigWig
+    - ENCFF006DGD.bigWig
+  ENCSR407CCJ:
+    biosample: cerebellum
+    biosample_summary: Homo sapiens cerebellum tissue female adult (51 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Cerebellum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF468UKL.bed.gz
+    pl_bigwigs:
+    - ENCFF476HIT.bigWig
+    - ENCFF252KRC.bigWig
+    mn_bigwigs:
+    - ENCFF616JZH.bigWig
+    - ENCFF569HVO.bigWig
+  ENCSR155NVW:
+    biosample: penis
+    biosample_summary: Homo sapiens penis tissue male adult (50 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Penis.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF452GDC.bed.gz
+    pl_bigwigs:
+    - ENCFF783KFT.bigWig
+    - ENCFF615HJM.bigWig
+    mn_bigwigs:
+    - ENCFF212QGD.bigWig
+    - ENCFF596OKQ.bigWig
+  ENCSR305RPP:
+    biosample: testis
+    biosample_summary: Homo sapiens testis tissue male
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Testis.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF979WFW.bed.gz
+    pl_bigwigs:
+    - ENCFF292MBF.bigWig
+    - ENCFF257XGW.bigWig
+    mn_bigwigs:
+    - ENCFF867UGD.bigWig
+    - ENCFF212GIQ.bigWig
+  ENCSR290MPW:
+    biosample: heart left ventricle
+    biosample_summary: Homo sapiens heart left ventricle tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF293VWI.bed.gz
+    pl_bigwigs:
+    - ENCFF535TOP.bigWig
+    - ENCFF493AAG.bigWig
+    mn_bigwigs:
+    - ENCFF191JMD.bigWig
+    - ENCFF250WGS.bigWig
+  ENCSR219NJB:
+    biosample: spleen
+    biosample_summary: Homo sapiens spleen tissue female adult (61 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Spleen.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF273BHB.bed.gz
+    pl_bigwigs:
+    - ENCFF968QHP.bigWig
+    mn_bigwigs:
+    - ENCFF558HBA.bigWig
+  ENCSR219QKX:
+    biosample: heart right ventricle
+    biosample_summary: Homo sapiens heart right ventricle tissue male adult (40 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF287KMD.bed.gz
+    pl_bigwigs:
+    - ENCFF952RDC.bigWig
+    - ENCFF658KBE.bigWig
+    mn_bigwigs:
+    - ENCFF035IDQ.bigWig
+    - ENCFF712XKK.bigWig
+  ENCSR656ZDH:
+    biosample: heart left ventricle
+    biosample_summary: Homo sapiens heart left ventricle tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF054DDW.bed.gz
+    pl_bigwigs:
+    - ENCFF396CRM.bigWig
+    - ENCFF549EWL.bigWig
+    mn_bigwigs:
+    - ENCFF009HXV.bigWig
+    - ENCFF531GVC.bigWig
+  ENCSR065NDB:
+    biosample: T-cell
+    biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
+      (22 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in T cells from T1D donor.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF235OML.bed.gz
+    pl_bigwigs:
+    - ENCFF789FBY.bigWig
+    mn_bigwigs:
+    - ENCFF037SOJ.bigWig
+  ENCSR769SLJ:
+    biosample: transverse colon
+    biosample_summary: Homo sapiens transverse colon tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Transverse colon.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF103FIQ.bed.gz
+    pl_bigwigs:
+    - ENCFF807IQQ.bigWig
+    mn_bigwigs:
+    - ENCFF482JTL.bigWig
+  ENCSR069DQH:
+    biosample: cytotoxic T cell
+    biosample_summary: Homo sapiens cytotoxic T cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Cytotoxic T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF204DQE.bed.gz
+    pl_bigwigs:
+    - ENCFF433SXM.bigWig
+    - ENCFF399NJN.bigWig
+    mn_bigwigs:
+    - ENCFF686BJG.bigWig
+    - ENCFF457IUS.bigWig
+  ENCSR617JRP:
+    biosample: Metastatic Breast Carcinoma in the Ovary
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Ovary tissue
+      female adult (57 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF108YMW.bed.gz
+    pl_bigwigs:
+    - ENCFF878OGN.bigWig
+    - ENCFF730VHC.bigWig
+    mn_bigwigs:
+    - ENCFF965ESB.bigWig
+    - ENCFF040WCX.bigWig
+  ENCSR100PNA:
+    biosample: paraaortic lymph node
+    biosample_summary: Homo sapiens paraaortic lymph node tissue female adult (68
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Periaortic lymph node.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF667XJZ.bed.gz
+    pl_bigwigs:
+    - ENCFF486AKB.bigWig
+    - ENCFF270MSL.bigWig
+    mn_bigwigs:
+    - ENCFF145LWD.bigWig
+    - ENCFF228FWZ.bigWig
+  ENCSR065QHA:
+    biosample: left lobe of liver
+    biosample_summary: Homo sapiens left lobe of liver tissue male adult (45 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left lobe of liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF992ZUB.bed.gz
+    pl_bigwigs:
+    - ENCFF890URC.bigWig
+    - ENCFF109XGP.bigWig
+    mn_bigwigs:
+    - ENCFF972TKK.bigWig
+    - ENCFF306NXH.bigWig
+  ENCSR233GRN:
+    biosample: bronchus
+    biosample_summary: Homo sapiens bronchus tissue female adult (68 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Bronchus.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF598LGS.bed.gz
+    pl_bigwigs:
+    - ENCFF444QJW.bigWig
+    - ENCFF120ZXQ.bigWig
+    mn_bigwigs:
+    - ENCFF203MHO.bigWig
+    - ENCFF828FHM.bigWig
+  ENCSR997INZ:
+    biosample: right atrium auricular region
+    biosample_summary: Homo sapiens right atrium auricular region tissue female adult
+      (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right atrium auricular
+      region of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF719BMO.bed.gz
+    pl_bigwigs:
+    - ENCFF731XGB.bigWig
+    - ENCFF851KFY.bigWig
+    mn_bigwigs:
+    - ENCFF948DHJ.bigWig
+    - ENCFF866JGJ.bigWig
+  ENCSR431MXP:
+    biosample: thyroid gland
+    biosample_summary: Homo sapiens thyroid gland tissue female adult (51 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Thyroid gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF972OIO.bed.gz
+    pl_bigwigs:
+    - ENCFF004QOI.bigWig
+    - ENCFF247QWI.bigWig
+    mn_bigwigs:
+    - ENCFF833TZN.bigWig
+    - ENCFF947EZN.bigWig
+  ENCSR255MUU:
+    biosample: progenitor cell of endocrine pancreas
+    biosample_summary: Homo sapiens progenitor cell of endocrine pancreas
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 derived pancreatic progenitor
+      cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF747TXG.bed.gz
+    pl_bigwigs:
+    - ENCFF110CJJ.bigWig
+    - ENCFF266MVV.bigWig
+    mn_bigwigs:
+    - ENCFF993AMV.bigWig
+    - ENCFF410TZS.bigWig
+  ENCSR673CJC:
+    biosample: Metastatic Lung Carcinoma in the Adrenal Gland
+    biosample_summary: Homo sapiens Metastatic Lung Carcinoma in the Adrenal Gland
+      tissue female adult (54 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic lung cancer
+      to adrenal gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF301RIB.bed.gz
+    pl_bigwigs:
+    - ENCFF071NAE.bigWig
+    mn_bigwigs:
+    - ENCFF853CUZ.bigWig
+  ENCSR946MDO:
+    biosample: gastroesophageal sphincter
+    biosample_summary: Homo sapiens gastroesophageal sphincter tissue male adult (37
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Gastroesophageal sphincter.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF446ATH.bed.gz
+    pl_bigwigs:
+    - ENCFF615XDK.bigWig
+    - ENCFF651ICI.bigWig
+    mn_bigwigs:
+    - ENCFF076UHT.bigWig
+    - ENCFF550PED.bigWig
+  ENCSR841GXY:
+    biosample: monocyte
+    biosample_summary: Homo sapiens monocyte
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Monocytes.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF640WWL.bed.gz
+    pl_bigwigs:
+    - ENCFF942ZKL.bigWig
+    - ENCFF219FVU.bigWig
+    mn_bigwigs:
+    - ENCFF664QSA.bigWig
+    - ENCFF513TWP.bigWig
+  ENCSR296XBI:
+    biosample: T-cell
+    biosample_summary: Homo sapiens T-cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pan T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF881LKL.bed.gz
+    pl_bigwigs:
+    - ENCFF215HTF.bigWig
+    - ENCFF974XOG.bigWig
+    mn_bigwigs:
+    - ENCFF013SHE.bigWig
+    - ENCFF310DAW.bigWig
+  ENCSR072JHG:
+    biosample: liver
+    biosample_summary: Homo sapiens liver tissue female adult (71 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF324XRK.bed.gz
+    pl_bigwigs:
+    - ENCFF896AAV.bigWig
+    - ENCFF710FSS.bigWig
+    mn_bigwigs:
+    - ENCFF734XLJ.bigWig
+    - ENCFF351WTC.bigWig
+  ENCSR883HAT:
+    biosample: uterus
+    biosample_summary: Homo sapiens uterus tissue female adult (42 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Uterus.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF402SBN.bed.gz
+    pl_bigwigs:
+    - ENCFF762ISN.bigWig
+    - ENCFF637HFL.bigWig
+    mn_bigwigs:
+    - ENCFF188WIH.bigWig
+    - ENCFF362NCT.bigWig
+  ENCSR360MUR:
+    biosample: HCT116
+    biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
+      CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting H.
+      sapiens BRD4
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in BRD4_U.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF742VBE.bed.gz
+    pl_bigwigs:
+    - ENCFF746WNN.bigWig
+    - ENCFF172YFM.bigWig
+    mn_bigwigs:
+    - ENCFF727ABO.bigWig
+    - ENCFF667FFP.bigWig
+  ENCSR871CUV:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens CDK7 treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid for\
+      \ 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in CDK7_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF985IMJ.bed.gz
+    pl_bigwigs:
+    - ENCFF936TVI.bigWig
+    - ENCFF803YGU.bigWig
+    mn_bigwigs:
+    - ENCFF383NKD.bigWig
+    - ENCFF716WJJ.bigWig
+  ENCSR676YGJ:
+    biosample: heart left ventricle
+    biosample_summary: Homo sapiens heart left ventricle tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF034AUY.bed.gz
+    pl_bigwigs:
+    - ENCFF231FBL.bigWig
+    - ENCFF760NXM.bigWig
+    mn_bigwigs:
+    - ENCFF903XWA.bigWig
+    - ENCFF932BDC.bigWig
+  ENCSR571OAW:
+    biosample: mesothelial cell of epicardium
+    biosample_summary: Homo sapiens mesothelial cell of epicardium
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 derived epicardium (mesothelium).
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF970XCA.bed.gz
+    pl_bigwigs:
+    - ENCFF675DRE.bigWig
+    - ENCFF534EDW.bigWig
+    mn_bigwigs:
+    - ENCFF334HUN.bigWig
+    - ENCFF516UGK.bigWig
+  ENCSR632XIZ:
+    biosample: skeletal muscle tissue
+    biosample_summary: Homo sapiens skeletal muscle tissue tissue female adult (29
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Skeletal muscle of arm.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF387FZF.bed.gz
+    pl_bigwigs:
+    - ENCFF650JQJ.bigWig
+    - ENCFF869EJO.bigWig
+    mn_bigwigs:
+    - ENCFF923PWV.bigWig
+    - ENCFF652IGY.bigWig
+  ENCSR179FHG:
+    biosample: sigmoid colon
+    biosample_summary: Homo sapiens sigmoid colon tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Sigmoid colon.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF852AGT.bed.gz
+    pl_bigwigs:
+    - ENCFF335GEL.bigWig
+    - ENCFF900NFJ.bigWig
+    mn_bigwigs:
+    - ENCFF618FAW.bigWig
+    - ENCFF113TXU.bigWig
+  ENCSR246YHR:
+    biosample: esophagus muscularis mucosa
+    biosample_summary: Homo sapiens esophagus muscularis mucosa tissue female adult
+      (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Esophagus muscularis mucosa.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF147RAN.bed.gz
+    pl_bigwigs:
+    - ENCFF543THJ.bigWig
+    - ENCFF243OLD.bigWig
+    mn_bigwigs:
+    - ENCFF389DJS.bigWig
+    - ENCFF804RZL.bigWig
+  ENCSR353ZXW:
+    biosample: SP-49
+    biosample_summary: Homo sapiens SP-49
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SP49.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF751BKA.bed.gz
+    pl_bigwigs:
+    - ENCFF781NVO.bigWig
+    - ENCFF109TJP.bigWig
+    mn_bigwigs:
+    - ENCFF688EKC.bigWig
+    - ENCFF830QJK.bigWig
+  ENCSR845LKT:
+    biosample: right lobe of liver
+    biosample_summary: Homo sapiens right lobe of liver tissue female child (16 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right lobe of liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF240VRD.bed.gz
+    pl_bigwigs:
+    - ENCFF555AEH.bigWig
+    - ENCFF827XRD.bigWig
+    mn_bigwigs:
+    - ENCFF107CAH.bigWig
+    - ENCFF770MQV.bigWig
+  ENCSR794VAJ:
+    biosample: sciatic nerve
+    biosample_summary: Homo sapiens sciatic nerve tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Sciatic nerve.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF671QMO.bed.gz
+    pl_bigwigs:
+    - ENCFF316HDE.bigWig
+    - ENCFF072WMN.bigWig
+    mn_bigwigs:
+    - ENCFF942QDQ.bigWig
+    - ENCFF014SON.bigWig
+  ENCSR610POV:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (40 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF699FGN.bed.gz
+    pl_bigwigs:
+    - ENCFF483HHI.bigWig
+    - ENCFF277IUN.bigWig
+    mn_bigwigs:
+    - ENCFF627MKY.bigWig
+    - ENCFF830VKK.bigWig
+  ENCSR220OLX:
+    biosample: left colon
+    biosample_summary: Homo sapiens left colon tissue female adult (46 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left colon.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF019DCD.bed.gz
+    pl_bigwigs:
+    - ENCFF608QEE.bigWig
+    - ENCFF540ITR.bigWig
+    mn_bigwigs:
+    - ENCFF783HOY.bigWig
+    - ENCFF330LFL.bigWig
+  ENCSR966RLG:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens SMARCA5 treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid\
+      \ for 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SMARCA5_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF241DYI.bed.gz
+    pl_bigwigs:
+    - ENCFF050HYB.bigWig
+    - ENCFF600JXG.bigWig
+    mn_bigwigs:
+    - ENCFF854YYZ.bigWig
+    - ENCFF064LEI.bigWig
+  ENCSR342WAR:
+    biosample: neuron
+    biosample_summary: Homo sapiens neuron
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PGP-1 derived excitatory
+      cortical neurons.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF068YHS.bed.gz
+    pl_bigwigs:
+    - ENCFF105TOD.bigWig
+    - ENCFF330JNY.bigWig
+    mn_bigwigs:
+    - ENCFF649ESY.bigWig
+    - ENCFF995VYK.bigWig
+  ENCSR956DBV:
+    biosample: suprapubic skin
+    biosample_summary: Homo sapiens suprapubic skin tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Suprapubic skin.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF772LHI.bed.gz
+    pl_bigwigs:
+    - ENCFF705RXG.bigWig
+    - ENCFF705WSW.bigWig
+    mn_bigwigs:
+    - ENCFF336ZEH.bigWig
+    - ENCFF458MKA.bigWig
+  ENCSR482XCK:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF287REW.bed.gz
+    pl_bigwigs:
+    - ENCFF556SMI.bigWig
+    - ENCFF526KDB.bigWig
+    mn_bigwigs:
+    - ENCFF201XNX.bigWig
+    - ENCFF996UHC.bigWig
+  ENCSR516KII:
+    biosample: astrocyte
+    biosample_summary: Homo sapiens astrocyte
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PGP-1 derived astrocytes.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF230GZV.bed.gz
+    pl_bigwigs:
+    - ENCFF213DLS.bigWig
+    - ENCFF593NGK.bigWig
+    mn_bigwigs:
+    - ENCFF327IXP.bigWig
+    - ENCFF391SBS.bigWig
+  ENCSR280NVT:
+    biosample: vagina
+    biosample_summary: Homo sapiens vagina tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Vagina.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF883NBI.bed.gz
+    pl_bigwigs:
+    - ENCFF324LOL.bigWig
+    - ENCFF113OSU.bigWig
+    mn_bigwigs:
+    - ENCFF026UHD.bigWig
+    - ENCFF835LYZ.bigWig
+  ENCSR245HPE:
+    biosample: psoas muscle
+    biosample_summary: Homo sapiens psoas muscle tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Psoas muscle.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF457KVY.bed.gz
+    pl_bigwigs:
+    - ENCFF615ZAO.bigWig
+    - ENCFF737MOO.bigWig
+    mn_bigwigs:
+    - ENCFF313PCX.bigWig
+    - ENCFF385LKB.bigWig
+  ENCSR889QVM:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF852ZQR.bed.gz
+    pl_bigwigs:
+    - ENCFF225QRI.bigWig
+    - ENCFF708CZI.bigWig
+    mn_bigwigs:
+    - ENCFF042LWJ.bigWig
+    - ENCFF393JXD.bigWig
+  ENCSR712UDA:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF013WQN.bed.gz
+    pl_bigwigs:
+    - ENCFF592QTD.bigWig
+    - ENCFF819SFE.bigWig
+    mn_bigwigs:
+    - ENCFF733TSK.bigWig
+    - ENCFF131GUM.bigWig
+  ENCSR926PFT:
+    biosample: omental fat pad
+    biosample_summary: Homo sapiens omental fat pad tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Omental fat pad.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF443OFA.bed.gz
+    pl_bigwigs:
+    - ENCFF505CNK.bigWig
+    mn_bigwigs:
+    - ENCFF923CEH.bigWig
+  ENCSR679CMZ:
+    biosample: testis
+    biosample_summary: Homo sapiens testis tissue male adult (54 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Testis.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF569TXP.bed.gz
+    pl_bigwigs:
+    - ENCFF779ATO.bigWig
+    - ENCFF104MEH.bigWig
+    mn_bigwigs:
+    - ENCFF382BDG.bigWig
+    - ENCFF780VYP.bigWig
+  ENCSR642TRG:
+    biosample: tibial artery
+    biosample_summary: Homo sapiens tibial artery tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Tibial artery.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF738XVP.bed.gz
+    pl_bigwigs:
+    - ENCFF236LRF.bigWig
+    - ENCFF240AEM.bigWig
+    mn_bigwigs:
+    - ENCFF909ZBT.bigWig
+    - ENCFF464PRP.bigWig
+  ENCSR723NVI:
+    biosample: T-cell
+    biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
+      (48 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in T cells from T1D donor.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF207HZB.bed.gz
+    pl_bigwigs:
+    - ENCFF499VLN.bigWig
+    mn_bigwigs:
+    - ENCFF620HBP.bigWig
+  ENCSR175VMO:
+    biosample: Metastatic Pancreatic Carcinoma in the Ovary
+    biosample_summary: Homo sapiens Metastatic Pancreatic Carcinoma in the Ovary tissue
+      female adult (52 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic pancreatic cancer
+      to ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF870DUL.bed.gz
+    pl_bigwigs:
+    - ENCFF384FLE.bigWig
+    mn_bigwigs:
+    - ENCFF304XHF.bigWig
+  ENCSR718AQM:
+    biosample: HCT116
+    biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
+      \ CRISPR inserting O. sativa LOC4335696, (insertion) using CRISPR targeting\
+      \ H. sapiens MED14 treated with 1 \u03BCM 5-Phenyl-1H-indole-3-acetic acid for\
+      \ 6 hours"
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in MED14_T.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF476IVX.bed.gz
+    pl_bigwigs:
+    - ENCFF597CJW.bigWig
+    - ENCFF971GBK.bigWig
+    mn_bigwigs:
+    - ENCFF532HFA.bigWig
+    - ENCFF203QOZ.bigWig
+  ENCSR516YGD:
+    biosample: adrenal gland
+    biosample_summary: Homo sapiens adrenal gland tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Adrenal gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF421FSV.bed.gz
+    pl_bigwigs:
+    - ENCFF926OWN.bigWig
+    - ENCFF602GLU.bigWig
+    mn_bigwigs:
+    - ENCFF504MMC.bigWig
+    - ENCFF254YEP.bigWig
+  ENCSR015HKC:
+    biosample: uterus
+    biosample_summary: Homo sapiens uterus tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Uterus.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF170SHE.bed.gz
+    pl_bigwigs:
+    - ENCFF195ZRE.bigWig
+    - ENCFF055SYJ.bigWig
+    mn_bigwigs:
+    - ENCFF107EPE.bigWig
+    - ENCFF664FMI.bigWig
+  ENCSR359PWL:
+    biosample: H9
+    biosample_summary: Homo sapiens H9
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 ESCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF413JCV.bed.gz
+    pl_bigwigs:
+    - ENCFF721JPD.bigWig
+    - ENCFF555OVY.bigWig
+    mn_bigwigs:
+    - ENCFF471WQZ.bigWig
+    - ENCFF856BBT.bigWig
+  ENCSR845TMF:
+    biosample: prostate gland
+    biosample_summary: Homo sapiens prostate gland tissue male adult (54 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Prostate gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF351UZK.bed.gz
+    pl_bigwigs:
+    - ENCFF834FXC.bigWig
+    - ENCFF108BYD.bigWig
+    mn_bigwigs:
+    - ENCFF147FRR.bigWig
+    - ENCFF745FEP.bigWig
+  ENCSR222JNI:
+    biosample: endothelial cell
+    biosample_summary: Homo sapiens endothelial cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PGP-1 derived endothelial
+      cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF601PHI.bed.gz
+    pl_bigwigs:
+    - ENCFF396FUP.bigWig
+    - ENCFF271MHZ.bigWig
+    mn_bigwigs:
+    - ENCFF460FFB.bigWig
+    - ENCFF679EAV.bigWig
+  ENCSR216FUJ:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (79 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF264CFT.bed.gz
+    pl_bigwigs:
+    - ENCFF884MQN.bigWig
+    - ENCFF860VBH.bigWig
+    mn_bigwigs:
+    - ENCFF107NKT.bigWig
+    - ENCFF315JID.bigWig
+  ENCSR889PCF:
+    biosample: bile duct
+    biosample_summary: Homo sapiens bile duct tissue female adult (41 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Bile duct.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF727CNE.bed.gz
+    pl_bigwigs:
+    - ENCFF914XVA.bigWig
+    - ENCFF901GLD.bigWig
+    mn_bigwigs:
+    - ENCFF108NST.bigWig
+    - ENCFF250RGI.bigWig
+  ENCSR153AON:
+    biosample: esophagus squamous epithelium
+    biosample_summary: Homo sapiens esophagus squamous epithelium tissue female adult
+      (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Esophagus squamous epithelium.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF502ETO.bed.gz
+    pl_bigwigs:
+    - ENCFF405ANW.bigWig
+    - ENCFF238YSG.bigWig
+    mn_bigwigs:
+    - ENCFF125OLI.bigWig
+    - ENCFF884SDH.bigWig
+  ENCSR436JXW:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (72 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF867TWQ.bed.gz
+    pl_bigwigs:
+    - ENCFF799POK.bigWig
+    - ENCFF152XNA.bigWig
+    mn_bigwigs:
+    - ENCFF972LSK.bigWig
+    - ENCFF048GTY.bigWig
+  ENCSR660UDB:
+    biosample: kidney
+    biosample_summary: Homo sapiens kidney tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Kidney.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF676MDX.bed.gz
+    pl_bigwigs:
+    - ENCFF163OAY.bigWig
+    - ENCFF455EZD.bigWig
+    mn_bigwigs:
+    - ENCFF159IQS.bigWig
+    - ENCFF551SZI.bigWig
+  ENCSR235BZZ:
+    biosample: gastrocnemius medialis
+    biosample_summary: Homo sapiens gastrocnemius medialis tissue female adult (53
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Gastrocnemius medialis.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF750LDC.bed.gz
+    pl_bigwigs:
+    - ENCFF849UZN.bigWig
+    - ENCFF923CQZ.bigWig
+    mn_bigwigs:
+    - ENCFF391ZCG.bigWig
+    - ENCFF998LSM.bigWig
+  ENCSR216UNW:
+    biosample: lower lobe of left lung
+    biosample_summary: Homo sapiens lower lobe of left lung tissue male adult (37
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Lower lobe of left lung.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF995OTA.bed.gz
+    pl_bigwigs:
+    - ENCFF822ZGP.bigWig
+    - ENCFF885EYN.bigWig
+    mn_bigwigs:
+    - ENCFF245EYN.bigWig
+    - ENCFF665FIG.bigWig
+  ENCSR813CRU:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
+      female adult (71 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to brain.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF107ZAZ.bed.gz
+    pl_bigwigs:
+    - ENCFF166QKH.bigWig
+    - ENCFF870SVA.bigWig
+    mn_bigwigs:
+    - ENCFF073WGY.bigWig
+    - ENCFF816FSG.bigWig
+  ENCSR829KWG:
+    biosample: natural killer cell
+    biosample_summary: Homo sapiens natural killer cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in NK cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF201GBY.bed.gz
+    pl_bigwigs:
+    - ENCFF427KWJ.bigWig
+    - ENCFF775DNF.bigWig
+    mn_bigwigs:
+    - ENCFF718BKN.bigWig
+    - ENCFF843WJV.bigWig
+  ENCSR380VKC:
+    biosample: heart right ventricle
+    biosample_summary: Homo sapiens heart right ventricle tissue female adult (41
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right ventricle of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF405KBC.bed.gz
+    pl_bigwigs:
+    - ENCFF602AWB.bigWig
+    - ENCFF487OHG.bigWig
+    mn_bigwigs:
+    - ENCFF434LVH.bigWig
+    - ENCFF746GWM.bigWig
+  ENCSR220XSM:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in K562 cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF051LUE.bed.gz
+    pl_bigwigs:
+    - ENCFF850NZE.bigWig
+    - ENCFF918QKQ.bigWig
+    mn_bigwigs:
+    - ENCFF364CCA.bigWig
+    - ENCFF861JFD.bigWig
+  ENCSR733DAS:
+    biosample: HEK293T
+    biosample_summary: Homo sapiens HEK293T genetically modified (insertion) using
+      CRISPR targeting H. sapiens ZNF143 treated with 500 nM dTAGV-1 for 6 hours
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in ZNF143_T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF399PVP.bed.gz
+    pl_bigwigs:
+    - ENCFF726DCR.bigWig
+    - ENCFF793MKG.bigWig
+    mn_bigwigs:
+    - ENCFF603FIP.bigWig
+    - ENCFF023FGG.bigWig
+  ENCSR269FMG:
+    biosample: liver
+    biosample_summary: Homo sapiens liver tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Liver.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF150GPU.bed.gz
+    pl_bigwigs:
+    - ENCFF557DCP.bigWig
+    - ENCFF626MJY.bigWig
+    mn_bigwigs:
+    - ENCFF776DVD.bigWig
+    - ENCFF532AWZ.bigWig
+  ENCSR995FAO:
+    biosample: mucosa of descending colon
+    biosample_summary: Homo sapiens mucosa of descending colon tissue female adult
+      (61 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Mucosa of descending colon.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF469CSQ.bed.gz
+    pl_bigwigs:
+    - ENCFF771SUS.bigWig
+    - ENCFF399YJU.bigWig
+    mn_bigwigs:
+    - ENCFF803YYA.bigWig
+    - ENCFF036QHA.bigWig
+  ENCSR443GRP:
+    biosample: endodermal cell
+    biosample_summary: Homo sapiens endodermal cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in H9 derived endodermal cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF281LQC.bed.gz
+    pl_bigwigs:
+    - ENCFF920VOE.bigWig
+    - ENCFF536ZSZ.bigWig
+    mn_bigwigs:
+    - ENCFF566OOL.bigWig
+    - ENCFF852MWH.bigWig
+  ENCSR881RXX:
+    biosample: anterior vena cava
+    biosample_summary: Homo sapiens anterior vena cava tissue male adult (62 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Superior vena cava.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF684VXC.bed.gz
+    pl_bigwigs:
+    - ENCFF668DAG.bigWig
+    - ENCFF897OUM.bigWig
+    mn_bigwigs:
+    - ENCFF401LJX.bigWig
+    - ENCFF829BGE.bigWig
+  ENCSR944DTY:
+    biosample: SEM
+    biosample_summary: Homo sapiens SEM
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in SEM.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF130BML.bed.gz
+    pl_bigwigs:
+    - ENCFF605JOB.bigWig
+    - ENCFF928RFH.bigWig
+    mn_bigwigs:
+    - ENCFF629JKB.bigWig
+    - ENCFF842KLO.bigWig
+  ENCSR270EGA:
+    biosample: left cardiac atrium
+    biosample_summary: Homo sapiens left cardiac atrium tissue male adult (37 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Left atrium of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF114TOZ.bed.gz
+    pl_bigwigs:
+    - ENCFF938EKW.bigWig
+    - ENCFF578KDV.bigWig
+    mn_bigwigs:
+    - ENCFF387TLJ.bigWig
+    - ENCFF518TDL.bigWig
+  ENCSR368ARY:
+    biosample: pulmonary artery
+    biosample_summary: Homo sapiens pulmonary artery tissue male adult (62 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pulmonary artery.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF754GEH.bed.gz
+    pl_bigwigs:
+    - ENCFF220END.bigWig
+    - ENCFF119UZV.bigWig
+    mn_bigwigs:
+    - ENCFF399BVF.bigWig
+    - ENCFF049UKV.bigWig
+  ENCSR521BLL:
+    biosample: psoas muscle
+    biosample_summary: Homo sapiens psoas muscle tissue female adult (61 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Psoas muscle.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF407XFC.bed.gz
+    pl_bigwigs:
+    - ENCFF009QAD.bigWig
+    - ENCFF667BQQ.bigWig
+    mn_bigwigs:
+    - ENCFF667LUJ.bigWig
+    - ENCFF231AYF.bigWig
+  ENCSR062QYF:
+    biosample: cerebellum
+    biosample_summary: Homo sapiens cerebellum tissue female adult (43 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Cerebellum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF907RYC.bed.gz
+    pl_bigwigs:
+    - ENCFF665UPZ.bigWig
+    - ENCFF839ZEW.bigWig
+    mn_bigwigs:
+    - ENCFF414KBK.bigWig
+    - ENCFF812VLT.bigWig
+  ENCSR526XOQ:
+    biosample: NALM6
+    biosample_summary: Homo sapiens NALM6
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in NALM-6.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF172XDH.bed.gz
+    pl_bigwigs:
+    - ENCFF081SCM.bigWig
+    - ENCFF244HXT.bigWig
+    mn_bigwigs:
+    - ENCFF027OPK.bigWig
+    - ENCFF836BOI.bigWig
+  ENCSR386UFU:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF501VTD.bed.gz
+    pl_bigwigs:
+    - ENCFF358DIN.bigWig
+    - ENCFF652ZFR.bigWig
+    mn_bigwigs:
+    - ENCFF985LWC.bigWig
+    - ENCFF145YXQ.bigWig
+  ENCSR795NHV:
+    biosample: peripheral blood mononuclear cell
+    biosample_summary: Homo sapiens peripheral blood mononuclear cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in PBMCs.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF093VWW.bed.gz
+    pl_bigwigs:
+    - ENCFF211DCV.bigWig
+    mn_bigwigs:
+    - ENCFF100KUJ.bigWig
+  ENCSR255VLW:
+    biosample: jejunum
+    biosample_summary: Homo sapiens jejunum tissue female adult (59 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Jejunum.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF915FOB.bed.gz
+    pl_bigwigs:
+    - ENCFF480GNS.bigWig
+    - ENCFF755EHL.bigWig
+    mn_bigwigs:
+    - ENCFF034XBH.bigWig
+    - ENCFF338IXA.bigWig
+  ENCSR087CGY:
+    biosample: ovary
+    biosample_summary: Homo sapiens ovary tissue female adult (53 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF509HWI.bed.gz
+    pl_bigwigs:
+    - ENCFF799EVP.bigWig
+    - ENCFF830KEM.bigWig
+    mn_bigwigs:
+    - ENCFF832OZO.bigWig
+    - ENCFF465LDD.bigWig
+  ENCSR374RDU:
+    biosample: breast
+    biosample_summary: Homo sapiens breast tissue female adult (52 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Breast mammary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF090SJD.bed.gz
+    pl_bigwigs:
+    - ENCFF279QHT.bigWig
+    - ENCFF832XLO.bigWig
+    mn_bigwigs:
+    - ENCFF083RLT.bigWig
+    - ENCFF918SNL.bigWig
+  ENCSR219IHS:
+    biosample: A549
+    biosample_summary: Homo sapiens A549
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Non-small cell adenocarcinoma
+      cell line.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF010QSO.bed.gz
+    pl_bigwigs:
+    - ENCFF114JYO.bigWig
+    - ENCFF026ERV.bigWig
+    mn_bigwigs:
+    - ENCFF547RPM.bigWig
+    - ENCFF448UVK.bigWig
+  ENCSR683YIA:
+    biosample: Pfeiffer
+    biosample_summary: Homo sapiens Pfeiffer
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pfeiffer.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF747UBU.bed.gz
+    pl_bigwigs:
+    - ENCFF699HRU.bigWig
+    - ENCFF237YGT.bigWig
+    mn_bigwigs:
+    - ENCFF669VEQ.bigWig
+    - ENCFF323NOD.bigWig
+    peak_type: divergent
+  ENCSR810UBG:
+    biosample: Metastatic Breast Carcinoma in the Ovary
+    biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Ovary tissue
+      female adult (48 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Metastatic breast cancer
+      to ovary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF501EFV.bed.gz
+    pl_bigwigs:
+    - ENCFF193NFD.bigWig
+    mn_bigwigs:
+    - ENCFF050ZHF.bigWig
+  ENCSR959JOB:
+    biosample: right ventricle myocardium
+    biosample_summary: Homo sapiens right ventricle myocardium tissue male adult (37
+      years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Right ventricle myocardium
+      inferior of heart.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF372VAM.bed.gz
+    pl_bigwigs:
+    - ENCFF755RHY.bigWig
+    - ENCFF661YWR.bigWig
+    mn_bigwigs:
+    - ENCFF206KMH.bigWig
+    - ENCFF458QYR.bigWig
+  ENCSR431OQI:
+    biosample: parotid gland
+    biosample_summary: Homo sapiens parotid gland tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Parotid gland.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF131KJE.bed.gz
+    pl_bigwigs:
+    - ENCFF126SCE.bigWig
+    - ENCFF370MUU.bigWig
+    mn_bigwigs:
+    - ENCFF484JID.bigWig
+    - ENCFF689GJG.bigWig
+  ENCSR353JON:
+    biosample: spinal cord
+    biosample_summary: Homo sapiens spinal cord tissue
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Spinal cord.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF992RSE.bed.gz
+    pl_bigwigs:
+    - ENCFF620VXH.bigWig
+    mn_bigwigs:
+    - ENCFF014WDF.bigWig
+  ENCSR374OGG:
+    biosample: pancreas
+    biosample_summary: Homo sapiens pancreas organoid
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Pancreas.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF502CAR.bed.gz
+    pl_bigwigs:
+    - ENCFF467VRR.bigWig
+    - ENCFF171MBF.bigWig
+    mn_bigwigs:
+    - ENCFF294NXS.bigWig
+    - ENCFF931XMV.bigWig
+  ENCSR528FMA:
+    biosample: helper T cell
+    biosample_summary: Homo sapiens helper T cell
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Helper T cells.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF530RYD.bed.gz
+    pl_bigwigs:
+    - ENCFF742NXX.bigWig
+    - ENCFF165PWR.bigWig
+    mn_bigwigs:
+    - ENCFF740MDT.bigWig
+    - ENCFF792MQK.bigWig
+  ENCSR500IHG:
+    biosample: breast
+    biosample_summary: Homo sapiens breast tissue female adult (55 years)
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in Breast mammary.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF332ZVC.bed.gz
+    pl_bigwigs:
+    - ENCFF053WOB.bigWig
+    - ENCFF363KIE.bigWig
+    mn_bigwigs:
+    - ENCFF946OWM.bigWig
+    - ENCFF605QOR.bigWig
+  ENCSR098LLB:
+    biosample: endothelial cell of umbilical vein
+    biosample_summary: Homo sapiens endothelial cell of umbilical vein male newborn
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in HUVEC.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF257CBC.bed.gz
+    pl_bigwigs:
+    - ENCFF261GXH.bigWig
+    mn_bigwigs:
+    - ENCFF807QNT.bigWig
+  ENCSR046BCI:
+    biosample: A673
+    biosample_summary: Homo sapiens A673
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in A673.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF456VRM.bed.gz
+    pl_bigwigs:
+    - ENCFF418SHY.bigWig
+    - ENCFF771KSZ.bigWig
+    mn_bigwigs:
+    - ENCFF280DDJ.bigWig
+    - ENCFF862PQN.bigWig
+  ENCSR935RNW:
+    biosample: Calu3
+    biosample_summary: Homo sapiens Calu3
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in CALU3.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF696YJX.bed.gz
+    pl_bigwigs:
+    - ENCFF057WPU.bigWig
+    - ENCFF107MGL.bigWig
+    mn_bigwigs:
+    - ENCFF979DPW.bigWig
+    - ENCFF199SAQ.bigWig
+  ENCSR799DGV:
+    biosample: MCF 10A
+    biosample_summary: Homo sapiens MCF 10A
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in MCF10A.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF478BHR.bed.gz
+    pl_bigwigs:
+    - ENCFF566EAN.bigWig
+    - ENCFF221GWZ.bigWig
+    - ENCFF952WWA.bigWig
+    - ENCFF572ZPQ.bigWig
+    mn_bigwigs:
+    - ENCFF074ZFW.bigWig
+    - ENCFF227BQW.bigWig
+    - ENCFF704RON.bigWig
+    - ENCFF114DBY.bigWig
+  ENCSR261KBX:
+    biosample: K562
+    biosample_summary: Homo sapiens K562
+    description: CoPRO experiment. A run-on assay was performed on captured nascent
+      RNA with cap state selection. In this experiment, only capped nascent RNA was
+      selected and PCR amplification was performed before sequencing.
+    lab: John Lis, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF819CPA.bed.gz
+    pl_bigwigs:
+    - ENCFF994CSC.bigWig
+    - ENCFF580QEK.bigWig
+    mn_bigwigs:
+    - ENCFF253HUA.bigWig
+    - ENCFF328OOU.bigWig
+  ENCSR100LIJ:
+    biosample: Caco-2
+    biosample_summary: Homo sapiens Caco-2
+    description: A run-on assay that precisely maps the transcription start sites
+      genome-wide with high sensitivity and specificity in CACO2.
+    lab: Haiyuan Yu, Cornell
+    library_construction: capped RNA enrichment
+    peaks:
+    - ENCFF417PHG.bed.gz
+    pl_bigwigs:
+    - ENCFF320FTM.bigWig
+    - ENCFF790ZZN.bigWig
+    mn_bigwigs:
+    - ENCFF635VJZ.bigWig
+    - ENCFF174MJP.bigWig
