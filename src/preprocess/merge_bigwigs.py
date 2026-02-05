@@ -6,13 +6,20 @@ bigwigs into one file and all minus-strand replicate bigwigs into another.
 Single-replicate experiments are moved/renamed rather than reprocessed.
 
 Requires UCSC Kent tools: bigWigMerge, bedGraphToBigWig
+
+Usage:
+    python src/preprocess/merge_bigwigs.py            # default 4 workers
+    python src/preprocess/merge_bigwigs.py -j 8        # 8 workers
+    python src/preprocess/merge_bigwigs.py -j 1        # sequential
 """
 
+import argparse
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import yaml
@@ -42,20 +49,27 @@ def check_dependencies():
 def merge_bigwigs(input_paths: list[Path], output_path: Path):
     """Merge BigWig files into a single BigWig via bigWigMerge + bedGraphToBigWig."""
     if len(input_paths) == 1:
-        shutil.move(str(input_paths[0]), str(output_path))
+        shutil.copy2(str(input_paths[0]), str(output_path))
         return
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir=OUTPUT_DIR) as tmpdir:
         bg_path = Path(tmpdir) / "merged.bedGraph"
         bg_sorted = Path(tmpdir) / "merged.sorted.bedGraph"
 
         subprocess.run(
-            ["bigWigMerge", *[str(p) for p in input_paths], str(bg_path)],
+            [
+                "bigWigMerge",
+                "-threshold=-10000000",
+                *[str(p) for p in input_paths],
+                str(bg_path),
+            ],
             check=True,
         )
+        if bg_path.stat().st_size == 0:
+            raise RuntimeError("bigWigMerge produced an empty bedGraph")
         # bedGraphToBigWig requires LC_COLLATE=C sorted input
         subprocess.run(
-            f"LC_COLLATE=C sort -k1,1 -k2,2n {bg_path} > {bg_sorted}",
+            f"LC_COLLATE=C sort -k1,1 -k2,2n '{bg_path}' > '{bg_sorted}'",
             shell=True,
             check=True,
         )
@@ -65,7 +79,26 @@ def merge_bigwigs(input_paths: list[Path], output_path: Path):
         )
 
 
+def process_task(task: dict) -> dict:
+    """Run a single merge task. Returns a result dict with status info."""
+    try:
+        merge_bigwigs(task["input_paths"], task["output_path"])
+        return {"status": "ok", "label": task["label"]}
+    except Exception as e:
+        return {"status": "error", "label": task["label"], "error": str(e)}
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Merge replicate BigWig files")
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=4,
+        help="number of parallel workers (default: 4)",
+    )
+    args = parser.parse_args()
+
     check_dependencies()
 
     if not CHROM_SIZES.exists():
@@ -81,13 +114,13 @@ def main():
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    experiments = config["experiments"]
-    total = len(experiments)
+    # Build task list
+    tasks = []
     skipped = 0
-    merged = 0
     errors = 0
+    experiments = config["experiments"]
 
-    for i, (exp_id, exp) in enumerate(experiments.items(), 1):
+    for exp_id, exp in experiments.items():
         biosample = re.sub(r"[^\w-]", "_", exp.get("biosample", "")).strip("_")
         for strand, key in [("pl", "pl_bigwigs"), ("mn", "mn_bigwigs")]:
             filenames = exp[key]
@@ -103,7 +136,7 @@ def main():
             missing = [p for p in input_paths if not p.exists()]
             if missing:
                 print(
-                    f"[{i}/{total}] WARNING: {exp_id} {strand}: "
+                    f"WARNING: {exp_id} {strand}: "
                     f"missing inputs: {[p.name for p in missing]}, skipping",
                     file=sys.stderr,
                 )
@@ -112,13 +145,45 @@ def main():
 
             n = len(input_paths)
             action = "moving" if n == 1 else f"merging {n} replicates"
-            print(f"[{i}/{total}] {exp_id}_{strand}: {action}")
-            merge_bigwigs(input_paths, output_path)
-            merged += 1
+            label = f"{exp_id}_{biosample}_{strand}"
+            tasks.append(
+                {
+                    "input_paths": input_paths,
+                    "output_path": output_path,
+                    "label": label,
+                    "action": action,
+                }
+            )
+
+    total = len(tasks)
+    if total == 0:
+        print(
+            f"Nothing to do ({skipped} already existed, {errors} skipped due to errors)"
+        )
+        return
 
     print(
-        f"\nDone: {merged} created, {skipped} already existed, {errors} skipped due to errors"
+        f"Processing {total} tasks with {args.jobs} workers "
+        f"({skipped} already existed, {errors} skipped due to errors)"
     )
+
+    completed = 0
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        futures = {pool.submit(process_task, t): t for t in tasks}
+        for future in as_completed(futures):
+            task = futures[future]
+            result = future.result()
+            completed += 1
+            if result["status"] == "ok":
+                print(f"[{completed}/{total}] {task['label']}: {task['action']}")
+            else:
+                print(
+                    f"[{completed}/{total}] ERROR: {task['label']}: {result['error']}",
+                    file=sys.stderr,
+                )
+                errors += 1
+
+    print(f"\nDone: {completed} processed, {skipped} already existed, {errors} errors")
 
 
 if __name__ == "__main__":

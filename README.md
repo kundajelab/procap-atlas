@@ -10,17 +10,17 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - `bigWigMerge`, `bedGraphToBigWig` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/)) -- BigWig merging
 - Python 3.10+ with `pyyaml` (`pip install pyyaml`)
 
-## Sample installation with conda
+## Sample installation with mamba
 
 ```bash
-# Create and activate conda environment
-conda create -n procap-atlas python=3.12 -y
-conda activate procap-atlas
+# Create and activate mamba environment
+mamba create -n procap-atlas python=3.12 -y
+mamba activate procap-atlas
 
 # Install command-line tools
-conda install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraphtobigwig -y
+mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraphtobigwig -y
 # Usually not needed.
-# conda install -c conda-forge parallel wget -y
+# mamba install -c conda-forge parallel wget -y
 
 # Install Python dependencies
 pip install pyyaml
@@ -30,19 +30,17 @@ pip install pyyaml
 
 ### 1. Download data
 
-Download scripts use relative paths and must be run from `src/download/`:
+Download scripts can be run from anywhere in the project directory, but we run them from root when possible for consistency:
 
 ```bash
-cd src/download
-
 # Download and index GRCh38 reference genome
-bash download_genome.sh
+bash src/download/download_genome.sh
 
-# Download plus/minus strand BigWig files (4 parallel jobs)
-bash download_bigwigs.sh
+# Download plus/minus strand BigWig files (8 parallel jobs)
+bash src/download/download_bigwigs.sh
 
 # Download bidirectional peak BED files (4 parallel jobs)
-bash download_peaks.sh
+bash src/download/download_peaks.sh
 ```
 
 ### 2. Generate experiment config
@@ -57,7 +55,7 @@ Output: `configs/experiment_config.yaml`
 
 ### 3. Merge replicate BigWig files
 
-Merges replicate BigWig files per experiment, keeping plus and minus strands separate. Single-replicate experiments are moved/renamed without reprocessing.
+Merges replicate BigWig files per experiment, keeping plus and minus strands separate. Single-replicate experiments are copied without reprocessing.
 
 ```bash
 python src/preprocess/merge_bigwigs.py
@@ -67,7 +65,7 @@ Output: `data/processed/bigwigs/{experiment}_{biosample}_{strand}.bigWig`
 
 ### 4. Rename and organize peak files
 
-Moves peak BED files into a processed directory with descriptive filenames including experiment ID, biosample, and peak type.
+Copy peak BED files into a processed directory with descriptive filenames including experiment ID, biosample, and peak type.
 
 ```bash
 python src/preprocess/rename_peaks.py
@@ -79,10 +77,10 @@ Output: `data/processed/peaks/{experiment}_{biosample}_{peak_type}.bed.gz`
 
 ```
 data_manifests/          # ENCODE file URLs, experiment metadata, archive blacklist
-configs/                 # Generated YAML experiment config
+configs/                 # Generated YAML experiment config with experimental metadata.
 src/
-  download/              # Bash download scripts (run from this directory)
-  preprocess/            # Python preprocessing scripts (run from repo root)
+  download/              # Bash download scripts
+  preprocess/            # Python preprocessing scripts
     generate_config.py   # Manifest parsing and config generation
     merge_bigwigs.py     # Replicate BigWig merging
     rename_peaks.py      # Peak file renaming

@@ -1,4 +1,4 @@
-# Auto-generated from ENCODE PRO-cap atlas data manifests by src/preprocess/generate_config.py
+# Auto-generated from ENCODE PRO-cap atlas data manifests
 experiments:
   ENCSR882DWM:
     biosample: K562
@@ -20,6 +20,10 @@ experiments:
     - ENCFF809FNB.bigWig
     - ENCFF191LBI.bigWig
     - ENCFF754VDR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR882DWM_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR882DWM_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR882DWM_K562_bidirectional.bed.gz
   ENCSR114HGS:
     biosample: K562
     biosample_summary: Homo sapiens K562
@@ -36,6 +40,10 @@ experiments:
     mn_bigwigs:
     - ENCFF755OQZ.bigWig
     - ENCFF529MUW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR114HGS_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR114HGS_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR114HGS_K562_bidirectional.bed.gz
   ENCSR165QKR:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -53,6 +61,10 @@ experiments:
     mn_bigwigs:
     - ENCFF103FBH.bigWig
     - ENCFF907PJM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR165QKR_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR165QKR_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR165QKR_HCT116_bidirectional.bed.gz
   ENCSR197JLW:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -71,6 +83,10 @@ experiments:
     mn_bigwigs:
     - ENCFF236NNV.bigWig
     - ENCFF301JHR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR197JLW_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR197JLW_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR197JLW_HCT116_bidirectional.bed.gz
   ENCSR100EDZ:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -89,6 +105,10 @@ experiments:
     mn_bigwigs:
     - ENCFF811NQO.bigWig
     - ENCFF482VJL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR100EDZ_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR100EDZ_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR100EDZ_HCT116_bidirectional.bed.gz
   ENCSR273ORE:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -107,6 +127,10 @@ experiments:
     mn_bigwigs:
     - ENCFF230CJC.bigWig
     - ENCFF641FTA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR273ORE_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR273ORE_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR273ORE_HCT116_bidirectional.bed.gz
   ENCSR124RWD:
     biosample: right ventricle myocardium
     biosample_summary: Homo sapiens right ventricle myocardium tissue male adult (37
@@ -124,6 +148,10 @@ experiments:
     mn_bigwigs:
     - ENCFF933IAZ.bigWig
     - ENCFF222UYK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR124RWD_right_ventricle_myocardium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR124RWD_right_ventricle_myocardium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR124RWD_right_ventricle_myocardium_bidirectional.bed.gz
   ENCSR178XKL:
     biosample: WTC11
     biosample_summary: Homo sapiens WTC11
@@ -143,6 +171,10 @@ experiments:
     - ENCFF679AYV.bigWig
     - ENCFF107OAK.bigWig
     - ENCFF813TZR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR178XKL_WTC11_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR178XKL_WTC11_mn.bigWig
+      peaks: data/processed/peaks/ENCSR178XKL_WTC11_bidirectional.bed.gz
   ENCSR720EXP:
     biosample: Metastatic Liver Carcinoma in the Lung
     biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Lung tissue
@@ -158,6 +190,10 @@ experiments:
     - ENCFF436KTP.bigWig
     mn_bigwigs:
     - ENCFF560UXJ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_bidirectional.bed.gz
   ENCSR753TEA:
     biosample: liver
     biosample_summary: Homo sapiens liver tissue
@@ -171,6 +207,10 @@ experiments:
     - ENCFF530CWG.bigWig
     mn_bigwigs:
     - ENCFF898WWI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR753TEA_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR753TEA_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR753TEA_liver_bidirectional.bed.gz
   ENCSR961UBB:
     biosample: heart left ventricle
     biosample_summary: Homo sapiens heart left ventricle tissue female adult (59 years)
@@ -186,6 +226,10 @@ experiments:
     mn_bigwigs:
     - ENCFF125EBR.bigWig
     - ENCFF367UXU.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR961UBB_heart_left_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR961UBB_heart_left_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR961UBB_heart_left_ventricle_bidirectional.bed.gz
   ENCSR796JNK:
     biosample: LUHMES
     biosample_summary: Homo sapiens LUHMES
@@ -202,6 +246,10 @@ experiments:
     mn_bigwigs:
     - ENCFF959MFT.bigWig
     - ENCFF047KUB.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR796JNK_LUHMES_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR796JNK_LUHMES_mn.bigWig
+      peaks: data/processed/peaks/ENCSR796JNK_LUHMES_bidirectional.bed.gz
   ENCSR784YIV:
     biosample: colonic mucosa
     biosample_summary: Homo sapiens colonic mucosa tissue female adult (41 years)
@@ -217,6 +265,10 @@ experiments:
     mn_bigwigs:
     - ENCFF281JZE.bigWig
     - ENCFF917MYT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR784YIV_colonic_mucosa_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR784YIV_colonic_mucosa_mn.bigWig
+      peaks: data/processed/peaks/ENCSR784YIV_colonic_mucosa_bidirectional.bed.gz
   ENCSR478DAN:
     biosample: upper lobe of left lung
     biosample_summary: Homo sapiens upper lobe of left lung tissue female adult (61
@@ -233,6 +285,10 @@ experiments:
     mn_bigwigs:
     - ENCFF781MJM.bigWig
     - ENCFF423VFN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR478DAN_upper_lobe_of_left_lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR478DAN_upper_lobe_of_left_lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR478DAN_upper_lobe_of_left_lung_bidirectional.bed.gz
   ENCSR666GXV:
     biosample: Colon Carcinoma Metastatic in the Lung
     biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Lung tissue
@@ -248,6 +304,10 @@ experiments:
     - ENCFF778MOH.bigWig
     mn_bigwigs:
     - ENCFF353XVZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_bidirectional.bed.gz
   ENCSR520PUD:
     biosample: HEK293
     biosample_summary: Homo sapiens HEK293
@@ -263,6 +323,10 @@ experiments:
     mn_bigwigs:
     - ENCFF757CGN.bigWig
     - ENCFF367WUV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR520PUD_HEK293_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR520PUD_HEK293_mn.bigWig
+      peaks: data/processed/peaks/ENCSR520PUD_HEK293_bidirectional.bed.gz
   ENCSR417NJC:
     biosample: spleen
     biosample_summary: Homo sapiens spleen tissue female adult (53 years)
@@ -278,6 +342,10 @@ experiments:
     mn_bigwigs:
     - ENCFF158QFB.bigWig
     - ENCFF607ASO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR417NJC_spleen_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR417NJC_spleen_mn.bigWig
+      peaks: data/processed/peaks/ENCSR417NJC_spleen_bidirectional.bed.gz
   ENCSR215OJB:
     biosample: GM23338
     biosample_summary: Homo sapiens GM23338
@@ -298,6 +366,10 @@ experiments:
     - ENCFF556DSS.bigWig
     - ENCFF930IUB.bigWig
     - ENCFF106GTA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR215OJB_GM23338_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR215OJB_GM23338_mn.bigWig
+      peaks: data/processed/peaks/ENCSR215OJB_GM23338_bidirectional.bed.gz
   ENCSR053UMZ:
     biosample: cerebellum
     biosample_summary: Homo sapiens cerebellum tissue
@@ -311,6 +383,10 @@ experiments:
     - ENCFF917ZTH.bigWig
     mn_bigwigs:
     - ENCFF311FGM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR053UMZ_cerebellum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR053UMZ_cerebellum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR053UMZ_cerebellum_bidirectional.bed.gz
   ENCSR867EQV:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -329,6 +405,10 @@ experiments:
     mn_bigwigs:
     - ENCFF702DZE.bigWig
     - ENCFF464MTI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR867EQV_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR867EQV_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR867EQV_HCT116_bidirectional.bed.gz
   ENCSR386RDW:
     biosample: subcutaneous adipose tissue
     biosample_summary: Homo sapiens subcutaneous adipose tissue tissue female adult
@@ -345,6 +425,10 @@ experiments:
     mn_bigwigs:
     - ENCFF376QOD.bigWig
     - ENCFF740QNR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR386RDW_subcutaneous_adipose_tissue_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR386RDW_subcutaneous_adipose_tissue_mn.bigWig
+      peaks: data/processed/peaks/ENCSR386RDW_subcutaneous_adipose_tissue_bidirectional.bed.gz
   ENCSR694RPO:
     biosample: right lobe of liver
     biosample_summary: Homo sapiens right lobe of liver tissue female adult (47 years)
@@ -360,6 +444,10 @@ experiments:
     mn_bigwigs:
     - ENCFF589KYQ.bigWig
     - ENCFF319LIA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR694RPO_right_lobe_of_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR694RPO_right_lobe_of_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR694RPO_right_lobe_of_liver_bidirectional.bed.gz
   ENCSR248SVP:
     biosample: osteocyte
     biosample_summary: Homo sapiens osteocyte
@@ -375,6 +463,10 @@ experiments:
     mn_bigwigs:
     - ENCFF412QOP.bigWig
     - ENCFF238ROQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR248SVP_osteocyte_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR248SVP_osteocyte_mn.bigWig
+      peaks: data/processed/peaks/ENCSR248SVP_osteocyte_bidirectional.bed.gz
   ENCSR992HBP:
     biosample: right lobe of liver
     biosample_summary: Homo sapiens right lobe of liver tissue female adult (53 years)
@@ -390,6 +482,10 @@ experiments:
     mn_bigwigs:
     - ENCFF496UYH.bigWig
     - ENCFF036GII.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR992HBP_right_lobe_of_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR992HBP_right_lobe_of_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR992HBP_right_lobe_of_liver_bidirectional.bed.gz
   ENCSR967RHN:
     biosample: lower lobe of left lung
     biosample_summary: Homo sapiens lower lobe of left lung tissue female adult (59
@@ -406,6 +502,10 @@ experiments:
     mn_bigwigs:
     - ENCFF409PEB.bigWig
     - ENCFF994WDH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR967RHN_lower_lobe_of_left_lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR967RHN_lower_lobe_of_left_lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR967RHN_lower_lobe_of_left_lung_bidirectional.bed.gz
   ENCSR757HMG:
     biosample: Peyer's patch
     biosample_summary: Homo sapiens Peyer's patch tissue female adult (53 years)
@@ -421,6 +521,10 @@ experiments:
     mn_bigwigs:
     - ENCFF027XYV.bigWig
     - ENCFF885FKZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR757HMG_Peyer_s_patch_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR757HMG_Peyer_s_patch_mn.bigWig
+      peaks: data/processed/peaks/ENCSR757HMG_Peyer_s_patch_bidirectional.bed.gz
   ENCSR983JFU:
     biosample: REH cell
     biosample_summary: Homo sapiens REH cell
@@ -436,6 +540,10 @@ experiments:
     mn_bigwigs:
     - ENCFF734PBI.bigWig
     - ENCFF361BKO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR983JFU_REH_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR983JFU_REH_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR983JFU_REH_cell_bidirectional.bed.gz
   ENCSR644TYW:
     biosample: Colon Carcinoma Metastatic in the Brain
     biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Brain tissue
@@ -451,6 +559,10 @@ experiments:
     - ENCFF509HVZ.bigWig
     mn_bigwigs:
     - ENCFF114QCE.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_bidirectional.bed.gz
   ENCSR542IVL:
     biosample: testis
     biosample_summary: Homo sapiens testis tissue male
@@ -466,6 +578,10 @@ experiments:
     mn_bigwigs:
     - ENCFF319JXY.bigWig
     - ENCFF189ANN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR542IVL_testis_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR542IVL_testis_mn.bigWig
+      peaks: data/processed/peaks/ENCSR542IVL_testis_bidirectional.bed.gz
   ENCSR821MIF:
     biosample: spleen
     biosample_summary: Homo sapiens spleen tissue female adult (59 years)
@@ -481,6 +597,10 @@ experiments:
     mn_bigwigs:
     - ENCFF569QSJ.bigWig
     - ENCFF748TYK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR821MIF_spleen_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR821MIF_spleen_mn.bigWig
+      peaks: data/processed/peaks/ENCSR821MIF_spleen_bidirectional.bed.gz
   ENCSR970ACM:
     biosample: adrenal gland
     biosample_summary: Homo sapiens adrenal gland tissue female adult (53 years)
@@ -496,6 +616,10 @@ experiments:
     mn_bigwigs:
     - ENCFF163BBJ.bigWig
     - ENCFF224LQG.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR970ACM_adrenal_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR970ACM_adrenal_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR970ACM_adrenal_gland_bidirectional.bed.gz
   ENCSR484CAZ:
     biosample: cardiac septum
     biosample_summary: Homo sapiens cardiac septum tissue female adult (41 years)
@@ -511,6 +635,10 @@ experiments:
     mn_bigwigs:
     - ENCFF104VVG.bigWig
     - ENCFF598EMW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR484CAZ_cardiac_septum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR484CAZ_cardiac_septum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR484CAZ_cardiac_septum_bidirectional.bed.gz
   ENCSR074XYR:
     biosample: Colon Carcinoma Metastatic in the Brain
     biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Brain tissue
@@ -526,6 +654,10 @@ experiments:
     - ENCFF382OAC.bigWig
     mn_bigwigs:
     - ENCFF675TNC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_bidirectional.bed.gz
   ENCSR636RVF:
     biosample: skeletal muscle tissue
     biosample_summary: Homo sapiens skeletal muscle tissue tissue female adult (42
@@ -542,6 +674,10 @@ experiments:
     mn_bigwigs:
     - ENCFF563XEO.bigWig
     - ENCFF254NUA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR636RVF_skeletal_muscle_tissue_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR636RVF_skeletal_muscle_tissue_mn.bigWig
+      peaks: data/processed/peaks/ENCSR636RVF_skeletal_muscle_tissue_bidirectional.bed.gz
   ENCSR122BHP:
     biosample: colic lymph node
     biosample_summary: Homo sapiens colic lymph node tissue female adult (50 years)
@@ -557,6 +693,10 @@ experiments:
     mn_bigwigs:
     - ENCFF191DNC.bigWig
     - ENCFF305OOT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR122BHP_colic_lymph_node_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR122BHP_colic_lymph_node_mn.bigWig
+      peaks: data/processed/peaks/ENCSR122BHP_colic_lymph_node_bidirectional.bed.gz
   ENCSR282COG:
     biosample: gallbladder
     biosample_summary: Homo sapiens gallbladder tissue male adult (40 years)
@@ -572,6 +712,10 @@ experiments:
     mn_bigwigs:
     - ENCFF364AKU.bigWig
     - ENCFF339KZC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR282COG_gallbladder_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR282COG_gallbladder_mn.bigWig
+      peaks: data/processed/peaks/ENCSR282COG_gallbladder_bidirectional.bed.gz
   ENCSR618ZHM:
     biosample: ileum
     biosample_summary: Homo sapiens ileum tissue female adult (62 years)
@@ -587,6 +731,10 @@ experiments:
     mn_bigwigs:
     - ENCFF779ZTK.bigWig
     - ENCFF044IRT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR618ZHM_ileum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR618ZHM_ileum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR618ZHM_ileum_bidirectional.bed.gz
   ENCSR940QKZ:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (41 years)
@@ -602,6 +750,10 @@ experiments:
     mn_bigwigs:
     - ENCFF029LEX.bigWig
     - ENCFF862XFV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR940QKZ_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR940QKZ_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR940QKZ_ovary_bidirectional.bed.gz
   ENCSR093JST:
     biosample: monocyte
     biosample_summary: Homo sapiens monocyte
@@ -617,6 +769,10 @@ experiments:
     mn_bigwigs:
     - ENCFF238NLM.bigWig
     - ENCFF921WDX.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR093JST_monocyte_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR093JST_monocyte_mn.bigWig
+      peaks: data/processed/peaks/ENCSR093JST_monocyte_bidirectional.bed.gz
   ENCSR331QXJ:
     biosample: Colon Carcinoma Metastatic in the Lung
     biosample_summary: Homo sapiens Colon Carcinoma Metastatic in the Lung tissue
@@ -632,6 +788,10 @@ experiments:
     - ENCFF365WMY.bigWig
     mn_bigwigs:
     - ENCFF462MKZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_bidirectional.bed.gz
   ENCSR575NNF:
     biosample: right lobe of liver
     biosample_summary: Homo sapiens right lobe of liver tissue female adult (41 years)
@@ -647,6 +807,10 @@ experiments:
     mn_bigwigs:
     - ENCFF523UUP.bigWig
     - ENCFF718JLW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR575NNF_right_lobe_of_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR575NNF_right_lobe_of_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR575NNF_right_lobe_of_liver_bidirectional.bed.gz
   ENCSR915VCN:
     biosample: cerebral cortex
     biosample_summary: Homo sapiens cerebral cortex tissue female adult (49 years)
@@ -663,6 +827,10 @@ experiments:
     mn_bigwigs:
     - ENCFF238YIB.bigWig
     - ENCFF958MEN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR915VCN_cerebral_cortex_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR915VCN_cerebral_cortex_mn.bigWig
+      peaks: data/processed/peaks/ENCSR915VCN_cerebral_cortex_bidirectional.bed.gz
   ENCSR766KPR:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (61 years)
@@ -678,6 +846,10 @@ experiments:
     mn_bigwigs:
     - ENCFF858WVO.bigWig
     - ENCFF153UJC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR766KPR_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR766KPR_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR766KPR_ovary_bidirectional.bed.gz
   ENCSR399LAD:
     biosample: uterus
     biosample_summary: Homo sapiens uterus tissue female adult (46 years)
@@ -693,6 +865,10 @@ experiments:
     mn_bigwigs:
     - ENCFF567EMR.bigWig
     - ENCFF553VSU.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR399LAD_uterus_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR399LAD_uterus_mn.bigWig
+      peaks: data/processed/peaks/ENCSR399LAD_uterus_bidirectional.bed.gz
   ENCSR756CCD:
     biosample: thyroid gland
     biosample_summary: Homo sapiens thyroid gland tissue male adult (49 years)
@@ -708,6 +884,10 @@ experiments:
     mn_bigwigs:
     - ENCFF631VBY.bigWig
     - ENCFF980XQW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR756CCD_thyroid_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR756CCD_thyroid_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR756CCD_thyroid_gland_bidirectional.bed.gz
   ENCSR023NXW:
     biosample: right common carotid artery plus branches
     biosample_summary: Homo sapiens right common carotid artery plus branches tissue
@@ -723,6 +903,10 @@ experiments:
     mn_bigwigs:
     - ENCFF673DSF.bigWig
     - ENCFF833CZC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR023NXW_right_common_carotid_artery_plus_branches_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR023NXW_right_common_carotid_artery_plus_branches_mn.bigWig
+      peaks: data/processed/peaks/ENCSR023NXW_right_common_carotid_artery_plus_branches_bidirectional.bed.gz
   ENCSR266TET:
     biosample: bronchial lymph node
     biosample_summary: Homo sapiens bronchial lymph node tissue female adult (63 years)
@@ -738,6 +922,10 @@ experiments:
     mn_bigwigs:
     - ENCFF963WQQ.bigWig
     - ENCFF119CQF.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR266TET_bronchial_lymph_node_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR266TET_bronchial_lymph_node_mn.bigWig
+      peaks: data/processed/peaks/ENCSR266TET_bronchial_lymph_node_bidirectional.bed.gz
   ENCSR045XAW:
     biosample: urinary bladder
     biosample_summary: Homo sapiens urinary bladder tissue female adult (67 years)
@@ -753,6 +941,10 @@ experiments:
     mn_bigwigs:
     - ENCFF859XQD.bigWig
     - ENCFF326MZI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR045XAW_urinary_bladder_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR045XAW_urinary_bladder_mn.bigWig
+      peaks: data/processed/peaks/ENCSR045XAW_urinary_bladder_bidirectional.bed.gz
   ENCSR934ZMQ:
     biosample: Metastatic Breast Carcinoma in the Ovary
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Ovary tissue
@@ -770,6 +962,10 @@ experiments:
     mn_bigwigs:
     - ENCFF918IJP.bigWig
     - ENCFF362VID.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_bidirectional.bed.gz
   ENCSR118KGX:
     biosample: T-cell
     biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
@@ -784,6 +980,10 @@ experiments:
     - ENCFF246KDC.bigWig
     mn_bigwigs:
     - ENCFF298UGL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR118KGX_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR118KGX_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR118KGX_T-cell_bidirectional.bed.gz
   ENCSR296MTV:
     biosample: left common carotid artery plus branches
     biosample_summary: Homo sapiens left common carotid artery plus branches tissue
@@ -799,6 +999,10 @@ experiments:
     mn_bigwigs:
     - ENCFF301ATR.bigWig
     - ENCFF763TUC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR296MTV_left_common_carotid_artery_plus_branches_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR296MTV_left_common_carotid_artery_plus_branches_mn.bigWig
+      peaks: data/processed/peaks/ENCSR296MTV_left_common_carotid_artery_plus_branches_bidirectional.bed.gz
   ENCSR212GWU:
     biosample: breast
     biosample_summary: Homo sapiens breast tissue female adult (39 years)
@@ -814,6 +1018,10 @@ experiments:
     mn_bigwigs:
     - ENCFF792ZQD.bigWig
     - ENCFF163LJV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR212GWU_breast_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR212GWU_breast_mn.bigWig
+      peaks: data/processed/peaks/ENCSR212GWU_breast_bidirectional.bed.gz
   ENCSR408RHY:
     biosample: adrenal gland
     biosample_summary: Homo sapiens adrenal gland tissue female adult (59 years)
@@ -829,6 +1037,10 @@ experiments:
     mn_bigwigs:
     - ENCFF119HBC.bigWig
     - ENCFF723AUV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR408RHY_adrenal_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR408RHY_adrenal_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR408RHY_adrenal_gland_bidirectional.bed.gz
   ENCSR594WJV:
     biosample: cytotoxic T cell
     biosample_summary: Homo sapiens cytotoxic T cell
@@ -844,6 +1056,10 @@ experiments:
     mn_bigwigs:
     - ENCFF167IBF.bigWig
     - ENCFF214DBJ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR594WJV_cytotoxic_T_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR594WJV_cytotoxic_T_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR594WJV_cytotoxic_T_cell_bidirectional.bed.gz
   ENCSR797AOQ:
     biosample: spleen
     biosample_summary: Homo sapiens spleen tissue female adult (41 years)
@@ -859,6 +1075,10 @@ experiments:
     mn_bigwigs:
     - ENCFF914OVT.bigWig
     - ENCFF865ANZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR797AOQ_spleen_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR797AOQ_spleen_mn.bigWig
+      peaks: data/processed/peaks/ENCSR797AOQ_spleen_bidirectional.bed.gz
   ENCSR675RBN:
     biosample: cerebral cortex
     biosample_summary: Homo sapiens cerebral cortex tissue
@@ -875,6 +1095,10 @@ experiments:
     mn_bigwigs:
     - ENCFF031GQY.bigWig
     - ENCFF361MGW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR675RBN_cerebral_cortex_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR675RBN_cerebral_cortex_mn.bigWig
+      peaks: data/processed/peaks/ENCSR675RBN_cerebral_cortex_bidirectional.bed.gz
   ENCSR812JCT:
     biosample: heart left ventricle
     biosample_summary: Homo sapiens heart left ventricle tissue female adult (46 years)
@@ -890,6 +1114,10 @@ experiments:
     mn_bigwigs:
     - ENCFF054BGT.bigWig
     - ENCFF353SVC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR812JCT_heart_left_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR812JCT_heart_left_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR812JCT_heart_left_ventricle_bidirectional.bed.gz
   ENCSR740DLY:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -905,6 +1133,10 @@ experiments:
     mn_bigwigs:
     - ENCFF262NUC.bigWig
     - ENCFF998DWH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR740DLY_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR740DLY_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR740DLY_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR964OON:
     biosample: sternocleidomastoid
     biosample_summary: Homo sapiens sternocleidomastoid tissue
@@ -920,6 +1152,10 @@ experiments:
     mn_bigwigs:
     - ENCFF025EGE.bigWig
     - ENCFF603TDX.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR964OON_sternocleidomastoid_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR964OON_sternocleidomastoid_mn.bigWig
+      peaks: data/processed/peaks/ENCSR964OON_sternocleidomastoid_bidirectional.bed.gz
   ENCSR883PPD:
     biosample: right cardiac atrium
     biosample_summary: Homo sapiens right cardiac atrium tissue female adult (46 years)
@@ -935,6 +1171,10 @@ experiments:
     mn_bigwigs:
     - ENCFF068IWI.bigWig
     - ENCFF393QMT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR883PPD_right_cardiac_atrium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR883PPD_right_cardiac_atrium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR883PPD_right_cardiac_atrium_bidirectional.bed.gz
   ENCSR784FKF:
     biosample: vermiform appendix
     biosample_summary: Homo sapiens vermiform appendix tissue male adult (56 years)
@@ -950,6 +1190,10 @@ experiments:
     mn_bigwigs:
     - ENCFF516NXU.bigWig
     - ENCFF444GIW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR784FKF_vermiform_appendix_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR784FKF_vermiform_appendix_mn.bigWig
+      peaks: data/processed/peaks/ENCSR784FKF_vermiform_appendix_bidirectional.bed.gz
   ENCSR273JQN:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -967,6 +1211,10 @@ experiments:
     mn_bigwigs:
     - ENCFF323ZMX.bigWig
     - ENCFF578FCY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR273JQN_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR273JQN_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR273JQN_HCT116_bidirectional.bed.gz
   ENCSR074XOP:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -984,6 +1232,10 @@ experiments:
     mn_bigwigs:
     - ENCFF892ADK.bigWig
     - ENCFF851IEE.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR074XOP_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR074XOP_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR074XOP_HCT116_bidirectional.bed.gz
   ENCSR635SXX:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -1001,6 +1253,10 @@ experiments:
     mn_bigwigs:
     - ENCFF513IVI.bigWig
     - ENCFF517PLA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR635SXX_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR635SXX_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR635SXX_HCT116_bidirectional.bed.gz
   ENCSR990FJB:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -1018,6 +1274,10 @@ experiments:
     mn_bigwigs:
     - ENCFF050BQZ.bigWig
     - ENCFF887JVU.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR990FJB_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR990FJB_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR990FJB_HCT116_bidirectional.bed.gz
   ENCSR261OWE:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -1036,6 +1296,10 @@ experiments:
     mn_bigwigs:
     - ENCFF687NPB.bigWig
     - ENCFF312IWO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR261OWE_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR261OWE_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR261OWE_HCT116_bidirectional.bed.gz
   ENCSR932TRR:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -1053,6 +1317,10 @@ experiments:
     mn_bigwigs:
     - ENCFF670EXD.bigWig
     - ENCFF337QIN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR932TRR_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR932TRR_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR932TRR_HCT116_bidirectional.bed.gz
   ENCSR604EBH:
     biosample: K562
     biosample_summary: Homo sapiens K562
@@ -1073,6 +1341,10 @@ experiments:
     - ENCFF461WON.bigWig
     - ENCFF538JPG.bigWig
     - ENCFF900CHQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR604EBH_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR604EBH_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR604EBH_K562_bidirectional.bed.gz
   ENCSR124AWE:
     biosample: SUDHL5
     biosample_summary: Homo sapiens SUDHL5
@@ -1088,6 +1360,10 @@ experiments:
     mn_bigwigs:
     - ENCFF981PND.bigWig
     - ENCFF797USK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR124AWE_SUDHL5_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR124AWE_SUDHL5_mn.bigWig
+      peaks: data/processed/peaks/ENCSR124AWE_SUDHL5_bidirectional.bed.gz
   ENCSR548GOG:
     biosample: stomach
     biosample_summary: Homo sapiens stomach tissue female adult (53 years)
@@ -1103,6 +1379,10 @@ experiments:
     mn_bigwigs:
     - ENCFF219LDS.bigWig
     - ENCFF851NUQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR548GOG_stomach_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR548GOG_stomach_mn.bigWig
+      peaks: data/processed/peaks/ENCSR548GOG_stomach_bidirectional.bed.gz
   ENCSR973QQI:
     biosample: ReNcell CX
     biosample_summary: Homo sapiens ReNcell CX
@@ -1119,6 +1399,10 @@ experiments:
     mn_bigwigs:
     - ENCFF773MMG.bigWig
     - ENCFF944VIF.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR973QQI_ReNcell_CX_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR973QQI_ReNcell_CX_mn.bigWig
+      peaks: data/processed/peaks/ENCSR973QQI_ReNcell_CX_bidirectional.bed.gz
   ENCSR473KVF:
     biosample: HEK293T
     biosample_summary: Homo sapiens HEK293T genetically modified (insertion) using
@@ -1135,6 +1419,10 @@ experiments:
     mn_bigwigs:
     - ENCFF748BAF.bigWig
     - ENCFF236QNQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR473KVF_HEK293T_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR473KVF_HEK293T_mn.bigWig
+      peaks: data/processed/peaks/ENCSR473KVF_HEK293T_bidirectional.bed.gz
   ENCSR382HFH:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -1150,6 +1438,10 @@ experiments:
     mn_bigwigs:
     - ENCFF653GEU.bigWig
     - ENCFF969NXK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR382HFH_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR382HFH_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR382HFH_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR624CVP:
     biosample: peritoneum
     biosample_summary: Homo sapiens peritoneum tissue female adult (53 years)
@@ -1165,6 +1457,10 @@ experiments:
     mn_bigwigs:
     - ENCFF721NEX.bigWig
     - ENCFF760FVH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR624CVP_peritoneum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR624CVP_peritoneum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR624CVP_peritoneum_bidirectional.bed.gz
   ENCSR575EOB:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -1182,6 +1478,10 @@ experiments:
     mn_bigwigs:
     - ENCFF783ELT.bigWig
     - ENCFF398ZGQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR701MOE:
     biosample: T-cell
     biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
@@ -1196,6 +1496,10 @@ experiments:
     - ENCFF224WRP.bigWig
     mn_bigwigs:
     - ENCFF248NZO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR701MOE_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR701MOE_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR701MOE_T-cell_bidirectional.bed.gz
   ENCSR657PSE:
     biosample: aorta
     biosample_summary: Homo sapiens aorta tissue female adult (41 years)
@@ -1211,6 +1515,10 @@ experiments:
     mn_bigwigs:
     - ENCFF045RVO.bigWig
     - ENCFF236DMO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR657PSE_aorta_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR657PSE_aorta_mn.bigWig
+      peaks: data/processed/peaks/ENCSR657PSE_aorta_bidirectional.bed.gz
   ENCSR472ETC:
     biosample: fallopian tube
     biosample_summary: Homo sapiens fallopian tube tissue female adult (46 years)
@@ -1226,6 +1534,10 @@ experiments:
     mn_bigwigs:
     - ENCFF791SXO.bigWig
     - ENCFF759JAR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR472ETC_fallopian_tube_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR472ETC_fallopian_tube_mn.bigWig
+      peaks: data/processed/peaks/ENCSR472ETC_fallopian_tube_bidirectional.bed.gz
   ENCSR077MAX:
     biosample: tibial nerve
     biosample_summary: Homo sapiens tibial nerve tissue male adult (37 years)
@@ -1241,6 +1553,10 @@ experiments:
     mn_bigwigs:
     - ENCFF622ABN.bigWig
     - ENCFF923UFT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR077MAX_tibial_nerve_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR077MAX_tibial_nerve_mn.bigWig
+      peaks: data/processed/peaks/ENCSR077MAX_tibial_nerve_bidirectional.bed.gz
   ENCSR426RMA:
     biosample: heart left ventricle
     biosample_summary: Homo sapiens heart left ventricle tissue male adult (40 years)
@@ -1256,6 +1572,10 @@ experiments:
     mn_bigwigs:
     - ENCFF369UUR.bigWig
     - ENCFF731YCW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR426RMA_heart_left_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR426RMA_heart_left_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR426RMA_heart_left_ventricle_bidirectional.bed.gz
   ENCSR489FZB:
     biosample: T-cell
     biosample_summary: Homo sapiens T-cell
@@ -1271,6 +1591,10 @@ experiments:
     mn_bigwigs:
     - ENCFF759MHE.bigWig
     - ENCFF718SOM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR489FZB_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR489FZB_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR489FZB_T-cell_bidirectional.bed.gz
   ENCSR683FOJ:
     biosample: mesenteric fat pad
     biosample_summary: Homo sapiens mesenteric fat pad tissue female adult (59 years)
@@ -1286,6 +1610,10 @@ experiments:
     mn_bigwigs:
     - ENCFF402EFB.bigWig
     - ENCFF635IKU.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR683FOJ_mesenteric_fat_pad_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR683FOJ_mesenteric_fat_pad_mn.bigWig
+      peaks: data/processed/peaks/ENCSR683FOJ_mesenteric_fat_pad_bidirectional.bed.gz
   ENCSR683YVU:
     biosample: helper T cell
     biosample_summary: Homo sapiens helper T cell
@@ -1301,6 +1629,10 @@ experiments:
     mn_bigwigs:
     - ENCFF334LNW.bigWig
     - ENCFF149SDN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR683YVU_helper_T_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR683YVU_helper_T_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR683YVU_helper_T_cell_bidirectional.bed.gz
   ENCSR574ZMF:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (59 years)
@@ -1316,6 +1648,10 @@ experiments:
     mn_bigwigs:
     - ENCFF416IGU.bigWig
     - ENCFF833UDI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR574ZMF_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR574ZMF_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR574ZMF_ovary_bidirectional.bed.gz
   ENCSR245UIS:
     biosample: Karpas-422
     biosample_summary: Homo sapiens Karpas-422
@@ -1331,6 +1667,10 @@ experiments:
     mn_bigwigs:
     - ENCFF126ZBC.bigWig
     - ENCFF382EUX.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR245UIS_Karpas-422_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR245UIS_Karpas-422_mn.bigWig
+      peaks: data/processed/peaks/ENCSR245UIS_Karpas-422_bidirectional.bed.gz
   ENCSR836XBB:
     biosample: rectum
     biosample_summary: Homo sapiens rectum tissue
@@ -1346,6 +1686,10 @@ experiments:
     mn_bigwigs:
     - ENCFF937HSR.bigWig
     - ENCFF878ZES.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR836XBB_rectum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR836XBB_rectum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR836XBB_rectum_bidirectional.bed.gz
   ENCSR526QVD:
     biosample: ureter
     biosample_summary: Homo sapiens ureter tissue female adult (53 years)
@@ -1361,6 +1705,10 @@ experiments:
     mn_bigwigs:
     - ENCFF015HOZ.bigWig
     - ENCFF744ZAH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR526QVD_ureter_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR526QVD_ureter_mn.bigWig
+      peaks: data/processed/peaks/ENCSR526QVD_ureter_bidirectional.bed.gz
   ENCSR876AEQ:
     biosample: Metastatic Liver Carcinoma in the Adrenal Gland
     biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Adrenal Gland
@@ -1376,6 +1724,10 @@ experiments:
     - ENCFF165NZD.bigWig
     mn_bigwigs:
     - ENCFF498JCP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_bidirectional.bed.gz
   ENCSR229XTQ:
     biosample: skeletal muscle tissue
     biosample_summary: Homo sapiens skeletal muscle tissue tissue male adult (59 years)
@@ -1391,6 +1743,10 @@ experiments:
     mn_bigwigs:
     - ENCFF191TIR.bigWig
     - ENCFF258BKO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR229XTQ_skeletal_muscle_tissue_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR229XTQ_skeletal_muscle_tissue_mn.bigWig
+      peaks: data/processed/peaks/ENCSR229XTQ_skeletal_muscle_tissue_bidirectional.bed.gz
   ENCSR659YNL:
     biosample: left lung
     biosample_summary: Homo sapiens left lung tissue male adult (40 years)
@@ -1406,6 +1762,10 @@ experiments:
     mn_bigwigs:
     - ENCFF690WCT.bigWig
     - ENCFF133HUW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR659YNL_left_lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR659YNL_left_lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR659YNL_left_lung_bidirectional.bed.gz
   ENCSR282IJP:
     biosample: neutrophil
     biosample_summary: Homo sapiens neutrophil
@@ -1421,6 +1781,10 @@ experiments:
     mn_bigwigs:
     - ENCFF267WPQ.bigWig
     - ENCFF662RXL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR282IJP_neutrophil_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR282IJP_neutrophil_mn.bigWig
+      peaks: data/processed/peaks/ENCSR282IJP_neutrophil_bidirectional.bed.gz
   ENCSR888DKJ:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -1438,6 +1802,10 @@ experiments:
     mn_bigwigs:
     - ENCFF769IGI.bigWig
     - ENCFF067NMD.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR754LBG:
     biosample: duodenum
     biosample_summary: Homo sapiens duodenum tissue female adult (70 years)
@@ -1453,6 +1821,10 @@ experiments:
     mn_bigwigs:
     - ENCFF330APO.bigWig
     - ENCFF242XXV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR754LBG_duodenum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR754LBG_duodenum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR754LBG_duodenum_bidirectional.bed.gz
   ENCSR250REI:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -1468,6 +1840,10 @@ experiments:
     mn_bigwigs:
     - ENCFF232QGY.bigWig
     - ENCFF621BGR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR250REI_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR250REI_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR250REI_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR180NBV:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -1485,6 +1861,10 @@ experiments:
     mn_bigwigs:
     - ENCFF745ZQQ.bigWig
     - ENCFF970IFE.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR739MOQ:
     biosample: body of pancreas
     biosample_summary: Homo sapiens body of pancreas tissue female adult (53 years)
@@ -1500,6 +1880,10 @@ experiments:
     mn_bigwigs:
     - ENCFF114QKA.bigWig
     - ENCFF068BOD.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR739MOQ_body_of_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR739MOQ_body_of_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR739MOQ_body_of_pancreas_bidirectional.bed.gz
   ENCSR117JKC:
     biosample: trachea
     biosample_summary: Homo sapiens trachea tissue male adult (54 years)
@@ -1515,6 +1899,10 @@ experiments:
     mn_bigwigs:
     - ENCFF867VHZ.bigWig
     - ENCFF235ZNX.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR117JKC_trachea_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR117JKC_trachea_mn.bigWig
+      peaks: data/processed/peaks/ENCSR117JKC_trachea_bidirectional.bed.gz
   ENCSR008TSD:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -1532,6 +1920,10 @@ experiments:
     mn_bigwigs:
     - ENCFF936QNE.bigWig
     - ENCFF855VJO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR723JIC:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -1547,6 +1939,10 @@ experiments:
     mn_bigwigs:
     - ENCFF291LMW.bigWig
     - ENCFF283MOB.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR723JIC_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR723JIC_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR723JIC_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR980TGS:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -1564,6 +1960,10 @@ experiments:
     mn_bigwigs:
     - ENCFF996HWK.bigWig
     - ENCFF468DVE.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR083AMN:
     biosample: B cell
     biosample_summary: Homo sapiens B cell
@@ -1579,6 +1979,10 @@ experiments:
     mn_bigwigs:
     - ENCFF408NIK.bigWig
     - ENCFF074SSA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR083AMN_B_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR083AMN_B_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR083AMN_B_cell_bidirectional.bed.gz
   ENCSR756TPG:
     biosample: K562
     biosample_summary: Homo sapiens K562
@@ -1599,6 +2003,10 @@ experiments:
     - ENCFF658HRY.bigWig
     - ENCFF848KKP.bigWig
     - ENCFF182HUP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR756TPG_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR756TPG_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR756TPG_K562_bidirectional.bed.gz
   ENCSR089CQL:
     biosample: T-cell
     biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
@@ -1613,6 +2021,10 @@ experiments:
     - ENCFF761RFA.bigWig
     mn_bigwigs:
     - ENCFF481YXT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR089CQL_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR089CQL_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR089CQL_T-cell_bidirectional.bed.gz
   ENCSR294JPW:
     biosample: left ventricle myocardium
     biosample_summary: Homo sapiens left ventricle myocardium tissue male adult (37
@@ -1630,6 +2042,10 @@ experiments:
     mn_bigwigs:
     - ENCFF667XMA.bigWig
     - ENCFF522YDK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR294JPW_left_ventricle_myocardium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR294JPW_left_ventricle_myocardium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR294JPW_left_ventricle_myocardium_bidirectional.bed.gz
   ENCSR321WCE:
     biosample: neural crest cell
     biosample_summary: Homo sapiens neural crest cell
@@ -1646,6 +2062,10 @@ experiments:
     mn_bigwigs:
     - ENCFF635TCW.bigWig
     - ENCFF113WQI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR321WCE_neural_crest_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR321WCE_neural_crest_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR321WCE_neural_crest_cell_bidirectional.bed.gz
   ENCSR357VUN:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (45 years)
@@ -1661,6 +2081,10 @@ experiments:
     mn_bigwigs:
     - ENCFF588HBC.bigWig
     - ENCFF376ZPG.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR357VUN_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR357VUN_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR357VUN_ovary_bidirectional.bed.gz
   ENCSR393PGX:
     biosample: breast epithelium
     biosample_summary: Homo sapiens breast epithelium tissue female adult (53 years)
@@ -1674,6 +2098,10 @@ experiments:
     - ENCFF992WRX.bigWig
     mn_bigwigs:
     - ENCFF440ZTM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR393PGX_breast_epithelium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR393PGX_breast_epithelium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR393PGX_breast_epithelium_bidirectional.bed.gz
   ENCSR489BCG:
     biosample: pancreas
     biosample_summary: Homo sapiens pancreas organoid
@@ -1687,6 +2115,10 @@ experiments:
     - ENCFF729QOS.bigWig
     mn_bigwigs:
     - ENCFF090RRR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR489BCG_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR489BCG_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR489BCG_pancreas_bidirectional.bed.gz
   ENCSR243MVI:
     biosample: liver
     biosample_summary: Homo sapiens liver tissue
@@ -1700,6 +2132,10 @@ experiments:
     - ENCFF314IXN.bigWig
     mn_bigwigs:
     - ENCFF908GQE.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR243MVI_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR243MVI_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR243MVI_liver_bidirectional.bed.gz
   ENCSR104MSL:
     biosample: pancreas
     biosample_summary: Homo sapiens pancreas organoid
@@ -1715,6 +2151,10 @@ experiments:
     mn_bigwigs:
     - ENCFF352IXG.bigWig
     - ENCFF268DZY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR104MSL_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR104MSL_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR104MSL_pancreas_bidirectional.bed.gz
   ENCSR928ZWP:
     biosample: lower leg skin
     biosample_summary: Homo sapiens lower leg skin tissue female adult (53 years)
@@ -1730,6 +2170,10 @@ experiments:
     mn_bigwigs:
     - ENCFF115MBG.bigWig
     - ENCFF226CFV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR928ZWP_lower_leg_skin_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR928ZWP_lower_leg_skin_mn.bigWig
+      peaks: data/processed/peaks/ENCSR928ZWP_lower_leg_skin_bidirectional.bed.gz
   ENCSR331UGM:
     biosample: liver
     biosample_summary: Homo sapiens liver tissue
@@ -1745,6 +2189,10 @@ experiments:
     mn_bigwigs:
     - ENCFF354GOW.bigWig
     - ENCFF759QBY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR331UGM_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR331UGM_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR331UGM_liver_bidirectional.bed.gz
   ENCSR149WMX:
     biosample: Metastatic Liver Carcinoma in the Lung
     biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Lung tissue
@@ -1760,6 +2208,10 @@ experiments:
     - ENCFF275RVY.bigWig
     mn_bigwigs:
     - ENCFF073DQK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_bidirectional.bed.gz
   ENCSR633OWM:
     biosample: pulmonary lymph node
     biosample_summary: Homo sapiens pulmonary lymph node tissue female adult (58 years)
@@ -1775,6 +2227,10 @@ experiments:
     mn_bigwigs:
     - ENCFF771XPV.bigWig
     - ENCFF950NUQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR633OWM_pulmonary_lymph_node_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR633OWM_pulmonary_lymph_node_mn.bigWig
+      peaks: data/processed/peaks/ENCSR633OWM_pulmonary_lymph_node_bidirectional.bed.gz
   ENCSR384HWB:
     biosample: ascending aorta
     biosample_summary: Homo sapiens ascending aorta tissue female adult (53 years)
@@ -1790,6 +2246,10 @@ experiments:
     mn_bigwigs:
     - ENCFF715UJT.bigWig
     - ENCFF217JZT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR384HWB_ascending_aorta_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR384HWB_ascending_aorta_mn.bigWig
+      peaks: data/processed/peaks/ENCSR384HWB_ascending_aorta_bidirectional.bed.gz
   ENCSR347PQY:
     biosample: upper lobe of left lung
     biosample_summary: Homo sapiens upper lobe of left lung tissue female adult (53
@@ -1806,6 +2266,10 @@ experiments:
     mn_bigwigs:
     - ENCFF450MXC.bigWig
     - ENCFF699XWT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR347PQY_upper_lobe_of_left_lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR347PQY_upper_lobe_of_left_lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR347PQY_upper_lobe_of_left_lung_bidirectional.bed.gz
   ENCSR335ZMZ:
     biosample: OCI-LY7
     biosample_summary: Homo sapiens OCI-LY7
@@ -1821,6 +2285,10 @@ experiments:
     mn_bigwigs:
     - ENCFF122BGE.bigWig
     - ENCFF117YRS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR335ZMZ_OCI-LY7_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR335ZMZ_OCI-LY7_mn.bigWig
+      peaks: data/processed/peaks/ENCSR335ZMZ_OCI-LY7_bidirectional.bed.gz
   ENCSR657RPS:
     biosample: uterus
     biosample_summary: Homo sapiens uterus tissue female adult (38 years)
@@ -1836,6 +2304,10 @@ experiments:
     mn_bigwigs:
     - ENCFF292OUX.bigWig
     - ENCFF455JXC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR657RPS_uterus_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR657RPS_uterus_mn.bigWig
+      peaks: data/processed/peaks/ENCSR657RPS_uterus_bidirectional.bed.gz
   ENCSR149ZRX:
     biosample: K562
     biosample_summary: Homo sapiens K562
@@ -1852,6 +2324,10 @@ experiments:
     mn_bigwigs:
     - ENCFF258ZIO.bigWig
     - ENCFF952YCN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR149ZRX_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR149ZRX_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR149ZRX_K562_bidirectional.bed.gz
   ENCSR834OVY:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -1867,6 +2343,10 @@ experiments:
     mn_bigwigs:
     - ENCFF296TBC.bigWig
     - ENCFF990ETZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR834OVY_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR834OVY_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR834OVY_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR262PWK:
     biosample: type B pancreatic cell
     biosample_summary: Homo sapiens type B pancreatic cell
@@ -1883,6 +2363,10 @@ experiments:
     mn_bigwigs:
     - ENCFF115FJX.bigWig
     - ENCFF966LRS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR262PWK_type_B_pancreatic_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR262PWK_type_B_pancreatic_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR262PWK_type_B_pancreatic_cell_bidirectional.bed.gz
   ENCSR300AAD:
     biosample: Metastatic Liver Carcinoma in the Adrenal Gland
     biosample_summary: Homo sapiens Metastatic Liver Carcinoma in the Adrenal Gland
@@ -1898,6 +2382,10 @@ experiments:
     - ENCFF648RXB.bigWig
     mn_bigwigs:
     - ENCFF074QXQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_bidirectional.bed.gz
   ENCSR900SLO:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -1915,6 +2403,10 @@ experiments:
     mn_bigwigs:
     - ENCFF067EBR.bigWig
     - ENCFF593BHS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR900SLO_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR900SLO_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR900SLO_HCT116_bidirectional.bed.gz
   ENCSR687HZX:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -1932,6 +2424,10 @@ experiments:
     mn_bigwigs:
     - ENCFF958CFG.bigWig
     - ENCFF495CDY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR997YHR:
     biosample: lung
     biosample_summary: Homo sapiens lung tissue female adult (53 years)
@@ -1947,6 +2443,10 @@ experiments:
     mn_bigwigs:
     - ENCFF607PRT.bigWig
     - ENCFF943ACS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR997YHR_lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR997YHR_lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR997YHR_lung_bidirectional.bed.gz
   ENCSR744JVA:
     biosample: pancreas
     biosample_summary: Homo sapiens pancreas organoid
@@ -1962,6 +2462,10 @@ experiments:
     mn_bigwigs:
     - ENCFF667ZIG.bigWig
     - ENCFF772FDR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR744JVA_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR744JVA_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR744JVA_pancreas_bidirectional.bed.gz
   ENCSR338WJS:
     biosample: pancreas
     biosample_summary: Homo sapiens pancreas organoid
@@ -1977,6 +2481,10 @@ experiments:
     mn_bigwigs:
     - ENCFF703BZM.bigWig
     - ENCFF006DGD.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR338WJS_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR338WJS_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR338WJS_pancreas_bidirectional.bed.gz
   ENCSR407CCJ:
     biosample: cerebellum
     biosample_summary: Homo sapiens cerebellum tissue female adult (51 years)
@@ -1992,6 +2500,10 @@ experiments:
     mn_bigwigs:
     - ENCFF616JZH.bigWig
     - ENCFF569HVO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR407CCJ_cerebellum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR407CCJ_cerebellum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR407CCJ_cerebellum_bidirectional.bed.gz
   ENCSR155NVW:
     biosample: penis
     biosample_summary: Homo sapiens penis tissue male adult (50 years)
@@ -2007,6 +2519,10 @@ experiments:
     mn_bigwigs:
     - ENCFF212QGD.bigWig
     - ENCFF596OKQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR155NVW_penis_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR155NVW_penis_mn.bigWig
+      peaks: data/processed/peaks/ENCSR155NVW_penis_bidirectional.bed.gz
   ENCSR305RPP:
     biosample: testis
     biosample_summary: Homo sapiens testis tissue male
@@ -2022,6 +2538,10 @@ experiments:
     mn_bigwigs:
     - ENCFF867UGD.bigWig
     - ENCFF212GIQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR305RPP_testis_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR305RPP_testis_mn.bigWig
+      peaks: data/processed/peaks/ENCSR305RPP_testis_bidirectional.bed.gz
   ENCSR290MPW:
     biosample: heart left ventricle
     biosample_summary: Homo sapiens heart left ventricle tissue female adult (41 years)
@@ -2037,6 +2557,10 @@ experiments:
     mn_bigwigs:
     - ENCFF191JMD.bigWig
     - ENCFF250WGS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR290MPW_heart_left_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR290MPW_heart_left_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR290MPW_heart_left_ventricle_bidirectional.bed.gz
   ENCSR219NJB:
     biosample: spleen
     biosample_summary: Homo sapiens spleen tissue female adult (61 years)
@@ -2050,6 +2574,10 @@ experiments:
     - ENCFF968QHP.bigWig
     mn_bigwigs:
     - ENCFF558HBA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR219NJB_spleen_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR219NJB_spleen_mn.bigWig
+      peaks: data/processed/peaks/ENCSR219NJB_spleen_bidirectional.bed.gz
   ENCSR219QKX:
     biosample: heart right ventricle
     biosample_summary: Homo sapiens heart right ventricle tissue male adult (40 years)
@@ -2065,6 +2593,10 @@ experiments:
     mn_bigwigs:
     - ENCFF035IDQ.bigWig
     - ENCFF712XKK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR219QKX_heart_right_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR219QKX_heart_right_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR219QKX_heart_right_ventricle_bidirectional.bed.gz
   ENCSR656ZDH:
     biosample: heart left ventricle
     biosample_summary: Homo sapiens heart left ventricle tissue female adult (53 years)
@@ -2080,6 +2612,10 @@ experiments:
     mn_bigwigs:
     - ENCFF009HXV.bigWig
     - ENCFF531GVC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR656ZDH_heart_left_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR656ZDH_heart_left_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR656ZDH_heart_left_ventricle_bidirectional.bed.gz
   ENCSR065NDB:
     biosample: T-cell
     biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
@@ -2094,6 +2630,10 @@ experiments:
     - ENCFF789FBY.bigWig
     mn_bigwigs:
     - ENCFF037SOJ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR065NDB_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR065NDB_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR065NDB_T-cell_bidirectional.bed.gz
   ENCSR769SLJ:
     biosample: transverse colon
     biosample_summary: Homo sapiens transverse colon tissue female adult (53 years)
@@ -2107,6 +2647,10 @@ experiments:
     - ENCFF807IQQ.bigWig
     mn_bigwigs:
     - ENCFF482JTL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR769SLJ_transverse_colon_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR769SLJ_transverse_colon_mn.bigWig
+      peaks: data/processed/peaks/ENCSR769SLJ_transverse_colon_bidirectional.bed.gz
   ENCSR069DQH:
     biosample: cytotoxic T cell
     biosample_summary: Homo sapiens cytotoxic T cell
@@ -2122,6 +2666,10 @@ experiments:
     mn_bigwigs:
     - ENCFF686BJG.bigWig
     - ENCFF457IUS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR069DQH_cytotoxic_T_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR069DQH_cytotoxic_T_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR069DQH_cytotoxic_T_cell_bidirectional.bed.gz
   ENCSR617JRP:
     biosample: Metastatic Breast Carcinoma in the Ovary
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Ovary tissue
@@ -2139,6 +2687,10 @@ experiments:
     mn_bigwigs:
     - ENCFF965ESB.bigWig
     - ENCFF040WCX.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_bidirectional.bed.gz
   ENCSR100PNA:
     biosample: paraaortic lymph node
     biosample_summary: Homo sapiens paraaortic lymph node tissue female adult (68
@@ -2155,6 +2707,10 @@ experiments:
     mn_bigwigs:
     - ENCFF145LWD.bigWig
     - ENCFF228FWZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR100PNA_paraaortic_lymph_node_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR100PNA_paraaortic_lymph_node_mn.bigWig
+      peaks: data/processed/peaks/ENCSR100PNA_paraaortic_lymph_node_bidirectional.bed.gz
   ENCSR065QHA:
     biosample: left lobe of liver
     biosample_summary: Homo sapiens left lobe of liver tissue male adult (45 years)
@@ -2170,6 +2726,10 @@ experiments:
     mn_bigwigs:
     - ENCFF972TKK.bigWig
     - ENCFF306NXH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR065QHA_left_lobe_of_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR065QHA_left_lobe_of_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR065QHA_left_lobe_of_liver_bidirectional.bed.gz
   ENCSR233GRN:
     biosample: bronchus
     biosample_summary: Homo sapiens bronchus tissue female adult (68 years)
@@ -2185,6 +2745,10 @@ experiments:
     mn_bigwigs:
     - ENCFF203MHO.bigWig
     - ENCFF828FHM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR233GRN_bronchus_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR233GRN_bronchus_mn.bigWig
+      peaks: data/processed/peaks/ENCSR233GRN_bronchus_bidirectional.bed.gz
   ENCSR997INZ:
     biosample: right atrium auricular region
     biosample_summary: Homo sapiens right atrium auricular region tissue female adult
@@ -2202,6 +2766,10 @@ experiments:
     mn_bigwigs:
     - ENCFF948DHJ.bigWig
     - ENCFF866JGJ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR997INZ_right_atrium_auricular_region_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR997INZ_right_atrium_auricular_region_mn.bigWig
+      peaks: data/processed/peaks/ENCSR997INZ_right_atrium_auricular_region_bidirectional.bed.gz
   ENCSR431MXP:
     biosample: thyroid gland
     biosample_summary: Homo sapiens thyroid gland tissue female adult (51 years)
@@ -2217,6 +2785,10 @@ experiments:
     mn_bigwigs:
     - ENCFF833TZN.bigWig
     - ENCFF947EZN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR431MXP_thyroid_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR431MXP_thyroid_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR431MXP_thyroid_gland_bidirectional.bed.gz
   ENCSR255MUU:
     biosample: progenitor cell of endocrine pancreas
     biosample_summary: Homo sapiens progenitor cell of endocrine pancreas
@@ -2233,6 +2805,10 @@ experiments:
     mn_bigwigs:
     - ENCFF993AMV.bigWig
     - ENCFF410TZS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_bidirectional.bed.gz
   ENCSR673CJC:
     biosample: Metastatic Lung Carcinoma in the Adrenal Gland
     biosample_summary: Homo sapiens Metastatic Lung Carcinoma in the Adrenal Gland
@@ -2248,6 +2824,10 @@ experiments:
     - ENCFF071NAE.bigWig
     mn_bigwigs:
     - ENCFF853CUZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_bidirectional.bed.gz
   ENCSR946MDO:
     biosample: gastroesophageal sphincter
     biosample_summary: Homo sapiens gastroesophageal sphincter tissue male adult (37
@@ -2264,6 +2844,10 @@ experiments:
     mn_bigwigs:
     - ENCFF076UHT.bigWig
     - ENCFF550PED.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR946MDO_gastroesophageal_sphincter_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR946MDO_gastroesophageal_sphincter_mn.bigWig
+      peaks: data/processed/peaks/ENCSR946MDO_gastroesophageal_sphincter_bidirectional.bed.gz
   ENCSR841GXY:
     biosample: monocyte
     biosample_summary: Homo sapiens monocyte
@@ -2279,6 +2863,10 @@ experiments:
     mn_bigwigs:
     - ENCFF664QSA.bigWig
     - ENCFF513TWP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR841GXY_monocyte_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR841GXY_monocyte_mn.bigWig
+      peaks: data/processed/peaks/ENCSR841GXY_monocyte_bidirectional.bed.gz
   ENCSR296XBI:
     biosample: T-cell
     biosample_summary: Homo sapiens T-cell
@@ -2294,6 +2882,10 @@ experiments:
     mn_bigwigs:
     - ENCFF013SHE.bigWig
     - ENCFF310DAW.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR296XBI_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR296XBI_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR296XBI_T-cell_bidirectional.bed.gz
   ENCSR072JHG:
     biosample: liver
     biosample_summary: Homo sapiens liver tissue female adult (71 years)
@@ -2309,6 +2901,10 @@ experiments:
     mn_bigwigs:
     - ENCFF734XLJ.bigWig
     - ENCFF351WTC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR072JHG_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR072JHG_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR072JHG_liver_bidirectional.bed.gz
   ENCSR883HAT:
     biosample: uterus
     biosample_summary: Homo sapiens uterus tissue female adult (42 years)
@@ -2324,6 +2920,10 @@ experiments:
     mn_bigwigs:
     - ENCFF188WIH.bigWig
     - ENCFF362NCT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR883HAT_uterus_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR883HAT_uterus_mn.bigWig
+      peaks: data/processed/peaks/ENCSR883HAT_uterus_bidirectional.bed.gz
   ENCSR360MUR:
     biosample: HCT116
     biosample_summary: Homo sapiens HCT116 genetically modified (insertion) using
@@ -2341,6 +2941,10 @@ experiments:
     mn_bigwigs:
     - ENCFF727ABO.bigWig
     - ENCFF667FFP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR360MUR_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR360MUR_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR360MUR_HCT116_bidirectional.bed.gz
   ENCSR871CUV:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -2359,6 +2963,10 @@ experiments:
     mn_bigwigs:
     - ENCFF383NKD.bigWig
     - ENCFF716WJJ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR871CUV_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR871CUV_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR871CUV_HCT116_bidirectional.bed.gz
   ENCSR676YGJ:
     biosample: heart left ventricle
     biosample_summary: Homo sapiens heart left ventricle tissue female adult (53 years)
@@ -2374,6 +2982,10 @@ experiments:
     mn_bigwigs:
     - ENCFF903XWA.bigWig
     - ENCFF932BDC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR676YGJ_heart_left_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR676YGJ_heart_left_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR676YGJ_heart_left_ventricle_bidirectional.bed.gz
   ENCSR571OAW:
     biosample: mesothelial cell of epicardium
     biosample_summary: Homo sapiens mesothelial cell of epicardium
@@ -2389,6 +3001,10 @@ experiments:
     mn_bigwigs:
     - ENCFF334HUN.bigWig
     - ENCFF516UGK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR571OAW_mesothelial_cell_of_epicardium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR571OAW_mesothelial_cell_of_epicardium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR571OAW_mesothelial_cell_of_epicardium_bidirectional.bed.gz
   ENCSR632XIZ:
     biosample: skeletal muscle tissue
     biosample_summary: Homo sapiens skeletal muscle tissue tissue female adult (29
@@ -2405,6 +3021,10 @@ experiments:
     mn_bigwigs:
     - ENCFF923PWV.bigWig
     - ENCFF652IGY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR632XIZ_skeletal_muscle_tissue_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR632XIZ_skeletal_muscle_tissue_mn.bigWig
+      peaks: data/processed/peaks/ENCSR632XIZ_skeletal_muscle_tissue_bidirectional.bed.gz
   ENCSR179FHG:
     biosample: sigmoid colon
     biosample_summary: Homo sapiens sigmoid colon tissue female adult (53 years)
@@ -2420,6 +3040,10 @@ experiments:
     mn_bigwigs:
     - ENCFF618FAW.bigWig
     - ENCFF113TXU.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR179FHG_sigmoid_colon_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR179FHG_sigmoid_colon_mn.bigWig
+      peaks: data/processed/peaks/ENCSR179FHG_sigmoid_colon_bidirectional.bed.gz
   ENCSR246YHR:
     biosample: esophagus muscularis mucosa
     biosample_summary: Homo sapiens esophagus muscularis mucosa tissue female adult
@@ -2436,6 +3060,10 @@ experiments:
     mn_bigwigs:
     - ENCFF389DJS.bigWig
     - ENCFF804RZL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR246YHR_esophagus_muscularis_mucosa_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR246YHR_esophagus_muscularis_mucosa_mn.bigWig
+      peaks: data/processed/peaks/ENCSR246YHR_esophagus_muscularis_mucosa_bidirectional.bed.gz
   ENCSR353ZXW:
     biosample: SP-49
     biosample_summary: Homo sapiens SP-49
@@ -2451,6 +3079,10 @@ experiments:
     mn_bigwigs:
     - ENCFF688EKC.bigWig
     - ENCFF830QJK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR353ZXW_SP-49_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR353ZXW_SP-49_mn.bigWig
+      peaks: data/processed/peaks/ENCSR353ZXW_SP-49_bidirectional.bed.gz
   ENCSR845LKT:
     biosample: right lobe of liver
     biosample_summary: Homo sapiens right lobe of liver tissue female child (16 years)
@@ -2466,6 +3098,10 @@ experiments:
     mn_bigwigs:
     - ENCFF107CAH.bigWig
     - ENCFF770MQV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR845LKT_right_lobe_of_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR845LKT_right_lobe_of_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR845LKT_right_lobe_of_liver_bidirectional.bed.gz
   ENCSR794VAJ:
     biosample: sciatic nerve
     biosample_summary: Homo sapiens sciatic nerve tissue female adult (41 years)
@@ -2481,6 +3117,10 @@ experiments:
     mn_bigwigs:
     - ENCFF942QDQ.bigWig
     - ENCFF014SON.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR794VAJ_sciatic_nerve_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR794VAJ_sciatic_nerve_mn.bigWig
+      peaks: data/processed/peaks/ENCSR794VAJ_sciatic_nerve_bidirectional.bed.gz
   ENCSR610POV:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -2498,6 +3138,10 @@ experiments:
     mn_bigwigs:
     - ENCFF627MKY.bigWig
     - ENCFF830VKK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR220OLX:
     biosample: left colon
     biosample_summary: Homo sapiens left colon tissue female adult (46 years)
@@ -2513,6 +3157,10 @@ experiments:
     mn_bigwigs:
     - ENCFF783HOY.bigWig
     - ENCFF330LFL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR220OLX_left_colon_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR220OLX_left_colon_mn.bigWig
+      peaks: data/processed/peaks/ENCSR220OLX_left_colon_bidirectional.bed.gz
   ENCSR966RLG:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -2531,6 +3179,10 @@ experiments:
     mn_bigwigs:
     - ENCFF854YYZ.bigWig
     - ENCFF064LEI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR966RLG_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR966RLG_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR966RLG_HCT116_bidirectional.bed.gz
   ENCSR342WAR:
     biosample: neuron
     biosample_summary: Homo sapiens neuron
@@ -2547,6 +3199,10 @@ experiments:
     mn_bigwigs:
     - ENCFF649ESY.bigWig
     - ENCFF995VYK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR342WAR_neuron_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR342WAR_neuron_mn.bigWig
+      peaks: data/processed/peaks/ENCSR342WAR_neuron_bidirectional.bed.gz
   ENCSR956DBV:
     biosample: suprapubic skin
     biosample_summary: Homo sapiens suprapubic skin tissue female adult (53 years)
@@ -2562,6 +3218,10 @@ experiments:
     mn_bigwigs:
     - ENCFF336ZEH.bigWig
     - ENCFF458MKA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR956DBV_suprapubic_skin_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR956DBV_suprapubic_skin_mn.bigWig
+      peaks: data/processed/peaks/ENCSR956DBV_suprapubic_skin_bidirectional.bed.gz
   ENCSR482XCK:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (53 years)
@@ -2577,6 +3237,10 @@ experiments:
     mn_bigwigs:
     - ENCFF201XNX.bigWig
     - ENCFF996UHC.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR482XCK_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR482XCK_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR482XCK_ovary_bidirectional.bed.gz
   ENCSR516KII:
     biosample: astrocyte
     biosample_summary: Homo sapiens astrocyte
@@ -2592,6 +3256,10 @@ experiments:
     mn_bigwigs:
     - ENCFF327IXP.bigWig
     - ENCFF391SBS.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR516KII_astrocyte_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR516KII_astrocyte_mn.bigWig
+      peaks: data/processed/peaks/ENCSR516KII_astrocyte_bidirectional.bed.gz
   ENCSR280NVT:
     biosample: vagina
     biosample_summary: Homo sapiens vagina tissue female adult (53 years)
@@ -2607,6 +3275,10 @@ experiments:
     mn_bigwigs:
     - ENCFF026UHD.bigWig
     - ENCFF835LYZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR280NVT_vagina_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR280NVT_vagina_mn.bigWig
+      peaks: data/processed/peaks/ENCSR280NVT_vagina_bidirectional.bed.gz
   ENCSR245HPE:
     biosample: psoas muscle
     biosample_summary: Homo sapiens psoas muscle tissue female adult (41 years)
@@ -2622,6 +3294,10 @@ experiments:
     mn_bigwigs:
     - ENCFF313PCX.bigWig
     - ENCFF385LKB.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR245HPE_psoas_muscle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR245HPE_psoas_muscle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR245HPE_psoas_muscle_bidirectional.bed.gz
   ENCSR889QVM:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (53 years)
@@ -2637,6 +3313,10 @@ experiments:
     mn_bigwigs:
     - ENCFF042LWJ.bigWig
     - ENCFF393JXD.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR889QVM_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR889QVM_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR889QVM_ovary_bidirectional.bed.gz
   ENCSR712UDA:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -2652,6 +3332,10 @@ experiments:
     mn_bigwigs:
     - ENCFF733TSK.bigWig
     - ENCFF131GUM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR712UDA_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR712UDA_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR712UDA_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR926PFT:
     biosample: omental fat pad
     biosample_summary: Homo sapiens omental fat pad tissue female adult (53 years)
@@ -2665,6 +3349,10 @@ experiments:
     - ENCFF505CNK.bigWig
     mn_bigwigs:
     - ENCFF923CEH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR926PFT_omental_fat_pad_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR926PFT_omental_fat_pad_mn.bigWig
+      peaks: data/processed/peaks/ENCSR926PFT_omental_fat_pad_bidirectional.bed.gz
   ENCSR679CMZ:
     biosample: testis
     biosample_summary: Homo sapiens testis tissue male adult (54 years)
@@ -2680,6 +3368,10 @@ experiments:
     mn_bigwigs:
     - ENCFF382BDG.bigWig
     - ENCFF780VYP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR679CMZ_testis_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR679CMZ_testis_mn.bigWig
+      peaks: data/processed/peaks/ENCSR679CMZ_testis_bidirectional.bed.gz
   ENCSR642TRG:
     biosample: tibial artery
     biosample_summary: Homo sapiens tibial artery tissue female adult (53 years)
@@ -2695,6 +3387,10 @@ experiments:
     mn_bigwigs:
     - ENCFF909ZBT.bigWig
     - ENCFF464PRP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR642TRG_tibial_artery_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR642TRG_tibial_artery_mn.bigWig
+      peaks: data/processed/peaks/ENCSR642TRG_tibial_artery_bidirectional.bed.gz
   ENCSR723NVI:
     biosample: T-cell
     biosample_summary: Homo sapiens with type 1 diabetes mellitus; T-cell female adult
@@ -2709,6 +3405,10 @@ experiments:
     - ENCFF499VLN.bigWig
     mn_bigwigs:
     - ENCFF620HBP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR723NVI_T-cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR723NVI_T-cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR723NVI_T-cell_bidirectional.bed.gz
   ENCSR175VMO:
     biosample: Metastatic Pancreatic Carcinoma in the Ovary
     biosample_summary: Homo sapiens Metastatic Pancreatic Carcinoma in the Ovary tissue
@@ -2724,6 +3424,10 @@ experiments:
     - ENCFF384FLE.bigWig
     mn_bigwigs:
     - ENCFF304XHF.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_bidirectional.bed.gz
   ENCSR718AQM:
     biosample: HCT116
     biosample_summary: "Homo sapiens HCT116 genetically modified (insertion) using\
@@ -2742,6 +3446,10 @@ experiments:
     mn_bigwigs:
     - ENCFF532HFA.bigWig
     - ENCFF203QOZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR718AQM_HCT116_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR718AQM_HCT116_mn.bigWig
+      peaks: data/processed/peaks/ENCSR718AQM_HCT116_bidirectional.bed.gz
   ENCSR516YGD:
     biosample: adrenal gland
     biosample_summary: Homo sapiens adrenal gland tissue female adult (41 years)
@@ -2757,6 +3465,10 @@ experiments:
     mn_bigwigs:
     - ENCFF504MMC.bigWig
     - ENCFF254YEP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR516YGD_adrenal_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR516YGD_adrenal_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR516YGD_adrenal_gland_bidirectional.bed.gz
   ENCSR015HKC:
     biosample: uterus
     biosample_summary: Homo sapiens uterus tissue female adult (53 years)
@@ -2772,6 +3484,10 @@ experiments:
     mn_bigwigs:
     - ENCFF107EPE.bigWig
     - ENCFF664FMI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR015HKC_uterus_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR015HKC_uterus_mn.bigWig
+      peaks: data/processed/peaks/ENCSR015HKC_uterus_bidirectional.bed.gz
   ENCSR359PWL:
     biosample: H9
     biosample_summary: Homo sapiens H9
@@ -2787,6 +3503,10 @@ experiments:
     mn_bigwigs:
     - ENCFF471WQZ.bigWig
     - ENCFF856BBT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR359PWL_H9_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR359PWL_H9_mn.bigWig
+      peaks: data/processed/peaks/ENCSR359PWL_H9_bidirectional.bed.gz
   ENCSR845TMF:
     biosample: prostate gland
     biosample_summary: Homo sapiens prostate gland tissue male adult (54 years)
@@ -2802,6 +3522,10 @@ experiments:
     mn_bigwigs:
     - ENCFF147FRR.bigWig
     - ENCFF745FEP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR845TMF_prostate_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR845TMF_prostate_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR845TMF_prostate_gland_bidirectional.bed.gz
   ENCSR222JNI:
     biosample: endothelial cell
     biosample_summary: Homo sapiens endothelial cell
@@ -2818,6 +3542,10 @@ experiments:
     mn_bigwigs:
     - ENCFF460FFB.bigWig
     - ENCFF679EAV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR222JNI_endothelial_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR222JNI_endothelial_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR222JNI_endothelial_cell_bidirectional.bed.gz
   ENCSR216FUJ:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -2835,6 +3563,10 @@ experiments:
     mn_bigwigs:
     - ENCFF107NKT.bigWig
     - ENCFF315JID.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR889PCF:
     biosample: bile duct
     biosample_summary: Homo sapiens bile duct tissue female adult (41 years)
@@ -2850,6 +3582,10 @@ experiments:
     mn_bigwigs:
     - ENCFF108NST.bigWig
     - ENCFF250RGI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR889PCF_bile_duct_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR889PCF_bile_duct_mn.bigWig
+      peaks: data/processed/peaks/ENCSR889PCF_bile_duct_bidirectional.bed.gz
   ENCSR153AON:
     biosample: esophagus squamous epithelium
     biosample_summary: Homo sapiens esophagus squamous epithelium tissue female adult
@@ -2866,6 +3602,10 @@ experiments:
     mn_bigwigs:
     - ENCFF125OLI.bigWig
     - ENCFF884SDH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR153AON_esophagus_squamous_epithelium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR153AON_esophagus_squamous_epithelium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR153AON_esophagus_squamous_epithelium_bidirectional.bed.gz
   ENCSR436JXW:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -2883,6 +3623,10 @@ experiments:
     mn_bigwigs:
     - ENCFF972LSK.bigWig
     - ENCFF048GTY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR660UDB:
     biosample: kidney
     biosample_summary: Homo sapiens kidney tissue female adult (53 years)
@@ -2898,6 +3642,10 @@ experiments:
     mn_bigwigs:
     - ENCFF159IQS.bigWig
     - ENCFF551SZI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR660UDB_kidney_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR660UDB_kidney_mn.bigWig
+      peaks: data/processed/peaks/ENCSR660UDB_kidney_bidirectional.bed.gz
   ENCSR235BZZ:
     biosample: gastrocnemius medialis
     biosample_summary: Homo sapiens gastrocnemius medialis tissue female adult (53
@@ -2914,6 +3662,10 @@ experiments:
     mn_bigwigs:
     - ENCFF391ZCG.bigWig
     - ENCFF998LSM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR235BZZ_gastrocnemius_medialis_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR235BZZ_gastrocnemius_medialis_mn.bigWig
+      peaks: data/processed/peaks/ENCSR235BZZ_gastrocnemius_medialis_bidirectional.bed.gz
   ENCSR216UNW:
     biosample: lower lobe of left lung
     biosample_summary: Homo sapiens lower lobe of left lung tissue male adult (37
@@ -2930,6 +3682,10 @@ experiments:
     mn_bigwigs:
     - ENCFF245EYN.bigWig
     - ENCFF665FIG.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR216UNW_lower_lobe_of_left_lung_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR216UNW_lower_lobe_of_left_lung_mn.bigWig
+      peaks: data/processed/peaks/ENCSR216UNW_lower_lobe_of_left_lung_bidirectional.bed.gz
   ENCSR813CRU:
     biosample: Metastatic Breast Carcinoma in the Brain
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Brain tissue
@@ -2947,6 +3703,10 @@ experiments:
     mn_bigwigs:
     - ENCFF073WGY.bigWig
     - ENCFF816FSG.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
+      peaks: data/processed/peaks/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_bidirectional.bed.gz
   ENCSR829KWG:
     biosample: natural killer cell
     biosample_summary: Homo sapiens natural killer cell
@@ -2962,6 +3722,10 @@ experiments:
     mn_bigwigs:
     - ENCFF718BKN.bigWig
     - ENCFF843WJV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR829KWG_natural_killer_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR829KWG_natural_killer_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR829KWG_natural_killer_cell_bidirectional.bed.gz
   ENCSR380VKC:
     biosample: heart right ventricle
     biosample_summary: Homo sapiens heart right ventricle tissue female adult (41
@@ -2978,6 +3742,10 @@ experiments:
     mn_bigwigs:
     - ENCFF434LVH.bigWig
     - ENCFF746GWM.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR380VKC_heart_right_ventricle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR380VKC_heart_right_ventricle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR380VKC_heart_right_ventricle_bidirectional.bed.gz
   ENCSR220XSM:
     biosample: K562
     biosample_summary: Homo sapiens K562
@@ -2993,6 +3761,10 @@ experiments:
     mn_bigwigs:
     - ENCFF364CCA.bigWig
     - ENCFF861JFD.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR220XSM_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR220XSM_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR220XSM_K562_bidirectional.bed.gz
   ENCSR733DAS:
     biosample: HEK293T
     biosample_summary: Homo sapiens HEK293T genetically modified (insertion) using
@@ -3009,6 +3781,10 @@ experiments:
     mn_bigwigs:
     - ENCFF603FIP.bigWig
     - ENCFF023FGG.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR733DAS_HEK293T_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR733DAS_HEK293T_mn.bigWig
+      peaks: data/processed/peaks/ENCSR733DAS_HEK293T_bidirectional.bed.gz
   ENCSR269FMG:
     biosample: liver
     biosample_summary: Homo sapiens liver tissue female adult (53 years)
@@ -3024,6 +3800,10 @@ experiments:
     mn_bigwigs:
     - ENCFF776DVD.bigWig
     - ENCFF532AWZ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR269FMG_liver_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR269FMG_liver_mn.bigWig
+      peaks: data/processed/peaks/ENCSR269FMG_liver_bidirectional.bed.gz
   ENCSR995FAO:
     biosample: mucosa of descending colon
     biosample_summary: Homo sapiens mucosa of descending colon tissue female adult
@@ -3040,6 +3820,10 @@ experiments:
     mn_bigwigs:
     - ENCFF803YYA.bigWig
     - ENCFF036QHA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR995FAO_mucosa_of_descending_colon_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR995FAO_mucosa_of_descending_colon_mn.bigWig
+      peaks: data/processed/peaks/ENCSR995FAO_mucosa_of_descending_colon_bidirectional.bed.gz
   ENCSR443GRP:
     biosample: endodermal cell
     biosample_summary: Homo sapiens endodermal cell
@@ -3055,6 +3839,10 @@ experiments:
     mn_bigwigs:
     - ENCFF566OOL.bigWig
     - ENCFF852MWH.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR443GRP_endodermal_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR443GRP_endodermal_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR443GRP_endodermal_cell_bidirectional.bed.gz
   ENCSR881RXX:
     biosample: anterior vena cava
     biosample_summary: Homo sapiens anterior vena cava tissue male adult (62 years)
@@ -3070,6 +3858,10 @@ experiments:
     mn_bigwigs:
     - ENCFF401LJX.bigWig
     - ENCFF829BGE.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR881RXX_anterior_vena_cava_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR881RXX_anterior_vena_cava_mn.bigWig
+      peaks: data/processed/peaks/ENCSR881RXX_anterior_vena_cava_bidirectional.bed.gz
   ENCSR944DTY:
     biosample: SEM
     biosample_summary: Homo sapiens SEM
@@ -3085,6 +3877,10 @@ experiments:
     mn_bigwigs:
     - ENCFF629JKB.bigWig
     - ENCFF842KLO.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR944DTY_SEM_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR944DTY_SEM_mn.bigWig
+      peaks: data/processed/peaks/ENCSR944DTY_SEM_bidirectional.bed.gz
   ENCSR270EGA:
     biosample: left cardiac atrium
     biosample_summary: Homo sapiens left cardiac atrium tissue male adult (37 years)
@@ -3100,6 +3896,10 @@ experiments:
     mn_bigwigs:
     - ENCFF387TLJ.bigWig
     - ENCFF518TDL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR270EGA_left_cardiac_atrium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR270EGA_left_cardiac_atrium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR270EGA_left_cardiac_atrium_bidirectional.bed.gz
   ENCSR368ARY:
     biosample: pulmonary artery
     biosample_summary: Homo sapiens pulmonary artery tissue male adult (62 years)
@@ -3115,6 +3915,10 @@ experiments:
     mn_bigwigs:
     - ENCFF399BVF.bigWig
     - ENCFF049UKV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR368ARY_pulmonary_artery_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR368ARY_pulmonary_artery_mn.bigWig
+      peaks: data/processed/peaks/ENCSR368ARY_pulmonary_artery_bidirectional.bed.gz
   ENCSR521BLL:
     biosample: psoas muscle
     biosample_summary: Homo sapiens psoas muscle tissue female adult (61 years)
@@ -3130,6 +3934,10 @@ experiments:
     mn_bigwigs:
     - ENCFF667LUJ.bigWig
     - ENCFF231AYF.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR521BLL_psoas_muscle_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR521BLL_psoas_muscle_mn.bigWig
+      peaks: data/processed/peaks/ENCSR521BLL_psoas_muscle_bidirectional.bed.gz
   ENCSR062QYF:
     biosample: cerebellum
     biosample_summary: Homo sapiens cerebellum tissue female adult (43 years)
@@ -3145,6 +3953,10 @@ experiments:
     mn_bigwigs:
     - ENCFF414KBK.bigWig
     - ENCFF812VLT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR062QYF_cerebellum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR062QYF_cerebellum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR062QYF_cerebellum_bidirectional.bed.gz
   ENCSR526XOQ:
     biosample: NALM6
     biosample_summary: Homo sapiens NALM6
@@ -3160,6 +3972,10 @@ experiments:
     mn_bigwigs:
     - ENCFF027OPK.bigWig
     - ENCFF836BOI.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR526XOQ_NALM6_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR526XOQ_NALM6_mn.bigWig
+      peaks: data/processed/peaks/ENCSR526XOQ_NALM6_bidirectional.bed.gz
   ENCSR386UFU:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -3175,6 +3991,10 @@ experiments:
     mn_bigwigs:
     - ENCFF985LWC.bigWig
     - ENCFF145YXQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR386UFU_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR386UFU_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR386UFU_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR795NHV:
     biosample: peripheral blood mononuclear cell
     biosample_summary: Homo sapiens peripheral blood mononuclear cell
@@ -3188,6 +4008,10 @@ experiments:
     - ENCFF211DCV.bigWig
     mn_bigwigs:
     - ENCFF100KUJ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR795NHV_peripheral_blood_mononuclear_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR795NHV_peripheral_blood_mononuclear_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR795NHV_peripheral_blood_mononuclear_cell_bidirectional.bed.gz
   ENCSR255VLW:
     biosample: jejunum
     biosample_summary: Homo sapiens jejunum tissue female adult (59 years)
@@ -3203,6 +4027,10 @@ experiments:
     mn_bigwigs:
     - ENCFF034XBH.bigWig
     - ENCFF338IXA.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR255VLW_jejunum_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR255VLW_jejunum_mn.bigWig
+      peaks: data/processed/peaks/ENCSR255VLW_jejunum_bidirectional.bed.gz
   ENCSR087CGY:
     biosample: ovary
     biosample_summary: Homo sapiens ovary tissue female adult (53 years)
@@ -3218,6 +4046,10 @@ experiments:
     mn_bigwigs:
     - ENCFF832OZO.bigWig
     - ENCFF465LDD.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR087CGY_ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR087CGY_ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR087CGY_ovary_bidirectional.bed.gz
   ENCSR374RDU:
     biosample: breast
     biosample_summary: Homo sapiens breast tissue female adult (52 years)
@@ -3233,6 +4065,10 @@ experiments:
     mn_bigwigs:
     - ENCFF083RLT.bigWig
     - ENCFF918SNL.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR374RDU_breast_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR374RDU_breast_mn.bigWig
+      peaks: data/processed/peaks/ENCSR374RDU_breast_bidirectional.bed.gz
   ENCSR219IHS:
     biosample: A549
     biosample_summary: Homo sapiens A549
@@ -3249,6 +4085,10 @@ experiments:
     mn_bigwigs:
     - ENCFF547RPM.bigWig
     - ENCFF448UVK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR219IHS_A549_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR219IHS_A549_mn.bigWig
+      peaks: data/processed/peaks/ENCSR219IHS_A549_bidirectional.bed.gz
   ENCSR683YIA:
     biosample: Pfeiffer
     biosample_summary: Homo sapiens Pfeiffer
@@ -3265,6 +4105,10 @@ experiments:
     - ENCFF669VEQ.bigWig
     - ENCFF323NOD.bigWig
     peak_type: divergent
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR683YIA_Pfeiffer_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR683YIA_Pfeiffer_mn.bigWig
+      peaks: data/processed/peaks/ENCSR683YIA_Pfeiffer_divergent.bed.gz
   ENCSR810UBG:
     biosample: Metastatic Breast Carcinoma in the Ovary
     biosample_summary: Homo sapiens Metastatic Breast Carcinoma in the Ovary tissue
@@ -3280,6 +4124,10 @@ experiments:
     - ENCFF193NFD.bigWig
     mn_bigwigs:
     - ENCFF050ZHF.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_mn.bigWig
+      peaks: data/processed/peaks/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_bidirectional.bed.gz
   ENCSR959JOB:
     biosample: right ventricle myocardium
     biosample_summary: Homo sapiens right ventricle myocardium tissue male adult (37
@@ -3297,6 +4145,10 @@ experiments:
     mn_bigwigs:
     - ENCFF206KMH.bigWig
     - ENCFF458QYR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR959JOB_right_ventricle_myocardium_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR959JOB_right_ventricle_myocardium_mn.bigWig
+      peaks: data/processed/peaks/ENCSR959JOB_right_ventricle_myocardium_bidirectional.bed.gz
   ENCSR431OQI:
     biosample: parotid gland
     biosample_summary: Homo sapiens parotid gland tissue
@@ -3312,6 +4164,10 @@ experiments:
     mn_bigwigs:
     - ENCFF484JID.bigWig
     - ENCFF689GJG.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR431OQI_parotid_gland_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR431OQI_parotid_gland_mn.bigWig
+      peaks: data/processed/peaks/ENCSR431OQI_parotid_gland_bidirectional.bed.gz
   ENCSR353JON:
     biosample: spinal cord
     biosample_summary: Homo sapiens spinal cord tissue
@@ -3325,6 +4181,10 @@ experiments:
     - ENCFF620VXH.bigWig
     mn_bigwigs:
     - ENCFF014WDF.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR353JON_spinal_cord_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR353JON_spinal_cord_mn.bigWig
+      peaks: data/processed/peaks/ENCSR353JON_spinal_cord_bidirectional.bed.gz
   ENCSR374OGG:
     biosample: pancreas
     biosample_summary: Homo sapiens pancreas organoid
@@ -3340,6 +4200,10 @@ experiments:
     mn_bigwigs:
     - ENCFF294NXS.bigWig
     - ENCFF931XMV.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR374OGG_pancreas_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR374OGG_pancreas_mn.bigWig
+      peaks: data/processed/peaks/ENCSR374OGG_pancreas_bidirectional.bed.gz
   ENCSR528FMA:
     biosample: helper T cell
     biosample_summary: Homo sapiens helper T cell
@@ -3355,6 +4219,10 @@ experiments:
     mn_bigwigs:
     - ENCFF740MDT.bigWig
     - ENCFF792MQK.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR528FMA_helper_T_cell_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR528FMA_helper_T_cell_mn.bigWig
+      peaks: data/processed/peaks/ENCSR528FMA_helper_T_cell_bidirectional.bed.gz
   ENCSR500IHG:
     biosample: breast
     biosample_summary: Homo sapiens breast tissue female adult (55 years)
@@ -3370,6 +4238,10 @@ experiments:
     mn_bigwigs:
     - ENCFF946OWM.bigWig
     - ENCFF605QOR.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR500IHG_breast_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR500IHG_breast_mn.bigWig
+      peaks: data/processed/peaks/ENCSR500IHG_breast_bidirectional.bed.gz
   ENCSR098LLB:
     biosample: endothelial cell of umbilical vein
     biosample_summary: Homo sapiens endothelial cell of umbilical vein male newborn
@@ -3383,6 +4255,10 @@ experiments:
     - ENCFF261GXH.bigWig
     mn_bigwigs:
     - ENCFF807QNT.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR098LLB_endothelial_cell_of_umbilical_vein_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR098LLB_endothelial_cell_of_umbilical_vein_mn.bigWig
+      peaks: data/processed/peaks/ENCSR098LLB_endothelial_cell_of_umbilical_vein_bidirectional.bed.gz
   ENCSR046BCI:
     biosample: A673
     biosample_summary: Homo sapiens A673
@@ -3398,6 +4274,10 @@ experiments:
     mn_bigwigs:
     - ENCFF280DDJ.bigWig
     - ENCFF862PQN.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR046BCI_A673_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR046BCI_A673_mn.bigWig
+      peaks: data/processed/peaks/ENCSR046BCI_A673_bidirectional.bed.gz
   ENCSR935RNW:
     biosample: Calu3
     biosample_summary: Homo sapiens Calu3
@@ -3413,6 +4293,10 @@ experiments:
     mn_bigwigs:
     - ENCFF979DPW.bigWig
     - ENCFF199SAQ.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR935RNW_Calu3_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR935RNW_Calu3_mn.bigWig
+      peaks: data/processed/peaks/ENCSR935RNW_Calu3_bidirectional.bed.gz
   ENCSR799DGV:
     biosample: MCF 10A
     biosample_summary: Homo sapiens MCF 10A
@@ -3432,6 +4316,10 @@ experiments:
     - ENCFF227BQW.bigWig
     - ENCFF704RON.bigWig
     - ENCFF114DBY.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR799DGV_MCF_10A_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR799DGV_MCF_10A_mn.bigWig
+      peaks: data/processed/peaks/ENCSR799DGV_MCF_10A_bidirectional.bed.gz
   ENCSR261KBX:
     biosample: K562
     biosample_summary: Homo sapiens K562
@@ -3448,6 +4336,10 @@ experiments:
     mn_bigwigs:
     - ENCFF253HUA.bigWig
     - ENCFF328OOU.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR261KBX_K562_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR261KBX_K562_mn.bigWig
+      peaks: data/processed/peaks/ENCSR261KBX_K562_bidirectional.bed.gz
   ENCSR100LIJ:
     biosample: Caco-2
     biosample_summary: Homo sapiens Caco-2
@@ -3463,3 +4355,7 @@ experiments:
     mn_bigwigs:
     - ENCFF635VJZ.bigWig
     - ENCFF174MJP.bigWig
+    processed:
+      pl_bigwig: data/processed/bigwigs/ENCSR100LIJ_Caco-2_pl.bigWig
+      mn_bigwig: data/processed/bigwigs/ENCSR100LIJ_Caco-2_mn.bigWig
+      peaks: data/processed/peaks/ENCSR100LIJ_Caco-2_bidirectional.bed.gz

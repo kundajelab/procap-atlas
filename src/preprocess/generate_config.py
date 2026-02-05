@@ -125,6 +125,16 @@ def main():
             entry["peaks"] = divergent_peaks
             entry["peak_type"] = "divergent"
 
+        # Add processed output paths
+        biosample_clean = re.sub(r"[^\w-]", "_", exp["biosample"]).strip("_")
+        peak_type = entry.get("peak_type", "bidirectional")
+        acc = exp["accession"]
+        entry["processed"] = {
+            "pl_bigwig": f"data/processed/bigwigs/{acc}_{biosample_clean}_pl.bigWig",
+            "mn_bigwig": f"data/processed/bigwigs/{acc}_{biosample_clean}_mn.bigWig",
+            "peaks": f"data/processed/peaks/{acc}_{biosample_clean}_{peak_type}.bed.gz",
+        }
+
         config[exp["accession"]] = entry
 
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
