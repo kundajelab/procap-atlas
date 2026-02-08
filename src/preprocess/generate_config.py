@@ -133,6 +133,7 @@ def main():
             "pl_bigwig": f"data/processed/bigwigs/{acc}_{biosample_clean}_pl.bigWig",
             "mn_bigwig": f"data/processed/bigwigs/{acc}_{biosample_clean}_mn.bigWig",
             "peaks": f"data/processed/peaks/{acc}_{biosample_clean}_{peak_type}.bed.gz",
+            "gc_negatives": f"data/processed/negatives/{acc}_{biosample_clean}_{peak_type}_gc_negatives.bed.gz",
         }
 
         config[exp["accession"]] = entry

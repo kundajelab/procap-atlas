@@ -73,18 +73,43 @@ python src/preprocess/rename_peaks.py
 
 Output: `data/processed/peaks/{experiment}_{biosample}_{peak_type}.bed.gz`
 
+### 5. Generate GC-matched negatives
+
+For each experiment, generates GC-matched negative regions from the genome, optionally filtering by signal strength using both strand BigWigs. Output is bgzip-compressed BED.
+
+```bash
+python src/preprocess/gc_match_run.py          # default 1 worker
+python src/preprocess/gc_match_run.py -j 8     # 8 parallel workers
+```
+
+Output: `data/processed/negatives/{experiment}_{biosample}_{peak_type}_gc_negatives.bed.gz`
+
+### 6. Train BNBPNet model
+
+Trains a BNBPNet model for a single experiment using 7-fold chromosome cross-validation. Fold `i` is held out for testing, fold `(i+1) % 7` for validation, and the remaining 5 folds for training. Chromosome splits are defined in `configs/chrom_splits.yaml`.
+
+```bash
+python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0
+python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0 --max-epochs 50 --lr 0.001
+```
+
+Output: `models/bpnet/{experiment}/`
+
 ## Project structure
 
 ```
 data_manifests/          # ENCODE file URLs, experiment metadata, archive blacklist
-configs/                 # Generated YAML experiment config with experimental metadata.
+configs/                 # Generated YAML experiment config, chromosome fold splits.
 src/
   download/              # Bash download scripts
   preprocess/            # Python preprocessing scripts
     generate_config.py   # Manifest parsing and config generation
     merge_bigwigs.py     # Replicate BigWig merging
     rename_peaks.py      # Peak file renaming
-  bpnet/                 # BPNet deep learning model (planned)
+    gc_match.py          # GC-matched negative region extraction (adapted from tangermeme)
+    gc_match_run.py      # Runs gc_match for all experiments in config
+  bpnet/                 # BPNet deep learning model
+    fit/fit.py           # BNBPNet training script (per experiment + fold)
   alphagenome/           # AlphaGenome analysis (planned)
 data/                    # gitignored, created by scripts
   hg38.fa                # Reference genome + index
@@ -94,4 +119,5 @@ data/                    # gitignored, created by scripts
   processed/             # Merged/renamed files (per experiment)
     bigwigs/
     peaks/
+    negatives/
 ```

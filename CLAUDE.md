@@ -14,8 +14,11 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `generate_config.py` — Cross-references experiment report TSV with manifest URL files to produce `configs/experiment_config.yaml`. Excludes archived file IDs via `archive_blacklist.txt`. Falls back to divergent peaks when bidirectional peaks are missing (with warnings). Includes processed output paths for each experiment.
   - `merge_bigwigs.py` — Merges replicate BigWig files per experiment (strands kept separate) into `data/processed/bigwigs/`. Single-replicate files are copied. Requires UCSC Kent tools (`bigWigMerge`, `bedGraphToBigWig`).
   - `rename_peaks.py` — Moves and renames peak BED files to `data/processed/peaks/` with experiment ID, biosample, and peak type in the filename.
-- **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`).
-- **`src/bpnet/`** — BPNet deep learning model (planned).
+  - `gc_match.py` — Adapted from tangermeme to extract GC-matched negative regions, extended to support thresholding on multiple bigwig files.
+  - `gc_match_run.py` — Runs `gc_match.py` for every experiment in the config, writing bgzip-compressed output to `data/processed/negatives/`. Supports multiprocessing via `-j/--jobs` flag (default 1 worker).
+- **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`) and chromosome fold splits (`chrom_splits.yaml`, 7 folds for cross-validation).
+- **`src/bpnet/`** — BPNet deep learning model training and evaluation:
+  - `fit/fit.py` — Trains a BNBPNet model for a single experiment and fold. Reads paths from `experiment_config.yaml` and chromosome splits from `chrom_splits.yaml`. Fold `i` holds out fold `i` for testing and validates on fold `(i+1) % 7`. Uses `bpnetlite.io.PeakGenerator` for training data loading with jitter and reverse complement augmentation.
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
@@ -32,7 +35,7 @@ pip install -r requirements.txt
 
 ## Pipeline Commands
 
-Scripts must run in order: download → generate config → merge/rename.
+Scripts must run in order: download → generate config → merge/rename → gc negatives → model training.
 
 ### Data Download
 
@@ -50,6 +53,13 @@ Preprocessing scripts are typically run from the repo root, but can be run from 
 python src/preprocess/generate_config.py   # Manifest → configs/experiment_config.yaml
 python src/preprocess/merge_bigwigs.py     # Merge replicate BigWigs (-j/--jobs flag, default 4 workers)
 python src/preprocess/rename_peaks.py      # Rename and organize peak files
+python src/preprocess/gc_match_run.py      # GC-matched negatives (-j/--jobs flag, default 1 worker)
+```
+
+### Model Training
+
+```bash
+python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0   # Train BNBPNet for experiment, fold 0
 ```
 
 ## External Dependencies
