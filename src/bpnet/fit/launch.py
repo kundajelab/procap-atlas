@@ -21,7 +21,22 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
+N_PEAKS_PATH = REPO_ROOT / "configs" / "n_peaks.txt"
 FIT_SCRIPT = REPO_ROOT / "src" / "bpnet" / "fit" / "fit.py"
+
+
+def load_n_peaks():
+    """Parse n_peaks.txt and return {experiment_id: peak_count} dict."""
+    peak_counts = {}
+    with open(N_PEAKS_PATH) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            count, filename = line.split(None, 1)
+            exp_id = filename.split("_")[0]
+            peak_counts[exp_id] = int(count)
+    return peak_counts
 
 
 def main():
@@ -37,6 +52,12 @@ def main():
     parser.add_argument("--cpus-per-task", type=int, default=1)
     parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="24:00:00")
+    parser.add_argument(
+        "--min-peaks",
+        type=int,
+        default=5000,
+        help="skip experiments with fewer than this many peaks (default: 5000)",
+    )
     # Extra args forwarded to fit.py
     parser.add_argument(
         "--fit-args",
@@ -56,18 +77,28 @@ def main():
         chrom_splits = yaml.safe_load(f)
     n_folds = len(chrom_splits["folds"])
 
+    # Load peak counts for filtering
+    peak_counts = load_n_peaks()
+
     log_dir = REPO_ROOT / "logs" / "bpnet"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     submitted = 0
-    skipped = 0
+    skipped_trained = 0
+    skipped_peaks = 0
     for exp_id in experiments:
+        # Skip experiments with too few peaks
+        n_peaks = peak_counts.get(exp_id, 0)
+        if n_peaks < args.min_peaks:
+            skipped_peaks += 1
+            continue
+
         for fold in range(n_folds):
             # Skip if model already trained
             model_dir = REPO_ROOT / "models" / "bpnet" / exp_id
             model_path = model_dir / f"{exp_id}.fold{fold}.final.torch"
             if model_path.exists():
-                skipped += 1
+                skipped_trained += 1
                 continue
 
             job_name = f"bpnet_{exp_id}_f{fold}"
@@ -112,7 +143,11 @@ def main():
 
     action = "Would submit" if args.dry_run else "Submitted"
     total = len(experiments) * n_folds
-    print(f"\n{action} {submitted} jobs, skipped {skipped} already trained ({total} total)")
+    print(
+        f"\n{action} {submitted} jobs, skipped {skipped_peaks} experiments "
+        f"with <{args.min_peaks} peaks, skipped {skipped_trained} already trained "
+        f"({total} total)"
+    )
 
 
 if __name__ == "__main__":
