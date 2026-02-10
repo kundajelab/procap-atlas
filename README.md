@@ -63,15 +63,15 @@ python src/preprocess/merge_bigwigs.py
 
 Output: `data/processed/bigwigs/{experiment}_{biosample}_{strand}.bigWig`
 
-### 4. Rename and organize peak files
+### 4. Merge and process peak files
 
-Copy peak BED files into a processed directory with descriptive filenames including experiment ID, biosample, and peak type.
+Merge bidirectional and unidirectional peak BED files per experiment into a single processed file. Falls back to copying when only one peak type is available.
 
 ```bash
-python src/preprocess/rename_peaks.py
+python src/preprocess/process_peaks.py
 ```
 
-Output: `data/processed/peaks/{experiment}_{biosample}_{peak_type}.bed.gz`
+Output: `data/processed/peaks/{experiment}_{biosample}.bed.gz`
 
 ### 5. Generate GC-matched negatives
 
@@ -105,7 +105,7 @@ src/
   preprocess/            # Python preprocessing scripts
     generate_config.py   # Manifest parsing and config generation
     merge_bigwigs.py     # Replicate BigWig merging
-    rename_peaks.py      # Peak file renaming
+    process_peaks.py     # Merge bidirectional + unidirectional peaks
     gc_match.py          # GC-matched negative region extraction (adapted from tangermeme)
     gc_match_run.py      # Runs gc_match for all experiments in config
   bpnet/                 # BPNet deep learning model

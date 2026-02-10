@@ -16,6 +16,7 @@ PL_BIGWIGS_MANIFEST = MANIFEST_DIR / "pl_bigwigs.txt"
 MN_BIGWIGS_MANIFEST = MANIFEST_DIR / "mn_bigwigs.txt"
 PEAKS_MANIFEST = MANIFEST_DIR / "bidirectional_peaks.txt"
 DIVERGENT_PEAKS_MANIFEST = MANIFEST_DIR / "divergent_peaks.txt"
+UNIDIRECTIONAL_PEAKS_MANIFEST = MANIFEST_DIR / "unidirectional_peaks.txt"
 ARCHIVE_BLACKLIST = MANIFEST_DIR / "archive_blacklist.txt"
 
 
@@ -83,6 +84,7 @@ def main():
     mn_lookup = parse_manifest(MN_BIGWIGS_MANIFEST)
     peaks_lookup = parse_manifest(PEAKS_MANIFEST)
     divergent_peaks_lookup = parse_manifest(DIVERGENT_PEAKS_MANIFEST)
+    unidirectional_peaks_lookup = parse_manifest(UNIDIRECTIONAL_PEAKS_MANIFEST)
     blacklist = parse_blacklist(ARCHIVE_BLACKLIST)
 
     if blacklist:
@@ -101,6 +103,7 @@ def main():
             "lab": exp["lab"],
             "library_construction": exp["library_construction"],
             "peaks": [],
+            "unidirectional_peaks": [],
             "pl_bigwigs": [],
             "mn_bigwigs": [],
         }
@@ -112,6 +115,10 @@ def main():
                 entry["peaks"].append(peaks_lookup[encff_id])
             if encff_id in divergent_peaks_lookup:
                 divergent_peaks.append(divergent_peaks_lookup[encff_id])
+            if encff_id in unidirectional_peaks_lookup:
+                entry["unidirectional_peaks"].append(
+                    unidirectional_peaks_lookup[encff_id]
+                )
             if encff_id in pl_lookup:
                 entry["pl_bigwigs"].append(pl_lookup[encff_id])
             if encff_id in mn_lookup:
@@ -132,8 +139,8 @@ def main():
         entry["processed"] = {
             "pl_bigwig": f"data/processed/bigwigs/{acc}_{biosample_clean}_pl.bigWig",
             "mn_bigwig": f"data/processed/bigwigs/{acc}_{biosample_clean}_mn.bigWig",
-            "peaks": f"data/processed/peaks/{acc}_{biosample_clean}_{peak_type}.bed.gz",
-            "gc_negatives": f"data/processed/negatives/{acc}_{biosample_clean}_{peak_type}_gc_negatives.bed.gz",
+            "peaks": f"data/processed/peaks/{acc}_{biosample_clean}.bed.gz",
+            "gc_negatives": f"data/processed/negatives/{acc}_{biosample_clean}_gc_negatives.bed.gz",
         }
 
         config[exp["accession"]] = entry

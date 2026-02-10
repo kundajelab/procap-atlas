@@ -11,9 +11,10 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - **`data_manifests/`** — Curated lists of ENCODE file URLs, experiment metadata (TSV), and an archive blacklist. These drive the download and preprocessing scripts.
 - **`src/download/`** — Bash scripts to fetch reference genome, BigWig signal tracks, and bidirectional peak BED files from ENCODE.
 - **`src/preprocess/`** — Python preprocessing scripts (require `pyyaml`):
-  - `generate_config.py` — Cross-references experiment report TSV with manifest URL files to produce `configs/experiment_config.yaml`. Excludes archived file IDs via `archive_blacklist.txt`. Falls back to divergent peaks when bidirectional peaks are missing (with warnings). Includes processed output paths for each experiment.
+  - `generate_config.py` — Cross-references experiment report TSV with manifest URL files to produce `configs/experiment_config.yaml`. Excludes archived file IDs via `archive_blacklist.txt`. Falls back to divergent peaks when bidirectional peaks are missing (with warnings). Also collects unidirectional peaks as a separate field per experiment. Includes processed output paths for each experiment.
   - `merge_bigwigs.py` — Merges replicate BigWig files per experiment (strands kept separate) into `data/processed/bigwigs/`. Single-replicate files are copied. Requires UCSC Kent tools (`bigWigMerge`, `bedGraphToBigWig`).
-  - `rename_peaks.py` — Moves and renames peak BED files to `data/processed/peaks/` with experiment ID, biosample, and peak type in the filename.
+  - `process_peaks.py` — Merges bidirectional and unidirectional peak BED files per experiment using `_merge_uni_bi_peaks.py`, writing combined output to `data/processed/peaks/`. Falls back to copying when only one peak type is available.
+  - `_merge_uni_bi_peaks.py` — Reads gzipped bidirectional and unidirectional peak BED files, reformats columns, and returns a sorted merged list. Adapted from ProCapNet.
   - `gc_match.py` — Adapted from tangermeme to extract GC-matched negative regions, extended to support thresholding on multiple bigwig files.
   - `gc_match_run.py` — Runs `gc_match.py` for every experiment in the config, writing bgzip-compressed output to `data/processed/negatives/`. Supports multiprocessing via `-j/--jobs` flag (default 1 worker).
 - **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`) and chromosome fold splits (`chrom_splits.yaml`, 7 folds for cross-validation).
@@ -52,7 +53,7 @@ Preprocessing scripts are typically run from the repo root, but can be run from 
 ```bash
 python src/preprocess/generate_config.py   # Manifest → configs/experiment_config.yaml
 python src/preprocess/merge_bigwigs.py     # Merge replicate BigWigs (-j/--jobs flag, default 4 workers)
-python src/preprocess/rename_peaks.py      # Rename and organize peak files
+python src/preprocess/process_peaks.py     # Merge bidirectional and unidirectional peak files
 python src/preprocess/gc_match_run.py      # GC-matched negatives (-j/--jobs flag, default 1 worker)
 ```
 
@@ -79,8 +80,8 @@ data/
 ├── hg38.chrom.sizes
 ├── raw/
 │   ├── bigwigs/    # strand-specific signal tracks (per replicate)
-│   └── peaks/      # bidirectional peak coordinates
+│   └── peaks/      # bidirectional and unidirectional peak coordinates
 └── processed/
     ├── bigwigs/    # merged across replicates: {experiment}_{biosample}_{strand}.bigWig
-    └── peaks/      # renamed: {experiment}_{biosample}_{peak_type}.bed.gz
+    └── peaks/      # merged bidirectional + unidirectional: {experiment}_{biosample}.bed.gz
 ```
