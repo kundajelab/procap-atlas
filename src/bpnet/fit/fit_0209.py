@@ -21,8 +21,8 @@ from pathlib import Path
 import pandas as pd
 import torch
 import yaml
-from bpnetlite.io import DataGenerator, PeakGenerator
-from personal_bpnet.clipnet_pytorch import CLIPNET
+from bpnetlite.bpnet import BPNet
+from data_loader import PeakGenerator
 from tangermeme.io import extract_loci
 from torch.optim import AdamW
 
@@ -62,7 +62,7 @@ def main():
     parser.add_argument("-o", "--output-dir", type=str, default=None)
     parser.add_argument("--n-filters", type=int, default=None)
     parser.add_argument("--n-layers", type=int, default=None)
-    parser.add_argument("--alpha", type=float, default=None)
+    parser.add_argument("--count_loss_weight", type=float, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--max-epochs", type=int, default=None)
@@ -141,13 +141,13 @@ def main():
         "max_jitter": 200,
         "n_filters": 512,
         "n_layers": 8,
-        "alpha": 100,
+        "count_loss_weight": 100,
         "reverse_complement": True,
         "shuffle": True,
         "batch_size": 64,
         "learning_rate": 0.0005,
-        "max_epochs": 100,
-        "early_stopping": 1000,
+        "max_epochs": 50,
+        "early_stopping": None,
         "negatives_ratio": 1 / 10,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
@@ -159,7 +159,7 @@ def main():
     cli_overrides = {
         "n_filters": args.n_filters,
         "n_layers": args.n_layers,
-        "alpha": args.alpha,
+        "count_loss_weight": args.count_loss_weight,
         "batch_size": args.batch_size,
         "learning_rate": args.lr,
         "max_epochs": args.max_epochs,
@@ -239,59 +239,33 @@ def main():
         exclusion_lists=params["blacklist"],
         verbose=params["verbose"],
     )
-    val_X, val_y = val
-    val_X_ctl = None
-    val_data_loader = torch.utils.data.DataLoader(
-        DataGenerator(sequences=val_X, signals=val_y, controls=val_X_ctl),
-        pin_memory=True,
-        num_workers=0,
-        batch_size=params["batch_size"],
-    )
+    X_valid, y_valid = val
+    y_valid = torch.abs(y_valid)
 
     # Initialize model
     n_outputs = len(params["signals"])
-    model = CLIPNET(
+    model = BPNet(
         name=params["name"],
         n_filters=params["n_filters"],
         n_outputs=n_outputs,
-        alpha=params["alpha"],
+        n_control_tracks=0,
+        count_loss_weight=params["count_loss_weight"],
         n_layers=params["n_layers"],
         trimming=(params["in_window"] - params["out_window"]) // 2,
+        verbose=params["verbose"],
     )
     model = model.to("cuda")
     optimizer = AdamW(model.parameters(), lr=params["learning_rate"])
-
-    # Load checkpoint if provided
-    if params["checkpoint"] is not None:
-        model.load_state_dict(torch.load(params["checkpoint"]))
-        chkpt = torch.load(params["checkpoint"].replace(".torch", ".checkpoint.torch"))
-        print(f"Restarting from checkpoint: {params['checkpoint']}")
-        print(f"Epoch: {chkpt['epoch']}")
-        optimizer.load_state_dict(chkpt["optimizer_state_dict"])
-        max_epochs = params["max_epochs"] - chkpt["epoch"]
-    else:
-        max_epochs = params["max_epochs"]
-
-    print(
-        f"\nModel: (filters={params['n_filters']}, layers={params['n_layers']}, "
-        f"alpha={params['alpha']})"
-    )
-    print(
-        f"Training for up to {max_epochs} epochs "
-        f"(early stopping: {params['early_stopping']})"
-    )
-    print(f"Output: {output_dir}/\n")
 
     # Fit model
     model.fit(
         training_data=train_data_loader,
         optimizer=optimizer,
-        valid_data=val_data_loader,
-        # ctl_has_mask=True,
-        max_epochs=max_epochs,
+        X_valid=X_valid,
+        y_valid=y_valid,
+        max_epochs=params["max_epochs"],
         batch_size=params["batch_size"],
         early_stopping=params["early_stopping"],
-        verbose=params["verbose"],
         dtype=torch.float,
     )
 

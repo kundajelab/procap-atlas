@@ -8,3 +8,4 @@ mkdir -p $OUTDIR
 
 cat $REPO_ROOT/data_manifests/bidirectional_peaks.txt | grep ".bed.gz" | parallel -j 4 "wget --quiet --no-check-certificate -P $OUTDIR {}"
 cat $REPO_ROOT/data_manifests/divergent_peaks.txt | grep ".bed.gz" | parallel -j 4 "wget --quiet --no-check-certificate -P $OUTDIR {}"
+cat $REPO_ROOT/data_manifests/unidirectional_peaks.txt | grep ".bed.gz" | parallel -j 4 "wget --quiet --no-check-certificate -P $OUTDIR {}"

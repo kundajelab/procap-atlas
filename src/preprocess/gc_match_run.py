@@ -13,7 +13,7 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import yaml
-from gc_match import extract_matching_loci
+from _gc_match import extract_matching_loci
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"

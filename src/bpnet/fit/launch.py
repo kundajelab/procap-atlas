@@ -49,7 +49,7 @@ def main():
     # SLURM resource flags
     parser.add_argument("--partition", type=str, default="akundaje")
     parser.add_argument("--gpus", type=str, default="1")
-    parser.add_argument("--cpus-per-task", type=int, default=1)
+    parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="24:00:00")
     parser.add_argument(
@@ -96,7 +96,7 @@ def main():
         for fold in range(n_folds):
             # Skip if model already trained
             model_dir = REPO_ROOT / "models" / "bpnet" / exp_id
-            model_path = model_dir / f"{exp_id}.fold{fold}.final.torch"
+            model_path = model_dir / f"{exp_id}.fold{fold}.torch"
             if model_path.exists():
                 skipped_trained += 1
                 continue
