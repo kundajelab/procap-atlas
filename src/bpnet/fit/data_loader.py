@@ -1,3 +1,8 @@
+"""
+A small modification to bpnetlite's PeakGenerator to support strand-specific data
+where the minus strand signal is represented by negative values.
+"""
+
 import torch
 from bpnetlite.io import PeakNegativeSampler
 from tangermeme.io import extract_loci

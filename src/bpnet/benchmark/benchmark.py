@@ -17,7 +17,6 @@ import pandas as pd
 import torch
 import yaml
 from bpnetlite.performance import jensen_shannon_distance, pearson_corr, spearman_corr
-from personal_bpnet.bnbpnet import BNBPNet
 from tangermeme.io import extract_loci
 from tangermeme.predict import predict
 
@@ -90,7 +89,7 @@ def main():
             sys.exit(1)
 
     # Model directory
-    model_dir = Path(str(REPO_ROOT / "models" / "bpnet" / args.experiment))
+    model_dir = Path(str(REPO_ROOT / "models" / "bpnet" / f"{args.experiment}_ccre"))
     model_paths = [
         model_dir / f"{args.experiment}.fold{fold}.torch" for fold in range(n_folds)
     ]
@@ -104,7 +103,6 @@ def main():
         "sequences": FASTA,
         "signals": [pl_bw_path, mn_bw_path],
         "loci": peaks_path,
-        "controls": [MAPPABILITY],
         "blacklist": [BLACKLIST],
         "in_window": 2114,
         "out_window": 1000,
@@ -154,18 +152,8 @@ def main():
         signals.append(torch.abs(y))
 
         # Load model
-        model = BNBPNet(
-            n_filters=params["n_filters"],
-            n_outputs=len(params["signals"]),
-            n_layers=params["n_layers"],
-            trimming=(params["in_window"] - params["out_window"]) // 2,
-        )
-        model.load_state_dict(
-            torch.load(
-                model_paths[fold],
-                weights_only=True,
-                map_location=torch.device("cpu"),
-            )
+        model = torch.load(
+            model_paths[fold], weights_only=False, map_location=torch.device("cpu")
         )
 
         # Predict

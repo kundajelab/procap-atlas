@@ -17,9 +17,10 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `_merge_uni_bi_peaks.py` — Reads gzipped bidirectional and unidirectional peak BED files, reformats columns, and returns a sorted merged list. Adapted from ProCapNet.
   - `gc_match.py` — Adapted from tangermeme to extract GC-matched negative regions, extended to support thresholding on multiple bigwig files.
   - `gc_match_run.py` — Runs `gc_match.py` for every experiment in the config, writing bgzip-compressed output to `data/processed/negatives/`. Supports multiprocessing via `-j/--jobs` flag (default 1 worker).
+  - `count_reads.py` — Counts total reads in the processed BigWig files for each experiment using `pybigtools`. Sums `value * (end - start)` over all intervals via `records()`; minus-strand values are negated in the BigWig so their total is taken as absolute value. Writes TSV to `configs/n_reads.txt` by default (`--tsv` to override).
 - **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`) and chromosome fold splits (`chrom_splits.yaml`, 7 folds for cross-validation).
 - **`src/bpnet/`** — BPNet deep learning model training and evaluation:
-  - `fit/fit.py` — Trains a BNBPNet model for a single experiment and fold. Reads paths from `experiment_config.yaml` and chromosome splits from `chrom_splits.yaml`. Fold `i` holds out fold `i` for testing and validates on fold `(i+1) % 7`. Uses `bpnetlite.io.PeakGenerator` for training data loading with jitter and reverse complement augmentation.
+  - `fit/fit_bpnet.py` — Consolidated BPNet training script with configurable background sampling. Accepts repeatable `--background NAME:RATIO` arguments (names: `ccre`, `gc`) where RATIO is negatives-per-positive contributed by that source. Sources are pooled proportionally. Default: `ccre:1/14 gc:1/14` (total `negative_ratio=1/7`, giving 1/8 of each batch as negatives). Output directory name encodes backgrounds and ratios (e.g. `{experiment}_ccre0.0714_gc0.0714`).
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
@@ -55,21 +56,26 @@ python src/preprocess/generate_config.py   # Manifest → configs/experiment_con
 python src/preprocess/merge_bigwigs.py     # Merge replicate BigWigs (-j/--jobs flag, default 4 workers)
 python src/preprocess/process_peaks.py     # Merge bidirectional and unidirectional peak files
 python src/preprocess/gc_match_run.py      # GC-matched negatives (-j/--jobs flag, default 1 worker)
+python src/preprocess/count_reads.py       # Count reads per experiment → configs/n_reads.txt
 ```
 
 ### Model Training
 
 ```bash
-python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0   # Train BNBPNet for experiment, fold 0
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0                                          # Train BPNet, default backgrounds (ccre+gc at 1/14 each)
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background gc:0.1               # GC negatives only
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05 --background gc:0.05  # custom ratios
 ```
 
 ## External Dependencies
 
 - `wget`, `gunzip` — file downloading and decompression
 - `samtools` — FASTA indexing
+- `bgzip` (htslib) — bgzip compression of processed peak and negative BED files
 - `parallel` (GNU parallel) — parallel downloads
 - `bigWigMerge`, `bedGraphToBigWig` (UCSC Kent tools) — BigWig merging
-- `pyyaml`, `tqdm` (Python) — YAML handling and progress bars
+- `sbatch` (SLURM, optional) — cluster job submission via `src/bpnet/fit/launch.py`
+- Python (see `requirements.txt`): `pyyaml`, `tqdm`, `numpy`, `pandas`, `scipy`, `joblib`, `pyfaidx`, `pyfastx`, `pybigtools`, `torch`, `tangermeme`, `bpnetlite`
 
 ## Data Layout After Download and Preprocessing
 

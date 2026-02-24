@@ -6,9 +6,11 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 
 - `wget`, `gunzip` -- file downloading and decompression
 - `samtools` -- FASTA indexing
+- `bgzip` (htslib) -- bgzip compression of processed BED files
 - GNU `parallel` -- parallel downloads
 - `bigWigMerge`, `bedGraphToBigWig` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/)) -- BigWig merging
-- Python 3.10+ with `pyyaml` (`pip install pyyaml`)
+- `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py`
+- Python 3.10+ (`pip install -r requirements.txt`)
 
 ## Sample installation with mamba
 
@@ -23,7 +25,7 @@ mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraph
 # mamba install -c conda-forge parallel wget -y
 
 # Install Python dependencies
-pip install pyyaml
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -84,16 +86,29 @@ python src/preprocess/gc_match_run.py -j 8     # 8 parallel workers
 
 Output: `data/processed/negatives/{experiment}_{biosample}_{peak_type}_gc_negatives.bed.gz`
 
-### 6. Train BNBPNet model
+### 6. Count reads per experiment
 
-Trains a BNBPNet model for a single experiment using 7-fold chromosome cross-validation. Fold `i` is held out for testing, fold `(i+1) % 7` for validation, and the remaining 5 folds for training. Chromosome splits are defined in `configs/chrom_splits.yaml`.
+Counts total reads across both strand BigWigs for each experiment using `pybigtools`. Results are written as a TSV.
 
 ```bash
-python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0
-python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0 --max-epochs 50 --lr 0.001
+python src/preprocess/count_reads.py
 ```
 
-Output: `models/bpnet/{experiment}/`
+Output: `configs/n_reads.txt`
+
+### 7. Train BPNet model
+
+Trains a BPNet model for a single experiment using 7-fold chromosome cross-validation. Fold `i` is held out for testing, fold `(i+1) % 7` for validation, and the remaining 5 folds for training. Chromosome splits are defined in `configs/chrom_splits.yaml`.
+
+Background negative sources and their per-batch sampling ratios are specified with repeatable `--background NAME:RATIO` arguments (available names: `ccre`, `gc`). The output directory name encodes the background configuration.
+
+```bash
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background gc:0.1
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05 --background gc:0.05
+```
+
+Output: `models/bpnet/{experiment}_{background_config}/`
 
 ## Project structure
 
@@ -108,8 +123,9 @@ src/
     process_peaks.py     # Merge bidirectional + unidirectional peaks
     gc_match.py          # GC-matched negative region extraction (adapted from tangermeme)
     gc_match_run.py      # Runs gc_match for all experiments in config
+    count_reads.py       # Count total reads per experiment across both strand BigWigs
   bpnet/                 # BPNet deep learning model
-    fit/fit.py           # BNBPNet training script (per experiment + fold)
+    fit/fit_bpnet.py     # BPNet training script with configurable background sampling
   alphagenome/           # AlphaGenome analysis (planned)
 data/                    # gitignored, created by scripts
   hg38.fa                # Reference genome + index

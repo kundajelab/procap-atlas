@@ -1,3 +1,20 @@
 # Python requirements for pip install. See README.md for details on other dependencies.
+
+# General
 pyyaml
 tqdm
+
+# Data
+numpy
+pandas
+scipy
+joblib
+pyfaidx
+pyfastx
+pybigtools
+
+# Deep learning
+torch
+tangermeme
+bpnetlite
+modisco

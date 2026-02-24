@@ -26,6 +26,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR882DWM_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR882DWM_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR882DWM_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR882DWM_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR882DWM_K562_gc_negatives.bed.gz
   ENCSR114HGS:
     biosample: K562
@@ -49,6 +50,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR114HGS_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR114HGS_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR114HGS_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR114HGS_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR114HGS_K562_gc_negatives.bed.gz
   ENCSR165QKR:
     biosample: HCT116
@@ -73,6 +75,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR165QKR_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR165QKR_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR165QKR_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR165QKR_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR165QKR_HCT116_gc_negatives.bed.gz
   ENCSR197JLW:
     biosample: HCT116
@@ -98,6 +101,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR197JLW_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR197JLW_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR197JLW_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR197JLW_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR197JLW_HCT116_gc_negatives.bed.gz
   ENCSR100EDZ:
     biosample: HCT116
@@ -123,6 +127,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR100EDZ_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR100EDZ_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR100EDZ_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR100EDZ_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR100EDZ_HCT116_gc_negatives.bed.gz
   ENCSR273ORE:
     biosample: HCT116
@@ -148,6 +153,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR273ORE_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR273ORE_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR273ORE_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR273ORE_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR273ORE_HCT116_gc_negatives.bed.gz
   ENCSR124RWD:
     biosample: right ventricle myocardium
@@ -172,6 +178,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR124RWD_right_ventricle_myocardium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR124RWD_right_ventricle_myocardium_mn.bigWig
       peaks: data/processed/peaks/ENCSR124RWD_right_ventricle_myocardium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR124RWD_right_ventricle_myocardium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR124RWD_right_ventricle_myocardium_gc_negatives.bed.gz
   ENCSR178XKL:
     biosample: WTC11
@@ -198,6 +205,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR178XKL_WTC11_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR178XKL_WTC11_mn.bigWig
       peaks: data/processed/peaks/ENCSR178XKL_WTC11.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR178XKL_WTC11_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR178XKL_WTC11_gc_negatives.bed.gz
   ENCSR720EXP:
     biosample: Metastatic Liver Carcinoma in the Lung
@@ -220,6 +228,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR720EXP_Metastatic_Liver_Carcinoma_in_the_Lung_gc_negatives.bed.gz
   ENCSR753TEA:
     biosample: liver
@@ -240,6 +249,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR753TEA_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR753TEA_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR753TEA_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR753TEA_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR753TEA_liver_gc_negatives.bed.gz
   ENCSR961UBB:
     biosample: heart left ventricle
@@ -262,6 +272,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR961UBB_heart_left_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR961UBB_heart_left_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR961UBB_heart_left_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR961UBB_heart_left_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR961UBB_heart_left_ventricle_gc_negatives.bed.gz
   ENCSR796JNK:
     biosample: LUHMES
@@ -285,6 +296,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR796JNK_LUHMES_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR796JNK_LUHMES_mn.bigWig
       peaks: data/processed/peaks/ENCSR796JNK_LUHMES.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR796JNK_LUHMES_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR796JNK_LUHMES_gc_negatives.bed.gz
   ENCSR784YIV:
     biosample: colonic mucosa
@@ -307,6 +319,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR784YIV_colonic_mucosa_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR784YIV_colonic_mucosa_mn.bigWig
       peaks: data/processed/peaks/ENCSR784YIV_colonic_mucosa.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR784YIV_colonic_mucosa_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR784YIV_colonic_mucosa_gc_negatives.bed.gz
   ENCSR478DAN:
     biosample: upper lobe of left lung
@@ -330,6 +343,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR478DAN_upper_lobe_of_left_lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR478DAN_upper_lobe_of_left_lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR478DAN_upper_lobe_of_left_lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR478DAN_upper_lobe_of_left_lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR478DAN_upper_lobe_of_left_lung_gc_negatives.bed.gz
   ENCSR666GXV:
     biosample: Colon Carcinoma Metastatic in the Lung
@@ -352,6 +366,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR666GXV_Colon_Carcinoma_Metastatic_in_the_Lung_gc_negatives.bed.gz
   ENCSR520PUD:
     biosample: HEK293
@@ -374,6 +389,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR520PUD_HEK293_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR520PUD_HEK293_mn.bigWig
       peaks: data/processed/peaks/ENCSR520PUD_HEK293.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR520PUD_HEK293_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR520PUD_HEK293_gc_negatives.bed.gz
   ENCSR417NJC:
     biosample: spleen
@@ -396,6 +412,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR417NJC_spleen_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR417NJC_spleen_mn.bigWig
       peaks: data/processed/peaks/ENCSR417NJC_spleen.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR417NJC_spleen_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR417NJC_spleen_gc_negatives.bed.gz
   ENCSR215OJB:
     biosample: GM23338
@@ -423,6 +440,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR215OJB_GM23338_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR215OJB_GM23338_mn.bigWig
       peaks: data/processed/peaks/ENCSR215OJB_GM23338.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR215OJB_GM23338_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR215OJB_GM23338_gc_negatives.bed.gz
   ENCSR053UMZ:
     biosample: cerebellum
@@ -443,6 +461,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR053UMZ_cerebellum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR053UMZ_cerebellum_mn.bigWig
       peaks: data/processed/peaks/ENCSR053UMZ_cerebellum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR053UMZ_cerebellum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR053UMZ_cerebellum_gc_negatives.bed.gz
   ENCSR867EQV:
     biosample: HCT116
@@ -468,6 +487,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR867EQV_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR867EQV_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR867EQV_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR867EQV_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR867EQV_HCT116_gc_negatives.bed.gz
   ENCSR386RDW:
     biosample: subcutaneous adipose tissue
@@ -491,6 +511,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR386RDW_subcutaneous_adipose_tissue_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR386RDW_subcutaneous_adipose_tissue_mn.bigWig
       peaks: data/processed/peaks/ENCSR386RDW_subcutaneous_adipose_tissue.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR386RDW_subcutaneous_adipose_tissue_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR386RDW_subcutaneous_adipose_tissue_gc_negatives.bed.gz
   ENCSR694RPO:
     biosample: right lobe of liver
@@ -513,6 +534,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR694RPO_right_lobe_of_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR694RPO_right_lobe_of_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR694RPO_right_lobe_of_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR694RPO_right_lobe_of_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR694RPO_right_lobe_of_liver_gc_negatives.bed.gz
   ENCSR248SVP:
     biosample: osteocyte
@@ -535,6 +557,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR248SVP_osteocyte_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR248SVP_osteocyte_mn.bigWig
       peaks: data/processed/peaks/ENCSR248SVP_osteocyte.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR248SVP_osteocyte_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR248SVP_osteocyte_gc_negatives.bed.gz
   ENCSR992HBP:
     biosample: right lobe of liver
@@ -557,6 +580,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR992HBP_right_lobe_of_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR992HBP_right_lobe_of_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR992HBP_right_lobe_of_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR992HBP_right_lobe_of_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR992HBP_right_lobe_of_liver_gc_negatives.bed.gz
   ENCSR967RHN:
     biosample: lower lobe of left lung
@@ -580,6 +604,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR967RHN_lower_lobe_of_left_lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR967RHN_lower_lobe_of_left_lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR967RHN_lower_lobe_of_left_lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR967RHN_lower_lobe_of_left_lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR967RHN_lower_lobe_of_left_lung_gc_negatives.bed.gz
   ENCSR757HMG:
     biosample: Peyer's patch
@@ -602,6 +627,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR757HMG_Peyer_s_patch_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR757HMG_Peyer_s_patch_mn.bigWig
       peaks: data/processed/peaks/ENCSR757HMG_Peyer_s_patch.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR757HMG_Peyer_s_patch_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR757HMG_Peyer_s_patch_gc_negatives.bed.gz
   ENCSR983JFU:
     biosample: REH cell
@@ -624,6 +650,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR983JFU_REH_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR983JFU_REH_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR983JFU_REH_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR983JFU_REH_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR983JFU_REH_cell_gc_negatives.bed.gz
   ENCSR644TYW:
     biosample: Colon Carcinoma Metastatic in the Brain
@@ -646,6 +673,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR644TYW_Colon_Carcinoma_Metastatic_in_the_Brain_gc_negatives.bed.gz
   ENCSR542IVL:
     biosample: testis
@@ -668,6 +696,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR542IVL_testis_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR542IVL_testis_mn.bigWig
       peaks: data/processed/peaks/ENCSR542IVL_testis.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR542IVL_testis_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR542IVL_testis_gc_negatives.bed.gz
   ENCSR821MIF:
     biosample: spleen
@@ -690,6 +719,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR821MIF_spleen_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR821MIF_spleen_mn.bigWig
       peaks: data/processed/peaks/ENCSR821MIF_spleen.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR821MIF_spleen_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR821MIF_spleen_gc_negatives.bed.gz
   ENCSR970ACM:
     biosample: adrenal gland
@@ -712,6 +742,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR970ACM_adrenal_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR970ACM_adrenal_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR970ACM_adrenal_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR970ACM_adrenal_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR970ACM_adrenal_gland_gc_negatives.bed.gz
   ENCSR484CAZ:
     biosample: cardiac septum
@@ -734,6 +765,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR484CAZ_cardiac_septum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR484CAZ_cardiac_septum_mn.bigWig
       peaks: data/processed/peaks/ENCSR484CAZ_cardiac_septum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR484CAZ_cardiac_septum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR484CAZ_cardiac_septum_gc_negatives.bed.gz
   ENCSR074XYR:
     biosample: Colon Carcinoma Metastatic in the Brain
@@ -756,6 +788,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR074XYR_Colon_Carcinoma_Metastatic_in_the_Brain_gc_negatives.bed.gz
   ENCSR636RVF:
     biosample: skeletal muscle tissue
@@ -779,6 +812,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR636RVF_skeletal_muscle_tissue_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR636RVF_skeletal_muscle_tissue_mn.bigWig
       peaks: data/processed/peaks/ENCSR636RVF_skeletal_muscle_tissue.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR636RVF_skeletal_muscle_tissue_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR636RVF_skeletal_muscle_tissue_gc_negatives.bed.gz
   ENCSR122BHP:
     biosample: colic lymph node
@@ -801,6 +835,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR122BHP_colic_lymph_node_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR122BHP_colic_lymph_node_mn.bigWig
       peaks: data/processed/peaks/ENCSR122BHP_colic_lymph_node.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR122BHP_colic_lymph_node_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR122BHP_colic_lymph_node_gc_negatives.bed.gz
   ENCSR282COG:
     biosample: gallbladder
@@ -823,6 +858,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR282COG_gallbladder_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR282COG_gallbladder_mn.bigWig
       peaks: data/processed/peaks/ENCSR282COG_gallbladder.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR282COG_gallbladder_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR282COG_gallbladder_gc_negatives.bed.gz
   ENCSR618ZHM:
     biosample: ileum
@@ -845,6 +881,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR618ZHM_ileum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR618ZHM_ileum_mn.bigWig
       peaks: data/processed/peaks/ENCSR618ZHM_ileum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR618ZHM_ileum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR618ZHM_ileum_gc_negatives.bed.gz
   ENCSR940QKZ:
     biosample: ovary
@@ -867,6 +904,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR940QKZ_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR940QKZ_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR940QKZ_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR940QKZ_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR940QKZ_ovary_gc_negatives.bed.gz
   ENCSR093JST:
     biosample: monocyte
@@ -889,6 +927,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR093JST_monocyte_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR093JST_monocyte_mn.bigWig
       peaks: data/processed/peaks/ENCSR093JST_monocyte.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR093JST_monocyte_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR093JST_monocyte_gc_negatives.bed.gz
   ENCSR331QXJ:
     biosample: Colon Carcinoma Metastatic in the Lung
@@ -911,6 +950,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR331QXJ_Colon_Carcinoma_Metastatic_in_the_Lung_gc_negatives.bed.gz
   ENCSR575NNF:
     biosample: right lobe of liver
@@ -933,6 +973,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR575NNF_right_lobe_of_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR575NNF_right_lobe_of_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR575NNF_right_lobe_of_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR575NNF_right_lobe_of_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR575NNF_right_lobe_of_liver_gc_negatives.bed.gz
   ENCSR915VCN:
     biosample: cerebral cortex
@@ -956,6 +997,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR915VCN_cerebral_cortex_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR915VCN_cerebral_cortex_mn.bigWig
       peaks: data/processed/peaks/ENCSR915VCN_cerebral_cortex.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR915VCN_cerebral_cortex_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR915VCN_cerebral_cortex_gc_negatives.bed.gz
   ENCSR766KPR:
     biosample: ovary
@@ -978,6 +1020,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR766KPR_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR766KPR_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR766KPR_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR766KPR_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR766KPR_ovary_gc_negatives.bed.gz
   ENCSR399LAD:
     biosample: uterus
@@ -1000,6 +1043,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR399LAD_uterus_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR399LAD_uterus_mn.bigWig
       peaks: data/processed/peaks/ENCSR399LAD_uterus.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR399LAD_uterus_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR399LAD_uterus_gc_negatives.bed.gz
   ENCSR756CCD:
     biosample: thyroid gland
@@ -1022,6 +1066,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR756CCD_thyroid_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR756CCD_thyroid_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR756CCD_thyroid_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR756CCD_thyroid_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR756CCD_thyroid_gland_gc_negatives.bed.gz
   ENCSR023NXW:
     biosample: right common carotid artery plus branches
@@ -1044,6 +1089,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR023NXW_right_common_carotid_artery_plus_branches_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR023NXW_right_common_carotid_artery_plus_branches_mn.bigWig
       peaks: data/processed/peaks/ENCSR023NXW_right_common_carotid_artery_plus_branches.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR023NXW_right_common_carotid_artery_plus_branches_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR023NXW_right_common_carotid_artery_plus_branches_gc_negatives.bed.gz
   ENCSR266TET:
     biosample: bronchial lymph node
@@ -1066,6 +1112,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR266TET_bronchial_lymph_node_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR266TET_bronchial_lymph_node_mn.bigWig
       peaks: data/processed/peaks/ENCSR266TET_bronchial_lymph_node.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR266TET_bronchial_lymph_node_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR266TET_bronchial_lymph_node_gc_negatives.bed.gz
   ENCSR045XAW:
     biosample: urinary bladder
@@ -1088,6 +1135,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR045XAW_urinary_bladder_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR045XAW_urinary_bladder_mn.bigWig
       peaks: data/processed/peaks/ENCSR045XAW_urinary_bladder.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR045XAW_urinary_bladder_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR045XAW_urinary_bladder_gc_negatives.bed.gz
   ENCSR934ZMQ:
     biosample: Metastatic Breast Carcinoma in the Ovary
@@ -1112,6 +1160,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR934ZMQ_Metastatic_Breast_Carcinoma_in_the_Ovary_gc_negatives.bed.gz
   ENCSR118KGX:
     biosample: T-cell
@@ -1133,6 +1182,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR118KGX_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR118KGX_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR118KGX_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR118KGX_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR118KGX_T-cell_gc_negatives.bed.gz
   ENCSR296MTV:
     biosample: left common carotid artery plus branches
@@ -1155,6 +1205,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR296MTV_left_common_carotid_artery_plus_branches_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR296MTV_left_common_carotid_artery_plus_branches_mn.bigWig
       peaks: data/processed/peaks/ENCSR296MTV_left_common_carotid_artery_plus_branches.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR296MTV_left_common_carotid_artery_plus_branches_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR296MTV_left_common_carotid_artery_plus_branches_gc_negatives.bed.gz
   ENCSR212GWU:
     biosample: breast
@@ -1177,6 +1228,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR212GWU_breast_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR212GWU_breast_mn.bigWig
       peaks: data/processed/peaks/ENCSR212GWU_breast.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR212GWU_breast_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR212GWU_breast_gc_negatives.bed.gz
   ENCSR408RHY:
     biosample: adrenal gland
@@ -1199,6 +1251,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR408RHY_adrenal_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR408RHY_adrenal_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR408RHY_adrenal_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR408RHY_adrenal_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR408RHY_adrenal_gland_gc_negatives.bed.gz
   ENCSR594WJV:
     biosample: cytotoxic T cell
@@ -1221,6 +1274,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR594WJV_cytotoxic_T_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR594WJV_cytotoxic_T_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR594WJV_cytotoxic_T_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR594WJV_cytotoxic_T_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR594WJV_cytotoxic_T_cell_gc_negatives.bed.gz
   ENCSR797AOQ:
     biosample: spleen
@@ -1243,6 +1297,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR797AOQ_spleen_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR797AOQ_spleen_mn.bigWig
       peaks: data/processed/peaks/ENCSR797AOQ_spleen.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR797AOQ_spleen_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR797AOQ_spleen_gc_negatives.bed.gz
   ENCSR675RBN:
     biosample: cerebral cortex
@@ -1266,6 +1321,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR675RBN_cerebral_cortex_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR675RBN_cerebral_cortex_mn.bigWig
       peaks: data/processed/peaks/ENCSR675RBN_cerebral_cortex.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR675RBN_cerebral_cortex_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR675RBN_cerebral_cortex_gc_negatives.bed.gz
   ENCSR812JCT:
     biosample: heart left ventricle
@@ -1288,6 +1344,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR812JCT_heart_left_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR812JCT_heart_left_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR812JCT_heart_left_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR812JCT_heart_left_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR812JCT_heart_left_ventricle_gc_negatives.bed.gz
   ENCSR740DLY:
     biosample: peripheral blood mononuclear cell
@@ -1310,6 +1367,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR740DLY_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR740DLY_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR740DLY_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR740DLY_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR740DLY_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR964OON:
     biosample: sternocleidomastoid
@@ -1332,6 +1390,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR964OON_sternocleidomastoid_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR964OON_sternocleidomastoid_mn.bigWig
       peaks: data/processed/peaks/ENCSR964OON_sternocleidomastoid.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR964OON_sternocleidomastoid_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR964OON_sternocleidomastoid_gc_negatives.bed.gz
   ENCSR883PPD:
     biosample: right cardiac atrium
@@ -1354,6 +1413,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR883PPD_right_cardiac_atrium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR883PPD_right_cardiac_atrium_mn.bigWig
       peaks: data/processed/peaks/ENCSR883PPD_right_cardiac_atrium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR883PPD_right_cardiac_atrium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR883PPD_right_cardiac_atrium_gc_negatives.bed.gz
   ENCSR784FKF:
     biosample: vermiform appendix
@@ -1376,6 +1436,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR784FKF_vermiform_appendix_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR784FKF_vermiform_appendix_mn.bigWig
       peaks: data/processed/peaks/ENCSR784FKF_vermiform_appendix.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR784FKF_vermiform_appendix_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR784FKF_vermiform_appendix_gc_negatives.bed.gz
   ENCSR273JQN:
     biosample: HCT116
@@ -1400,6 +1461,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR273JQN_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR273JQN_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR273JQN_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR273JQN_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR273JQN_HCT116_gc_negatives.bed.gz
   ENCSR074XOP:
     biosample: HCT116
@@ -1424,6 +1486,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR074XOP_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR074XOP_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR074XOP_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR074XOP_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR074XOP_HCT116_gc_negatives.bed.gz
   ENCSR635SXX:
     biosample: HCT116
@@ -1448,6 +1511,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR635SXX_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR635SXX_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR635SXX_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR635SXX_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR635SXX_HCT116_gc_negatives.bed.gz
   ENCSR990FJB:
     biosample: HCT116
@@ -1472,6 +1536,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR990FJB_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR990FJB_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR990FJB_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR990FJB_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR990FJB_HCT116_gc_negatives.bed.gz
   ENCSR261OWE:
     biosample: HCT116
@@ -1497,6 +1562,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR261OWE_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR261OWE_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR261OWE_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR261OWE_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR261OWE_HCT116_gc_negatives.bed.gz
   ENCSR932TRR:
     biosample: HCT116
@@ -1521,6 +1587,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR932TRR_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR932TRR_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR932TRR_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR932TRR_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR932TRR_HCT116_gc_negatives.bed.gz
   ENCSR604EBH:
     biosample: K562
@@ -1548,6 +1615,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR604EBH_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR604EBH_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR604EBH_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR604EBH_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR604EBH_K562_gc_negatives.bed.gz
   ENCSR124AWE:
     biosample: SUDHL5
@@ -1570,6 +1638,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR124AWE_SUDHL5_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR124AWE_SUDHL5_mn.bigWig
       peaks: data/processed/peaks/ENCSR124AWE_SUDHL5.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR124AWE_SUDHL5_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR124AWE_SUDHL5_gc_negatives.bed.gz
   ENCSR548GOG:
     biosample: stomach
@@ -1592,6 +1661,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR548GOG_stomach_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR548GOG_stomach_mn.bigWig
       peaks: data/processed/peaks/ENCSR548GOG_stomach.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR548GOG_stomach_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR548GOG_stomach_gc_negatives.bed.gz
   ENCSR973QQI:
     biosample: ReNcell CX
@@ -1615,6 +1685,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR973QQI_ReNcell_CX_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR973QQI_ReNcell_CX_mn.bigWig
       peaks: data/processed/peaks/ENCSR973QQI_ReNcell_CX.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR973QQI_ReNcell_CX_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR973QQI_ReNcell_CX_gc_negatives.bed.gz
   ENCSR473KVF:
     biosample: HEK293T
@@ -1638,6 +1709,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR473KVF_HEK293T_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR473KVF_HEK293T_mn.bigWig
       peaks: data/processed/peaks/ENCSR473KVF_HEK293T.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR473KVF_HEK293T_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR473KVF_HEK293T_gc_negatives.bed.gz
   ENCSR382HFH:
     biosample: peripheral blood mononuclear cell
@@ -1660,6 +1732,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR382HFH_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR382HFH_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR382HFH_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR382HFH_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR382HFH_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR624CVP:
     biosample: peritoneum
@@ -1682,6 +1755,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR624CVP_peritoneum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR624CVP_peritoneum_mn.bigWig
       peaks: data/processed/peaks/ENCSR624CVP_peritoneum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR624CVP_peritoneum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR624CVP_peritoneum_gc_negatives.bed.gz
   ENCSR575EOB:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -1706,6 +1780,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR575EOB_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR701MOE:
     biosample: T-cell
@@ -1727,6 +1802,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR701MOE_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR701MOE_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR701MOE_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR701MOE_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR701MOE_T-cell_gc_negatives.bed.gz
   ENCSR657PSE:
     biosample: aorta
@@ -1749,6 +1825,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR657PSE_aorta_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR657PSE_aorta_mn.bigWig
       peaks: data/processed/peaks/ENCSR657PSE_aorta.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR657PSE_aorta_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR657PSE_aorta_gc_negatives.bed.gz
   ENCSR472ETC:
     biosample: fallopian tube
@@ -1771,6 +1848,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR472ETC_fallopian_tube_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR472ETC_fallopian_tube_mn.bigWig
       peaks: data/processed/peaks/ENCSR472ETC_fallopian_tube.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR472ETC_fallopian_tube_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR472ETC_fallopian_tube_gc_negatives.bed.gz
   ENCSR077MAX:
     biosample: tibial nerve
@@ -1793,6 +1871,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR077MAX_tibial_nerve_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR077MAX_tibial_nerve_mn.bigWig
       peaks: data/processed/peaks/ENCSR077MAX_tibial_nerve.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR077MAX_tibial_nerve_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR077MAX_tibial_nerve_gc_negatives.bed.gz
   ENCSR426RMA:
     biosample: heart left ventricle
@@ -1815,6 +1894,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR426RMA_heart_left_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR426RMA_heart_left_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR426RMA_heart_left_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR426RMA_heart_left_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR426RMA_heart_left_ventricle_gc_negatives.bed.gz
   ENCSR489FZB:
     biosample: T-cell
@@ -1837,6 +1917,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR489FZB_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR489FZB_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR489FZB_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR489FZB_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR489FZB_T-cell_gc_negatives.bed.gz
   ENCSR683FOJ:
     biosample: mesenteric fat pad
@@ -1859,6 +1940,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR683FOJ_mesenteric_fat_pad_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR683FOJ_mesenteric_fat_pad_mn.bigWig
       peaks: data/processed/peaks/ENCSR683FOJ_mesenteric_fat_pad.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR683FOJ_mesenteric_fat_pad_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR683FOJ_mesenteric_fat_pad_gc_negatives.bed.gz
   ENCSR683YVU:
     biosample: helper T cell
@@ -1881,6 +1963,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR683YVU_helper_T_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR683YVU_helper_T_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR683YVU_helper_T_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR683YVU_helper_T_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR683YVU_helper_T_cell_gc_negatives.bed.gz
   ENCSR574ZMF:
     biosample: ovary
@@ -1903,6 +1986,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR574ZMF_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR574ZMF_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR574ZMF_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR574ZMF_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR574ZMF_ovary_gc_negatives.bed.gz
   ENCSR245UIS:
     biosample: Karpas-422
@@ -1925,6 +2009,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR245UIS_Karpas-422_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR245UIS_Karpas-422_mn.bigWig
       peaks: data/processed/peaks/ENCSR245UIS_Karpas-422.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR245UIS_Karpas-422_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR245UIS_Karpas-422_gc_negatives.bed.gz
   ENCSR836XBB:
     biosample: rectum
@@ -1947,6 +2032,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR836XBB_rectum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR836XBB_rectum_mn.bigWig
       peaks: data/processed/peaks/ENCSR836XBB_rectum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR836XBB_rectum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR836XBB_rectum_gc_negatives.bed.gz
   ENCSR526QVD:
     biosample: ureter
@@ -1969,6 +2055,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR526QVD_ureter_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR526QVD_ureter_mn.bigWig
       peaks: data/processed/peaks/ENCSR526QVD_ureter.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR526QVD_ureter_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR526QVD_ureter_gc_negatives.bed.gz
   ENCSR876AEQ:
     biosample: Metastatic Liver Carcinoma in the Adrenal Gland
@@ -1991,6 +2078,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR876AEQ_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_gc_negatives.bed.gz
   ENCSR229XTQ:
     biosample: skeletal muscle tissue
@@ -2013,6 +2101,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR229XTQ_skeletal_muscle_tissue_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR229XTQ_skeletal_muscle_tissue_mn.bigWig
       peaks: data/processed/peaks/ENCSR229XTQ_skeletal_muscle_tissue.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR229XTQ_skeletal_muscle_tissue_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR229XTQ_skeletal_muscle_tissue_gc_negatives.bed.gz
   ENCSR659YNL:
     biosample: left lung
@@ -2035,6 +2124,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR659YNL_left_lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR659YNL_left_lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR659YNL_left_lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR659YNL_left_lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR659YNL_left_lung_gc_negatives.bed.gz
   ENCSR282IJP:
     biosample: neutrophil
@@ -2057,6 +2147,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR282IJP_neutrophil_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR282IJP_neutrophil_mn.bigWig
       peaks: data/processed/peaks/ENCSR282IJP_neutrophil.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR282IJP_neutrophil_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR282IJP_neutrophil_gc_negatives.bed.gz
   ENCSR888DKJ:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -2081,6 +2172,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR888DKJ_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR754LBG:
     biosample: duodenum
@@ -2103,6 +2195,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR754LBG_duodenum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR754LBG_duodenum_mn.bigWig
       peaks: data/processed/peaks/ENCSR754LBG_duodenum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR754LBG_duodenum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR754LBG_duodenum_gc_negatives.bed.gz
   ENCSR250REI:
     biosample: peripheral blood mononuclear cell
@@ -2125,6 +2218,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR250REI_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR250REI_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR250REI_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR250REI_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR250REI_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR180NBV:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -2149,6 +2243,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR180NBV_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR739MOQ:
     biosample: body of pancreas
@@ -2171,6 +2266,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR739MOQ_body_of_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR739MOQ_body_of_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR739MOQ_body_of_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR739MOQ_body_of_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR739MOQ_body_of_pancreas_gc_negatives.bed.gz
   ENCSR117JKC:
     biosample: trachea
@@ -2193,6 +2289,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR117JKC_trachea_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR117JKC_trachea_mn.bigWig
       peaks: data/processed/peaks/ENCSR117JKC_trachea.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR117JKC_trachea_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR117JKC_trachea_gc_negatives.bed.gz
   ENCSR008TSD:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -2217,6 +2314,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR008TSD_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR723JIC:
     biosample: peripheral blood mononuclear cell
@@ -2239,6 +2337,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR723JIC_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR723JIC_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR723JIC_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR723JIC_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR723JIC_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR980TGS:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -2263,6 +2362,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR980TGS_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR083AMN:
     biosample: B cell
@@ -2285,6 +2385,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR083AMN_B_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR083AMN_B_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR083AMN_B_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR083AMN_B_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR083AMN_B_cell_gc_negatives.bed.gz
   ENCSR756TPG:
     biosample: K562
@@ -2312,6 +2413,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR756TPG_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR756TPG_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR756TPG_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR756TPG_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR756TPG_K562_gc_negatives.bed.gz
   ENCSR089CQL:
     biosample: T-cell
@@ -2333,6 +2435,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR089CQL_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR089CQL_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR089CQL_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR089CQL_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR089CQL_T-cell_gc_negatives.bed.gz
   ENCSR294JPW:
     biosample: left ventricle myocardium
@@ -2357,6 +2460,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR294JPW_left_ventricle_myocardium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR294JPW_left_ventricle_myocardium_mn.bigWig
       peaks: data/processed/peaks/ENCSR294JPW_left_ventricle_myocardium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR294JPW_left_ventricle_myocardium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR294JPW_left_ventricle_myocardium_gc_negatives.bed.gz
   ENCSR321WCE:
     biosample: neural crest cell
@@ -2380,6 +2484,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR321WCE_neural_crest_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR321WCE_neural_crest_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR321WCE_neural_crest_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR321WCE_neural_crest_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR321WCE_neural_crest_cell_gc_negatives.bed.gz
   ENCSR357VUN:
     biosample: ovary
@@ -2402,6 +2507,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR357VUN_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR357VUN_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR357VUN_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR357VUN_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR357VUN_ovary_gc_negatives.bed.gz
   ENCSR393PGX:
     biosample: breast epithelium
@@ -2422,6 +2528,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR393PGX_breast_epithelium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR393PGX_breast_epithelium_mn.bigWig
       peaks: data/processed/peaks/ENCSR393PGX_breast_epithelium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR393PGX_breast_epithelium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR393PGX_breast_epithelium_gc_negatives.bed.gz
   ENCSR489BCG:
     biosample: pancreas
@@ -2442,6 +2549,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR489BCG_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR489BCG_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR489BCG_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR489BCG_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR489BCG_pancreas_gc_negatives.bed.gz
   ENCSR243MVI:
     biosample: liver
@@ -2462,6 +2570,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR243MVI_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR243MVI_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR243MVI_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR243MVI_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR243MVI_liver_gc_negatives.bed.gz
   ENCSR104MSL:
     biosample: pancreas
@@ -2484,6 +2593,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR104MSL_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR104MSL_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR104MSL_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR104MSL_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR104MSL_pancreas_gc_negatives.bed.gz
   ENCSR928ZWP:
     biosample: lower leg skin
@@ -2506,6 +2616,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR928ZWP_lower_leg_skin_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR928ZWP_lower_leg_skin_mn.bigWig
       peaks: data/processed/peaks/ENCSR928ZWP_lower_leg_skin.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR928ZWP_lower_leg_skin_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR928ZWP_lower_leg_skin_gc_negatives.bed.gz
   ENCSR331UGM:
     biosample: liver
@@ -2528,6 +2639,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR331UGM_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR331UGM_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR331UGM_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR331UGM_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR331UGM_liver_gc_negatives.bed.gz
   ENCSR149WMX:
     biosample: Metastatic Liver Carcinoma in the Lung
@@ -2550,6 +2662,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR149WMX_Metastatic_Liver_Carcinoma_in_the_Lung_gc_negatives.bed.gz
   ENCSR633OWM:
     biosample: pulmonary lymph node
@@ -2572,6 +2685,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR633OWM_pulmonary_lymph_node_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR633OWM_pulmonary_lymph_node_mn.bigWig
       peaks: data/processed/peaks/ENCSR633OWM_pulmonary_lymph_node.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR633OWM_pulmonary_lymph_node_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR633OWM_pulmonary_lymph_node_gc_negatives.bed.gz
   ENCSR384HWB:
     biosample: ascending aorta
@@ -2594,6 +2708,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR384HWB_ascending_aorta_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR384HWB_ascending_aorta_mn.bigWig
       peaks: data/processed/peaks/ENCSR384HWB_ascending_aorta.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR384HWB_ascending_aorta_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR384HWB_ascending_aorta_gc_negatives.bed.gz
   ENCSR347PQY:
     biosample: upper lobe of left lung
@@ -2617,6 +2732,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR347PQY_upper_lobe_of_left_lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR347PQY_upper_lobe_of_left_lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR347PQY_upper_lobe_of_left_lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR347PQY_upper_lobe_of_left_lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR347PQY_upper_lobe_of_left_lung_gc_negatives.bed.gz
   ENCSR335ZMZ:
     biosample: OCI-LY7
@@ -2639,6 +2755,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR335ZMZ_OCI-LY7_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR335ZMZ_OCI-LY7_mn.bigWig
       peaks: data/processed/peaks/ENCSR335ZMZ_OCI-LY7.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR335ZMZ_OCI-LY7_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR335ZMZ_OCI-LY7_gc_negatives.bed.gz
   ENCSR657RPS:
     biosample: uterus
@@ -2661,6 +2778,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR657RPS_uterus_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR657RPS_uterus_mn.bigWig
       peaks: data/processed/peaks/ENCSR657RPS_uterus.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR657RPS_uterus_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR657RPS_uterus_gc_negatives.bed.gz
   ENCSR149ZRX:
     biosample: K562
@@ -2684,6 +2802,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR149ZRX_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR149ZRX_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR149ZRX_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR149ZRX_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR149ZRX_K562_gc_negatives.bed.gz
   ENCSR834OVY:
     biosample: peripheral blood mononuclear cell
@@ -2706,6 +2825,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR834OVY_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR834OVY_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR834OVY_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR834OVY_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR834OVY_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR262PWK:
     biosample: type B pancreatic cell
@@ -2729,6 +2849,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR262PWK_type_B_pancreatic_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR262PWK_type_B_pancreatic_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR262PWK_type_B_pancreatic_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR262PWK_type_B_pancreatic_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR262PWK_type_B_pancreatic_cell_gc_negatives.bed.gz
   ENCSR300AAD:
     biosample: Metastatic Liver Carcinoma in the Adrenal Gland
@@ -2751,6 +2872,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR300AAD_Metastatic_Liver_Carcinoma_in_the_Adrenal_Gland_gc_negatives.bed.gz
   ENCSR900SLO:
     biosample: HCT116
@@ -2775,6 +2897,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR900SLO_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR900SLO_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR900SLO_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR900SLO_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR900SLO_HCT116_gc_negatives.bed.gz
   ENCSR687HZX:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -2799,6 +2922,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR687HZX_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR997YHR:
     biosample: lung
@@ -2821,6 +2945,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR997YHR_lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR997YHR_lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR997YHR_lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR997YHR_lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR997YHR_lung_gc_negatives.bed.gz
   ENCSR744JVA:
     biosample: pancreas
@@ -2843,6 +2968,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR744JVA_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR744JVA_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR744JVA_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR744JVA_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR744JVA_pancreas_gc_negatives.bed.gz
   ENCSR338WJS:
     biosample: pancreas
@@ -2865,6 +2991,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR338WJS_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR338WJS_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR338WJS_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR338WJS_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR338WJS_pancreas_gc_negatives.bed.gz
   ENCSR407CCJ:
     biosample: cerebellum
@@ -2887,6 +3014,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR407CCJ_cerebellum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR407CCJ_cerebellum_mn.bigWig
       peaks: data/processed/peaks/ENCSR407CCJ_cerebellum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR407CCJ_cerebellum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR407CCJ_cerebellum_gc_negatives.bed.gz
   ENCSR155NVW:
     biosample: penis
@@ -2909,6 +3037,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR155NVW_penis_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR155NVW_penis_mn.bigWig
       peaks: data/processed/peaks/ENCSR155NVW_penis.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR155NVW_penis_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR155NVW_penis_gc_negatives.bed.gz
   ENCSR305RPP:
     biosample: testis
@@ -2931,6 +3060,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR305RPP_testis_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR305RPP_testis_mn.bigWig
       peaks: data/processed/peaks/ENCSR305RPP_testis.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR305RPP_testis_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR305RPP_testis_gc_negatives.bed.gz
   ENCSR290MPW:
     biosample: heart left ventricle
@@ -2953,6 +3083,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR290MPW_heart_left_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR290MPW_heart_left_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR290MPW_heart_left_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR290MPW_heart_left_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR290MPW_heart_left_ventricle_gc_negatives.bed.gz
   ENCSR219NJB:
     biosample: spleen
@@ -2973,6 +3104,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR219NJB_spleen_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR219NJB_spleen_mn.bigWig
       peaks: data/processed/peaks/ENCSR219NJB_spleen.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR219NJB_spleen_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR219NJB_spleen_gc_negatives.bed.gz
   ENCSR219QKX:
     biosample: heart right ventricle
@@ -2995,6 +3127,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR219QKX_heart_right_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR219QKX_heart_right_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR219QKX_heart_right_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR219QKX_heart_right_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR219QKX_heart_right_ventricle_gc_negatives.bed.gz
   ENCSR656ZDH:
     biosample: heart left ventricle
@@ -3017,6 +3150,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR656ZDH_heart_left_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR656ZDH_heart_left_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR656ZDH_heart_left_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR656ZDH_heart_left_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR656ZDH_heart_left_ventricle_gc_negatives.bed.gz
   ENCSR065NDB:
     biosample: T-cell
@@ -3038,6 +3172,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR065NDB_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR065NDB_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR065NDB_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR065NDB_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR065NDB_T-cell_gc_negatives.bed.gz
   ENCSR769SLJ:
     biosample: transverse colon
@@ -3058,6 +3193,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR769SLJ_transverse_colon_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR769SLJ_transverse_colon_mn.bigWig
       peaks: data/processed/peaks/ENCSR769SLJ_transverse_colon.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR769SLJ_transverse_colon_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR769SLJ_transverse_colon_gc_negatives.bed.gz
   ENCSR069DQH:
     biosample: cytotoxic T cell
@@ -3080,6 +3216,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR069DQH_cytotoxic_T_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR069DQH_cytotoxic_T_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR069DQH_cytotoxic_T_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR069DQH_cytotoxic_T_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR069DQH_cytotoxic_T_cell_gc_negatives.bed.gz
   ENCSR617JRP:
     biosample: Metastatic Breast Carcinoma in the Ovary
@@ -3104,6 +3241,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR617JRP_Metastatic_Breast_Carcinoma_in_the_Ovary_gc_negatives.bed.gz
   ENCSR100PNA:
     biosample: paraaortic lymph node
@@ -3127,6 +3265,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR100PNA_paraaortic_lymph_node_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR100PNA_paraaortic_lymph_node_mn.bigWig
       peaks: data/processed/peaks/ENCSR100PNA_paraaortic_lymph_node.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR100PNA_paraaortic_lymph_node_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR100PNA_paraaortic_lymph_node_gc_negatives.bed.gz
   ENCSR065QHA:
     biosample: left lobe of liver
@@ -3149,6 +3288,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR065QHA_left_lobe_of_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR065QHA_left_lobe_of_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR065QHA_left_lobe_of_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR065QHA_left_lobe_of_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR065QHA_left_lobe_of_liver_gc_negatives.bed.gz
   ENCSR233GRN:
     biosample: bronchus
@@ -3171,6 +3311,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR233GRN_bronchus_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR233GRN_bronchus_mn.bigWig
       peaks: data/processed/peaks/ENCSR233GRN_bronchus.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR233GRN_bronchus_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR233GRN_bronchus_gc_negatives.bed.gz
   ENCSR997INZ:
     biosample: right atrium auricular region
@@ -3195,6 +3336,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR997INZ_right_atrium_auricular_region_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR997INZ_right_atrium_auricular_region_mn.bigWig
       peaks: data/processed/peaks/ENCSR997INZ_right_atrium_auricular_region.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR997INZ_right_atrium_auricular_region_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR997INZ_right_atrium_auricular_region_gc_negatives.bed.gz
   ENCSR431MXP:
     biosample: thyroid gland
@@ -3217,6 +3359,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR431MXP_thyroid_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR431MXP_thyroid_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR431MXP_thyroid_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR431MXP_thyroid_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR431MXP_thyroid_gland_gc_negatives.bed.gz
   ENCSR255MUU:
     biosample: progenitor cell of endocrine pancreas
@@ -3240,6 +3383,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR255MUU_progenitor_cell_of_endocrine_pancreas_gc_negatives.bed.gz
   ENCSR673CJC:
     biosample: Metastatic Lung Carcinoma in the Adrenal Gland
@@ -3262,6 +3406,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR673CJC_Metastatic_Lung_Carcinoma_in_the_Adrenal_Gland_gc_negatives.bed.gz
   ENCSR946MDO:
     biosample: gastroesophageal sphincter
@@ -3285,6 +3430,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR946MDO_gastroesophageal_sphincter_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR946MDO_gastroesophageal_sphincter_mn.bigWig
       peaks: data/processed/peaks/ENCSR946MDO_gastroesophageal_sphincter.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR946MDO_gastroesophageal_sphincter_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR946MDO_gastroesophageal_sphincter_gc_negatives.bed.gz
   ENCSR841GXY:
     biosample: monocyte
@@ -3307,6 +3453,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR841GXY_monocyte_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR841GXY_monocyte_mn.bigWig
       peaks: data/processed/peaks/ENCSR841GXY_monocyte.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR841GXY_monocyte_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR841GXY_monocyte_gc_negatives.bed.gz
   ENCSR296XBI:
     biosample: T-cell
@@ -3329,6 +3476,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR296XBI_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR296XBI_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR296XBI_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR296XBI_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR296XBI_T-cell_gc_negatives.bed.gz
   ENCSR072JHG:
     biosample: liver
@@ -3351,6 +3499,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR072JHG_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR072JHG_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR072JHG_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR072JHG_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR072JHG_liver_gc_negatives.bed.gz
   ENCSR883HAT:
     biosample: uterus
@@ -3373,6 +3522,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR883HAT_uterus_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR883HAT_uterus_mn.bigWig
       peaks: data/processed/peaks/ENCSR883HAT_uterus.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR883HAT_uterus_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR883HAT_uterus_gc_negatives.bed.gz
   ENCSR360MUR:
     biosample: HCT116
@@ -3397,6 +3547,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR360MUR_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR360MUR_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR360MUR_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR360MUR_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR360MUR_HCT116_gc_negatives.bed.gz
   ENCSR871CUV:
     biosample: HCT116
@@ -3422,6 +3573,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR871CUV_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR871CUV_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR871CUV_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR871CUV_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR871CUV_HCT116_gc_negatives.bed.gz
   ENCSR676YGJ:
     biosample: heart left ventricle
@@ -3444,6 +3596,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR676YGJ_heart_left_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR676YGJ_heart_left_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR676YGJ_heart_left_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR676YGJ_heart_left_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR676YGJ_heart_left_ventricle_gc_negatives.bed.gz
   ENCSR571OAW:
     biosample: mesothelial cell of epicardium
@@ -3466,6 +3619,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR571OAW_mesothelial_cell_of_epicardium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR571OAW_mesothelial_cell_of_epicardium_mn.bigWig
       peaks: data/processed/peaks/ENCSR571OAW_mesothelial_cell_of_epicardium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR571OAW_mesothelial_cell_of_epicardium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR571OAW_mesothelial_cell_of_epicardium_gc_negatives.bed.gz
   ENCSR632XIZ:
     biosample: skeletal muscle tissue
@@ -3489,6 +3643,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR632XIZ_skeletal_muscle_tissue_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR632XIZ_skeletal_muscle_tissue_mn.bigWig
       peaks: data/processed/peaks/ENCSR632XIZ_skeletal_muscle_tissue.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR632XIZ_skeletal_muscle_tissue_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR632XIZ_skeletal_muscle_tissue_gc_negatives.bed.gz
   ENCSR179FHG:
     biosample: sigmoid colon
@@ -3511,6 +3666,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR179FHG_sigmoid_colon_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR179FHG_sigmoid_colon_mn.bigWig
       peaks: data/processed/peaks/ENCSR179FHG_sigmoid_colon.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR179FHG_sigmoid_colon_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR179FHG_sigmoid_colon_gc_negatives.bed.gz
   ENCSR246YHR:
     biosample: esophagus muscularis mucosa
@@ -3534,6 +3690,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR246YHR_esophagus_muscularis_mucosa_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR246YHR_esophagus_muscularis_mucosa_mn.bigWig
       peaks: data/processed/peaks/ENCSR246YHR_esophagus_muscularis_mucosa.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR246YHR_esophagus_muscularis_mucosa_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR246YHR_esophagus_muscularis_mucosa_gc_negatives.bed.gz
   ENCSR353ZXW:
     biosample: SP-49
@@ -3556,6 +3713,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR353ZXW_SP-49_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR353ZXW_SP-49_mn.bigWig
       peaks: data/processed/peaks/ENCSR353ZXW_SP-49.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR353ZXW_SP-49_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR353ZXW_SP-49_gc_negatives.bed.gz
   ENCSR845LKT:
     biosample: right lobe of liver
@@ -3578,6 +3736,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR845LKT_right_lobe_of_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR845LKT_right_lobe_of_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR845LKT_right_lobe_of_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR845LKT_right_lobe_of_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR845LKT_right_lobe_of_liver_gc_negatives.bed.gz
   ENCSR794VAJ:
     biosample: sciatic nerve
@@ -3600,6 +3759,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR794VAJ_sciatic_nerve_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR794VAJ_sciatic_nerve_mn.bigWig
       peaks: data/processed/peaks/ENCSR794VAJ_sciatic_nerve.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR794VAJ_sciatic_nerve_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR794VAJ_sciatic_nerve_gc_negatives.bed.gz
   ENCSR610POV:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -3624,6 +3784,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR610POV_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR220OLX:
     biosample: left colon
@@ -3646,6 +3807,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR220OLX_left_colon_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR220OLX_left_colon_mn.bigWig
       peaks: data/processed/peaks/ENCSR220OLX_left_colon.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR220OLX_left_colon_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR220OLX_left_colon_gc_negatives.bed.gz
   ENCSR966RLG:
     biosample: HCT116
@@ -3671,6 +3833,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR966RLG_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR966RLG_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR966RLG_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR966RLG_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR966RLG_HCT116_gc_negatives.bed.gz
   ENCSR342WAR:
     biosample: neuron
@@ -3694,6 +3857,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR342WAR_neuron_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR342WAR_neuron_mn.bigWig
       peaks: data/processed/peaks/ENCSR342WAR_neuron.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR342WAR_neuron_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR342WAR_neuron_gc_negatives.bed.gz
   ENCSR956DBV:
     biosample: suprapubic skin
@@ -3716,6 +3880,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR956DBV_suprapubic_skin_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR956DBV_suprapubic_skin_mn.bigWig
       peaks: data/processed/peaks/ENCSR956DBV_suprapubic_skin.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR956DBV_suprapubic_skin_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR956DBV_suprapubic_skin_gc_negatives.bed.gz
   ENCSR482XCK:
     biosample: ovary
@@ -3738,6 +3903,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR482XCK_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR482XCK_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR482XCK_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR482XCK_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR482XCK_ovary_gc_negatives.bed.gz
   ENCSR516KII:
     biosample: astrocyte
@@ -3760,6 +3926,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR516KII_astrocyte_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR516KII_astrocyte_mn.bigWig
       peaks: data/processed/peaks/ENCSR516KII_astrocyte.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR516KII_astrocyte_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR516KII_astrocyte_gc_negatives.bed.gz
   ENCSR280NVT:
     biosample: vagina
@@ -3782,6 +3949,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR280NVT_vagina_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR280NVT_vagina_mn.bigWig
       peaks: data/processed/peaks/ENCSR280NVT_vagina.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR280NVT_vagina_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR280NVT_vagina_gc_negatives.bed.gz
   ENCSR245HPE:
     biosample: psoas muscle
@@ -3804,6 +3972,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR245HPE_psoas_muscle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR245HPE_psoas_muscle_mn.bigWig
       peaks: data/processed/peaks/ENCSR245HPE_psoas_muscle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR245HPE_psoas_muscle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR245HPE_psoas_muscle_gc_negatives.bed.gz
   ENCSR889QVM:
     biosample: ovary
@@ -3826,6 +3995,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR889QVM_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR889QVM_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR889QVM_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR889QVM_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR889QVM_ovary_gc_negatives.bed.gz
   ENCSR712UDA:
     biosample: peripheral blood mononuclear cell
@@ -3848,6 +4018,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR712UDA_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR712UDA_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR712UDA_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR712UDA_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR712UDA_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR926PFT:
     biosample: omental fat pad
@@ -3868,6 +4039,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR926PFT_omental_fat_pad_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR926PFT_omental_fat_pad_mn.bigWig
       peaks: data/processed/peaks/ENCSR926PFT_omental_fat_pad.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR926PFT_omental_fat_pad_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR926PFT_omental_fat_pad_gc_negatives.bed.gz
   ENCSR679CMZ:
     biosample: testis
@@ -3890,6 +4062,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR679CMZ_testis_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR679CMZ_testis_mn.bigWig
       peaks: data/processed/peaks/ENCSR679CMZ_testis.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR679CMZ_testis_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR679CMZ_testis_gc_negatives.bed.gz
   ENCSR642TRG:
     biosample: tibial artery
@@ -3912,6 +4085,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR642TRG_tibial_artery_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR642TRG_tibial_artery_mn.bigWig
       peaks: data/processed/peaks/ENCSR642TRG_tibial_artery.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR642TRG_tibial_artery_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR642TRG_tibial_artery_gc_negatives.bed.gz
   ENCSR723NVI:
     biosample: T-cell
@@ -3933,6 +4107,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR723NVI_T-cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR723NVI_T-cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR723NVI_T-cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR723NVI_T-cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR723NVI_T-cell_gc_negatives.bed.gz
   ENCSR175VMO:
     biosample: Metastatic Pancreatic Carcinoma in the Ovary
@@ -3955,6 +4130,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR175VMO_Metastatic_Pancreatic_Carcinoma_in_the_Ovary_gc_negatives.bed.gz
   ENCSR718AQM:
     biosample: HCT116
@@ -3980,6 +4156,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR718AQM_HCT116_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR718AQM_HCT116_mn.bigWig
       peaks: data/processed/peaks/ENCSR718AQM_HCT116.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR718AQM_HCT116_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR718AQM_HCT116_gc_negatives.bed.gz
   ENCSR516YGD:
     biosample: adrenal gland
@@ -4002,6 +4179,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR516YGD_adrenal_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR516YGD_adrenal_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR516YGD_adrenal_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR516YGD_adrenal_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR516YGD_adrenal_gland_gc_negatives.bed.gz
   ENCSR015HKC:
     biosample: uterus
@@ -4024,6 +4202,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR015HKC_uterus_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR015HKC_uterus_mn.bigWig
       peaks: data/processed/peaks/ENCSR015HKC_uterus.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR015HKC_uterus_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR015HKC_uterus_gc_negatives.bed.gz
   ENCSR359PWL:
     biosample: H9
@@ -4046,6 +4225,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR359PWL_H9_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR359PWL_H9_mn.bigWig
       peaks: data/processed/peaks/ENCSR359PWL_H9.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR359PWL_H9_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR359PWL_H9_gc_negatives.bed.gz
   ENCSR845TMF:
     biosample: prostate gland
@@ -4068,6 +4248,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR845TMF_prostate_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR845TMF_prostate_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR845TMF_prostate_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR845TMF_prostate_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR845TMF_prostate_gland_gc_negatives.bed.gz
   ENCSR222JNI:
     biosample: endothelial cell
@@ -4091,6 +4272,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR222JNI_endothelial_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR222JNI_endothelial_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR222JNI_endothelial_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR222JNI_endothelial_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR222JNI_endothelial_cell_gc_negatives.bed.gz
   ENCSR216FUJ:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -4115,6 +4297,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR216FUJ_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR889PCF:
     biosample: bile duct
@@ -4137,6 +4320,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR889PCF_bile_duct_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR889PCF_bile_duct_mn.bigWig
       peaks: data/processed/peaks/ENCSR889PCF_bile_duct.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR889PCF_bile_duct_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR889PCF_bile_duct_gc_negatives.bed.gz
   ENCSR153AON:
     biosample: esophagus squamous epithelium
@@ -4160,6 +4344,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR153AON_esophagus_squamous_epithelium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR153AON_esophagus_squamous_epithelium_mn.bigWig
       peaks: data/processed/peaks/ENCSR153AON_esophagus_squamous_epithelium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR153AON_esophagus_squamous_epithelium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR153AON_esophagus_squamous_epithelium_gc_negatives.bed.gz
   ENCSR436JXW:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -4184,6 +4369,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR436JXW_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR660UDB:
     biosample: kidney
@@ -4206,6 +4392,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR660UDB_kidney_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR660UDB_kidney_mn.bigWig
       peaks: data/processed/peaks/ENCSR660UDB_kidney.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR660UDB_kidney_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR660UDB_kidney_gc_negatives.bed.gz
   ENCSR235BZZ:
     biosample: gastrocnemius medialis
@@ -4229,6 +4416,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR235BZZ_gastrocnemius_medialis_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR235BZZ_gastrocnemius_medialis_mn.bigWig
       peaks: data/processed/peaks/ENCSR235BZZ_gastrocnemius_medialis.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR235BZZ_gastrocnemius_medialis_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR235BZZ_gastrocnemius_medialis_gc_negatives.bed.gz
   ENCSR216UNW:
     biosample: lower lobe of left lung
@@ -4252,6 +4440,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR216UNW_lower_lobe_of_left_lung_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR216UNW_lower_lobe_of_left_lung_mn.bigWig
       peaks: data/processed/peaks/ENCSR216UNW_lower_lobe_of_left_lung.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR216UNW_lower_lobe_of_left_lung_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR216UNW_lower_lobe_of_left_lung_gc_negatives.bed.gz
   ENCSR813CRU:
     biosample: Metastatic Breast Carcinoma in the Brain
@@ -4276,6 +4465,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_mn.bigWig
       peaks: data/processed/peaks/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR813CRU_Metastatic_Breast_Carcinoma_in_the_Brain_gc_negatives.bed.gz
   ENCSR829KWG:
     biosample: natural killer cell
@@ -4298,6 +4488,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR829KWG_natural_killer_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR829KWG_natural_killer_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR829KWG_natural_killer_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR829KWG_natural_killer_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR829KWG_natural_killer_cell_gc_negatives.bed.gz
   ENCSR380VKC:
     biosample: heart right ventricle
@@ -4321,6 +4512,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR380VKC_heart_right_ventricle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR380VKC_heart_right_ventricle_mn.bigWig
       peaks: data/processed/peaks/ENCSR380VKC_heart_right_ventricle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR380VKC_heart_right_ventricle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR380VKC_heart_right_ventricle_gc_negatives.bed.gz
   ENCSR220XSM:
     biosample: K562
@@ -4343,6 +4535,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR220XSM_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR220XSM_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR220XSM_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR220XSM_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR220XSM_K562_gc_negatives.bed.gz
   ENCSR733DAS:
     biosample: HEK293T
@@ -4366,6 +4559,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR733DAS_HEK293T_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR733DAS_HEK293T_mn.bigWig
       peaks: data/processed/peaks/ENCSR733DAS_HEK293T.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR733DAS_HEK293T_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR733DAS_HEK293T_gc_negatives.bed.gz
   ENCSR269FMG:
     biosample: liver
@@ -4388,6 +4582,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR269FMG_liver_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR269FMG_liver_mn.bigWig
       peaks: data/processed/peaks/ENCSR269FMG_liver.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR269FMG_liver_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR269FMG_liver_gc_negatives.bed.gz
   ENCSR995FAO:
     biosample: mucosa of descending colon
@@ -4411,6 +4606,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR995FAO_mucosa_of_descending_colon_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR995FAO_mucosa_of_descending_colon_mn.bigWig
       peaks: data/processed/peaks/ENCSR995FAO_mucosa_of_descending_colon.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR995FAO_mucosa_of_descending_colon_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR995FAO_mucosa_of_descending_colon_gc_negatives.bed.gz
   ENCSR443GRP:
     biosample: endodermal cell
@@ -4433,6 +4629,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR443GRP_endodermal_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR443GRP_endodermal_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR443GRP_endodermal_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR443GRP_endodermal_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR443GRP_endodermal_cell_gc_negatives.bed.gz
   ENCSR881RXX:
     biosample: anterior vena cava
@@ -4455,6 +4652,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR881RXX_anterior_vena_cava_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR881RXX_anterior_vena_cava_mn.bigWig
       peaks: data/processed/peaks/ENCSR881RXX_anterior_vena_cava.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR881RXX_anterior_vena_cava_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR881RXX_anterior_vena_cava_gc_negatives.bed.gz
   ENCSR944DTY:
     biosample: SEM
@@ -4477,6 +4675,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR944DTY_SEM_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR944DTY_SEM_mn.bigWig
       peaks: data/processed/peaks/ENCSR944DTY_SEM.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR944DTY_SEM_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR944DTY_SEM_gc_negatives.bed.gz
   ENCSR270EGA:
     biosample: left cardiac atrium
@@ -4499,6 +4698,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR270EGA_left_cardiac_atrium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR270EGA_left_cardiac_atrium_mn.bigWig
       peaks: data/processed/peaks/ENCSR270EGA_left_cardiac_atrium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR270EGA_left_cardiac_atrium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR270EGA_left_cardiac_atrium_gc_negatives.bed.gz
   ENCSR368ARY:
     biosample: pulmonary artery
@@ -4521,6 +4721,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR368ARY_pulmonary_artery_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR368ARY_pulmonary_artery_mn.bigWig
       peaks: data/processed/peaks/ENCSR368ARY_pulmonary_artery.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR368ARY_pulmonary_artery_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR368ARY_pulmonary_artery_gc_negatives.bed.gz
   ENCSR521BLL:
     biosample: psoas muscle
@@ -4543,6 +4744,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR521BLL_psoas_muscle_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR521BLL_psoas_muscle_mn.bigWig
       peaks: data/processed/peaks/ENCSR521BLL_psoas_muscle.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR521BLL_psoas_muscle_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR521BLL_psoas_muscle_gc_negatives.bed.gz
   ENCSR062QYF:
     biosample: cerebellum
@@ -4565,6 +4767,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR062QYF_cerebellum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR062QYF_cerebellum_mn.bigWig
       peaks: data/processed/peaks/ENCSR062QYF_cerebellum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR062QYF_cerebellum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR062QYF_cerebellum_gc_negatives.bed.gz
   ENCSR526XOQ:
     biosample: NALM6
@@ -4587,6 +4790,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR526XOQ_NALM6_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR526XOQ_NALM6_mn.bigWig
       peaks: data/processed/peaks/ENCSR526XOQ_NALM6.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR526XOQ_NALM6_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR526XOQ_NALM6_gc_negatives.bed.gz
   ENCSR386UFU:
     biosample: peripheral blood mononuclear cell
@@ -4609,6 +4813,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR386UFU_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR386UFU_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR386UFU_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR386UFU_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR386UFU_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR795NHV:
     biosample: peripheral blood mononuclear cell
@@ -4629,6 +4834,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR795NHV_peripheral_blood_mononuclear_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR795NHV_peripheral_blood_mononuclear_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR795NHV_peripheral_blood_mononuclear_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR795NHV_peripheral_blood_mononuclear_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR795NHV_peripheral_blood_mononuclear_cell_gc_negatives.bed.gz
   ENCSR255VLW:
     biosample: jejunum
@@ -4651,6 +4857,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR255VLW_jejunum_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR255VLW_jejunum_mn.bigWig
       peaks: data/processed/peaks/ENCSR255VLW_jejunum.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR255VLW_jejunum_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR255VLW_jejunum_gc_negatives.bed.gz
   ENCSR087CGY:
     biosample: ovary
@@ -4673,6 +4880,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR087CGY_ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR087CGY_ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR087CGY_ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR087CGY_ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR087CGY_ovary_gc_negatives.bed.gz
   ENCSR374RDU:
     biosample: breast
@@ -4695,6 +4903,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR374RDU_breast_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR374RDU_breast_mn.bigWig
       peaks: data/processed/peaks/ENCSR374RDU_breast.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR374RDU_breast_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR374RDU_breast_gc_negatives.bed.gz
   ENCSR219IHS:
     biosample: A549
@@ -4718,6 +4927,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR219IHS_A549_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR219IHS_A549_mn.bigWig
       peaks: data/processed/peaks/ENCSR219IHS_A549.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR219IHS_A549_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR219IHS_A549_gc_negatives.bed.gz
   ENCSR683YIA:
     biosample: Pfeiffer
@@ -4740,6 +4950,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR683YIA_Pfeiffer_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR683YIA_Pfeiffer_mn.bigWig
       peaks: data/processed/peaks/ENCSR683YIA_Pfeiffer.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR683YIA_Pfeiffer_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR683YIA_Pfeiffer_gc_negatives.bed.gz
   ENCSR810UBG:
     biosample: Metastatic Breast Carcinoma in the Ovary
@@ -4762,6 +4973,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_mn.bigWig
       peaks: data/processed/peaks/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR810UBG_Metastatic_Breast_Carcinoma_in_the_Ovary_gc_negatives.bed.gz
   ENCSR959JOB:
     biosample: right ventricle myocardium
@@ -4786,6 +4998,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR959JOB_right_ventricle_myocardium_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR959JOB_right_ventricle_myocardium_mn.bigWig
       peaks: data/processed/peaks/ENCSR959JOB_right_ventricle_myocardium.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR959JOB_right_ventricle_myocardium_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR959JOB_right_ventricle_myocardium_gc_negatives.bed.gz
   ENCSR431OQI:
     biosample: parotid gland
@@ -4808,6 +5021,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR431OQI_parotid_gland_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR431OQI_parotid_gland_mn.bigWig
       peaks: data/processed/peaks/ENCSR431OQI_parotid_gland.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR431OQI_parotid_gland_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR431OQI_parotid_gland_gc_negatives.bed.gz
   ENCSR353JON:
     biosample: spinal cord
@@ -4828,6 +5042,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR353JON_spinal_cord_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR353JON_spinal_cord_mn.bigWig
       peaks: data/processed/peaks/ENCSR353JON_spinal_cord.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR353JON_spinal_cord_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR353JON_spinal_cord_gc_negatives.bed.gz
   ENCSR374OGG:
     biosample: pancreas
@@ -4850,6 +5065,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR374OGG_pancreas_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR374OGG_pancreas_mn.bigWig
       peaks: data/processed/peaks/ENCSR374OGG_pancreas.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR374OGG_pancreas_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR374OGG_pancreas_gc_negatives.bed.gz
   ENCSR528FMA:
     biosample: helper T cell
@@ -4872,6 +5088,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR528FMA_helper_T_cell_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR528FMA_helper_T_cell_mn.bigWig
       peaks: data/processed/peaks/ENCSR528FMA_helper_T_cell.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR528FMA_helper_T_cell_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR528FMA_helper_T_cell_gc_negatives.bed.gz
   ENCSR500IHG:
     biosample: breast
@@ -4894,6 +5111,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR500IHG_breast_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR500IHG_breast_mn.bigWig
       peaks: data/processed/peaks/ENCSR500IHG_breast.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR500IHG_breast_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR500IHG_breast_gc_negatives.bed.gz
   ENCSR098LLB:
     biosample: endothelial cell of umbilical vein
@@ -4914,6 +5132,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR098LLB_endothelial_cell_of_umbilical_vein_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR098LLB_endothelial_cell_of_umbilical_vein_mn.bigWig
       peaks: data/processed/peaks/ENCSR098LLB_endothelial_cell_of_umbilical_vein.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR098LLB_endothelial_cell_of_umbilical_vein_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR098LLB_endothelial_cell_of_umbilical_vein_gc_negatives.bed.gz
   ENCSR046BCI:
     biosample: A673
@@ -4936,6 +5155,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR046BCI_A673_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR046BCI_A673_mn.bigWig
       peaks: data/processed/peaks/ENCSR046BCI_A673.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR046BCI_A673_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR046BCI_A673_gc_negatives.bed.gz
   ENCSR935RNW:
     biosample: Calu3
@@ -4958,6 +5178,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR935RNW_Calu3_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR935RNW_Calu3_mn.bigWig
       peaks: data/processed/peaks/ENCSR935RNW_Calu3.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR935RNW_Calu3_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR935RNW_Calu3_gc_negatives.bed.gz
   ENCSR799DGV:
     biosample: MCF 10A
@@ -4984,6 +5205,7 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR799DGV_MCF_10A_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR799DGV_MCF_10A_mn.bigWig
       peaks: data/processed/peaks/ENCSR799DGV_MCF_10A.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR799DGV_MCF_10A_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR799DGV_MCF_10A_gc_negatives.bed.gz
   ENCSR261KBX:
     biosample: K562
@@ -5007,7 +5229,9 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR261KBX_K562_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR261KBX_K562_mn.bigWig
       peaks: data/processed/peaks/ENCSR261KBX_K562.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR261KBX_K562_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR261KBX_K562_gc_negatives.bed.gz
+      dnase_negatives: data/processed/negatives/ENCSR261KBX_K562_dnase.bed.gz
   ENCSR100LIJ:
     biosample: Caco-2
     biosample_summary: Homo sapiens Caco-2
@@ -5029,4 +5253,5 @@ experiments:
       pl_bigwig: data/processed/bigwigs/ENCSR100LIJ_Caco-2_pl.bigWig
       mn_bigwig: data/processed/bigwigs/ENCSR100LIJ_Caco-2_mn.bigWig
       peaks: data/processed/peaks/ENCSR100LIJ_Caco-2.bed.gz
+      filtered_peaks: data/processed/peaks/ENCSR100LIJ_Caco-2_filtered.bed.gz
       gc_negatives: data/processed/negatives/ENCSR100LIJ_Caco-2_gc_negatives.bed.gz

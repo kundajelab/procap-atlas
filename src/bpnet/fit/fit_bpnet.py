@@ -1,21 +1,30 @@
 """
-Wrapper script to fit a BNBPNet model on PRO-cap data.
+Consolidated BPNet training script with configurable background sampling.
 
-Reads experiment paths from configs/experiment_config.yaml and trains a BNBPNet
-model using bpnetlite's PeakGenerator for data loading. Supports checkpoint
-resumption.
+Each --background NAME:RATIO argument adds a negative training source,
+where RATIO is the fraction of each training batch drawn from that source.
+Multiple --background arguments are combined into a single negatives pool
+sampled proportionally by ratio. The output directory name encodes the
+background configuration, e.g.:
+
+  {experiment}_ccre0.05_gc0.05
+
+Available background sources:
+  ccre   cCRE annotations (data/GRCh38-cCREs.bed.gz)
+  gc     GC-matched negatives (from experiment config)
 
 Chromosome splits are read from configs/chrom_splits.yaml. Fold i holds out
 fold i for testing and validates on fold (i+1) %% 7. Remaining folds are used
 for training.
 
 Usage:
-    python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0
-    python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 3 --max-epochs 50 --lr 0.001 ...
+    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX --fold 0 --background gc:0.1
+    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX --fold 0 --background ccre:0.05 --background gc:0.05
 """
 
 import argparse
 import sys
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -30,47 +39,113 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
-MAPPABILITY = str(REPO_ROOT / "data" / "k36.Umap.MultiTrackMappability.bw")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
+CCRES = REPO_ROOT / "data" / "GRCh38-cCREs.bed.gz"
+
+VALID_BACKGROUNDS = {"ccre", "gc"}
 
 
 def load_chrom_splits():
-    """Load chromosome fold assignments from chrom_splits.yaml.
-
-    Returns a dict mapping fold number (int) to list of chromosome names.
-    """
     with open(CHROM_SPLITS_PATH) as f:
         data = yaml.safe_load(f)
     return {int(k): v for k, v in data["folds"].items()}
 
 
+def parse_background(value: str) -> tuple[str, float]:
+    """Parse a 'NAME:RATIO' background argument."""
+    try:
+        name, ratio_str = value.split(":")
+        ratio = float(ratio_str)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"Invalid background '{value}': expected NAME:RATIO (e.g. ccre:0.05)"
+        )
+    if name not in VALID_BACKGROUNDS:
+        raise argparse.ArgumentTypeError(
+            f"Unknown background '{name}': must be one of {sorted(VALID_BACKGROUNDS)}"
+        )
+    if ratio <= 0:
+        raise argparse.ArgumentTypeError(f"Ratio must be positive, got {ratio}")
+    return name, ratio
+
+
+def load_bed(path: str | Path) -> pd.DataFrame:
+    return pd.read_csv(
+        path,
+        sep="\t",
+        usecols=[0, 1, 2],
+        header=None,
+        index_col=False,
+        names=["chrom", "start", "end"],
+        dtype={"chrom": str},
+    )
+
+
+def build_negatives_pool(
+    sources: list[tuple[str, float, pd.DataFrame]],
+    random_state: int = 47,
+) -> tuple[pd.DataFrame | None, float]:
+    """Combine negatives from multiple sources sampled proportionally by ratio.
+
+    Limits each source so that no source runs out before the others given their
+    relative ratios. Returns (combined_df, total_ratio).
+    """
+    if not sources:
+        return None, 0.0
+
+    # k = max samples-per-unit-ratio limited by the source that runs out first
+    k = min(len(df) / ratio for _, ratio, df in sources)
+
+    dfs = []
+    for name, ratio, df in sources:
+        n = int(k * ratio)
+        sampled = df.sample(n=n, random_state=random_state) if n < len(df) else df
+        print(f"  '{name}': {len(sampled):,} / {len(df):,} negatives")
+        dfs.append(sampled)
+
+    return pd.concat(dfs, ignore_index=True), sum(r for _, r, _ in sources)
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
         "-e",
         "--experiment",
         type=str,
         required=True,
-        help="experiment accession ID (e.g. ENCSR882DWM)",
+        help="experiment accession ID (e.g. ENCSR261KBX)",
     )
     parser.add_argument(
+        "-f",
         "--fold",
         type=int,
         required=True,
         help="fold to hold out for testing (validation = (fold+1) %% 7)",
     )
+    parser.add_argument(
+        "--background",
+        metavar="NAME:RATIO",
+        type=parse_background,
+        action="append",
+        dest="backgrounds",
+        default=None,
+        help="background source and per-batch ratio (repeatable); "
+        "default: ccre:0.0714 gc:0.0714 (sums to 1/7 negatives:positives)",
+    )
+
     parser.add_argument("-o", "--output-dir", type=str, default=None)
     parser.add_argument("--n-filters", type=int, default=None)
     parser.add_argument("--n-layers", type=int, default=None)
-    parser.add_argument("--count_loss_weight", type=float, default=None)
+    parser.add_argument("--count-loss-weight", type=float, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--max-epochs", type=int, default=None)
     parser.add_argument("--early-stopping", type=int, default=None)
     parser.add_argument("--max-jitter", type=int, default=None)
-    parser.add_argument("--negatives-ratio", type=float, default=None)
-    parser.add_argument("--checkpoint", type=str, default=None)
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--random-state", type=int, default=None)
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     # Load experiment config
@@ -85,13 +160,10 @@ def main():
     exp = experiments[args.experiment]
     processed = exp.get("processed", {})
 
-    # Resolve paths from config
     peaks_path = str(REPO_ROOT / processed["peaks"])
     pl_bw_path = str(REPO_ROOT / processed["pl_bigwig"])
     mn_bw_path = str(REPO_ROOT / processed["mn_bigwig"])
-    negatives_path = str(REPO_ROOT / processed["gc_negatives"])
 
-    # Verify files exist
     for path, label in [
         (peaks_path, "peaks"),
         (pl_bw_path, "plus bigwig"),
@@ -101,11 +173,10 @@ def main():
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
-    has_negatives = Path(negatives_path).exists()
-    if not has_negatives:
-        print(
-            f"WARNING: negatives not found ({negatives_path}), training without negatives"
-        )
+    background_paths = {
+        "ccre": CCRES,
+        "gc": REPO_ROOT / processed["gc_negatives"],
+    }
 
     # Chromosome splits: fold i = test, fold (i+1)%n = validation, rest = train
     chrom_splits = load_chrom_splits()
@@ -113,27 +184,27 @@ def main():
     test_fold = args.fold
     valid_fold = (args.fold + 1) % n_folds
     train_folds = [f for f in range(n_folds) if f not in (test_fold, valid_fold)]
-
     test_chroms = chrom_splits[test_fold]
     valid_chroms = chrom_splits[valid_fold]
-    train_chroms = []
-    for f in train_folds:
-        train_chroms.extend(chrom_splits[f])
+    train_chroms = [c for f in train_folds for c in chrom_splits[f]]
 
-    # Output directory
-    output_dir = Path(
-        args.output_dir or str(REPO_ROOT / "models" / "bpnet" / args.experiment)
-    )
+    # Output directory name encodes background sources and ratios
+    if args.backgrounds:
+        bg_suffix = "_".join(
+            f"{name}{ratio:g}" for name, ratio in sorted(args.backgrounds)
+        )
+        default_dir = REPO_ROOT / "models" / "bpnet" / f"{args.experiment}_{bg_suffix}"
+    else:
+        default_dir = REPO_ROOT / "models" / "bpnet" / args.experiment
+
+    output_dir = Path(args.output_dir or str(default_dir))
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build params with defaults, then apply CLI overrides
     params = {
         "name": str(output_dir / f"{args.experiment}.fold{args.fold}"),
         "sequences": FASTA,
         "signals": [pl_bw_path, mn_bw_path],
         "loci": peaks_path,
-        "negatives": negatives_path if has_negatives else None,
-        # "controls": [MAPPABILITY],
         "blacklist": [BLACKLIST],
         "checkpoint": None,
         "in_window": 2114,
@@ -148,14 +219,12 @@ def main():
         "learning_rate": 0.0005,
         "max_epochs": 50,
         "early_stopping": None,
-        "negatives_ratio": 1 / 10,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
-        "random_state": 47,
+        "random_state": None,
         "verbose": False,
     }
 
-    # Apply CLI overrides
     cli_overrides = {
         "n_filters": args.n_filters,
         "n_layers": args.n_layers,
@@ -165,8 +234,7 @@ def main():
         "max_epochs": args.max_epochs,
         "early_stopping": args.early_stopping,
         "max_jitter": args.max_jitter,
-        "negatives_ratio": args.negatives_ratio,
-        "checkpoint": args.checkpoint,
+        "random_state": args.random_state,
     }
     for k, v in cli_overrides.items():
         if v is not None:
@@ -174,40 +242,39 @@ def main():
     if args.verbose:
         params["verbose"] = True
 
+    if args.backgrounds is None:
+        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
+
     # Load peaks
-    peaks = pd.read_csv(
-        params["loci"],
-        sep="\t",
-        usecols=[0, 1, 2],
-        header=None,
-        index_col=False,
-        names=["chrom", "start", "end"],
-        dtype={"chrom": str},
-    )
+    peaks = load_bed(params["loci"])
 
-    # Load negatives
-    negatives = None
-    if params["negatives"] is not None:
-        negatives = pd.read_csv(
-            params["negatives"],
-            sep="\t",
-            usecols=[0, 1, 2],
-            header=None,
-            index_col=False,
-            names=["chrom", "start", "end"],
-            dtype={"chrom": str},
-        )
-
-    # Training DataLoader
+    # Load background sources and build negatives pool
     print(f"Experiment: {args.experiment} ({exp['biosample']})")
     print(f"Fold {args.fold}: test={test_chroms}, valid={valid_chroms}")
+
+    sources = []
+    for name, ratio in args.backgrounds:
+        path = background_paths[name]
+        if not Path(path).exists():
+            warnings.warn(f"Background '{name}' not found at {path}, skipping.")
+            continue
+        sources.append((name, ratio, load_bed(path)))
+
+    if args.backgrounds and not sources:
+        warnings.warn(
+            "No background sources could be loaded. Training without negatives."
+        )
+
+    print(f"Building negatives pool ({len(sources)} source(s)):")
+    negatives, negatives_ratio = build_negatives_pool(sources, params["random_state"])
+
+    # Training DataLoader
     print(f"Loading training data (chroms: {train_chroms})...")
     train_data_loader = PeakGenerator(
         peaks=peaks,
         negatives=negatives,
         sequences=params["sequences"],
         signals=params["signals"],
-        # controls=params["controls"],
         chroms=params["training_chroms"],
         in_window=params["in_window"],
         out_window=params["out_window"],
@@ -217,7 +284,7 @@ def main():
         random_state=params["random_state"],
         batch_size=params["batch_size"],
         verbose=params["verbose"],
-        negative_ratio=params["negatives_ratio"],
+        negative_ratio=negatives_ratio,
         exclusion_lists=params["blacklist"],
         min_counts=None,
         max_counts=None,
@@ -225,8 +292,8 @@ def main():
         num_workers=0,
     )
 
-    # Validation DataLoader
-    print(f"Loading validation data (chroms: {params['validation_chroms']})...")
+    # Validation data
+    print(f"Loading validation data (chroms: {valid_chroms})...")
     val = extract_loci(
         loci=peaks,
         sequences=params["sequences"],
@@ -242,12 +309,11 @@ def main():
     X_valid, y_valid = val
     y_valid = torch.abs(y_valid)
 
-    # Initialize model
-    n_outputs = len(params["signals"])
+    # Initialize and train model
     model = BPNet(
         name=params["name"],
         n_filters=params["n_filters"],
-        n_outputs=n_outputs,
+        n_outputs=len(params["signals"]),
         n_control_tracks=0,
         count_loss_weight=params["count_loss_weight"],
         n_layers=params["n_layers"],
@@ -257,7 +323,6 @@ def main():
     model = model.to("cuda")
     optimizer = AdamW(model.parameters(), lr=params["learning_rate"])
 
-    # Fit model
     model.fit(
         training_data=train_data_loader,
         optimizer=optimizer,
