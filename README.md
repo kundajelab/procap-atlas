@@ -9,7 +9,7 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - `bgzip` (htslib) -- bgzip compression of processed BED files
 - GNU `parallel` -- parallel downloads
 - `bigWigMerge`, `bedGraphToBigWig` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/)) -- BigWig merging
-- `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py`
+- `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py` and `src/bpnet/attribute/launch.py`
 - Python 3.10+ (`pip install -r requirements.txt`)
 
 ## Sample installation with mamba
@@ -110,6 +110,14 @@ python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05
 
 Output: `models/bpnet/{experiment}_{background_config}/`
 
+To submit training jobs for all experiments and folds via SLURM, use `launch.py`. Jobs are skipped automatically for experiments with fewer than `--min-peaks` peaks and for folds where the model file already exists. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to retrain everything on your own SLURM cluster.
+
+```bash
+python src/bpnet/fit/launch.py                     # all experiments x 7 folds
+python src/bpnet/fit/launch.py --dry-run           # preview without submitting
+python src/bpnet/fit/launch.py --min-peaks 10000   # only well-covered experiments
+```
+
 ### 8. Benchmark BPNet model
 
 Evaluates trained models across all folds on held-out test chromosomes. Use the same `--background` arguments as during training to resolve the model directory, or specify `--model-dir` directly.
@@ -124,7 +132,7 @@ Output: `performance_metrics/bpnet/{model_dir_name}.json`
 
 ### 9. Compute attributions
 
-Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Use the same `--background` arguments as during training, or `--model-dir` directly. `--head` selects the profile or count output head.
+Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Use the same `--background` arguments as during training, or `--model-dir` directly. `--head` selects the profile or count output head; `--ohe` additionally saves one-hot-encoded sequences.
 
 ```bash
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
@@ -133,6 +141,14 @@ python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/
 ```
 
 Output: `attributions/bpnet/{model_dir_name}_{head}.npz`
+
+To submit attribution jobs for all experiments via SLURM, use `launch.py`. Jobs are skipped automatically if the output already exists, any fold model is missing, or the experiment has fewer than `--min-peaks` peaks. `--head` is repeatable to run multiple heads. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to use this to run attributions on your own SLURM cluster.
+
+```bash
+python src/bpnet/attribute/launch.py                              # profile head, all experiments
+python src/bpnet/attribute/launch.py --head profile --head count  # both heads
+python src/bpnet/attribute/launch.py --dry-run                    # preview without submitting
+```
 
 ## Project structure
 
@@ -150,8 +166,10 @@ src/
     count_reads.py       # Count total reads per experiment across both strand BigWigs
   bpnet/                 # BPNet deep learning model
     fit/fit_bpnet.py           # BPNet training script with configurable background sampling
+    fit/launch.py              # SLURM job submission for training
     benchmark/benchmark_bpnet.py     # BPNet evaluation across folds → performance_metrics/
     attribute/attribute_bpnet.py     # DeepLIFT/SHAP attributions → attributions/
+    attribute/launch.py              # SLURM job submission for attributions
   alphagenome/           # AlphaGenome analysis (planned)
 data/                    # gitignored, created by scripts
   hg38.fa                # Reference genome + index

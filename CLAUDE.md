@@ -21,8 +21,10 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`) and chromosome fold splits (`chrom_splits.yaml`, 7 folds for cross-validation).
 - **`src/bpnet/`** — BPNet deep learning model training and evaluation:
   - `fit/fit_bpnet.py` — Consolidated BPNet training script with configurable background sampling. Accepts repeatable `--background NAME:RATIO` arguments (names: `ccre`, `gc`) where RATIO is negatives-per-positive contributed by that source. Sources are pooled proportionally. Default: `gc:1/7` (no cCREs; `negative_ratio=1/7`, giving 1/8 of each batch as negatives). Output directory defaults to `models/bpnet/{experiment}`; when `--background` is explicitly specified the suffix encodes the config (e.g. `{experiment}_gc0.1`).
+  - `fit/launch.py` — Submits SLURM jobs to train BPNet models, one per (experiment, fold) pair. Skips experiments with fewer than `--min-peaks` peaks and folds where the model file already exists. Extra arguments forwarded to `fit_bpnet.py` via `--fit-args`. Logs to `logs/bpnet/`.
   - `benchmark/benchmark_bpnet.py` — Evaluates a trained BPNet across all folds on held-out test chromosomes. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. Reports per-fold and genome-wide profile Pearson, profile JSD, log-counts Pearson, and counts Spearman. Always writes results to `performance_metrics/bpnet/{model_dir_name}.json`.
   - `attribute/attribute_bpnet.py` — Computes DeepLIFT/SHAP attributions across all folds for a trained BPNet, averaging fold attributions genome-wide. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. `--head` selects profile or count head; `--ohe` saves one-hot-encoded sequences. Output: `attributions/bpnet/{model_dir_name}_{head}.npz`.
+  - `attribute/launch.py` — Submits SLURM jobs for attributions, one per (experiment, head) pair. Skips experiments with too few peaks (`--min-peaks`), incomplete training (any fold model missing), or existing output. `--head` is repeatable (default: `profile`). Logs to `logs/bpnet_attr/`.
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
@@ -67,6 +69,19 @@ python src/preprocess/count_reads.py       # Count reads per experiment → conf
 python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0                                          # Train BPNet, default backgrounds (ccre+gc at 1/14 each)
 python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background gc:0.1               # GC negatives only
 python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05 --background gc:0.05  # custom ratios
+python src/bpnet/fit/launch.py                     # submit all experiments x 7 folds via SLURM
+python src/bpnet/fit/launch.py --dry-run           # preview sbatch scripts without submitting
+```
+
+### Attributions
+
+```bash
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM              # profile head (default)
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count  # count head
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --ohe         # also save one-hot sequences
+python src/bpnet/attribute/launch.py                                        # submit all via SLURM (profile head)
+python src/bpnet/attribute/launch.py --head profile --head count            # submit both heads
+python src/bpnet/attribute/launch.py --dry-run                              # preview without submitting
 ```
 
 ## External Dependencies
@@ -76,7 +91,7 @@ python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05
 - `bgzip` (htslib) — bgzip compression of processed peak and negative BED files
 - `parallel` (GNU parallel) — parallel downloads
 - `bigWigMerge`, `bedGraphToBigWig` (UCSC Kent tools) — BigWig merging
-- `sbatch` (SLURM, optional) — cluster job submission via `src/bpnet/fit/launch.py`
+- `sbatch` (SLURM, optional) — cluster job submission via `src/bpnet/fit/launch.py` and `src/bpnet/attribute/launch.py`
 - Python (see `requirements.txt`): `pyyaml`, `tqdm`, `numpy`, `pandas`, `scipy`, `joblib`, `pyfaidx`, `pyfastx`, `pybigtools`, `torch`, `tangermeme`, `bpnetlite`
 
 ## Data Layout After Download and Preprocessing
