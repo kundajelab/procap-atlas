@@ -110,6 +110,18 @@ python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05
 
 Output: `models/bpnet/{experiment}_{background_config}/`
 
+### 8. Benchmark BPNet model
+
+Evaluates trained models across all folds on held-out test chromosomes. Use the same `--background` arguments as during training to resolve the model directory, or specify `--model-dir` directly.
+
+```bash
+python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR882DWM
+python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR882DWM --background gc:0.1
+python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_dnase
+```
+
+Output: `performance_metrics/bpnet/{model_dir_name}.json`
+
 ## Project structure
 
 ```
@@ -125,7 +137,8 @@ src/
     gc_match_run.py      # Runs gc_match for all experiments in config
     count_reads.py       # Count total reads per experiment across both strand BigWigs
   bpnet/                 # BPNet deep learning model
-    fit/fit_bpnet.py     # BPNet training script with configurable background sampling
+    fit/fit_bpnet.py           # BPNet training script with configurable background sampling
+    benchmark/benchmark_bpnet.py  # BPNet evaluation across folds → performance_metrics/
   alphagenome/           # AlphaGenome analysis (planned)
 data/                    # gitignored, created by scripts
   hg38.fa                # Reference genome + index

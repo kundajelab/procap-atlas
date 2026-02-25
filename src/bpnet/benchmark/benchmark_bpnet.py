@@ -1,14 +1,21 @@
-"""Benchmark a trained BNBPNet model across all folds.
+"""
+Benchmark a trained BPNet model across all folds.
 
 Loads trained models for each fold, predicts on the held-out test chromosomes,
 and reports profile and count prediction metrics.
 
+The --background arguments must match those used during training so that the
+correct model directory is resolved. Use --model-dir to specify the path
+directly instead.
+
 Usage:
-    python src/bpnet/benchmark/benchmark.py -e ENCSR261KBX -v
-    python src/bpnet/benchmark/benchmark.py -e ENCSR261KBX -o -v # To save output
+    python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR261KBX
+    python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR261KBX --background gc:0.1
+    python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -24,38 +31,67 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
-MAPPABILITY = str(REPO_ROOT / "data" / "k36.Umap.MultiTrackMappability.bw")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
+
+VALID_BACKGROUNDS = {"ccre", "gc"}
 
 
 def load_chrom_splits():
-    """Load chromosome fold assignments from chrom_splits.yaml.
-
-    Returns a dict mapping fold number (int) to list of chromosome names.
-    """
     with open(CHROM_SPLITS_PATH) as f:
         data = yaml.safe_load(f)
     return {int(k): v for k, v in data["folds"].items()}
 
 
+def parse_background(value: str) -> tuple[str, float]:
+    """Parse a 'NAME:RATIO' background argument."""
+    try:
+        name, ratio_str = value.split(":")
+        ratio = float(ratio_str)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"Invalid background '{value}': expected NAME:RATIO (e.g. ccre:0.05)"
+        )
+    if name not in VALID_BACKGROUNDS:
+        raise argparse.ArgumentTypeError(
+            f"Unknown background '{name}': must be one of {sorted(VALID_BACKGROUNDS)}"
+        )
+    if ratio <= 0:
+        raise argparse.ArgumentTypeError(f"Ratio must be positive, got {ratio}")
+    return name, ratio
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
-        "-e",
-        "--experiment",
-        type=str,
-        required=True,
+        "-e", "--experiment", type=str, required=True,
         help="experiment accession ID (e.g. ENCSR882DWM)",
     )
     parser.add_argument(
-        "-o",
-        "--save-output",
-        action="store_true",
-        help="whether to save predictions + signals to disk",
+        "--background",
+        metavar="NAME:RATIO",
+        type=parse_background,
+        action="append",
+        dest="backgrounds",
+        default=None,
+        help="background config used during training (repeatable); "
+             "default: ccre:0.0714 gc:0.0714",
+    )
+    parser.add_argument(
+        "-m", "--model-dir", type=str, default=None,
+        help="override model directory (default: derived from --background)",
+    )
+    parser.add_argument(
+        "-o", "--save-output", action="store_true",
+        help="save predictions and signals to disk",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
+
+    if args.backgrounds is None:
+        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
 
     # Load experiment config
     with open(CONFIG_PATH) as f:
@@ -69,16 +105,10 @@ def main():
     exp = experiments[args.experiment]
     processed = exp.get("processed", {})
 
-    # Chromosome splits: fold i = test, fold (i+1)%n = validation, rest = train
-    chrom_splits = load_chrom_splits()
-    n_folds = len(chrom_splits)
-
-    # Resolve paths from config
     peaks_path = str(REPO_ROOT / processed["peaks"])
     pl_bw_path = str(REPO_ROOT / processed["pl_bigwig"])
     mn_bw_path = str(REPO_ROOT / processed["mn_bigwig"])
 
-    # Verify data files exist
     for path, label in [
         (peaks_path, "peaks"),
         (pl_bw_path, "plus bigwig"),
@@ -88,8 +118,18 @@ def main():
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
-    # Model directory
-    model_dir = Path(str(REPO_ROOT / "models" / "bpnet" / f"{args.experiment}_ccre"))
+    # Resolve model directory from background config or explicit override
+    if args.model_dir:
+        model_dir = Path(args.model_dir)
+    else:
+        bg_suffix = "_".join(
+            f"{name}{ratio:g}" for name, ratio in sorted(args.backgrounds)
+        )
+        model_dir = REPO_ROOT / "models" / "bpnet" / f"{args.experiment}_{bg_suffix}"
+
+    chrom_splits = load_chrom_splits()
+    n_folds = len(chrom_splits)
+
     model_paths = [
         model_dir / f"{args.experiment}.fold{fold}.torch" for fold in range(n_folds)
     ]
@@ -98,7 +138,6 @@ def main():
             print(f"Error: model not found: {model_path}", file=sys.stderr)
             sys.exit(1)
 
-    # Build params with defaults, then apply CLI overrides
     params = {
         "sequences": FASTA,
         "signals": [pl_bw_path, mn_bw_path],
@@ -106,22 +145,15 @@ def main():
         "blacklist": [BLACKLIST],
         "in_window": 2114,
         "out_window": 1000,
-        "n_filters": 512,
-        "n_layers": 8,
         "batch_size": 64,
         "verbose": False,
     }
 
-    # Apply CLI overrides
-    cli_overrides = {"batch_size": args.batch_size}
-    for k, v in cli_overrides.items():
-        if v is not None:
-            params[k] = v
-
+    if args.batch_size is not None:
+        params["batch_size"] = args.batch_size
     if args.verbose:
         params["verbose"] = True
 
-    # Load peaks
     loci = pd.read_csv(
         params["loci"],
         sep="\t",
@@ -132,16 +164,18 @@ def main():
         dtype={"chrom": str},
     )
 
-    # Predict on test sets
+    print(f"Experiment: {args.experiment} ({exp['biosample']})")
+    print(f"Model dir: {model_dir}")
+
+    # Predict on each fold's test chromosomes
     signals = []
     preds = []
     for fold in range(n_folds):
-        # Load data
-        test_chrom = chrom_splits[fold]
+        test_chroms = chrom_splits[fold]
         X, y = extract_loci(
             loci=loci,
             sequences=params["sequences"],
-            chroms=test_chrom,
+            chroms=test_chroms,
             signals=params["signals"],
             in_window=params["in_window"],
             out_window=params["out_window"],
@@ -151,12 +185,9 @@ def main():
         )
         signals.append(torch.abs(y))
 
-        # Load model
         model = torch.load(
             model_paths[fold], weights_only=False, map_location=torch.device("cpu")
         )
-
-        # Predict
         preds.append(
             predict(
                 model=model,
@@ -201,8 +232,7 @@ def main():
         torch.cat([signal.sum(dim=(-1, -2)) for signal in signals]),
     ).item()
 
-    # Output
-    print("Per-fold results:\n----------------")
+    print("\nPer-fold results:\n----------------")
     print(
         f"Profile Pearson correlation: {[np.nanmedian(c).item() for c in profile_corr]}"
         f" (n_nan={[np.isnan(c).mean().item() for c in profile_corr]})"
@@ -211,19 +241,46 @@ def main():
         f"Profile Jensen-Shannon distance: {[np.nanmedian(j).item() for j in profile_jsd]} "
         f"(n_nan={[np.isnan(j).mean().item() for j in profile_jsd]})"
     )
-    print(f"Log Counts Pearson correlation: {log_counts_pearson}")
-    print(f"Counts Spearman correlation: {counts_spearman}\n")
+    print(f"Log counts Pearson correlation: {log_counts_pearson}")
+    print(f"Counts Spearman correlation: {counts_spearman}")
 
     print("\nGenome-wide results:\n----------------")
     print(f"Profile Pearson correlation: {np.nanmedian(np.concatenate(profile_corr))}")
-    print(
-        f"Profile Jensen-Shannon distance: {np.nanmedian(np.concatenate(profile_jsd))}"
-    )
-    print(f"Log Counts Pearson correlation: {log_counts_pearson_all}")
+    print(f"Profile Jensen-Shannon distance: {np.nanmedian(np.concatenate(profile_jsd))}")
+    print(f"Log counts Pearson correlation: {log_counts_pearson_all}")
     print(f"Counts Spearman correlation: {counts_spearman_all}")
 
+    # Save metrics to JSON
+    metrics = {
+        "experiment": args.experiment,
+        "biosample": exp["biosample"],
+        "model_dir": str(model_dir),
+        "per_fold": {
+            str(fold): {
+                "profile_pearson": np.nanmedian(profile_corr[fold]).item(),
+                "profile_jsd": np.nanmedian(profile_jsd[fold]).item(),
+                "log_counts_pearson": log_counts_pearson[fold],
+                "counts_spearman": counts_spearman[fold],
+            }
+            for fold in range(n_folds)
+        },
+        "genome_wide": {
+            "profile_pearson": np.nanmedian(np.concatenate(profile_corr)).item(),
+            "profile_jsd": np.nanmedian(np.concatenate(profile_jsd)).item(),
+            "log_counts_pearson": log_counts_pearson_all,
+            "counts_spearman": counts_spearman_all,
+        },
+    }
+    metrics_dir = REPO_ROOT / "performance_metrics" / "bpnet"
+    metrics_dir.mkdir(parents=True, exist_ok=True)
+    metrics_path = metrics_dir / f"{model_dir.name}.json"
+    with open(metrics_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+    print(f"\nMetrics saved to {metrics_path}")
+
     if args.save_output:
-        output_dir = str(REPO_ROOT) / "predictions" / "bpnet"
+        output_dir = REPO_ROOT / "predictions" / "bpnet"
+        output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{args.experiment}.npz"
         np.savez_compressed(output_path, preds=preds, signals=signals)
         print(f"\nPredictions saved to {output_path}")

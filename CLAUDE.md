@@ -21,6 +21,7 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`) and chromosome fold splits (`chrom_splits.yaml`, 7 folds for cross-validation).
 - **`src/bpnet/`** — BPNet deep learning model training and evaluation:
   - `fit/fit_bpnet.py` — Consolidated BPNet training script with configurable background sampling. Accepts repeatable `--background NAME:RATIO` arguments (names: `ccre`, `gc`) where RATIO is negatives-per-positive contributed by that source. Sources are pooled proportionally. Default: `ccre:1/14 gc:1/14` (total `negative_ratio=1/7`, giving 1/8 of each batch as negatives). Output directory name encodes backgrounds and ratios (e.g. `{experiment}_ccre0.0714_gc0.0714`).
+  - `benchmark/benchmark_bpnet.py` — Evaluates a trained BPNet across all folds on held-out test chromosomes. Accepts the same `--background NAME:RATIO` arguments as `fit_bpnet.py` to resolve the model directory; use `--model-dir` to override. Reports per-fold and genome-wide profile Pearson, profile JSD, log-counts Pearson, and counts Spearman metrics. Always writes results to `performance_metrics/bpnet/{model_dir_name}.json`.
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
