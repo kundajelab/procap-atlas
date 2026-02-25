@@ -107,7 +107,7 @@ def main():
                 continue
 
             job_name = f"bpnet_{exp_id}_f{fold}"
-            fit_cmd = f"python {FIT_SCRIPT} -e {exp_id} --fold {fold}"
+            fit_cmd = f"python {FIT_SCRIPT} -e {exp_id} --fold {fold} -v"
             if args.fit_args:
                 fit_cmd += f" {args.fit_args}"
 
