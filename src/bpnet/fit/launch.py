@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Submit SLURM jobs to train BNBPNet models for all experiments and folds.
+"""Submit SLURM jobs to train BPNet models for all experiments and folds.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
-sbatch job per (experiment, fold) pair.
+sbatch job per (experiment, fold) pair via fit_bpnet.py.
+
+Experiments with fewer peaks than --min-peaks (default: 5000) are skipped,
+as low-peak experiments tend to produce poorly calibrated models. Experiments
+with an already-trained model file are also skipped automatically.
 
 Usage:
     python src/bpnet/fit/launch.py                    # submit all experiments x 7 folds
     python src/bpnet/fit/launch.py --dry-run           # print sbatch scripts without submitting
     python src/bpnet/fit/launch.py --time 12:00:00 --mem 32G --partition gpu
+    python src/bpnet/fit/launch.py --min-peaks 10000  # only well-covered experiments
 """
 
 import argparse
@@ -22,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 N_PEAKS_PATH = REPO_ROOT / "configs" / "n_peaks.txt"
-FIT_SCRIPT = REPO_ROOT / "src" / "bpnet" / "fit" / "fit.py"
+FIT_SCRIPT = REPO_ROOT / "src" / "bpnet" / "fit" / "fit_bpnet.py"
 
 
 def load_n_peaks():
@@ -51,14 +56,14 @@ def main():
     parser.add_argument("--gpus", type=str, default="1")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="24:00:00")
+    parser.add_argument("--time", type=str, default="48:00:00")
     parser.add_argument(
         "--min-peaks",
         type=int,
         default=5000,
         help="skip experiments with fewer than this many peaks (default: 5000)",
     )
-    # Extra args forwarded to fit.py
+    # Extra args forwarded to fit_bpnet.py
     parser.add_argument(
         "--fit-args",
         type=str,
@@ -117,6 +122,18 @@ def main():
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
 
+                ml openblas/0.3.28
+                ml xsimd/8.1.0
+                ml xz/5.8.1
+                ml hdf5/1.14.4
+                ml arrow/22.0.0
+                ml load py-pyarrow/18.1.0_py312
+                ml lz4/1.8.0
+                ml biology
+                ml htslib
+                ml ucsc-utils
+
+                mamba activate torch
                 {fit_cmd}
             """)
 
