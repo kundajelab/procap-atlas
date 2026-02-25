@@ -6,7 +6,7 @@ sbatch job per (experiment, head) pair via attribute_bpnet.py.
 
 Jobs are skipped if the output attribution file already exists or if any
 fold model is missing (meaning training is incomplete). Experiments with
-fewer peaks than --min-peaks (default: 5000) are also skipped.
+fewer total reads than --min-reads (default: 10_000_000) are also skipped.
 
 Usage:
     python src/bpnet/attribute/launch.py                    # submit all experiments, profile head
@@ -14,7 +14,7 @@ Usage:
     python src/bpnet/attribute/launch.py --head count        # count head only
     python src/bpnet/attribute/launch.py --head profile --head count  # both heads
     python src/bpnet/attribute/launch.py --time 24:00:00 --mem 64G --partition gpu
-    python src/bpnet/attribute/launch.py --min-peaks 10000  # only well-covered experiments
+    python src/bpnet/attribute/launch.py --min-reads 20000000  # only well-covered experiments
 """
 
 import argparse
@@ -23,27 +23,20 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pandas as pd
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
-N_PEAKS_PATH = REPO_ROOT / "configs" / "n_peaks.txt"
+N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 ATTRIBUTE_SCRIPT = REPO_ROOT / "src" / "bpnet" / "attribute" / "attribute_bpnet.py"
 
 
-def load_n_peaks():
-    """Parse n_peaks.txt and return {experiment_id: peak_count} dict."""
-    peak_counts = {}
-    with open(N_PEAKS_PATH) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            count, filename = line.split(None, 1)
-            exp_id = filename.split("_")[0]
-            peak_counts[exp_id] = int(count)
-    return peak_counts
+def load_n_reads():
+    """Parse n_reads.txt and return {experiment_id: total_reads} dict."""
+    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
+    return dict(zip(df["experiment"], df["total_reads"]))
 
 
 def main():
@@ -69,10 +62,10 @@ def main():
     parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="48:00:00")
     parser.add_argument(
-        "--min-peaks",
+        "--min-reads",
         type=int,
-        default=5000,
-        help="skip experiments with fewer than this many peaks (default: 5000)",
+        default=10_000_000,
+        help="skip experiments with fewer total reads than this (default: 10000000)",
     )
     # Extra args forwarded to attribute_bpnet.py
     parser.add_argument(
@@ -95,8 +88,8 @@ def main():
         chrom_splits = yaml.safe_load(f)
     n_folds = len(chrom_splits["folds"])
 
-    # Load peak counts for filtering
-    peak_counts = load_n_peaks()
+    # Load read counts for filtering
+    read_counts = load_n_reads()
 
     log_dir = REPO_ROOT / "logs" / "bpnet_attr"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -104,12 +97,12 @@ def main():
     submitted = 0
     skipped_done = 0
     skipped_untrained = 0
-    skipped_peaks = 0
+    skipped_reads = 0
     for exp_id in experiments:
-        # Skip experiments with too few peaks
-        n_peaks = peak_counts.get(exp_id, 0)
-        if n_peaks < args.min_peaks:
-            skipped_peaks += 1
+        # Skip experiments with too few reads
+        n_reads = read_counts.get(exp_id, 0)
+        if n_reads < args.min_reads:
+            skipped_reads += 1
             continue
 
         # Skip if any fold model is missing (training incomplete)
@@ -180,8 +173,8 @@ def main():
     action = "Would submit" if args.dry_run else "Submitted"
     total = len(experiments) * len(heads)
     print(
-        f"\n{action} {submitted} jobs, skipped {skipped_peaks} experiments "
-        f"with <{args.min_peaks} peaks, skipped {skipped_untrained} with incomplete "
+        f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
+        f"with <{args.min_reads:,} reads, skipped {skipped_untrained} with incomplete "
         f"training, skipped {skipped_done} already attributed ({total} total)"
     )
 
