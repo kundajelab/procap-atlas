@@ -9,6 +9,14 @@ background configuration, e.g.:
 
   {experiment}_ccre0.05_gc0.05
 
+if backgrounds are specified as:
+
+  --background ccre:0.05 --background gc:0.05
+
+The default background ratio is 1/14 for cCREs and 1/14 for GC-matched, resulting
+in 1/8 of each batch as negatives. If no --background arguments are specified,
+the no background will be appended to the output directory name.
+
 Available background sources:
   ccre   cCRE annotations (data/GRCh38-cCREs.bed.gz)
   gc     GC-matched negatives (from experiment config)
@@ -18,8 +26,8 @@ fold i for testing and validates on fold (i+1) %% 7. Remaining folds are used
 for training.
 
 Usage:
-    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX --fold 0 --background gc:0.1
-    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX --fold 0 --background ccre:0.05 --background gc:0.05
+    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX -f 0 --background gc:0.1
+    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX -f 0 --background ccre:0.05 --background gc:0.05
 """
 
 import argparse
@@ -152,11 +160,13 @@ def main():
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
+    # Validate experiment
     experiments = config["experiments"]
     if args.experiment not in experiments:
         print(f"Error: {args.experiment} not found in config", file=sys.stderr)
         sys.exit(1)
 
+    # Fetch experiment data paths
     exp = experiments[args.experiment]
     processed = exp.get("processed", {})
 
@@ -164,6 +174,7 @@ def main():
     pl_bw_path = str(REPO_ROOT / processed["pl_bigwig"])
     mn_bw_path = str(REPO_ROOT / processed["mn_bigwig"])
 
+    # Validate experiment data paths
     for path, label in [
         (peaks_path, "peaks"),
         (pl_bw_path, "plus bigwig"),
@@ -173,6 +184,7 @@ def main():
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
+    # Fetch background data paths
     background_paths = {
         "ccre": CCRES,
         "gc": REPO_ROOT / processed["gc_negatives"],
@@ -188,8 +200,14 @@ def main():
     valid_chroms = chrom_splits[valid_fold]
     train_chroms = [c for f in train_folds for c in chrom_splits[f]]
 
-    # Output directory name encodes background sources and ratios
-    if args.backgrounds:
+    # Check whether we're using the default background ratios
+    using_default_backgrounds = args.backgrounds is None
+    if using_default_backgrounds:
+        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
+
+    # Output directory name encodes background sources and ratios only when
+    # non-default backgrounds are specified
+    if not using_default_backgrounds:
         bg_suffix = "_".join(
             f"{name}{ratio:g}" for name, ratio in sorted(args.backgrounds)
         )
@@ -241,9 +259,6 @@ def main():
             params[k] = v
     if args.verbose:
         params["verbose"] = True
-
-    if args.backgrounds is None:
-        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
 
     # Load peaks
     peaks = load_bed(params["loci"])

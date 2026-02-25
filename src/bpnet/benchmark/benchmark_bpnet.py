@@ -4,13 +4,10 @@ Benchmark a trained BPNet model across all folds.
 Loads trained models for each fold, predicts on the held-out test chromosomes,
 and reports profile and count prediction metrics.
 
-The --background arguments must match those used during training so that the
-correct model directory is resolved. Use --model-dir to specify the path
-directly instead.
+Use --model-dir to specify the path directly if trained with custom negative ratios.
 
 Usage:
     python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR261KBX
-    python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR261KBX --background gc:0.1
     python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
 """
 
@@ -33,31 +30,10 @@ CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
-VALID_BACKGROUNDS = {"ccre", "gc"}
-
-
 def load_chrom_splits():
     with open(CHROM_SPLITS_PATH) as f:
         data = yaml.safe_load(f)
     return {int(k): v for k, v in data["folds"].items()}
-
-
-def parse_background(value: str) -> tuple[str, float]:
-    """Parse a 'NAME:RATIO' background argument."""
-    try:
-        name, ratio_str = value.split(":")
-        ratio = float(ratio_str)
-    except ValueError:
-        raise argparse.ArgumentTypeError(
-            f"Invalid background '{value}': expected NAME:RATIO (e.g. ccre:0.05)"
-        )
-    if name not in VALID_BACKGROUNDS:
-        raise argparse.ArgumentTypeError(
-            f"Unknown background '{name}': must be one of {sorted(VALID_BACKGROUNDS)}"
-        )
-    if ratio <= 0:
-        raise argparse.ArgumentTypeError(f"Ratio must be positive, got {ratio}")
-    return name, ratio
 
 
 def main():
@@ -65,33 +41,28 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "-e", "--experiment", type=str, required=True,
+        "-e",
+        "--experiment",
+        type=str,
+        required=True,
         help="experiment accession ID (e.g. ENCSR882DWM)",
     )
     parser.add_argument(
-        "--background",
-        metavar="NAME:RATIO",
-        type=parse_background,
-        action="append",
-        dest="backgrounds",
+        "-m",
+        "--model-dir",
+        type=str,
         default=None,
-        help="background config used during training (repeatable); "
-             "default: ccre:0.0714 gc:0.0714",
+        help="override model directory, default derived from config",
     )
     parser.add_argument(
-        "-m", "--model-dir", type=str, default=None,
-        help="override model directory (default: derived from --background)",
-    )
-    parser.add_argument(
-        "-o", "--save-output", action="store_true",
+        "-o",
+        "--save-output",
+        action="store_true",
         help="save predictions and signals to disk",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
-
-    if args.backgrounds is None:
-        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
 
     # Load experiment config
     with open(CONFIG_PATH) as f:
@@ -118,14 +89,11 @@ def main():
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
-    # Resolve model directory from background config or explicit override
+    # Resolve model directory from config or explicit override
     if args.model_dir:
         model_dir = Path(args.model_dir)
     else:
-        bg_suffix = "_".join(
-            f"{name}{ratio:g}" for name, ratio in sorted(args.backgrounds)
-        )
-        model_dir = REPO_ROOT / "models" / "bpnet" / f"{args.experiment}_{bg_suffix}"
+        model_dir = REPO_ROOT / "models" / "bpnet" / args.experiment
 
     chrom_splits = load_chrom_splits()
     n_folds = len(chrom_splits)
@@ -246,7 +214,9 @@ def main():
 
     print("\nGenome-wide results:\n----------------")
     print(f"Profile Pearson correlation: {np.nanmedian(np.concatenate(profile_corr))}")
-    print(f"Profile Jensen-Shannon distance: {np.nanmedian(np.concatenate(profile_jsd))}")
+    print(
+        f"Profile Jensen-Shannon distance: {np.nanmedian(np.concatenate(profile_jsd))}"
+    )
     print(f"Log counts Pearson correlation: {log_counts_pearson_all}")
     print(f"Counts Spearman correlation: {counts_spearman_all}")
 

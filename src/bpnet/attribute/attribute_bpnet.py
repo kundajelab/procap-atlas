@@ -3,14 +3,10 @@
 Loads trained models for each fold, computes hypothetical attributions on all
 peaks genome-wide, averages across folds, and saves to attributions/bpnet/.
 
-The --background arguments must match those used during training so that the
-correct model directory is resolved. Use --model-dir to specify the path
-directly instead.
-
 Usage:
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX
-    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --background gc:0.1
-    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase --head count --ohe
+    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head count --ohe
+    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
 """
 
 import argparse
@@ -33,27 +29,6 @@ CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
-VALID_BACKGROUNDS = {"ccre", "gc"}
-
-
-def parse_background(value: str) -> tuple[str, float]:
-    """Parse a 'NAME:RATIO' background argument."""
-    try:
-        name, ratio_str = value.split(":")
-        ratio = float(ratio_str)
-    except ValueError:
-        raise argparse.ArgumentTypeError(
-            f"Invalid background '{value}': expected NAME:RATIO (e.g. ccre:0.05)"
-        )
-    if name not in VALID_BACKGROUNDS:
-        raise argparse.ArgumentTypeError(
-            f"Unknown background '{name}': must be one of {sorted(VALID_BACKGROUNDS)}"
-        )
-    if ratio <= 0:
-        raise argparse.ArgumentTypeError(f"Ratio must be positive, got {ratio}")
-    return name, ratio
-
-
 def load_chrom_splits():
     """Load chromosome fold assignments from chrom_splits.yaml.
 
@@ -74,18 +49,11 @@ def main():
         help="experiment accession ID (e.g. ENCSR882DWM)",
     )
     parser.add_argument(
-        "--background",
-        metavar="NAME:RATIO",
-        type=parse_background,
-        action="append",
-        dest="backgrounds",
+        "-m",
+        "--model-dir",
+        type=str,
         default=None,
-        help="background config used during training (repeatable); "
-             "default: ccre:0.0714 gc:0.0714",
-    )
-    parser.add_argument(
-        "-m", "--model-dir", type=str, default=None,
-        help="override model directory (default: derived from --background)",
+        help="override model directory, default derived from config",
     )
     parser.add_argument(
         "--head",
@@ -99,12 +67,9 @@ def main():
         action="store_true",
         help="whether to save one-hot-encoded sequences to disk",
     )
-    parser.add_argument("-bs", "--batch-size", type=int, default=64)
+    parser.add_argument("-b", "--batch-size", type=int, default=64)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
-
-    if args.backgrounds is None:
-        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
 
     # Load experiment config
     with open(CONFIG_PATH) as f:
@@ -145,10 +110,7 @@ def main():
     if args.model_dir:
         model_dir = Path(args.model_dir)
     else:
-        bg_suffix = "_".join(
-            f"{name}{ratio:g}" for name, ratio in sorted(args.backgrounds)
-        )
-        model_dir = REPO_ROOT / "models" / "bpnet" / f"{args.experiment}_{bg_suffix}"
+        model_dir = REPO_ROOT / "models" / "bpnet" / args.experiment
     model_paths = [
         model_dir / f"{args.experiment}.fold{fold}.torch" for fold in range(n_folds)
     ]
