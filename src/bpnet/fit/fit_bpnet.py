@@ -13,9 +13,9 @@ if backgrounds are specified as:
 
   --background ccre:0.05 --background gc:0.05
 
-The default background ratio is 1/14 for cCREs and 1/14 for GC-matched, resulting
-in 1/8 of each batch as negatives. If no --background arguments are specified,
-the no background will be appended to the output directory name.
+The default background is 1/7 GC-matched negatives (no cCREs), giving 1/8 of each
+batch as negatives. If no --background arguments are specified, no suffix will be
+appended to the output directory name.
 
 Available background sources:
   ccre   cCRE annotations (data/GRCh38-cCREs.bed.gz)
@@ -140,7 +140,7 @@ def main():
         dest="backgrounds",
         default=None,
         help="background source and per-batch ratio (repeatable); "
-        "default: ccre:0.0714 gc:0.0714 (sums to 1/7 negatives:positives)",
+        "default: gc:0.1429 (1/7 negatives:positives, GC-matched only)",
     )
 
     parser.add_argument("-o", "--output-dir", type=str, default=None)
@@ -203,7 +203,7 @@ def main():
     # Check whether we're using the default background ratios
     using_default_backgrounds = args.backgrounds is None
     if using_default_backgrounds:
-        args.backgrounds = [("ccre", 1 / 14), ("gc", 1 / 14)]
+        args.backgrounds = [("gc", 1 / 7)]
 
     # Output directory name encodes background sources and ratios only when
     # non-default backgrounds are specified
