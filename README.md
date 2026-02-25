@@ -122,6 +122,18 @@ python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR882DWM --model-dir models/
 
 Output: `performance_metrics/bpnet/{model_dir_name}.json`
 
+### 9. Compute attributions
+
+Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Use the same `--background` arguments as during training, or `--model-dir` directly. `--head` selects the profile or count output head.
+
+```bash
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count --ohe
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_dnase
+```
+
+Output: `attributions/bpnet/{model_dir_name}_{head}.npz`
+
 ## Project structure
 
 ```
@@ -138,7 +150,8 @@ src/
     count_reads.py       # Count total reads per experiment across both strand BigWigs
   bpnet/                 # BPNet deep learning model
     fit/fit_bpnet.py           # BPNet training script with configurable background sampling
-    benchmark/benchmark_bpnet.py  # BPNet evaluation across folds → performance_metrics/
+    benchmark/benchmark_bpnet.py     # BPNet evaluation across folds → performance_metrics/
+    attribute/attribute_bpnet.py     # DeepLIFT/SHAP attributions → attributions/
   alphagenome/           # AlphaGenome analysis (planned)
 data/                    # gitignored, created by scripts
   hg38.fa                # Reference genome + index
