@@ -110,12 +110,12 @@ python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05
 
 Output: `models/bpnet/{experiment}_{background_config}/`
 
-To submit training jobs for all experiments and folds via SLURM, use `launch.py`. Jobs are skipped automatically for experiments with fewer than `--min-peaks` peaks and for folds where the model file already exists. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to retrain everything on your own SLURM cluster.
+To submit training jobs for all experiments and folds via SLURM, use `launch.py`. Jobs are skipped automatically for experiments with fewer than `--min-reads` total reads (default: 10M) and for folds where the model file already exists. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to retrain everything on your own SLURM cluster.
 
 ```bash
-python src/bpnet/fit/launch.py                     # all experiments x 7 folds
-python src/bpnet/fit/launch.py --dry-run           # preview without submitting
-python src/bpnet/fit/launch.py --min-peaks 10000   # only well-covered experiments
+python src/bpnet/fit/launch.py                          # all experiments x 7 folds
+python src/bpnet/fit/launch.py --dry-run                # preview without submitting
+python src/bpnet/fit/launch.py --min-reads 20000000     # only well-covered experiments
 ```
 
 ### 8. Benchmark BPNet model
@@ -142,7 +142,7 @@ python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/
 
 Output: `attributions/bpnet/{model_dir_name}_{head}.npz`
 
-To submit attribution jobs for all experiments via SLURM, use `launch.py`. Jobs are skipped automatically if the output already exists, any fold model is missing, or the experiment has fewer than `--min-peaks` peaks. `--head` is repeatable to run multiple heads. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to use this to run attributions on your own SLURM cluster.
+To submit attribution jobs for all experiments via SLURM, use `launch.py`. Jobs are skipped automatically if the output already exists, any fold model is missing, or the experiment has fewer than `--min-reads` total reads (default: 10M). `--head` is repeatable to run multiple heads. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to use this to run attributions on your own SLURM cluster.
 
 ```bash
 python src/bpnet/attribute/launch.py                              # profile head, all experiments
