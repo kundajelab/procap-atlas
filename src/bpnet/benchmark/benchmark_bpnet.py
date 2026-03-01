@@ -30,6 +30,7 @@ CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
+
 def load_chrom_splits():
     with open(CHROM_SPLITS_PATH) as f:
         data = yaml.safe_load(f)
@@ -60,7 +61,7 @@ def main():
         action="store_true",
         help="save predictions and signals to disk",
     )
-    parser.add_argument("-b", "--batch-size", type=int, default=None)
+    parser.add_argument("-b", "--batch-size", type=int, default=64)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -252,7 +253,19 @@ def main():
         output_dir = REPO_ROOT / "predictions" / "bpnet"
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{args.experiment}.npz"
-        np.savez_compressed(output_path, preds=preds, signals=signals)
+        scaled_preds = {
+            f"predict_fold{i}": (
+                torch.nn.functional.softmax(
+                    pred[0].reshape(pred[0].shape[0], -1), dim=-1
+                )
+                * torch.exp(pred[1])
+            )
+            .reshape(*pred[0].shape)
+            .numpy()
+            for i, pred in enumerate(preds)
+        }
+        expts = {f"expt_fold{i}": signal.numpy() for i, signal in enumerate(signals)}
+        np.savez_compressed(output_path, **scaled_preds, **expts)
         print(f"\nPredictions saved to {output_path}")
 
 

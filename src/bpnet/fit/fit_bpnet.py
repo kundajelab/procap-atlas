@@ -91,7 +91,7 @@ def load_bed(path: str | Path) -> pd.DataFrame:
 
 def build_negatives_pool(
     sources: list[tuple[str, float, pd.DataFrame]],
-    random_state: int = 47,
+    random_state: None | int = None,
 ) -> tuple[pd.DataFrame | None, float]:
     """Combine negatives from multiple sources sampled proportionally by ratio.
 

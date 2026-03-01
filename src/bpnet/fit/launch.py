@@ -45,11 +45,15 @@ def main():
         help="print sbatch scripts without submitting",
     )
     # SLURM resource flags
+    parser.add_argument(
+        "--gpus",
+        type=str,
+        default="GPU_SKU:A100_SXM4|GPU_SKU:L40S|GPU_SKU:H100_SXM5|GPU_SKU:RTX_3090",
+    )
     parser.add_argument("--partition", type=str, default="akundaje")
-    parser.add_argument("--gpus", type=str, default="1")
     parser.add_argument("--cpus-per-task", type=int, default=4)
-    parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="48:00:00")
+    parser.add_argument("--mem", type=str, default="32G")
+    parser.add_argument("--time", type=str, default="24:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -105,12 +109,16 @@ def main():
                 fit_cmd += f" {args.fit_args}"
 
             sbatch_script = textwrap.dedent(f"""\
-                #!/bin/bash
+                #!/bin/bash -l
                 #SBATCH --job-name={job_name}
-                #SBATCH --partition={args.partition}
-                #SBATCH --gpus={args.gpus}
+                #SBATCH --ntasks=1
+                #SBATCH --ntasks-per-node=1
+                #SBATCH --nodes=1
+                #SBATCH --gpus=1
+                #SBATCH -C {args.gpus}
                 #SBATCH --cpus-per-task={args.cpus_per_task}
                 #SBATCH --mem={args.mem}
+                #SBATCH --partition={args.partition}
                 #SBATCH --time={args.time}
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
@@ -127,6 +135,7 @@ def main():
                 ml ucsc-utils
 
                 mamba activate torch
+                nvidia-smi -L
                 {fit_cmd}
             """)
 

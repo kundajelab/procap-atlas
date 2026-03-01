@@ -5,8 +5,7 @@ Reads experiment IDs from configs/experiment_config.yaml and submits one
 sbatch job per (experiment, head) pair via attribute_bpnet.py.
 
 Jobs are skipped if the output attribution file already exists or if any
-fold model is missing (meaning training is incomplete). Experiments with
-fewer total reads than --min-reads (default: 10_000_000) are also skipped.
+fold model is missing (meaning training is incomplete).
 
 Usage:
     python src/bpnet/attribute/launch.py                    # submit all experiments, profile head
@@ -56,23 +55,31 @@ def main():
         help="attribution head(s) to run; repeatable (default: profile)",
     )
     # SLURM resource flags
+    parser.add_argument(
+        "--gpus",
+        type=str,
+        default="GPU_SKU:A100_SXM4|GPU_SKU:L40S|GPU_SKU:H100_SXM5|GPU_SKU:RTX_3090",
+    )
     parser.add_argument("--partition", type=str, default="akundaje")
-    parser.add_argument("--gpus", type=str, default="1")
-    parser.add_argument("--cpus-per-task", type=int, default=1)
+    parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="48:00:00")
+    parser.add_argument("--time", type=str, default="24:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
-        default=10_000_000,
+        default=0,
         help="skip experiments with fewer total reads than this (default: 10000000)",
     )
-    # Extra args forwarded to attribute_bpnet.py
     parser.add_argument(
         "--attribute-args",
         type=str,
         default="",
         help="extra arguments forwarded to attribute_bpnet.py (e.g. '--batch-size 32')",
+    )
+    parser.add_argument(
+        "--ohe",
+        action="store_true",
+        help="whether to save one-hot-encoded sequences to disk",
     )
     args = parser.parse_args()
 
@@ -125,14 +132,20 @@ def main():
 
             job_name = f"bpnet_attr_{exp_id}_{head}"
             attr_cmd = f"python {ATTRIBUTE_SCRIPT} -e {exp_id} --head {head} -v {args.attribute_args}"
+            if args.ohe and (head == "profile" or len(heads) == 1):
+                attr_cmd += " --ohe"
 
             sbatch_script = textwrap.dedent(f"""\
-                #!/bin/bash
+                #!/bin/bash -l
                 #SBATCH --job-name={job_name}
-                #SBATCH --partition={args.partition}
-                #SBATCH --gpus={args.gpus}
+                #SBATCH --ntasks=1
+                #SBATCH --ntasks-per-node=1
+                #SBATCH --nodes=1
+                #SBATCH --gpus=1
+                #SBATCH -C {args.gpus}
                 #SBATCH --cpus-per-task={args.cpus_per_task}
                 #SBATCH --mem={args.mem}
+                #SBATCH --partition={args.partition}
                 #SBATCH --time={args.time}
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
@@ -149,6 +162,7 @@ def main():
                 ml ucsc-utils
 
                 mamba activate torch
+                nvidia-smi -L
                 {attr_cmd}
             """)
 

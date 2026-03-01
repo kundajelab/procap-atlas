@@ -29,6 +29,7 @@ CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
+
 def load_chrom_splits():
     """Load chromosome fold assignments from chrom_splits.yaml.
 
@@ -89,19 +90,13 @@ def main():
 
     # Resolve paths from config
     peaks_path = str(REPO_ROOT / processed["filtered_peaks"])
-    pl_bw_path = str(REPO_ROOT / processed["pl_bigwig"])
-    mn_bw_path = str(REPO_ROOT / processed["mn_bigwig"])
 
     # Output directory
     out_dir = REPO_ROOT / "attributions" / "bpnet"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Verify data files exist
-    for path, label in [
-        (peaks_path, "filtered_peaks"),
-        (pl_bw_path, "plus bigwig"),
-        (mn_bw_path, "minus bigwig"),
-    ]:
+    for path, label in [(peaks_path, "filtered_peaks")]:
         if not Path(path).exists():
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
@@ -122,7 +117,6 @@ def main():
     # Build params with defaults, then apply CLI overrides
     params = {
         "sequences": FASTA,
-        "signals": [pl_bw_path, mn_bw_path],
         "loci": peaks_path,
         "blacklist": [BLACKLIST],
         "in_window": 2114,
