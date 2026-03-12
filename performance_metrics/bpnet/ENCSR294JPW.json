@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR294JPW",
+    "biosample": "left ventricle myocardium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR294JPW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.498418390750885,
+            "profile_jsd": 0.3536533713340759,
+            "log_counts_pearson": 0.7240445017814636,
+            "counts_spearman": 0.7393969297409058
+        },
+        "1": {
+            "profile_pearson": 0.49492600560188293,
+            "profile_jsd": 0.35588976740837097,
+            "log_counts_pearson": 0.7190660834312439,
+            "counts_spearman": 0.7404467463493347
+        },
+        "2": {
+            "profile_pearson": 0.4965853691101074,
+            "profile_jsd": 0.3593977689743042,
+            "log_counts_pearson": 0.6925478577613831,
+            "counts_spearman": 0.711341142654419
+        },
+        "3": {
+            "profile_pearson": 0.49532192945480347,
+            "profile_jsd": 0.3538177013397217,
+            "log_counts_pearson": 0.7070383429527283,
+            "counts_spearman": 0.7279504537582397
+        },
+        "4": {
+            "profile_pearson": 0.4798542559146881,
+            "profile_jsd": 0.36198824644088745,
+            "log_counts_pearson": 0.700844407081604,
+            "counts_spearman": 0.7177308797836304
+        },
+        "5": {
+            "profile_pearson": 0.49247467517852783,
+            "profile_jsd": 0.36118263006210327,
+            "log_counts_pearson": 0.7181402444839478,
+            "counts_spearman": 0.7297185063362122
+        },
+        "6": {
+            "profile_pearson": 0.5224224328994751,
+            "profile_jsd": 0.33944791555404663,
+            "log_counts_pearson": 0.6688886880874634,
+            "counts_spearman": 0.6853164434432983
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.496614933013916,
+        "profile_jsd": 0.3553563356399536,
+        "log_counts_pearson": 0.6968651413917542,
+        "counts_spearman": 0.7154576182365417
+    }
+}

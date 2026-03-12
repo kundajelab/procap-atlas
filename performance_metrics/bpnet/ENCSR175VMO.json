@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR175VMO",
+    "biosample": "Metastatic Pancreatic Carcinoma in the Ovary",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR175VMO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5103675127029419,
+            "profile_jsd": 0.3424696922302246,
+            "log_counts_pearson": 0.6136669516563416,
+            "counts_spearman": 0.6335633993148804
+        },
+        "1": {
+            "profile_pearson": 0.5050601363182068,
+            "profile_jsd": 0.34859102964401245,
+            "log_counts_pearson": 0.6765035390853882,
+            "counts_spearman": 0.7040471434593201
+        },
+        "2": {
+            "profile_pearson": 0.500514030456543,
+            "profile_jsd": 0.3584340214729309,
+            "log_counts_pearson": 0.672604501247406,
+            "counts_spearman": 0.6921426653862
+        },
+        "3": {
+            "profile_pearson": 0.49263396859169006,
+            "profile_jsd": 0.3503261208534241,
+            "log_counts_pearson": 0.6509383916854858,
+            "counts_spearman": 0.6905266642570496
+        },
+        "4": {
+            "profile_pearson": 0.502402126789093,
+            "profile_jsd": 0.3496660590171814,
+            "log_counts_pearson": 0.6376891732215881,
+            "counts_spearman": 0.6644450426101685
+        },
+        "5": {
+            "profile_pearson": 0.5055259466171265,
+            "profile_jsd": 0.3439869284629822,
+            "log_counts_pearson": 0.6633200645446777,
+            "counts_spearman": 0.6909241676330566
+        },
+        "6": {
+            "profile_pearson": 0.514502763748169,
+            "profile_jsd": 0.33649957180023193,
+            "log_counts_pearson": 0.5892065763473511,
+            "counts_spearman": 0.6047982573509216
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.504725992679596,
+        "profile_jsd": 0.34754133224487305,
+        "log_counts_pearson": 0.6305251717567444,
+        "counts_spearman": 0.6552833914756775
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR386UFU",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR386UFU",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4400101900100708,
+            "profile_jsd": 0.4059162437915802,
+            "log_counts_pearson": 0.6705687642097473,
+            "counts_spearman": 0.6785467863082886
+        },
+        "1": {
+            "profile_pearson": 0.4069698750972748,
+            "profile_jsd": 0.43103426694869995,
+            "log_counts_pearson": 0.7098693251609802,
+            "counts_spearman": 0.7093679904937744
+        },
+        "2": {
+            "profile_pearson": 0.42675191164016724,
+            "profile_jsd": 0.41554784774780273,
+            "log_counts_pearson": 0.6584418416023254,
+            "counts_spearman": 0.6586765646934509
+        },
+        "3": {
+            "profile_pearson": 0.4232145845890045,
+            "profile_jsd": 0.4199441075325012,
+            "log_counts_pearson": 0.7024171352386475,
+            "counts_spearman": 0.6987990140914917
+        },
+        "4": {
+            "profile_pearson": 0.4175386428833008,
+            "profile_jsd": 0.4255133271217346,
+            "log_counts_pearson": 0.6465300917625427,
+            "counts_spearman": 0.6437324285507202
+        },
+        "5": {
+            "profile_pearson": 0.4196211099624634,
+            "profile_jsd": 0.4201430678367615,
+            "log_counts_pearson": 0.6800820231437683,
+            "counts_spearman": 0.6821776032447815
+        },
+        "6": {
+            "profile_pearson": 0.4189634919166565,
+            "profile_jsd": 0.42159393429756165,
+            "log_counts_pearson": 0.5994778275489807,
+            "counts_spearman": 0.6059196591377258
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.42133304476737976,
+        "profile_jsd": 0.4198291301727295,
+        "log_counts_pearson": 0.659135103225708,
+        "counts_spearman": 0.6622515916824341
+    }
+}

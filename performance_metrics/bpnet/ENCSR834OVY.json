@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR834OVY",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR834OVY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.40722212195396423,
+            "profile_jsd": 0.4217001497745514,
+            "log_counts_pearson": 0.7221563458442688,
+            "counts_spearman": 0.7272542715072632
+        },
+        "1": {
+            "profile_pearson": 0.41015538573265076,
+            "profile_jsd": 0.4299374520778656,
+            "log_counts_pearson": 0.7223700284957886,
+            "counts_spearman": 0.7236757874488831
+        },
+        "2": {
+            "profile_pearson": 0.40331903100013733,
+            "profile_jsd": 0.43061575293540955,
+            "log_counts_pearson": 0.6928746104240417,
+            "counts_spearman": 0.7012278437614441
+        },
+        "3": {
+            "profile_pearson": 0.4134744107723236,
+            "profile_jsd": 0.42641109228134155,
+            "log_counts_pearson": 0.7204661965370178,
+            "counts_spearman": 0.7299661636352539
+        },
+        "4": {
+            "profile_pearson": 0.3937252461910248,
+            "profile_jsd": 0.42958807945251465,
+            "log_counts_pearson": 0.6828650832176208,
+            "counts_spearman": 0.6935135126113892
+        },
+        "5": {
+            "profile_pearson": 0.402099609375,
+            "profile_jsd": 0.42923176288604736,
+            "log_counts_pearson": 0.7287835478782654,
+            "counts_spearman": 0.7314252853393555
+        },
+        "6": {
+            "profile_pearson": 0.4064255952835083,
+            "profile_jsd": 0.4248366951942444,
+            "log_counts_pearson": 0.6676640510559082,
+            "counts_spearman": 0.6803075075149536
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.40421515703201294,
+        "profile_jsd": 0.42763373255729675,
+        "log_counts_pearson": 0.701701283454895,
+        "counts_spearman": 0.7094419598579407
+    }
+}

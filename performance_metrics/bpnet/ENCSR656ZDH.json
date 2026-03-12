@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR656ZDH",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR656ZDH",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5124508738517761,
+            "profile_jsd": 0.3403170108795166,
+            "log_counts_pearson": 0.7333972454071045,
+            "counts_spearman": 0.748572826385498
+        },
+        "1": {
+            "profile_pearson": 0.5126904845237732,
+            "profile_jsd": 0.3420127332210541,
+            "log_counts_pearson": 0.7553668022155762,
+            "counts_spearman": 0.7693325281143188
+        },
+        "2": {
+            "profile_pearson": 0.5084993839263916,
+            "profile_jsd": 0.3496447801589966,
+            "log_counts_pearson": 0.745005190372467,
+            "counts_spearman": 0.7571365833282471
+        },
+        "3": {
+            "profile_pearson": 0.501860499382019,
+            "profile_jsd": 0.34280288219451904,
+            "log_counts_pearson": 0.7468307614326477,
+            "counts_spearman": 0.7638545036315918
+        },
+        "4": {
+            "profile_pearson": 0.4910772442817688,
+            "profile_jsd": 0.35526129603385925,
+            "log_counts_pearson": 0.7389934659004211,
+            "counts_spearman": 0.7574771642684937
+        },
+        "5": {
+            "profile_pearson": 0.5154191851615906,
+            "profile_jsd": 0.34199005365371704,
+            "log_counts_pearson": 0.7197884917259216,
+            "counts_spearman": 0.7317690253257751
+        },
+        "6": {
+            "profile_pearson": 0.5338186025619507,
+            "profile_jsd": 0.32731521129608154,
+            "log_counts_pearson": 0.6978567838668823,
+            "counts_spearman": 0.7093617916107178
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5105080604553223,
+        "profile_jsd": 0.34286290407180786,
+        "log_counts_pearson": 0.7282021045684814,
+        "counts_spearman": 0.7434871792793274
+    }
+}

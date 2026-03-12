@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR098LLB",
+    "biosample": "endothelial cell of umbilical vein",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR098LLB",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5432218313217163,
+            "profile_jsd": 0.33024248480796814,
+            "log_counts_pearson": 0.7158200144767761,
+            "counts_spearman": 0.733540415763855
+        },
+        "1": {
+            "profile_pearson": 0.5366846323013306,
+            "profile_jsd": 0.3283265233039856,
+            "log_counts_pearson": 0.7202653884887695,
+            "counts_spearman": 0.7429736256599426
+        },
+        "2": {
+            "profile_pearson": 0.545571506023407,
+            "profile_jsd": 0.32790327072143555,
+            "log_counts_pearson": 0.7100064754486084,
+            "counts_spearman": 0.7334576845169067
+        },
+        "3": {
+            "profile_pearson": 0.5415908098220825,
+            "profile_jsd": 0.32814911007881165,
+            "log_counts_pearson": 0.6737796068191528,
+            "counts_spearman": 0.7160665988922119
+        },
+        "4": {
+            "profile_pearson": 0.5405435562133789,
+            "profile_jsd": 0.32753315567970276,
+            "log_counts_pearson": 0.7004101872444153,
+            "counts_spearman": 0.7297942042350769
+        },
+        "5": {
+            "profile_pearson": 0.5394094586372375,
+            "profile_jsd": 0.32760322093963623,
+            "log_counts_pearson": 0.7104933261871338,
+            "counts_spearman": 0.7276560664176941
+        },
+        "6": {
+            "profile_pearson": 0.5506769418716431,
+            "profile_jsd": 0.31922447681427,
+            "log_counts_pearson": 0.6361564993858337,
+            "counts_spearman": 0.653960108757019
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5423121452331543,
+        "profile_jsd": 0.32715117931365967,
+        "log_counts_pearson": 0.6873978972434998,
+        "counts_spearman": 0.7109259366989136
+    }
+}

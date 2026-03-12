@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR666GXV",
+    "biosample": "Colon Carcinoma Metastatic in the Lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR666GXV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5173349976539612,
+            "profile_jsd": 0.33996790647506714,
+            "log_counts_pearson": 0.7039058804512024,
+            "counts_spearman": 0.7224121689796448
+        },
+        "1": {
+            "profile_pearson": 0.5043522119522095,
+            "profile_jsd": 0.3484852910041809,
+            "log_counts_pearson": 0.7273391485214233,
+            "counts_spearman": 0.7496446967124939
+        },
+        "2": {
+            "profile_pearson": 0.4992291331291199,
+            "profile_jsd": 0.35365915298461914,
+            "log_counts_pearson": 0.7233155965805054,
+            "counts_spearman": 0.7394776940345764
+        },
+        "3": {
+            "profile_pearson": 0.5175084471702576,
+            "profile_jsd": 0.34068918228149414,
+            "log_counts_pearson": 0.7230549454689026,
+            "counts_spearman": 0.7434586882591248
+        },
+        "4": {
+            "profile_pearson": 0.5069172382354736,
+            "profile_jsd": 0.35456135869026184,
+            "log_counts_pearson": 0.7072543501853943,
+            "counts_spearman": 0.7311174273490906
+        },
+        "5": {
+            "profile_pearson": 0.5187448859214783,
+            "profile_jsd": 0.34330305457115173,
+            "log_counts_pearson": 0.7063801884651184,
+            "counts_spearman": 0.7286238074302673
+        },
+        "6": {
+            "profile_pearson": 0.5138022899627686,
+            "profile_jsd": 0.34657490253448486,
+            "log_counts_pearson": 0.6688968539237976,
+            "counts_spearman": 0.6829342842102051
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5114909410476685,
+        "profile_jsd": 0.3468894362449646,
+        "log_counts_pearson": 0.7025283575057983,
+        "counts_spearman": 0.7254731059074402
+    }
+}

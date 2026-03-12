@@ -82,7 +82,7 @@ def main():
     # Load read counts for filtering
     read_counts = load_n_reads()
 
-    log_dir = REPO_ROOT / "logs" / "fit_bpnet"
+    log_dir = REPO_ROOT / "logs" / "bpnet_fit"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     submitted = 0

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR069DQH",
+    "biosample": "cytotoxic T cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR069DQH",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.44157761335372925,
+            "profile_jsd": 0.38482674956321716,
+            "log_counts_pearson": 0.6577436923980713,
+            "counts_spearman": 0.6808856725692749
+        },
+        "1": {
+            "profile_pearson": 0.43186792731285095,
+            "profile_jsd": 0.3920014202594757,
+            "log_counts_pearson": 0.6629335284233093,
+            "counts_spearman": 0.6760352849960327
+        },
+        "2": {
+            "profile_pearson": 0.4336100220680237,
+            "profile_jsd": 0.3865196704864502,
+            "log_counts_pearson": 0.6236997246742249,
+            "counts_spearman": 0.647315263748169
+        },
+        "3": {
+            "profile_pearson": 0.43652814626693726,
+            "profile_jsd": 0.38967058062553406,
+            "log_counts_pearson": 0.63678377866745,
+            "counts_spearman": 0.6522967219352722
+        },
+        "4": {
+            "profile_pearson": 0.4274553954601288,
+            "profile_jsd": 0.3922899663448334,
+            "log_counts_pearson": 0.6475081443786621,
+            "counts_spearman": 0.6617242693901062
+        },
+        "5": {
+            "profile_pearson": 0.4334252178668976,
+            "profile_jsd": 0.38664525747299194,
+            "log_counts_pearson": 0.6499674320220947,
+            "counts_spearman": 0.6666920185089111
+        },
+        "6": {
+            "profile_pearson": 0.43547528982162476,
+            "profile_jsd": 0.38476619124412537,
+            "log_counts_pearson": 0.6045565605163574,
+            "counts_spearman": 0.6242932677268982
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4342384338378906,
+        "profile_jsd": 0.38794487714767456,
+        "log_counts_pearson": 0.6368230581283569,
+        "counts_spearman": 0.6549208164215088
+    }
+}

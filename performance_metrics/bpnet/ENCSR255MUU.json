@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR255MUU",
+    "biosample": "progenitor cell of endocrine pancreas",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR255MUU",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5739080905914307,
+            "profile_jsd": 0.30094045400619507,
+            "log_counts_pearson": 0.6447854042053223,
+            "counts_spearman": 0.6296444535255432
+        },
+        "1": {
+            "profile_pearson": 0.5582723617553711,
+            "profile_jsd": 0.3099782168865204,
+            "log_counts_pearson": 0.659125030040741,
+            "counts_spearman": 0.6687864661216736
+        },
+        "2": {
+            "profile_pearson": 0.5550458431243896,
+            "profile_jsd": 0.31247127056121826,
+            "log_counts_pearson": 0.6436944007873535,
+            "counts_spearman": 0.6357104778289795
+        },
+        "3": {
+            "profile_pearson": 0.5664002299308777,
+            "profile_jsd": 0.30933573842048645,
+            "log_counts_pearson": 0.6571851372718811,
+            "counts_spearman": 0.6664677262306213
+        },
+        "4": {
+            "profile_pearson": 0.5515445470809937,
+            "profile_jsd": 0.30994170904159546,
+            "log_counts_pearson": 0.6216395497322083,
+            "counts_spearman": 0.6136712431907654
+        },
+        "5": {
+            "profile_pearson": 0.5597871541976929,
+            "profile_jsd": 0.3094137907028198,
+            "log_counts_pearson": 0.6414021849632263,
+            "counts_spearman": 0.6554843187332153
+        },
+        "6": {
+            "profile_pearson": 0.5623047351837158,
+            "profile_jsd": 0.3032265603542328,
+            "log_counts_pearson": 0.6078227162361145,
+            "counts_spearman": 0.5966679453849792
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.560846209526062,
+        "profile_jsd": 0.3080402612686157,
+        "log_counts_pearson": 0.628121554851532,
+        "counts_spearman": 0.6251754760742188
+    }
+}

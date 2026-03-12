@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR633OWM",
+    "biosample": "pulmonary lymph node",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR633OWM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4937950074672699,
+            "profile_jsd": 0.34935474395751953,
+            "log_counts_pearson": 0.6855786442756653,
+            "counts_spearman": 0.7005665302276611
+        },
+        "1": {
+            "profile_pearson": 0.4983330965042114,
+            "profile_jsd": 0.3522743582725525,
+            "log_counts_pearson": 0.7067064642906189,
+            "counts_spearman": 0.7107585668563843
+        },
+        "2": {
+            "profile_pearson": 0.49548783898353577,
+            "profile_jsd": 0.34722965955734253,
+            "log_counts_pearson": 0.6759446263313293,
+            "counts_spearman": 0.6907499432563782
+        },
+        "3": {
+            "profile_pearson": 0.4914630651473999,
+            "profile_jsd": 0.35033801198005676,
+            "log_counts_pearson": 0.6985712647438049,
+            "counts_spearman": 0.7074881792068481
+        },
+        "4": {
+            "profile_pearson": 0.47916141152381897,
+            "profile_jsd": 0.35819509625434875,
+            "log_counts_pearson": 0.6716984510421753,
+            "counts_spearman": 0.6898043751716614
+        },
+        "5": {
+            "profile_pearson": 0.5117179751396179,
+            "profile_jsd": 0.34530532360076904,
+            "log_counts_pearson": 0.6860283017158508,
+            "counts_spearman": 0.7062951922416687
+        },
+        "6": {
+            "profile_pearson": 0.5044169425964355,
+            "profile_jsd": 0.3440190851688385,
+            "log_counts_pearson": 0.6689674258232117,
+            "counts_spearman": 0.6758733987808228
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4970954954624176,
+        "profile_jsd": 0.3493097126483917,
+        "log_counts_pearson": 0.6815734505653381,
+        "counts_spearman": 0.6945721507072449
+    }
+}

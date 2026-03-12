@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR478DAN",
+    "biosample": "upper lobe of left lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR478DAN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5034370422363281,
+            "profile_jsd": 0.35647594928741455,
+            "log_counts_pearson": 0.6713721752166748,
+            "counts_spearman": 0.6692100167274475
+        },
+        "1": {
+            "profile_pearson": 0.5172853469848633,
+            "profile_jsd": 0.3559799790382385,
+            "log_counts_pearson": 0.6893035173416138,
+            "counts_spearman": 0.7026445865631104
+        },
+        "2": {
+            "profile_pearson": 0.4902329444885254,
+            "profile_jsd": 0.3695445656776428,
+            "log_counts_pearson": 0.7192220687866211,
+            "counts_spearman": 0.724524199962616
+        },
+        "3": {
+            "profile_pearson": 0.5227468013763428,
+            "profile_jsd": 0.3505977392196655,
+            "log_counts_pearson": 0.7077184915542603,
+            "counts_spearman": 0.7119723558425903
+        },
+        "4": {
+            "profile_pearson": 0.5101732611656189,
+            "profile_jsd": 0.3588674068450928,
+            "log_counts_pearson": 0.703313946723938,
+            "counts_spearman": 0.6933461427688599
+        },
+        "5": {
+            "profile_pearson": 0.5174849033355713,
+            "profile_jsd": 0.35275381803512573,
+            "log_counts_pearson": 0.7048282623291016,
+            "counts_spearman": 0.6948307752609253
+        },
+        "6": {
+            "profile_pearson": 0.5247043967247009,
+            "profile_jsd": 0.35635602474212646,
+            "log_counts_pearson": 0.6516695022583008,
+            "counts_spearman": 0.6545097827911377
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5115567445755005,
+        "profile_jsd": 0.35691913962364197,
+        "log_counts_pearson": 0.6819487810134888,
+        "counts_spearman": 0.6730748414993286
+    }
+}

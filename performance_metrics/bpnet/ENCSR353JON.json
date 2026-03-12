@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR353JON",
+    "biosample": "spinal cord",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR353JON",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4292016625404358,
+            "profile_jsd": 0.44211673736572266,
+            "log_counts_pearson": 0.29792988300323486,
+            "counts_spearman": 0.2632150948047638
+        },
+        "1": {
+            "profile_pearson": 0.43274378776550293,
+            "profile_jsd": 0.4643741548061371,
+            "log_counts_pearson": 0.27024298906326294,
+            "counts_spearman": 0.24136602878570557
+        },
+        "2": {
+            "profile_pearson": 0.4597751796245575,
+            "profile_jsd": 0.4562850594520569,
+            "log_counts_pearson": 0.18818064033985138,
+            "counts_spearman": 0.17931720614433289
+        },
+        "3": {
+            "profile_pearson": 0.4404877722263336,
+            "profile_jsd": 0.459319144487381,
+            "log_counts_pearson": 0.24356229603290558,
+            "counts_spearman": 0.1910259872674942
+        },
+        "4": {
+            "profile_pearson": 0.44862279295921326,
+            "profile_jsd": 0.453948974609375,
+            "log_counts_pearson": 0.2639463245868683,
+            "counts_spearman": 0.280057817697525
+        },
+        "5": {
+            "profile_pearson": 0.4582981467247009,
+            "profile_jsd": 0.45284682512283325,
+            "log_counts_pearson": 0.2807970941066742,
+            "counts_spearman": 0.23765715956687927
+        },
+        "6": {
+            "profile_pearson": 0.4929106831550598,
+            "profile_jsd": 0.4498540163040161,
+            "log_counts_pearson": 0.1465444415807724,
+            "counts_spearman": 0.10803275555372238
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.44761958718299866,
+        "profile_jsd": 0.45249009132385254,
+        "log_counts_pearson": 0.2261526882648468,
+        "counts_spearman": 0.19685178995132446
+    }
+}

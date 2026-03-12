@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR997INZ",
+    "biosample": "right atrium auricular region",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR997INZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.48594918847084045,
+            "profile_jsd": 0.3693007230758667,
+            "log_counts_pearson": 0.6766520142555237,
+            "counts_spearman": 0.6935568451881409
+        },
+        "1": {
+            "profile_pearson": 0.4804922938346863,
+            "profile_jsd": 0.3724381923675537,
+            "log_counts_pearson": 0.6882844567298889,
+            "counts_spearman": 0.6892091631889343
+        },
+        "2": {
+            "profile_pearson": 0.48963576555252075,
+            "profile_jsd": 0.3707578778266907,
+            "log_counts_pearson": 0.6963995099067688,
+            "counts_spearman": 0.7016324400901794
+        },
+        "3": {
+            "profile_pearson": 0.48598670959472656,
+            "profile_jsd": 0.36690962314605713,
+            "log_counts_pearson": 0.6904484033584595,
+            "counts_spearman": 0.6955413222312927
+        },
+        "4": {
+            "profile_pearson": 0.47369927167892456,
+            "profile_jsd": 0.3721237778663635,
+            "log_counts_pearson": 0.6587550044059753,
+            "counts_spearman": 0.6701191663742065
+        },
+        "5": {
+            "profile_pearson": 0.49014437198638916,
+            "profile_jsd": 0.36563774943351746,
+            "log_counts_pearson": 0.6729708909988403,
+            "counts_spearman": 0.6797423958778381
+        },
+        "6": {
+            "profile_pearson": 0.5011096596717834,
+            "profile_jsd": 0.35505980253219604,
+            "log_counts_pearson": 0.6448501944541931,
+            "counts_spearman": 0.6614515781402588
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.486366868019104,
+        "profile_jsd": 0.36765557527542114,
+        "log_counts_pearson": 0.6701937317848206,
+        "counts_spearman": 0.681942343711853
+    }
+}

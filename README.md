@@ -26,6 +26,10 @@ mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraph
 
 # Install Python dependencies
 pip install -r requirements.txt
+
+# Install cherimoya
+git clone git@github.com:jmschrei/cherimoya.git
+pip install -e cherimoya
 ```
 
 ## Usage

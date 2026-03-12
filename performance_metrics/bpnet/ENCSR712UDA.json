@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR712UDA",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR712UDA",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5054739713668823,
+            "profile_jsd": 0.3405744731426239,
+            "log_counts_pearson": 0.6627463698387146,
+            "counts_spearman": 0.6634477376937866
+        },
+        "1": {
+            "profile_pearson": 0.4915115237236023,
+            "profile_jsd": 0.3542080521583557,
+            "log_counts_pearson": 0.6946448087692261,
+            "counts_spearman": 0.7142874598503113
+        },
+        "2": {
+            "profile_pearson": 0.47615718841552734,
+            "profile_jsd": 0.35862594842910767,
+            "log_counts_pearson": 0.6525237560272217,
+            "counts_spearman": 0.6665681004524231
+        },
+        "3": {
+            "profile_pearson": 0.4959545135498047,
+            "profile_jsd": 0.3521547317504883,
+            "log_counts_pearson": 0.6682909727096558,
+            "counts_spearman": 0.6942743062973022
+        },
+        "4": {
+            "profile_pearson": 0.4857338070869446,
+            "profile_jsd": 0.3574788570404053,
+            "log_counts_pearson": 0.6471177339553833,
+            "counts_spearman": 0.666348934173584
+        },
+        "5": {
+            "profile_pearson": 0.4904854893684387,
+            "profile_jsd": 0.3557952046394348,
+            "log_counts_pearson": 0.638171911239624,
+            "counts_spearman": 0.656238317489624
+        },
+        "6": {
+            "profile_pearson": 0.5059270262718201,
+            "profile_jsd": 0.35524383187294006,
+            "log_counts_pearson": 0.6182153820991516,
+            "counts_spearman": 0.6280765533447266
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4935338497161865,
+        "profile_jsd": 0.3533232510089874,
+        "log_counts_pearson": 0.6441572904586792,
+        "counts_spearman": 0.6588492393493652
+    }
+}

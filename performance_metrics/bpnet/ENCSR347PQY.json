@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR347PQY",
+    "biosample": "upper lobe of left lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR347PQY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4970528483390808,
+            "profile_jsd": 0.35319387912750244,
+            "log_counts_pearson": 0.644831120967865,
+            "counts_spearman": 0.6640676259994507
+        },
+        "1": {
+            "profile_pearson": 0.4862043261528015,
+            "profile_jsd": 0.36077433824539185,
+            "log_counts_pearson": 0.6095578670501709,
+            "counts_spearman": 0.6437844038009644
+        },
+        "2": {
+            "profile_pearson": 0.48024022579193115,
+            "profile_jsd": 0.3553023040294647,
+            "log_counts_pearson": 0.6412959694862366,
+            "counts_spearman": 0.65972900390625
+        },
+        "3": {
+            "profile_pearson": 0.47346869111061096,
+            "profile_jsd": 0.3628411591053009,
+            "log_counts_pearson": 0.6292816400527954,
+            "counts_spearman": 0.6467376351356506
+        },
+        "4": {
+            "profile_pearson": 0.4727405905723572,
+            "profile_jsd": 0.36042582988739014,
+            "log_counts_pearson": 0.6311966776847839,
+            "counts_spearman": 0.6502825617790222
+        },
+        "5": {
+            "profile_pearson": 0.48343777656555176,
+            "profile_jsd": 0.3588012456893921,
+            "log_counts_pearson": 0.650285542011261,
+            "counts_spearman": 0.6732420325279236
+        },
+        "6": {
+            "profile_pearson": 0.4915299117565155,
+            "profile_jsd": 0.34852856397628784,
+            "log_counts_pearson": 0.5698732137680054,
+            "counts_spearman": 0.5843585133552551
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4829544723033905,
+        "profile_jsd": 0.3573019802570343,
+        "log_counts_pearson": 0.6034232378005981,
+        "counts_spearman": 0.6290343999862671
+    }
+}

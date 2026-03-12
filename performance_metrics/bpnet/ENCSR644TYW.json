@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR644TYW",
+    "biosample": "Colon Carcinoma Metastatic in the Brain",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR644TYW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4850558936595917,
+            "profile_jsd": 0.36525535583496094,
+            "log_counts_pearson": 0.611232578754425,
+            "counts_spearman": 0.5946568846702576
+        },
+        "1": {
+            "profile_pearson": 0.4948742389678955,
+            "profile_jsd": 0.35731565952301025,
+            "log_counts_pearson": 0.6522688269615173,
+            "counts_spearman": 0.6505014300346375
+        },
+        "2": {
+            "profile_pearson": 0.5109182596206665,
+            "profile_jsd": 0.3482581377029419,
+            "log_counts_pearson": 0.6377846598625183,
+            "counts_spearman": 0.6405596733093262
+        },
+        "3": {
+            "profile_pearson": 0.4940558671951294,
+            "profile_jsd": 0.3527712821960449,
+            "log_counts_pearson": 0.6217663288116455,
+            "counts_spearman": 0.6366906762123108
+        },
+        "4": {
+            "profile_pearson": 0.5008248686790466,
+            "profile_jsd": 0.35431861877441406,
+            "log_counts_pearson": 0.6013386249542236,
+            "counts_spearman": 0.6114388108253479
+        },
+        "5": {
+            "profile_pearson": 0.4953959584236145,
+            "profile_jsd": 0.3603217899799347,
+            "log_counts_pearson": 0.6173167824745178,
+            "counts_spearman": 0.6173324584960938
+        },
+        "6": {
+            "profile_pearson": 0.5043797492980957,
+            "profile_jsd": 0.3564980626106262,
+            "log_counts_pearson": 0.5440180897712708,
+            "counts_spearman": 0.5566055774688721
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4983820915222168,
+        "profile_jsd": 0.35690581798553467,
+        "log_counts_pearson": 0.601401686668396,
+        "counts_spearman": 0.6097716093063354
+    }
+}

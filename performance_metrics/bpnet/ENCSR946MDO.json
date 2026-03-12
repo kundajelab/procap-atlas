@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR946MDO",
+    "biosample": "gastroesophageal sphincter",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR946MDO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4926935136318207,
+            "profile_jsd": 0.36598244309425354,
+            "log_counts_pearson": 0.6906048059463501,
+            "counts_spearman": 0.7123448848724365
+        },
+        "1": {
+            "profile_pearson": 0.48619991540908813,
+            "profile_jsd": 0.36603498458862305,
+            "log_counts_pearson": 0.6933967471122742,
+            "counts_spearman": 0.7130253314971924
+        },
+        "2": {
+            "profile_pearson": 0.49758103489875793,
+            "profile_jsd": 0.3644578456878662,
+            "log_counts_pearson": 0.6842978000640869,
+            "counts_spearman": 0.7128551602363586
+        },
+        "3": {
+            "profile_pearson": 0.48058468103408813,
+            "profile_jsd": 0.36374107003211975,
+            "log_counts_pearson": 0.6897294521331787,
+            "counts_spearman": 0.7100555300712585
+        },
+        "4": {
+            "profile_pearson": 0.479393869638443,
+            "profile_jsd": 0.3723047375679016,
+            "log_counts_pearson": 0.6899997591972351,
+            "counts_spearman": 0.7061679363250732
+        },
+        "5": {
+            "profile_pearson": 0.48722976446151733,
+            "profile_jsd": 0.3662988841533661,
+            "log_counts_pearson": 0.6913130879402161,
+            "counts_spearman": 0.7100643515586853
+        },
+        "6": {
+            "profile_pearson": 0.49930858612060547,
+            "profile_jsd": 0.35804983973503113,
+            "log_counts_pearson": 0.6429051756858826,
+            "counts_spearman": 0.6537839770317078
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48856595158576965,
+        "profile_jsd": 0.36530962586402893,
+        "log_counts_pearson": 0.6808604598045349,
+        "counts_spearman": 0.7011725902557373
+    }
+}

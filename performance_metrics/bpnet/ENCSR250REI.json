@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR250REI",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR250REI",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4437015652656555,
+            "profile_jsd": 0.38437730073928833,
+            "log_counts_pearson": 0.7164338231086731,
+            "counts_spearman": 0.7327955365180969
+        },
+        "1": {
+            "profile_pearson": 0.44571641087532043,
+            "profile_jsd": 0.3987826704978943,
+            "log_counts_pearson": 0.7171652913093567,
+            "counts_spearman": 0.7304010987281799
+        },
+        "2": {
+            "profile_pearson": 0.4339626431465149,
+            "profile_jsd": 0.3960171043872833,
+            "log_counts_pearson": 0.7160923480987549,
+            "counts_spearman": 0.7333399057388306
+        },
+        "3": {
+            "profile_pearson": 0.45488205552101135,
+            "profile_jsd": 0.3905113935470581,
+            "log_counts_pearson": 0.7132207751274109,
+            "counts_spearman": 0.7321362495422363
+        },
+        "4": {
+            "profile_pearson": 0.4361397922039032,
+            "profile_jsd": 0.401142418384552,
+            "log_counts_pearson": 0.7086191773414612,
+            "counts_spearman": 0.720691978931427
+        },
+        "5": {
+            "profile_pearson": 0.4417465627193451,
+            "profile_jsd": 0.3934503197669983,
+            "log_counts_pearson": 0.7281440496444702,
+            "counts_spearman": 0.7387266755104065
+        },
+        "6": {
+            "profile_pearson": 0.4413529634475708,
+            "profile_jsd": 0.3940602242946625,
+            "log_counts_pearson": 0.6700847744941711,
+            "counts_spearman": 0.686124324798584
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.44204968214035034,
+        "profile_jsd": 0.39437729120254517,
+        "log_counts_pearson": 0.7013641595840454,
+        "counts_spearman": 0.7177783846855164
+    }
+}

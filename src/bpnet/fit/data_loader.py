@@ -163,9 +163,9 @@ def PeakGenerator(
         verbose=verbose,
     )
 
-    loci_counts = X_peaks[1].sum(dim=(1, 2))
+    loci_counts = torch.abs(X_peaks[1]).sum(dim=(1, 2))
 
-    outlier_threshold = torch.quantile(X_peaks[1].sum(dim=(1, 2)), 0.99) * 1.2
+    outlier_threshold = torch.quantile(loci_counts, 0.99) * 1.2
     outlier_idxs = loci_counts > outlier_threshold
 
     X_bg = extract_loci(

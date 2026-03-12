@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR431MXP",
+    "biosample": "thyroid gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR431MXP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5294206142425537,
+            "profile_jsd": 0.3483235836029053,
+            "log_counts_pearson": 0.7468595504760742,
+            "counts_spearman": 0.75799560546875
+        },
+        "1": {
+            "profile_pearson": 0.5184590816497803,
+            "profile_jsd": 0.3543872833251953,
+            "log_counts_pearson": 0.7301176190376282,
+            "counts_spearman": 0.7387769818305969
+        },
+        "2": {
+            "profile_pearson": 0.5171487331390381,
+            "profile_jsd": 0.353455126285553,
+            "log_counts_pearson": 0.7568670511245728,
+            "counts_spearman": 0.7618001103401184
+        },
+        "3": {
+            "profile_pearson": 0.5073553919792175,
+            "profile_jsd": 0.3588613271713257,
+            "log_counts_pearson": 0.725631058216095,
+            "counts_spearman": 0.7331135272979736
+        },
+        "4": {
+            "profile_pearson": 0.5106032490730286,
+            "profile_jsd": 0.3548162579536438,
+            "log_counts_pearson": 0.731211245059967,
+            "counts_spearman": 0.7387458086013794
+        },
+        "5": {
+            "profile_pearson": 0.5271150469779968,
+            "profile_jsd": 0.35064512491226196,
+            "log_counts_pearson": 0.733742892742157,
+            "counts_spearman": 0.7507237195968628
+        },
+        "6": {
+            "profile_pearson": 0.5191340446472168,
+            "profile_jsd": 0.3453543782234192,
+            "log_counts_pearson": 0.704357922077179,
+            "counts_spearman": 0.7231821417808533
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.518855631351471,
+        "profile_jsd": 0.35224708914756775,
+        "log_counts_pearson": 0.7259393930435181,
+        "counts_spearman": 0.7395862936973572
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR575NNF",
+    "biosample": "right lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR575NNF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.48373889923095703,
+            "profile_jsd": 0.3788459897041321,
+            "log_counts_pearson": 0.6713382005691528,
+            "counts_spearman": 0.6736117005348206
+        },
+        "1": {
+            "profile_pearson": 0.4792857766151428,
+            "profile_jsd": 0.38424474000930786,
+            "log_counts_pearson": 0.683612585067749,
+            "counts_spearman": 0.677619457244873
+        },
+        "2": {
+            "profile_pearson": 0.48548221588134766,
+            "profile_jsd": 0.37724417448043823,
+            "log_counts_pearson": 0.6472119688987732,
+            "counts_spearman": 0.6517706513404846
+        },
+        "3": {
+            "profile_pearson": 0.47402557730674744,
+            "profile_jsd": 0.38798317313194275,
+            "log_counts_pearson": 0.6332916617393494,
+            "counts_spearman": 0.6363459825515747
+        },
+        "4": {
+            "profile_pearson": 0.48939570784568787,
+            "profile_jsd": 0.38098838925361633,
+            "log_counts_pearson": 0.6548336744308472,
+            "counts_spearman": 0.6607496738433838
+        },
+        "5": {
+            "profile_pearson": 0.4897121787071228,
+            "profile_jsd": 0.3800453245639801,
+            "log_counts_pearson": 0.6911953687667847,
+            "counts_spearman": 0.6915928721427917
+        },
+        "6": {
+            "profile_pearson": 0.4989241063594818,
+            "profile_jsd": 0.3702853322029114,
+            "log_counts_pearson": 0.6228039860725403,
+            "counts_spearman": 0.6427884697914124
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48581287264823914,
+        "profile_jsd": 0.3799654543399811,
+        "log_counts_pearson": 0.6521783471107483,
+        "counts_spearman": 0.6595061421394348
+    }
+}

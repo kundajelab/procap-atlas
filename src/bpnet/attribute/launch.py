@@ -63,7 +63,7 @@ def main():
     parser.add_argument("--partition", type=str, default="akundaje")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="24:00:00")
+    parser.add_argument("--time", type=str, default="48:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -75,11 +75,6 @@ def main():
         type=str,
         default="",
         help="extra arguments forwarded to attribute_bpnet.py (e.g. '--batch-size 32')",
-    )
-    parser.add_argument(
-        "--ohe",
-        action="store_true",
-        help="whether to save one-hot-encoded sequences to disk",
     )
     args = parser.parse_args()
 
@@ -132,8 +127,6 @@ def main():
 
             job_name = f"bpnet_attr_{exp_id}_{head}"
             attr_cmd = f"python {ATTRIBUTE_SCRIPT} -e {exp_id} --head {head} -v {args.attribute_args}"
-            if args.ohe and (head == "profile" or len(heads) == 1):
-                attr_cmd += " --ohe"
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l

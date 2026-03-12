@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR023NXW",
+    "biosample": "right common carotid artery plus branches",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR023NXW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4772111177444458,
+            "profile_jsd": 0.355025053024292,
+            "log_counts_pearson": 0.708979070186615,
+            "counts_spearman": 0.7268998026847839
+        },
+        "1": {
+            "profile_pearson": 0.45884472131729126,
+            "profile_jsd": 0.3635004162788391,
+            "log_counts_pearson": 0.6975066661834717,
+            "counts_spearman": 0.7108286023139954
+        },
+        "2": {
+            "profile_pearson": 0.46663230657577515,
+            "profile_jsd": 0.3684302866458893,
+            "log_counts_pearson": 0.7088662981987,
+            "counts_spearman": 0.7298689484596252
+        },
+        "3": {
+            "profile_pearson": 0.47631072998046875,
+            "profile_jsd": 0.36141443252563477,
+            "log_counts_pearson": 0.7137822508811951,
+            "counts_spearman": 0.7264236211776733
+        },
+        "4": {
+            "profile_pearson": 0.45538294315338135,
+            "profile_jsd": 0.3737408518791199,
+            "log_counts_pearson": 0.7013871669769287,
+            "counts_spearman": 0.7106204628944397
+        },
+        "5": {
+            "profile_pearson": 0.4607195556163788,
+            "profile_jsd": 0.36692655086517334,
+            "log_counts_pearson": 0.7295587658882141,
+            "counts_spearman": 0.7413446307182312
+        },
+        "6": {
+            "profile_pearson": 0.4832770526409149,
+            "profile_jsd": 0.34940391778945923,
+            "log_counts_pearson": 0.6829444766044617,
+            "counts_spearman": 0.6947802305221558
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4676612615585327,
+        "profile_jsd": 0.363431841135025,
+        "log_counts_pearson": 0.7041763067245483,
+        "counts_spearman": 0.7193018794059753
+    }
+}

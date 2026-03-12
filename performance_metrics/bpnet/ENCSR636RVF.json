@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR636RVF",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR636RVF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4798329472541809,
+            "profile_jsd": 0.35616928339004517,
+            "log_counts_pearson": 0.5703047513961792,
+            "counts_spearman": 0.5873997807502747
+        },
+        "1": {
+            "profile_pearson": 0.4724288582801819,
+            "profile_jsd": 0.3607495427131653,
+            "log_counts_pearson": 0.584101676940918,
+            "counts_spearman": 0.5971218347549438
+        },
+        "2": {
+            "profile_pearson": 0.479796826839447,
+            "profile_jsd": 0.3573569059371948,
+            "log_counts_pearson": 0.5982993245124817,
+            "counts_spearman": 0.6039757132530212
+        },
+        "3": {
+            "profile_pearson": 0.4666851758956909,
+            "profile_jsd": 0.36076268553733826,
+            "log_counts_pearson": 0.5986745357513428,
+            "counts_spearman": 0.6180280447006226
+        },
+        "4": {
+            "profile_pearson": 0.4591578245162964,
+            "profile_jsd": 0.3700534701347351,
+            "log_counts_pearson": 0.5699390769004822,
+            "counts_spearman": 0.584011971950531
+        },
+        "5": {
+            "profile_pearson": 0.46102744340896606,
+            "profile_jsd": 0.3670395612716675,
+            "log_counts_pearson": 0.5856548547744751,
+            "counts_spearman": 0.5959364771842957
+        },
+        "6": {
+            "profile_pearson": 0.4679467976093292,
+            "profile_jsd": 0.36464154720306396,
+            "log_counts_pearson": 0.5511908531188965,
+            "counts_spearman": 0.5566422939300537
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.46924668550491333,
+        "profile_jsd": 0.36248308420181274,
+        "log_counts_pearson": 0.5615763068199158,
+        "counts_spearman": 0.5756033062934875
+    }
+}

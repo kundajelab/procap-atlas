@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR926PFT",
+    "biosample": "omental fat pad",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR926PFT",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.45811960101127625,
+            "profile_jsd": 0.45375239849090576,
+            "log_counts_pearson": 0.35759133100509644,
+            "counts_spearman": 0.3607901334762573
+        },
+        "1": {
+            "profile_pearson": 0.46403956413269043,
+            "profile_jsd": 0.44648706912994385,
+            "log_counts_pearson": 0.4192025363445282,
+            "counts_spearman": 0.3978230357170105
+        },
+        "2": {
+            "profile_pearson": 0.48073017597198486,
+            "profile_jsd": 0.45574986934661865,
+            "log_counts_pearson": 0.38943150639533997,
+            "counts_spearman": 0.36638519167900085
+        },
+        "3": {
+            "profile_pearson": 0.4635290503501892,
+            "profile_jsd": 0.4556157886981964,
+            "log_counts_pearson": 0.390028715133667,
+            "counts_spearman": 0.38807713985443115
+        },
+        "4": {
+            "profile_pearson": 0.45631662011146545,
+            "profile_jsd": 0.4583025872707367,
+            "log_counts_pearson": 0.3357742428779602,
+            "counts_spearman": 0.3351547122001648
+        },
+        "5": {
+            "profile_pearson": 0.4467746615409851,
+            "profile_jsd": 0.4565141797065735,
+            "log_counts_pearson": 0.4062044620513916,
+            "counts_spearman": 0.39754244685173035
+        },
+        "6": {
+            "profile_pearson": 0.48118969798088074,
+            "profile_jsd": 0.442915678024292,
+            "log_counts_pearson": 0.3443063795566559,
+            "counts_spearman": 0.3399495482444763
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4635646939277649,
+        "profile_jsd": 0.4528191089630127,
+        "log_counts_pearson": 0.3662097156047821,
+        "counts_spearman": 0.35238537192344666
+    }
+}

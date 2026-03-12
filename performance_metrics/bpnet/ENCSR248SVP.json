@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR248SVP",
+    "biosample": "osteocyte",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR248SVP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5345072746276855,
+            "profile_jsd": 0.32301074266433716,
+            "log_counts_pearson": 0.6465389132499695,
+            "counts_spearman": 0.640289306640625
+        },
+        "1": {
+            "profile_pearson": 0.5240447521209717,
+            "profile_jsd": 0.32500648498535156,
+            "log_counts_pearson": 0.6805161237716675,
+            "counts_spearman": 0.6810986399650574
+        },
+        "2": {
+            "profile_pearson": 0.527160108089447,
+            "profile_jsd": 0.3298487067222595,
+            "log_counts_pearson": 0.6566298007965088,
+            "counts_spearman": 0.6668586730957031
+        },
+        "3": {
+            "profile_pearson": 0.515092670917511,
+            "profile_jsd": 0.3385423421859741,
+            "log_counts_pearson": 0.6803109645843506,
+            "counts_spearman": 0.6962031722068787
+        },
+        "4": {
+            "profile_pearson": 0.5089746713638306,
+            "profile_jsd": 0.3339153528213501,
+            "log_counts_pearson": 0.6620308756828308,
+            "counts_spearman": 0.6672305464744568
+        },
+        "5": {
+            "profile_pearson": 0.51896071434021,
+            "profile_jsd": 0.3313889503479004,
+            "log_counts_pearson": 0.6646376848220825,
+            "counts_spearman": 0.676777184009552
+        },
+        "6": {
+            "profile_pearson": 0.5247003436088562,
+            "profile_jsd": 0.3297484517097473,
+            "log_counts_pearson": 0.6032809615135193,
+            "counts_spearman": 0.6043176651000977
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5216195583343506,
+        "profile_jsd": 0.3299405872821808,
+        "log_counts_pearson": 0.6516216993331909,
+        "counts_spearman": 0.654359757900238
+    }
+}

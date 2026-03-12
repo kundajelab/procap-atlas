@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR632XIZ",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR632XIZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4669684171676636,
+            "profile_jsd": 0.37506991624832153,
+            "log_counts_pearson": 0.6111639738082886,
+            "counts_spearman": 0.6274199485778809
+        },
+        "1": {
+            "profile_pearson": 0.45861849188804626,
+            "profile_jsd": 0.37852150201797485,
+            "log_counts_pearson": 0.6362011432647705,
+            "counts_spearman": 0.6622926592826843
+        },
+        "2": {
+            "profile_pearson": 0.45001381635665894,
+            "profile_jsd": 0.38569125533103943,
+            "log_counts_pearson": 0.6291687488555908,
+            "counts_spearman": 0.6518076062202454
+        },
+        "3": {
+            "profile_pearson": 0.4654615521430969,
+            "profile_jsd": 0.3791518807411194,
+            "log_counts_pearson": 0.6252173781394958,
+            "counts_spearman": 0.6506052017211914
+        },
+        "4": {
+            "profile_pearson": 0.4428565800189972,
+            "profile_jsd": 0.38331139087677,
+            "log_counts_pearson": 0.6046938300132751,
+            "counts_spearman": 0.6192048788070679
+        },
+        "5": {
+            "profile_pearson": 0.4379832148551941,
+            "profile_jsd": 0.38847827911376953,
+            "log_counts_pearson": 0.5856713652610779,
+            "counts_spearman": 0.6031194925308228
+        },
+        "6": {
+            "profile_pearson": 0.46948859095573425,
+            "profile_jsd": 0.38158562779426575,
+            "log_counts_pearson": 0.5646791458129883,
+            "counts_spearman": 0.5791407227516174
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.45484644174575806,
+        "profile_jsd": 0.3820272386074066,
+        "log_counts_pearson": 0.6013679504394531,
+        "counts_spearman": 0.6214833855628967
+    }
+}

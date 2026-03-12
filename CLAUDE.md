@@ -23,8 +23,11 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `fit/fit_bpnet.py` — Consolidated BPNet training script with configurable background sampling. Accepts repeatable `--background NAME:RATIO` arguments (names: `ccre`, `gc`) where RATIO is negatives-per-positive contributed by that source. Sources are pooled proportionally. Default: `gc:1/7` (no cCREs; `negative_ratio=1/7`, giving 1/8 of each batch as negatives). Output directory defaults to `models/bpnet/{experiment}`; when `--background` is explicitly specified the suffix encodes the config (e.g. `{experiment}_gc0.1`).
   - `fit/launch.py` — Submits SLURM jobs to train BPNet models, one per (experiment, fold) pair. Skips experiments with fewer than `--min-reads` total reads (default: 10M) and folds where the model file already exists. Extra arguments forwarded to `fit_bpnet.py` via `--fit-args`. Logs to `logs/bpnet/`.
   - `benchmark/benchmark_bpnet.py` — Evaluates a trained BPNet across all folds on held-out test chromosomes. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. Reports per-fold and genome-wide profile Pearson, profile JSD, log-counts Pearson, and counts Spearman. Always writes results to `performance_metrics/bpnet/{model_dir_name}.json`.
-  - `attribute/attribute_bpnet.py` — Computes DeepLIFT/SHAP attributions across all folds for a trained BPNet, averaging fold attributions genome-wide. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. `--head` selects profile or count head; `--ohe` saves one-hot-encoded sequences. Does not require signal BigWigs (peak loci only). Output: `attributions/bpnet/{model_dir_name}_{head}.npz`.
-  - `attribute/launch.py` — Submits SLURM jobs for attributions, one per (experiment, head) pair. Skips experiments with incomplete training (any fold model missing) or existing output; `--min-reads` filter defaults to 0 (disabled). `--head` is repeatable (default: `profile`); `--ohe` forwards to attribute_bpnet.py. Logs to `logs/bpnet_attr/`.
+  - `attribute/attribute_bpnet.py` — Computes DeepLIFT/SHAP attributions across all folds for a trained BPNet, averaging fold attributions genome-wide. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. `--head` selects profile or count head. Does not require signal BigWigs (peak loci only). Output: `attributions/bpnet/{model_dir_name}_{head}.npz`.
+  - `attribute/save_ohe.py` — Extracts and saves one-hot-encoded sequences for all peaks of a given experiment to `attributions/bpnet/{experiment}_ohe.npz`. Run separately from attributions.
+  - `attribute/run_ohe.py` — Runs `save_ohe.py` for all experiments asynchronously. Skips experiments where the OHE file already exists; `-j/--jobs` controls concurrency (default: 4); `--min-reads` and `--dry-run` supported.
+  - `attribute/launch.py` — Submits SLURM jobs for attributions, one per (experiment, head) pair. Skips experiments with incomplete training (any fold model missing) or existing output; `--min-reads` filter defaults to 0 (disabled). `--head` is repeatable (default: `profile`). Logs to `logs/bpnet_attr/`.
+  - `modisco/launch.py` — Submits SLURM jobs for tf-modisco, one per (experiment, head) pair. Skips experiments where the attribution or OHE npz is missing or modisco output already exists. Runs `modisco motifs` then `modisco report` in a single job. Output: `modisco/bpnet/{exp_id}_{head}.modisco.h5` and `modisco/bpnet/{exp_id}_{head}.modisco/`. Logs to `logs/bpnet_modisco/`.
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
@@ -78,10 +81,20 @@ python src/bpnet/fit/launch.py --dry-run           # preview sbatch scripts with
 ```bash
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM              # profile head (default)
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count  # count head
-python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --ohe         # also save one-hot sequences
+python src/bpnet/attribute/save_ohe.py -e ENCSR882DWM                      # save one-hot sequences separately
+python src/bpnet/attribute/run_ohe.py                                       # save OHE for all experiments (4 concurrent)
+python src/bpnet/attribute/run_ohe.py -j 8 --min-reads 10000000            # 8 concurrent, skip low-coverage
 python src/bpnet/attribute/launch.py                                        # submit all via SLURM (profile head)
 python src/bpnet/attribute/launch.py --head profile --head count            # submit both heads
 python src/bpnet/attribute/launch.py --dry-run                              # preview without submitting
+```
+
+### Modisco
+
+```bash
+python src/bpnet/modisco/launch.py                                          # submit all experiments, profile head
+python src/bpnet/modisco/launch.py --head profile --head count              # both heads
+python src/bpnet/modisco/launch.py --dry-run                                # preview without submitting
 ```
 
 ## External Dependencies

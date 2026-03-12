@@ -5,7 +5,7 @@ peaks genome-wide, averages across folds, and saves to attributions/bpnet/.
 
 Usage:
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX
-    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head count --ohe
+    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head count
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
 """
 
@@ -62,11 +62,6 @@ def main():
         default="profile",
         choices=["profile", "count"],
         help="type of prediction to make (profile or count)",
-    )
-    parser.add_argument(
-        "--ohe",
-        action="store_true",
-        help="whether to save one-hot-encoded sequences to disk",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -149,7 +144,7 @@ def main():
 
     print(str(REPO_ROOT / processed["filtered_peaks"]))
 
-    # Calculate attributions for each fold, and store
+    # Load sequences
     all_chrom = list(chain.from_iterable(chrom_splits.values()))
     X = extract_loci(
         loci=loci,
@@ -160,12 +155,6 @@ def main():
         ignore=list("QWERYUIOPSDFHJKLZXVBNM"),
         exclusion_lists=params["blacklist"],
     )
-
-    # Save ohe if requested
-    if args.ohe:
-        ohe_path = out_dir / f"{args.experiment}_ohe.npz"
-        np.savez_compressed(ohe_path, X)
-        print(f"\nOne-hot-encoded sequences saved to {ohe_path}")
 
     # Calculate attributions, looping over folds
     attributions = []

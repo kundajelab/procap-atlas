@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR300AAD",
+    "biosample": "Metastatic Liver Carcinoma in the Adrenal Gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR300AAD",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4884457290172577,
+            "profile_jsd": 0.36680683493614197,
+            "log_counts_pearson": 0.5713427662849426,
+            "counts_spearman": 0.5878546833992004
+        },
+        "1": {
+            "profile_pearson": 0.4974704682826996,
+            "profile_jsd": 0.36275774240493774,
+            "log_counts_pearson": 0.5987992882728577,
+            "counts_spearman": 0.6180282831192017
+        },
+        "2": {
+            "profile_pearson": 0.4965369999408722,
+            "profile_jsd": 0.36360788345336914,
+            "log_counts_pearson": 0.6092907786369324,
+            "counts_spearman": 0.6234875917434692
+        },
+        "3": {
+            "profile_pearson": 0.4805386960506439,
+            "profile_jsd": 0.37761133909225464,
+            "log_counts_pearson": 0.5734782814979553,
+            "counts_spearman": 0.5889923572540283
+        },
+        "4": {
+            "profile_pearson": 0.48439642786979675,
+            "profile_jsd": 0.36877501010894775,
+            "log_counts_pearson": 0.5660697221755981,
+            "counts_spearman": 0.5901292562484741
+        },
+        "5": {
+            "profile_pearson": 0.4858262240886688,
+            "profile_jsd": 0.37571731209754944,
+            "log_counts_pearson": 0.6032919883728027,
+            "counts_spearman": 0.6234854459762573
+        },
+        "6": {
+            "profile_pearson": 0.49350154399871826,
+            "profile_jsd": 0.36918729543685913,
+            "log_counts_pearson": 0.5522036552429199,
+            "counts_spearman": 0.5700451135635376
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48951590061187744,
+        "profile_jsd": 0.36967742443084717,
+        "log_counts_pearson": 0.5623728632926941,
+        "counts_spearman": 0.5830345153808594
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR784FKF",
+    "biosample": "vermiform appendix",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR784FKF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5002507567405701,
+            "profile_jsd": 0.35076069831848145,
+            "log_counts_pearson": 0.7222982048988342,
+            "counts_spearman": 0.7434694170951843
+        },
+        "1": {
+            "profile_pearson": 0.49660447239875793,
+            "profile_jsd": 0.36403918266296387,
+            "log_counts_pearson": 0.7478764057159424,
+            "counts_spearman": 0.7638179063796997
+        },
+        "2": {
+            "profile_pearson": 0.4870872497558594,
+            "profile_jsd": 0.3637394607067108,
+            "log_counts_pearson": 0.7321319580078125,
+            "counts_spearman": 0.752354085445404
+        },
+        "3": {
+            "profile_pearson": 0.500199019908905,
+            "profile_jsd": 0.36022841930389404,
+            "log_counts_pearson": 0.7497846484184265,
+            "counts_spearman": 0.7644732594490051
+        },
+        "4": {
+            "profile_pearson": 0.4879363775253296,
+            "profile_jsd": 0.3648284077644348,
+            "log_counts_pearson": 0.735755980014801,
+            "counts_spearman": 0.7524207830429077
+        },
+        "5": {
+            "profile_pearson": 0.4922959804534912,
+            "profile_jsd": 0.36279284954071045,
+            "log_counts_pearson": 0.7433385252952576,
+            "counts_spearman": 0.7566635012626648
+        },
+        "6": {
+            "profile_pearson": 0.505226731300354,
+            "profile_jsd": 0.35290127992630005,
+            "log_counts_pearson": 0.6923121809959412,
+            "counts_spearman": 0.7084119319915771
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4951218366622925,
+        "profile_jsd": 0.36034050583839417,
+        "log_counts_pearson": 0.7301422357559204,
+        "counts_spearman": 0.7487316131591797
+    }
+}

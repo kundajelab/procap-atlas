@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR675RBN",
+    "biosample": "cerebral cortex",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR675RBN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.41434934735298157,
+            "profile_jsd": 0.4787598252296448,
+            "log_counts_pearson": 0.3780662417411804,
+            "counts_spearman": 0.35006678104400635
+        },
+        "1": {
+            "profile_pearson": 0.4139116704463959,
+            "profile_jsd": 0.48797762393951416,
+            "log_counts_pearson": 0.2894046902656555,
+            "counts_spearman": 0.2720741033554077
+        },
+        "2": {
+            "profile_pearson": 0.4199686050415039,
+            "profile_jsd": 0.4870144724845886,
+            "log_counts_pearson": 0.2040385901927948,
+            "counts_spearman": 0.15087611973285675
+        },
+        "3": {
+            "profile_pearson": 0.472940593957901,
+            "profile_jsd": 0.4726920425891876,
+            "log_counts_pearson": 0.33269622921943665,
+            "counts_spearman": 0.31708982586860657
+        },
+        "4": {
+            "profile_pearson": 0.44469308853149414,
+            "profile_jsd": 0.4680936634540558,
+            "log_counts_pearson": 0.22011524438858032,
+            "counts_spearman": 0.2633620798587799
+        },
+        "5": {
+            "profile_pearson": 0.42512962222099304,
+            "profile_jsd": 0.477719783782959,
+            "log_counts_pearson": 0.2880952060222626,
+            "counts_spearman": 0.2548685371875763
+        },
+        "6": {
+            "profile_pearson": 0.4842109680175781,
+            "profile_jsd": 0.45503148436546326,
+            "log_counts_pearson": 0.10602360218763351,
+            "counts_spearman": 0.1529138833284378
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.44033703207969666,
+        "profile_jsd": 0.47720009088516235,
+        "log_counts_pearson": 0.2570519745349884,
+        "counts_spearman": 0.24878908693790436
+    }
+}

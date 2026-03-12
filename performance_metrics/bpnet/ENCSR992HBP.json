@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR992HBP",
+    "biosample": "right lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR992HBP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49361151456832886,
+            "profile_jsd": 0.3599773347377777,
+            "log_counts_pearson": 0.6815593838691711,
+            "counts_spearman": 0.6832458972930908
+        },
+        "1": {
+            "profile_pearson": 0.4824170172214508,
+            "profile_jsd": 0.36390143632888794,
+            "log_counts_pearson": 0.6956924200057983,
+            "counts_spearman": 0.6947409510612488
+        },
+        "2": {
+            "profile_pearson": 0.47168242931365967,
+            "profile_jsd": 0.3739675283432007,
+            "log_counts_pearson": 0.7026204466819763,
+            "counts_spearman": 0.6953482031822205
+        },
+        "3": {
+            "profile_pearson": 0.4929167628288269,
+            "profile_jsd": 0.3619731664657593,
+            "log_counts_pearson": 0.6920087933540344,
+            "counts_spearman": 0.6886845231056213
+        },
+        "4": {
+            "profile_pearson": 0.4818973243236542,
+            "profile_jsd": 0.3691083788871765,
+            "log_counts_pearson": 0.6989867687225342,
+            "counts_spearman": 0.7003629803657532
+        },
+        "5": {
+            "profile_pearson": 0.48935946822166443,
+            "profile_jsd": 0.36532342433929443,
+            "log_counts_pearson": 0.6778390407562256,
+            "counts_spearman": 0.6865575909614563
+        },
+        "6": {
+            "profile_pearson": 0.4977785348892212,
+            "profile_jsd": 0.35607028007507324,
+            "log_counts_pearson": 0.6509135365486145,
+            "counts_spearman": 0.6625868082046509
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48699602484703064,
+        "profile_jsd": 0.3645474314689636,
+        "log_counts_pearson": 0.6772004961967468,
+        "counts_spearman": 0.6805101037025452
+    }
+}

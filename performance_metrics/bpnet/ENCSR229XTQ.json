@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR229XTQ",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR229XTQ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5197540521621704,
+            "profile_jsd": 0.34699198603630066,
+            "log_counts_pearson": 0.6637541651725769,
+            "counts_spearman": 0.6601917147636414
+        },
+        "1": {
+            "profile_pearson": 0.543916642665863,
+            "profile_jsd": 0.3440178632736206,
+            "log_counts_pearson": 0.667543888092041,
+            "counts_spearman": 0.6590889692306519
+        },
+        "2": {
+            "profile_pearson": 0.5347534418106079,
+            "profile_jsd": 0.3456066846847534,
+            "log_counts_pearson": 0.6585310697555542,
+            "counts_spearman": 0.6408767104148865
+        },
+        "3": {
+            "profile_pearson": 0.530695915222168,
+            "profile_jsd": 0.34839290380477905,
+            "log_counts_pearson": 0.6702616810798645,
+            "counts_spearman": 0.6691499948501587
+        },
+        "4": {
+            "profile_pearson": 0.5126851797103882,
+            "profile_jsd": 0.35339057445526123,
+            "log_counts_pearson": 0.6523529291152954,
+            "counts_spearman": 0.6510503888130188
+        },
+        "5": {
+            "profile_pearson": 0.5320982933044434,
+            "profile_jsd": 0.3464948832988739,
+            "log_counts_pearson": 0.6507055759429932,
+            "counts_spearman": 0.6218616366386414
+        },
+        "6": {
+            "profile_pearson": 0.5312999486923218,
+            "profile_jsd": 0.36333346366882324,
+            "log_counts_pearson": 0.5918816328048706,
+            "counts_spearman": 0.5842970609664917
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5288546085357666,
+        "profile_jsd": 0.34964877367019653,
+        "log_counts_pearson": 0.6463804244995117,
+        "counts_spearman": 0.6350159049034119
+    }
+}
