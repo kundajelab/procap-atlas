@@ -231,7 +231,7 @@ def main():
         "in_window": 2114,
         "out_window": 1000,
         "max_jitter": 200,
-        "n_filters": 512,
+        "n_filters": 96,
         "n_layers": 9,
         "reverse_complement": True,
         "shuffle": True,
@@ -384,7 +384,7 @@ def main():
         max_epochs=params["max_epochs"],
         batch_size=params["batch_size"],
         early_stopping=params["early_stopping"],
-        dtype=torch.float,
+        dtype=torch.bfloat16,
     )
 
     print(f"\nModel saved to {output_dir}/")

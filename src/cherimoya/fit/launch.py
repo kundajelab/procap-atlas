@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Submit SLURM jobs to train BPNet models for all experiments and folds.
+"""Submit SLURM jobs to train Cherimoya models for all experiments and folds.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
-sbatch job per (experiment, fold) pair via fit_bpnet.py.
+sbatch job per (experiment, fold) pair via fit_cherimoya.py.
 
 Experiments with fewer total reads than --min-reads (default: 10_000_000) are
 skipped, as low-coverage experiments tend to produce poorly calibrated models.
 Experiments with an already-trained model file are also skipped automatically.
 
 Usage:
-    python src/bpnet/fit/launch.py                    # submit all experiments x 7 folds
-    python src/bpnet/fit/launch.py --dry-run           # print sbatch scripts without submitting
-    python src/bpnet/fit/launch.py --time 12:00:00 --mem 32G --partition gpu
-    python src/bpnet/fit/launch.py --min-reads 20000000  # only well-covered experiments
+    python src/cherimoya/fit/launch.py                    # submit all experiments x 7 folds
+    python src/cherimoya/fit/launch.py --dry-run           # print sbatch scripts without submitting
+    python src/cherimoya/fit/launch.py --time 12:00:00 --mem 32G --partition gpu
+    python src/cherimoya/fit/launch.py --min-reads 20000000  # only well-covered experiments
 """
 
 import argparse
@@ -28,7 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
-FIT_SCRIPT = REPO_ROOT / "src" / "bpnet" / "fit" / "fit_bpnet.py"
+FIT_SCRIPT = REPO_ROOT / "src" / "cherimoya" / "fit" / "fit_cherimoya.py"
 
 
 def load_n_reads():
@@ -50,22 +50,22 @@ def main():
         type=str,
         default="GPU_SKU:A100_SXM4|GPU_SKU:L40S|GPU_SKU:H100_SXM5|GPU_SKU:RTX_3090",
     )
-    parser.add_argument("--partition", type=str, default="akundaje")
+    parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="32G")
-    parser.add_argument("--time", type=str, default="24:00:00")
+    parser.add_argument("--time", type=str, default="6:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
-        default=10_000_000,
-        help="skip experiments with fewer total reads than this (default: 10000000)",
+        default=0,
+        help="skip experiments with fewer total reads than this (default: 0)",
     )
-    # Extra args forwarded to fit_bpnet.py
+    # Extra args forwarded to fit_cherimoya.py
     parser.add_argument(
         "--fit-args",
         type=str,
         default="",
-        help="extra arguments forwarded to fit.py (e.g. '--max-epochs 100')",
+        help="extra arguments forwarded to fit_cherimoya.py (e.g. '--max-epochs 100')",
     )
     args = parser.parse_args()
 
@@ -82,7 +82,7 @@ def main():
     # Load read counts for filtering
     read_counts = load_n_reads()
 
-    log_dir = REPO_ROOT / "logs" / "bpnet_fit"
+    log_dir = REPO_ROOT / "logs" / "cherimoya_fit"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     submitted = 0
@@ -97,13 +97,13 @@ def main():
 
         for fold in range(n_folds):
             # Skip if model already trained
-            model_dir = REPO_ROOT / "models" / "bpnet" / exp_id
+            model_dir = REPO_ROOT / "models" / "cherimoya" / exp_id
             model_path = model_dir / f"{exp_id}.fold{fold}.torch"
             if model_path.exists():
                 skipped_trained += 1
                 continue
 
-            job_name = f"bpnet_{exp_id}_f{fold}"
+            job_name = f"cherimoya_{exp_id}_f{fold}"
             fit_cmd = f"python {FIT_SCRIPT} -e {exp_id} --fold {fold} -v"
             if args.fit_args:
                 fit_cmd += f" {args.fit_args}"

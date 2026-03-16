@@ -28,6 +28,13 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `attribute/run_ohe.py` — Runs `save_ohe.py` for all experiments asynchronously. Skips experiments where the OHE file already exists; `-j/--jobs` controls concurrency (default: 4); `--min-reads` and `--dry-run` supported.
   - `attribute/launch.py` — Submits SLURM jobs for attributions, one per (experiment, head) pair. Skips experiments with incomplete training (any fold model missing) or existing output; `--min-reads` filter defaults to 0 (disabled). `--head` is repeatable (default: `profile`). Logs to `logs/bpnet_attr/`.
   - `modisco/launch.py` — Submits SLURM jobs for tf-modisco, one per (experiment, head) pair. Skips experiments where the attribution or OHE npz is missing or modisco output already exists. Runs `modisco motifs` then `modisco report` in a single job. Output: `modisco/bpnet/{exp_id}_{head}.modisco.h5` and `modisco/bpnet/{exp_id}_{head}.modisco/`. Logs to `logs/bpnet_modisco/`.
+- **`src/cherimoya/`** — Cherimoya deep learning model training and evaluation (similar API to BPNet):
+  - `fit/fit_cherimoya.py` — **Production** Cherimoya training script. Uses `CheriBlock` with a Triton fused dilated conv+norm kernel. Muon + AdamW dual-optimizer setup with warmup + cosine decay schedules. Accepts the same `--background NAME:RATIO` pattern as BPNet; `--muon-lr` and `--adam-lr` set the respective learning rates. Output directory defaults to `models/cherimoya/{experiment}`; non-default backgrounds append a suffix. Logs to `logs/cherimoya_fit/`.
+  - `fit/cherimoya2.py` — Pure PyTorch `CheriBlock2` implementation (replaces the fused Triton kernel with `Conv1d` + `LayerNorm`). **For testing/development only** — not intended for production training runs.
+  - `fit/fit_cherimoya2.py` — Training script for the pure PyTorch `CheriBlock2` model. Same interface as `fit_cherimoya.py`. **For testing/development only.**
+  - `fit/data_loader.py` — `PeakGenerator` and `PeakNegativeSampler` for strand-specific PRO-cap data loading during Cherimoya training.
+  - `fit/launch.py` — Submits SLURM jobs to train Cherimoya models, one per (experiment, fold) pair. Skips experiments with fewer than `--min-reads` total reads (default: 0) and folds where the model file already exists. Extra arguments forwarded via `--fit-args`. Logs to `logs/cherimoya_fit/`.
+  - `benchmark/benchmark_cherimoya.py` — Evaluates a trained Cherimoya across all folds on held-out test chromosomes. Defaults to `models/cherimoya/{experiment}`; use `--model-dir` to override. Reports per-fold and genome-wide profile Pearson, profile JSD, log-counts Pearson, and counts Spearman. Always writes results to `performance_metrics/cherimoya/{model_dir_name}.json`. `--save-output` writes scaled predictions to `predictions/cherimoya/{model_dir_name}.npz`.
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
@@ -74,6 +81,18 @@ python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background gc:0.1   
 python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05 --background gc:0.05  # custom ratios
 python src/bpnet/fit/launch.py                     # submit all experiments x 7 folds via SLURM
 python src/bpnet/fit/launch.py --dry-run           # preview sbatch scripts without submitting
+```
+
+### Cherimoya Training
+
+```bash
+python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0                   # train Cherimoya, default backgrounds
+python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0 --background gc:0.1  # GC negatives only
+python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0 --muon-lr 0.005 --adam-lr 0.002
+python src/cherimoya/fit/launch.py                                                    # submit all experiments x 7 folds via SLURM
+python src/cherimoya/fit/launch.py --dry-run                                          # preview sbatch scripts without submitting
+python src/cherimoya/benchmark/benchmark_cherimoya.py -e ENCSR882DWM                 # benchmark across all folds
+python src/cherimoya/benchmark/benchmark_cherimoya.py -e ENCSR882DWM --save-output   # also save predictions
 ```
 
 ### Attributions

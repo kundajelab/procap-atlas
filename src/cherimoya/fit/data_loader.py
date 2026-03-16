@@ -384,9 +384,9 @@ def PeakGenerator(
     X_gen = torch.utils.data.DataLoader(
         X_gen,
         pin_memory=pin_memory,
-        num_workers=1,
+        num_workers=num_workers,
         batch_size=batch_size,
-        persistent_workers=True,
+        persistent_workers=num_workers > 0,
     )
 
     return X_gen

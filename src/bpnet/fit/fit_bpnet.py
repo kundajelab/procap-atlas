@@ -26,8 +26,7 @@ fold i for testing and validates on fold (i+1) %% 7. Remaining folds are used
 for training.
 
 Usage:
-    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX -f 0 --background gc:0.1
-    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX -f 0 --background ccre:0.05 --background gc:0.05
+    python src/bpnet/fit/fit_bpnet.py -e ENCSR261KBX -f 0
 """
 
 import argparse

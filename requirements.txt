@@ -18,3 +18,5 @@ torch
 tangermeme
 bpnetlite
 modisco
+# cherimoya must be installed from source; see README.md
+# git clone git@github.com:jmschrei/cherimoya.git && pip install -e cherimoya

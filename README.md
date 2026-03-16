@@ -9,7 +9,7 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - `bgzip` (htslib) -- bgzip compression of processed BED files
 - GNU `parallel` -- parallel downloads
 - `bigWigMerge`, `bedGraphToBigWig` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/)) -- BigWig merging
-- `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py` and `src/bpnet/attribute/launch.py`
+- `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py`, `src/bpnet/attribute/launch.py`, and `src/cherimoya/fit/launch.py`
 - Python 3.10+ (`pip install -r requirements.txt`)
 
 ## Sample installation with mamba
@@ -136,15 +136,16 @@ Output: `performance_metrics/bpnet/{model_dir_name}.json`
 
 ### 9. Compute attributions
 
-Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Use the same `--background` arguments as during training, or `--model-dir` directly. `--head` selects the profile or count output head; `--ohe` additionally saves one-hot-encoded sequences.
+Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Use the same `--background` arguments as during training, or `--model-dir` directly. `--head` selects the profile or count output head. One-hot-encoded sequences can be saved separately with `save_ohe.py`.
 
 ```bash
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
-python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count --ohe
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_dnase
+python src/bpnet/attribute/save_ohe.py -e ENCSR882DWM
 ```
 
-Output: `attributions/bpnet/{model_dir_name}_{head}.npz`
+Output: `attributions/bpnet/{model_dir_name}_{head}.npz`, `attributions/bpnet/{experiment}_ohe.npz`
 
 To submit attribution jobs for all experiments via SLURM, use `launch.py`. Jobs are skipped automatically if the output already exists, any fold model is missing, or the experiment has fewer than `--min-reads` total reads (default: 10M). `--head` is repeatable to run multiple heads. **NOTE** that the SLURM launcher has some hardcoded references to partitions/module loads that are specific to Sherlock/Kundaje lab, so you will have to tweak this if you want to use this to run attributions on your own SLURM cluster.
 
@@ -153,6 +154,39 @@ python src/bpnet/attribute/launch.py                              # profile head
 python src/bpnet/attribute/launch.py --head profile --head count  # both heads
 python src/bpnet/attribute/launch.py --dry-run                    # preview without submitting
 ```
+
+### 10. Train Cherimoya model
+
+Trains a [Cherimoya](https://github.com/jmschrei/cherimoya) model for a single experiment using the same 7-fold chromosome cross-validation scheme as BPNet. The production training script uses a Triton fused dilated conv+norm kernel (`CheriBlock`). Training uses a dual-optimizer setup: Muon for the bulk 2D weight matrices (linear layers in each block) and AdamW for everything else (input/output convolutions, biases, scalars), both with warmup + cosine decay schedules.
+
+Background negative sources follow the same `--background NAME:RATIO` interface as BPNet.
+
+```bash
+python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0
+python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0 --background gc:0.1
+python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0 --muon-lr 0.005 --adam-lr 0.002
+```
+
+Output: `models/cherimoya/{experiment}_{background_config}/`
+
+To submit training jobs for all experiments and folds via SLURM:
+
+```bash
+python src/cherimoya/fit/launch.py             # all experiments x 7 folds
+python src/cherimoya/fit/launch.py --dry-run   # preview without submitting
+```
+
+### 11. Benchmark Cherimoya model
+
+Evaluates trained Cherimoya models across all folds on held-out test chromosomes. Optionally saves scaled predictions.
+
+```bash
+python src/cherimoya/benchmark/benchmark_cherimoya.py -e ENCSR882DWM
+python src/cherimoya/benchmark/benchmark_cherimoya.py -e ENCSR882DWM --model-dir models/cherimoya/ENCSR882DWM_gc0.1
+python src/cherimoya/benchmark/benchmark_cherimoya.py -e ENCSR882DWM --save-output
+```
+
+Output: `performance_metrics/cherimoya/{model_dir_name}.json`
 
 ## Project structure
 
@@ -173,7 +207,14 @@ src/
     fit/launch.py              # SLURM job submission for training
     benchmark/benchmark_bpnet.py     # BPNet evaluation across folds → performance_metrics/
     attribute/attribute_bpnet.py     # DeepLIFT/SHAP attributions → attributions/
+    attribute/save_ohe.py            # Save one-hot-encoded sequences → attributions/
     attribute/launch.py              # SLURM job submission for attributions
+  cherimoya/             # Cherimoya deep learning model
+    fit/fit_cherimoya.py       # Production training script (Triton fused kernel)
+    fit/fit_cherimoya2.py      # Testing/development training script (pure PyTorch)
+    fit/data_loader.py         # Strand-specific PRO-cap data loader
+    fit/launch.py              # SLURM job submission for training
+    benchmark/benchmark_cherimoya.py # Cherimoya evaluation across folds → performance_metrics/
   alphagenome/           # AlphaGenome analysis (planned)
 data/                    # gitignored, created by scripts
   hg38.fa                # Reference genome + index
