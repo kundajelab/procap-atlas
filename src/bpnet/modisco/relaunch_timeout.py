@@ -26,6 +26,7 @@ JASPAR_PATH = (
 
 # Pattern: modisco_{exp_id}_{head}.err
 LOG_NAME_RE = re.compile(r"^modisco_(\w+)_(profile|count)\.err$")
+RELOG_NAME_RE = re.compile(r"^relaunch_modisco_(\w+)_(profile|count)\.err$")
 TIMEOUT_RE = re.compile(
     r"(CANCELLED\s+AT\s+\S+\s+DUE\s+TO\s+TIME\s+LIMIT"
     r"|DUE TO TIME LIMIT"
@@ -46,6 +47,12 @@ def find_timed_out(log_dir: Path) -> list[tuple[str, str, Path]]:
         text = err_path.read_text(errors="replace")
         if TIMEOUT_RE.search(text):
             timed_out.append((exp_id, head, err_path))
+    for err_path in sorted(log_dir.glob("relaunch_modisco_*.err")):
+        m = RELOG_NAME_RE.match(err_path.name)
+        if not m:
+            continue
+        exp_id, head = m.group(1), m.group(2)
+        timed_out.append((exp_id, head, err_path))
     return timed_out
 
 
@@ -72,8 +79,8 @@ def main():
     parser.add_argument(
         "--time",
         type=str,
-        default="4-00:00:00",
-        help="new time limit for relaunched jobs (default: 4-00:00:00)",
+        default="6-23:00:00",
+        help="new time limit for relaunched jobs (default: 6-23:00:00)",
     )
     args = parser.parse_args()
 
@@ -116,7 +123,7 @@ def main():
             skipped_no_attr += 1
             continue
 
-        job_name = f"modisco_{exp_id}_{head}"
+        job_name = f"relaunch_modisco_{exp_id}_{head}"
 
         modisco_motifs_cmd = (
             f"modisco motifs"
@@ -124,12 +131,6 @@ def main():
             f" -a {attr_path}"
             f" -o {out_h5}"
             f" -n {args.n_seqlets} -l {args.leiden} -w {args.window} -v"
-        )
-        modisco_report_cmd = (
-            f"modisco report"
-            f" -i {out_h5}"
-            f" -o {f'{exp_id}_{head}.modisco'}"
-            f" -m {JASPAR_PATH}"
         )
 
         sbatch_script = textwrap.dedent(f"""\
@@ -163,7 +164,6 @@ def main():
             mkdir -p {out_dir}
             cd {out_dir}
             time {modisco_motifs_cmd}
-            time {modisco_report_cmd}
         """)
 
         if args.dry_run:

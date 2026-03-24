@@ -238,8 +238,8 @@ def main():
         "batch_size": 64,
         "muon_learning_rate": 0.001,
         "adam_learning_rate": 0.004,
-        "max_epochs": 50,
-        "early_stopping": None,
+        "max_epochs": 100,
+        "early_stopping": 10,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
@@ -352,7 +352,7 @@ def main():
 
     # Warmup + cosine decay schedules
     n_warmup = len(train_data_loader) * 5
-    n_total = len(train_data_loader) * 50
+    n_total = len(train_data_loader) * params["max_epochs"]
 
     muon_scheduler = SequentialLR(
         muon_optimizer,

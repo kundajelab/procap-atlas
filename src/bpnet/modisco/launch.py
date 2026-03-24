@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Submit SLURM jobs to run tf-modisco on BPNet attributions.
+"""Submit SLURM jobs to run `modisco motifs` on BPNet attributions.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
-sbatch job per (experiment, head) pair via `modisco motifs` and `modisco report`.
+sbatch job per (experiment, head) pair. Jobs are skipped if the modisco .h5
+output already exists or if the required attribution/OHE npz files are missing
+(run attribute/launch.py first).
 
-Jobs are skipped if the modisco output already exists or if the required
-attribution/OHE npz files are missing (run attribute/launch.py --ohe first).
+Run launch_report.py separately after motifs completes.
 
 Usage:
     python src/bpnet/modisco/launch.py                    # submit all experiments, both heads
@@ -28,9 +29,6 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
-JASPAR_PATH = (
-    REPO_ROOT / "data" / "JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt"
-)
 
 
 def load_n_reads():
@@ -78,7 +76,7 @@ def main():
         help="window to get seqlets from (default: 1000)",
     )
     # SLURM resource flags
-    parser.add_argument("--partition", type=str, default="akundaje,owners")
+    parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=32)
     parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="2-00:00:00")
@@ -128,7 +126,7 @@ def main():
                 skipped_no_attr += 1
                 continue
 
-            # Skip if modisco output already exists
+            # Skip if modisco .h5 output already exists
             out_h5 = out_dir / f"{exp_id}_{head}.modisco.h5"
             if out_h5.exists():
                 skipped_done += 1
@@ -142,12 +140,6 @@ def main():
                 f" -a {attr_path}"
                 f" -o {out_h5}"
                 f" -n {args.n_seqlets} -l {args.leiden} -w {args.window} -v"
-            )
-            modisco_report_cmd = (
-                f"modisco report"
-                f" -i {out_h5}"
-                f" -o {f'{exp_id}_{head}.modisco'}"
-                f" -m {JASPAR_PATH}"
             )
 
             sbatch_script = textwrap.dedent(f"""\
@@ -163,7 +155,7 @@ def main():
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
                 #SBATCH -C NO_GPU
-
+                
                 ml openblas/0.3.28
                 ml xsimd/8.1.0
                 ml xz/5.8.1
@@ -181,7 +173,6 @@ def main():
                 mkdir -p {out_dir}
                 cd {out_dir}
                 time {modisco_motifs_cmd}
-                time {modisco_report_cmd}
             """)
 
             if args.dry_run:
