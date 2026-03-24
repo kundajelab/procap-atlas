@@ -39,7 +39,12 @@ import torch
 import yaml
 from data_loader import PeakGenerator
 from tangermeme.io import extract_loci
-from torch.optim import AdamW, Muon
+from torch.optim import AdamW
+
+try:
+    from torch.optim import Muon
+except ImportError:
+    from muon import Muon  # local fallback for PyTorch < 2.9
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 
 from cherimoya import Cherimoya

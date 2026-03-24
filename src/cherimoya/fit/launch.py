@@ -133,10 +133,8 @@ def main():
                 ml biology
                 ml htslib
                 ml ucsc-utils
-                ml rust/1.90.0
-                ml py-pytorch/2.9.1_py314
-
-                mamba activate cherimoya
+                
+                mamba activate torch
                 nvidia-smi -L
                 {fit_cmd}
             """)
