@@ -46,11 +46,8 @@ def _zeropower_via_newtonschulz(
     ortho.div_(ortho.norm().clamp(min=eps))
     for _ in range(ns_steps):
         gram = ortho @ ortho.T
-        ortho = torch.addmm(
-            torch.addmm(gram, gram, gram, beta=b, alpha=c),
-            ortho,
-            alpha=a,
-        )
+        gram_update = torch.addmm(gram, gram, gram, beta=b, alpha=c)
+        ortho = torch.addmm(ortho, gram_update, ortho, beta=a)
 
     if grad.size(0) > grad.size(1):
         ortho = ortho.T

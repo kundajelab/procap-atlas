@@ -48,12 +48,12 @@ def main():
     parser.add_argument(
         "--gpus",
         type=str,
-        default="GPU_SKU:A100_SXM4|GPU_SKU:L40S|GPU_SKU:H100_SXM5|GPU_SKU:RTX_3090",
+        default="GPU_GEN:AMP|GPU_GEN:LOV|GPU_GEN:HPR",
     )
     parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="32G")
-    parser.add_argument("--time", type=str, default="6:00:00")
+    parser.add_argument("--time", type=str, default="2:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,

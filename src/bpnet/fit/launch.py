@@ -48,7 +48,7 @@ def main():
     parser.add_argument(
         "--gpus",
         type=str,
-        default="GPU_SKU:A100_SXM4|GPU_SKU:L40S|GPU_SKU:H100_SXM5|GPU_SKU:RTX_3090",
+        default="GPU_GEN:AMP|GPU_GEN:LOV|GPU_GEN:HPR",
     )
     parser.add_argument("--partition", type=str, default="akundaje")
     parser.add_argument("--cpus-per-task", type=int, default=4)
