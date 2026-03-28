@@ -105,6 +105,7 @@ def main():
                 f" -i {out_h5}"
                 f" -o {exp_id}_{head}.modisco"
                 f" -m {JASPAR_PATH}"
+                f" --lite"
             )
 
             sbatch_script = textwrap.dedent(f"""\
@@ -121,6 +122,9 @@ def main():
                 #SBATCH --error={log_dir}/{job_name}.err
                 #SBATCH -C NO_GPU
 
+                ml gh # github CLI
+                ml gcc/12.4.0
+                ml cmake/3.31.4
                 ml openblas/0.3.28
                 ml xsimd/8.1.0
                 ml xz/5.8.1
@@ -131,7 +135,6 @@ def main():
                 ml biology
                 ml htslib
                 ml ucsc-utils
-                ml rust/1.90.0
                 
                 mamba activate torch
 
