@@ -1,4 +1,4 @@
-name: torch
+name: procap-atlas
 channels:
   - conda-forge
   - bioconda

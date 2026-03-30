@@ -27,7 +27,12 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `attribute/save_ohe.py` — Extracts and saves one-hot-encoded sequences for all peaks of a given experiment to `attributions/bpnet/{experiment}_ohe.npz`. Run separately from attributions.
   - `attribute/run_ohe.py` — Runs `save_ohe.py` for all experiments asynchronously. Skips experiments where the OHE file already exists; `-j/--jobs` controls concurrency (default: 4); `--min-reads` and `--dry-run` supported.
   - `attribute/launch.py` — Submits SLURM jobs for attributions, one per (experiment, head) pair. Skips experiments with incomplete training (any fold model missing) or existing output; `--min-reads` filter defaults to 0 (disabled). `--head` is repeatable (default: `profile`). Logs to `logs/bpnet_attr/`.
-  - `modisco/launch.py` — Submits SLURM jobs for tf-modisco, one per (experiment, head) pair. Skips experiments where the attribution or OHE npz is missing or modisco output already exists. Runs `modisco motifs` then `modisco report` in a single job. Output: `modisco/bpnet/{exp_id}_{head}.modisco.h5` and `modisco/bpnet/{exp_id}_{head}.modisco/`. Logs to `logs/bpnet_modisco/`.
+  - `modisco/launch.py` — Submits SLURM jobs to run `modisco motifs` on BPNet attributions, one job per (experiment, head) pair. Skips experiments where the attribution or OHE npz is missing, or the `.h5` output already exists; `--min-reads` filter supported (default: 0, disabled). Modisco parameters (`-n/--n-seqlets`, `-l/--leiden`, `-w/--window`) and SLURM resources are configurable. Output: `modisco/bpnet/{exp_id}_{head}.modisco.h5`. Logs to `logs/bpnet_modisco/`. Run `launch_report.py` separately after this completes.
+  - `modisco/launch_report.py` — Submits SLURM jobs to run `modisco report` on completed `.h5` outputs, one job per (experiment, head) pair. Skips pairs where the `.h5` is missing or the report directory already exists. Uses JASPAR 2026 vertebrate motif database at `data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt` for motif matching. Output: `modisco/bpnet/{exp_id}_{head}.modisco/`. Logs to `logs/bpnet_modisco/`.
+  - `modisco/relaunch_timeout.py` — Recovers from SLURM time-limit cancellations. Scans `logs/bpnet_modisco/*.err` for TIME_LIMIT/TIMEOUT signals and resubmits the affected jobs with a longer runtime (default: `6-23:00:00`, vs the original `2-00:00:00`). Skips jobs whose `.h5` output already exists (completed on a prior retry). `--list` prints timed-out jobs and their status without submitting; `--dry-run` previews sbatch scripts.
+  - `modisco/modisco.sh` — Manual SLURM array script (array indices 0–1 → count/profile) for running `modisco motifs` + `modisco report` on a single hardcoded experiment. Template for one-off runs; edit `biosample` and `background` variables before use.
+  - `modisco/modisco_peak_test.sh` — Manual script for cross-experiment modisco: runs `modisco motifs` + `modisco report` using attributions from one model applied to peaks from a different experiment. Useful for testing how a model's learned motifs generalize to a different peak set.
+  - `modisco/modisco_retrain.sh` — Similar to `modisco_peak_test.sh` but for retrained models (model name encodes both the track source and peak source). Used for benchmarking retrained models against alternative peak sets.
 - **`src/cherimoya/`** — Cherimoya deep learning model training and evaluation (similar API to BPNet):
   - `fit/fit_cherimoya.py` — **Production** Cherimoya training script. Uses `CheriBlock` with a Triton fused dilated conv+norm kernel. Muon + AdamW dual-optimizer setup with warmup + cosine decay schedules. Accepts the same `--background NAME:RATIO` pattern as BPNet; `--muon-lr` and `--adam-lr` set the respective learning rates. Output directory defaults to `models/cherimoya/{experiment}`; non-default backgrounds append a suffix. Logs to `logs/cherimoya_fit/`.
   - `fit/cherimoya2.py` — Pure PyTorch `CheriBlock2` implementation (replaces the fused Triton kernel with `Conv1d` + `LayerNorm`). **For testing/development only** — not intended for production training runs.
@@ -114,9 +119,24 @@ python src/bpnet/attribute/launch.py --dry-run                              # pr
 ### Modisco
 
 ```bash
-python src/bpnet/modisco/launch.py                                          # submit all experiments, profile head
-python src/bpnet/modisco/launch.py --head profile --head count              # both heads
-python src/bpnet/modisco/launch.py --dry-run                                # preview without submitting
+# Step 1: run modisco motifs (requires attributions from attribute/launch.py)
+python src/bpnet/modisco/launch.py                                              # submit all experiments, both heads
+python src/bpnet/modisco/launch.py --head profile --head count                  # explicit both heads
+python src/bpnet/modisco/launch.py --head count                                 # count head only
+python src/bpnet/modisco/launch.py --dry-run                                    # preview without submitting
+python src/bpnet/modisco/launch.py --min-reads 20000000                         # only well-covered experiments
+python src/bpnet/modisco/launch.py -n 500000 -l 30 -w 500                      # custom modisco parameters
+
+# Step 2: run modisco report (requires completed .h5 outputs from step 1)
+python src/bpnet/modisco/launch_report.py                                       # submit all experiments, both heads
+python src/bpnet/modisco/launch_report.py --head profile                        # profile head only
+python src/bpnet/modisco/launch_report.py --dry-run                             # preview without submitting
+
+# Recovery: relaunch jobs that hit the SLURM time limit
+python src/bpnet/modisco/relaunch_timeout.py --list                             # show timed-out jobs and status
+python src/bpnet/modisco/relaunch_timeout.py --dry-run                          # preview relaunch scripts
+python src/bpnet/modisco/relaunch_timeout.py                                    # resubmit with 6-23:00:00 time limit
+python src/bpnet/modisco/relaunch_timeout.py --time 4-00:00:00                  # custom extended time limit
 ```
 
 ### Track Hub
