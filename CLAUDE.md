@@ -35,6 +35,9 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `fit/data_loader.py` — `PeakGenerator` and `PeakNegativeSampler` for strand-specific PRO-cap data loading during Cherimoya training.
   - `fit/launch.py` — Submits SLURM jobs to train Cherimoya models, one per (experiment, fold) pair. Skips experiments with fewer than `--min-reads` total reads (default: 0) and folds where the model file already exists. Extra arguments forwarded via `--fit-args`. Logs to `logs/cherimoya_fit/`.
   - `benchmark/benchmark_cherimoya.py` — Evaluates a trained Cherimoya across all folds on held-out test chromosomes. Defaults to `models/cherimoya/{experiment}`; use `--model-dir` to override. Reports per-fold and genome-wide profile Pearson, profile JSD, log-counts Pearson, and counts Spearman. Always writes results to `performance_metrics/cherimoya/{model_dir_name}.json`. `--save-output` writes scaled predictions to `predictions/cherimoya/{model_dir_name}.npz`.
+- **`src/hub/`** — UCSC track hub generation (see `src/hub/README.md` for full details):
+  - `generate_hub.py` — Reads `configs/experiment_config.yaml` and writes `hub/hub.txt`, `hub/genomes.txt`, and `hub/hg38/trackDb.txt`. Experiments grouped into supertracks by biosample; each experiment gets a `compositeTrack` for plus/minus strand BigWigs and a `bigBed` peaks track. Experiments with `uncapped` in `library_construction` are set to `visibility hide`. Requires `--email`; `--base-url` sets the public-facing URL root (default: `https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas`).
+  - `convert_peaks_bigbed.py` — Converts all `data/processed/peaks/{exp}_{biosample}.bed.gz` files to bigBed format using `bedToBigBed`. Writes alongside source `.bed.gz` files by default; use `--output-dir` to override. Handles 8-column merged, 6-column bidirectional-only, and other PINTS formats automatically. Skips experiments where the output already exists or input is missing. Supports `-j/--jobs` for parallelism.
 - **`src/alphagenome/`** — AlphaGenome analysis (planned).
 - **`data/`** (gitignored, created by scripts) — Downloaded genome, signal files, and peaks.
 
@@ -116,6 +119,19 @@ python src/bpnet/modisco/launch.py --head profile --head count              # bo
 python src/bpnet/modisco/launch.py --dry-run                                # preview without submitting
 ```
 
+### Track Hub
+
+Requires processed BigWig and peak files. Run after preprocessing is complete.
+
+```bash
+python src/hub/generate_hub.py --email you@example.com  # write hub/hub.txt, hub/genomes.txt, hub/hg38/trackDb.txt
+python src/hub/convert_peaks_bigbed.py                  # convert peaks to bigBed → hub/hg38/bigbed/
+python src/hub/convert_peaks_bigbed.py -j 4             # 4 parallel workers
+hubCheck hub/hub.txt                                    # validate (requires UCSC Kent tools)
+```
+
+Hub URL: `https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas/hub/hub.txt`
+
 ## External Dependencies
 
 - `wget`, `gunzip` — file downloading and decompression
@@ -123,6 +139,8 @@ python src/bpnet/modisco/launch.py --dry-run                                # pr
 - `bgzip` (htslib) — bgzip compression of processed peak and negative BED files
 - `parallel` (GNU parallel) — parallel downloads
 - `bigWigMerge`, `bedGraphToBigWig` (UCSC Kent tools) — BigWig merging
+- `bedToBigBed` (UCSC Kent tools, optional) — peak BED to bigBed conversion for track hub
+- `hubCheck` (UCSC Kent tools, optional) — track hub validation
 - `sbatch` (SLURM, optional) — cluster job submission via `src/bpnet/fit/launch.py` and `src/bpnet/attribute/launch.py`
 - Python (see `requirements.txt`): `pyyaml`, `tqdm`, `numpy`, `pandas`, `scipy`, `joblib`, `pyfaidx`, `pyfastx`, `pybigtools`, `torch`, `tangermeme`, `bpnetlite`
 

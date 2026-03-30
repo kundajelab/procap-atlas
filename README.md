@@ -8,7 +8,7 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
 - `samtools` -- FASTA indexing
 - `bgzip` (htslib) -- bgzip compression of processed BED files
 - GNU `parallel` -- parallel downloads
-- `bigWigMerge`, `bedGraphToBigWig` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/)) -- BigWig merging
+- `bigWigMerge`, `bedGraphToBigWig`, `bedToBigBed`, `hubCheck` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/) or `bioconda`) -- BigWig merging and track hub generation
 - `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py`, `src/bpnet/attribute/launch.py`, and `src/cherimoya/fit/launch.py`
 - Python 3.10+ (`pip install -r requirements.txt`)
 
@@ -20,7 +20,7 @@ mamba create -n procap-atlas python=3.12 -y
 mamba activate procap-atlas
 
 # Install command-line tools
-mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraphtobigwig -y
+mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraphtobigwig ucsc-bedtobigbed ucsc-hubcheck -y
 # Usually not needed.
 # mamba install -c conda-forge parallel wget -y
 
@@ -78,6 +78,23 @@ python src/preprocess/process_peaks.py
 ```
 
 Output: `data/processed/peaks/{experiment}_{biosample}.bed.gz`
+
+### 4b. Generate UCSC track hub (optional)
+
+Generates a [UCSC track hub](https://genome.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) for visualizing all 224 experiments in the Genome Browser. Experiments are grouped by biosample; each has a strand-specific multiWig signal track and a peaks track.
+
+```bash
+python src/hub/generate_hub.py --email you@example.com  # write hub files
+python src/hub/convert_peaks_bigbed.py            # convert peaks to bigBed (requires bedToBigBed)
+python src/hub/convert_peaks_bigbed.py -j 4       # 4 parallel workers
+hubCheck hub/hub.txt                              # validate (optional)
+```
+
+Output: `hub/hub.txt`, `hub/genomes.txt`, `hub/hg38/trackDb.txt`, `hub/hg38/bigbed/*.bb`
+
+Hub URL: `https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas/hub/hub.txt`
+
+I will try to keep this hub online for as long as my accounts at Stanford remain active, but at some point my stuff will get deleted.
 
 ### 5. Generate GC-matched negatives
 
@@ -202,6 +219,10 @@ src/
     gc_match.py          # GC-matched negative region extraction (adapted from tangermeme)
     gc_match_run.py      # Runs gc_match for all experiments in config
     count_reads.py       # Count total reads per experiment across both strand BigWigs
+  hub/                   # UCSC track hub generation (see src/hub/README.md)
+    generate_hub.py      # Generate hub.txt, genomes.txt, trackDb.txt from experiment config
+    convert_peaks_bigbed.py  # Convert peak BED.gz files to bigBed format
+    README.md            # Track hub documentation
   bpnet/                 # BPNet deep learning model
     fit/fit_bpnet.py           # BPNet training script with configurable background sampling
     fit/launch.py              # SLURM job submission for training

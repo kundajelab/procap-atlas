@@ -21,6 +21,7 @@ Usage:
 
 import argparse
 import gzip
+import re
 import sys
 from pathlib import Path
 
@@ -57,7 +58,7 @@ def parse_tss(gff3_path: Path, feature: str = "gene") -> list[tuple[str, int, st
             if chrom not in CANONICAL_CHROMS:
                 continue
             start = int(fields[3]) - 1  # GFF3 is 1-based inclusive -> 0-based
-            end = int(fields[4])        # GFF3 end is 1-based inclusive -> 0-based exclusive
+            end = int(fields[4])  # GFF3 end is 1-based inclusive -> 0-based exclusive
             strand = fields[6]
             tss = start if strand == "+" else end - 1
             tss_list.append((chrom, tss, strand))
@@ -122,8 +123,12 @@ def collect_windows(
                 sense = pl_sig
                 antisense = mn_sig
 
-            sense_bin = sense[: n_bins * bin_size].reshape(n_bins, bin_size).mean(axis=1)
-            antisense_bin = antisense[: n_bins * bin_size].reshape(n_bins, bin_size).mean(axis=1)
+            sense_bin = (
+                sense[: n_bins * bin_size].reshape(n_bins, bin_size).mean(axis=1)
+            )
+            antisense_bin = (
+                antisense[: n_bins * bin_size].reshape(n_bins, bin_size).mean(axis=1)
+            )
             sense_rows.append(sense_bin)
             antisense_rows.append(antisense_bin)
 
@@ -152,7 +157,9 @@ def plot_metaplot(
     fig, ax = plt.subplots(figsize=(6, 3.5))
 
     ax.fill_between(positions, sense, color="#e04b4b", alpha=0.8, label="Sense")
-    ax.fill_between(positions, -antisense, color="#4b7be0", alpha=0.8, label="Antisense")
+    ax.fill_between(
+        positions, -antisense, color="#4b7be0", alpha=0.8, label="Antisense"
+    )
     ax.plot(positions, sense, color="#c02020", linewidth=0.8)
     ax.plot(positions, -antisense, color="#2050c0", linewidth=0.8)
 
@@ -214,7 +221,9 @@ def plot_heatmap(
     fig_height = panel_height * 2 + 1.5  # two panels + margins
 
     fig, axes = plt.subplots(
-        2, 1, figsize=(6, fig_height),
+        2,
+        1,
+        figsize=(6, fig_height),
         gridspec_kw={"height_ratios": [1, 1], "hspace": 0.35},
     )
 
@@ -260,7 +269,9 @@ def load_n_reads(path: Path) -> dict[str, float]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Metaplot PRO-cap signal around gene TSSs")
+    parser = argparse.ArgumentParser(
+        description="Metaplot PRO-cap signal around gene TSSs"
+    )
     parser.add_argument(
         "--annotation",
         metavar="GFF3",
@@ -276,16 +287,16 @@ def main():
     parser.add_argument(
         "--window",
         type=int,
-        default=2000,
+        default=200,
         metavar="BP",
-        help="half-window size in bp around each TSS (default: 2000)",
+        help="half-window size in bp around each TSS (default: 100)",
     )
     parser.add_argument(
         "--bin-size",
         type=int,
-        default=10,
+        default=1,
         metavar="BP",
-        help="bin size in bp for averaging signal (default: 10)",
+        help="bin size in bp for averaging signal (default: 1)",
     )
     parser.add_argument(
         "--plot-type",
@@ -330,7 +341,9 @@ def main():
 
     n_reads_map = load_n_reads(N_READS_PATH) if N_READS_PATH.exists() else {}
 
-    print(f"Parsing {args.feature} TSSs from {args.annotation.name}...", file=sys.stderr)
+    print(
+        f"Parsing {args.feature} TSSs from {args.annotation.name}...", file=sys.stderr
+    )
     tss_list = parse_tss(args.annotation, feature=args.feature)
     print(f"Found {len(tss_list):,} TSSs on canonical chromosomes.", file=sys.stderr)
 
@@ -339,16 +352,21 @@ def main():
     experiments = config["experiments"]
     if args.experiment:
         if args.experiment not in experiments:
-            print(f"ERROR: experiment {args.experiment!r} not in config", file=sys.stderr)
+            print(
+                f"ERROR: experiment {args.experiment!r} not in config", file=sys.stderr
+            )
             sys.exit(1)
         experiments = {args.experiment: experiments[args.experiment]}
 
     for exp_id, exp in tqdm(experiments.items(), unit="exp"):
-        biosample = exp.get("biosample", "unknown")
+        biosample = re.sub(r"[^\w-]", "_", exp.get("biosample", "unknown")).strip("_")
         total_reads = n_reads_map.get(exp_id)
 
         if total_reads is None:
-            print(f"WARNING: {exp_id}: no read count found in n_reads.txt, skipping", file=sys.stderr)
+            print(
+                f"WARNING: {exp_id}: no read count found in n_reads.txt, skipping",
+                file=sys.stderr,
+            )
             continue
         if total_reads < args.min_reads:
             continue
@@ -359,7 +377,10 @@ def main():
 
         missing = [p for p in (pl_path, mn_path) if not p.exists()]
         if missing:
-            print(f"WARNING: {exp_id}: missing {[p.name for p in missing]}, skipping", file=sys.stderr)
+            print(
+                f"WARNING: {exp_id}: missing {[p.name for p in missing]}, skipping",
+                file=sys.stderr,
+            )
             continue
 
         sense_mat, antisense_mat = collect_windows(
@@ -375,15 +396,25 @@ def main():
         if args.plot_type in ("metaplot", "both"):
             out_path = args.out_dir / f"{exp_id}_{biosample}_metaplot.pdf"
             plot_metaplot(
-                sense_mat.mean(axis=0), antisense_mat.mean(axis=0),
-                args.window, args.bin_size, n_tss, title, out_path,
+                sense_mat.mean(axis=0),
+                antisense_mat.mean(axis=0),
+                args.window,
+                args.bin_size,
+                n_tss,
+                title,
+                out_path,
             )
 
         if args.plot_type in ("heatmap", "both"):
             out_path = args.out_dir / f"{exp_id}_{biosample}_heatmap.pdf"
             plot_heatmap(
-                sense_mat, antisense_mat,
-                args.window, args.bin_size, args.max_tss, title, out_path,
+                sense_mat,
+                antisense_mat,
+                args.window,
+                args.bin_size,
+                args.max_tss,
+                title,
+                out_path,
             )
 
     print(f"\nPlots written to {args.out_dir}/", file=sys.stderr)
