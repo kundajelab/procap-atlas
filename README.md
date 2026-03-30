@@ -2,34 +2,15 @@
 
 Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-cap (Precision Run-On sequencing with cap selection) data is used for transcription start site (TSS) analysis on the human genome (GRCh38/hg38).
 
-## Prerequisites
+## Environment installation
 
-- `wget`, `gunzip` -- file downloading and decompression
-- `samtools` -- FASTA indexing
-- `bgzip` (htslib) -- bgzip compression of processed BED files
-- GNU `parallel` -- parallel downloads
-- `bigWigMerge`, `bedGraphToBigWig`, `bedToBigBed`, `hubCheck` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/) or `bioconda`) -- BigWig merging and track hub generation
-- `sbatch` (SLURM, optional) -- cluster job submission via `src/bpnet/fit/launch.py`, `src/bpnet/attribute/launch.py`, and `src/cherimoya/fit/launch.py`
-- Python 3.10+ (`pip install -r requirements.txt`)
-
-## Sample installation with mamba
+Command line and python dependencies are specified in `environment.yml` and can be installed via conda/mamba:
 
 ```bash
 # Create and activate mamba environment
-mamba create -n procap-atlas python=3.12 -y
-mamba activate procap-atlas
-
-# Install command-line tools
-mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraphtobigwig ucsc-bedtobigbed ucsc-hubcheck -y
+mamba create -f environment.yml
 # Usually not needed.
 # mamba install -c conda-forge parallel wget -y
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Install cherimoya
-git clone git@github.com:jmschrei/cherimoya.git
-pip install -e cherimoya
 ```
 
 ## Usage
