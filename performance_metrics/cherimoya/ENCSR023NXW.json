@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR023NXW",
+    "biosample": "right common carotid artery plus branches",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR023NXW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4952007830142975,
+            "profile_jsd": 0.3469678461551666,
+            "log_counts_pearson": 0.7322919964790344,
+            "counts_spearman": 0.744352400302887
+        },
+        "1": {
+            "profile_pearson": 0.48441892862319946,
+            "profile_jsd": 0.35335880517959595,
+            "log_counts_pearson": 0.7210785746574402,
+            "counts_spearman": 0.7295892834663391
+        },
+        "2": {
+            "profile_pearson": 0.49122413992881775,
+            "profile_jsd": 0.3570028841495514,
+            "log_counts_pearson": 0.726957380771637,
+            "counts_spearman": 0.7409716248512268
+        },
+        "3": {
+            "profile_pearson": 0.4813602566719055,
+            "profile_jsd": 0.35955551266670227,
+            "log_counts_pearson": 0.7218238711357117,
+            "counts_spearman": 0.7312912344932556
+        },
+        "4": {
+            "profile_pearson": 0.4717451333999634,
+            "profile_jsd": 0.3544773459434509,
+            "log_counts_pearson": 0.713412344455719,
+            "counts_spearman": 0.7211498618125916
+        },
+        "5": {
+            "profile_pearson": 0.4224414825439453,
+            "profile_jsd": 0.38848114013671875,
+            "log_counts_pearson": 0.7251421213150024,
+            "counts_spearman": 0.7277268767356873
+        },
+        "6": {
+            "profile_pearson": 0.4289342761039734,
+            "profile_jsd": 0.37487900257110596,
+            "log_counts_pearson": 0.6820205450057983,
+            "counts_spearman": 0.6870041489601135
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.466801255941391,
+        "profile_jsd": 0.3628309369087219,
+        "log_counts_pearson": 0.7099389433860779,
+        "counts_spearman": 0.7187236547470093
+    }
+}

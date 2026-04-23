@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR065QHA",
+    "biosample": "left lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR065QHA",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5336617231369019,
+            "profile_jsd": 0.345650851726532,
+            "log_counts_pearson": 0.6658349633216858,
+            "counts_spearman": 0.6750887036323547
+        },
+        "1": {
+            "profile_pearson": 0.5132610201835632,
+            "profile_jsd": 0.35257506370544434,
+            "log_counts_pearson": 0.6557267904281616,
+            "counts_spearman": 0.6598084568977356
+        },
+        "2": {
+            "profile_pearson": 0.4051606059074402,
+            "profile_jsd": 0.41481131315231323,
+            "log_counts_pearson": 0.6559972167015076,
+            "counts_spearman": 0.6342592835426331
+        },
+        "3": {
+            "profile_pearson": 0.41504180431365967,
+            "profile_jsd": 0.4056229293346405,
+            "log_counts_pearson": 0.6512631177902222,
+            "counts_spearman": 0.6266263127326965
+        },
+        "4": {
+            "profile_pearson": 0.5103284120559692,
+            "profile_jsd": 0.3584454655647278,
+            "log_counts_pearson": 0.6248531341552734,
+            "counts_spearman": 0.6339504718780518
+        },
+        "5": {
+            "profile_pearson": 0.5173840522766113,
+            "profile_jsd": 0.35644060373306274,
+            "log_counts_pearson": 0.6529535055160522,
+            "counts_spearman": 0.6562866568565369
+        },
+        "6": {
+            "profile_pearson": 0.5406251549720764,
+            "profile_jsd": 0.34000009298324585,
+            "log_counts_pearson": 0.6235808730125427,
+            "counts_spearman": 0.640277087688446
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4919610917568207,
+        "profile_jsd": 0.3680330216884613,
+        "log_counts_pearson": 0.631564736366272,
+        "counts_spearman": 0.6323609948158264
+    }
+}

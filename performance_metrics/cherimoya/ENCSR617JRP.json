@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR617JRP",
+    "biosample": "Metastatic Breast Carcinoma in the Ovary",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR617JRP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.50557941198349,
+            "profile_jsd": 0.35997042059898376,
+            "log_counts_pearson": 0.6836944818496704,
+            "counts_spearman": 0.7085580229759216
+        },
+        "1": {
+            "profile_pearson": 0.5409510731697083,
+            "profile_jsd": 0.3468775153160095,
+            "log_counts_pearson": 0.7425381541252136,
+            "counts_spearman": 0.7733466029167175
+        },
+        "2": {
+            "profile_pearson": 0.5387513637542725,
+            "profile_jsd": 0.3451933264732361,
+            "log_counts_pearson": 0.74174964427948,
+            "counts_spearman": 0.7666564583778381
+        },
+        "3": {
+            "profile_pearson": 0.4528430998325348,
+            "profile_jsd": 0.38901370763778687,
+            "log_counts_pearson": 0.7440859079360962,
+            "counts_spearman": 0.7501367926597595
+        },
+        "4": {
+            "profile_pearson": 0.5301414728164673,
+            "profile_jsd": 0.34531569480895996,
+            "log_counts_pearson": 0.7225534319877625,
+            "counts_spearman": 0.747877836227417
+        },
+        "5": {
+            "profile_pearson": 0.524268627166748,
+            "profile_jsd": 0.34417757391929626,
+            "log_counts_pearson": 0.7296760678291321,
+            "counts_spearman": 0.7567898035049438
+        },
+        "6": {
+            "profile_pearson": 0.5503103137016296,
+            "profile_jsd": 0.33210790157318115,
+            "log_counts_pearson": 0.6925469040870667,
+            "counts_spearman": 0.7178065180778503
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5189597606658936,
+        "profile_jsd": 0.351077675819397,
+        "log_counts_pearson": 0.7081832885742188,
+        "counts_spearman": 0.7367327213287354
+    }
+}

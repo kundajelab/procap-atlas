@@ -13,6 +13,27 @@ mamba activate procap-atlas
 
 `parallel` and `wget` are usually installed by default, but if not, they can also be installed via conda/mamba.
 
+### MotifCompendium environment
+
+[MotifCompendium](https://github.com/kundajelab/MotifCompendium) requires a separate conda environment. Clone the repo and create the environment (GPU or CPU variant):
+
+```bash
+git clone https://github.com/kundajelab/MotifCompendium.git
+cd MotifCompendium
+
+# GPU (recommended)
+conda env create -f environment_gpu.yml
+conda activate motifcompendium-gpu
+
+# CPU-only
+conda env create -f environment.yml
+conda activate motifcompendium
+
+pip install -e .
+```
+
+Scripts in `src/bpnet/motifcompendium/` should be run inside this environment after modisco outputs have been generated (step 10).
+
 ## Usage
 
 ### 1. Download data
@@ -164,7 +185,18 @@ python src/bpnet/modisco/relaunch_timeout.py --time 4-00:00:00   # custom extend
 
 Output: `modisco/bpnet/{exp_id}_{head}.modisco.h5`, `modisco/bpnet/{exp_id}_{head}.modisco/`
 
-### 11. Train Cherimoya model
+### 11. Cluster motifs across experiments
+
+Clusters modisco motifs across all experiments using [MotifCompendium](https://github.com/kundajelab/MotifCompendium). Run inside the `motifcompendium` or `motifcompendium-gpu` conda environment (see installation above). The script expects modisco `.h5` files to be present in the working directory (or adjust glob paths in the script).
+
+```bash
+conda activate motifcompendium-gpu
+python src/bpnet/motifcompendium/cluster_motifs.py
+```
+
+Output: `count_similarity_distribution.html`, `profile_similarity_distribution.html`
+
+### 12. Train Cherimoya model
 
 Trains a [Cherimoya](https://github.com/jmschrei/cherimoya) model for a single experiment using the same 7-fold chromosome cross-validation scheme as BPNet. The production training script uses a Triton fused dilated conv+norm kernel (`CheriBlock`). Training uses a dual-optimizer setup: Muon for the bulk 2D weight matrices (linear layers in each block) and AdamW for everything else (input/output convolutions, biases, scalars), both with warmup + cosine decay schedules.
 
@@ -185,7 +217,7 @@ python src/cherimoya/fit/launch.py             # all experiments x 7 folds
 python src/cherimoya/fit/launch.py --dry-run   # preview without submitting
 ```
 
-### 12. Benchmark Cherimoya model
+### 13. Benchmark Cherimoya model
 
 Evaluates trained Cherimoya models across all folds on held-out test chromosomes. Optionally saves scaled predictions.
 
@@ -242,6 +274,7 @@ src/
     modisco/launch.py                # SLURM job submission for modisco motifs
     modisco/launch_report.py         # SLURM job submission for modisco report
     modisco/relaunch_timeout.py      # Relaunch SLURM jobs that hit the time limit
+    motifcompendium/cluster_motifs.py  # Cross-experiment motif clustering via MotifCompendium
   cherimoya/             # Cherimoya deep learning model
     fit/fit_cherimoya.py       # Production training script (Triton fused kernel)
     fit/fit_cherimoya2.py      # Testing/development training script (pure PyTorch)

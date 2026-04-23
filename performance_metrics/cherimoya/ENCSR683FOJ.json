@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR683FOJ",
+    "biosample": "mesenteric fat pad",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR683FOJ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5557041168212891,
+            "profile_jsd": 0.352932333946228,
+            "log_counts_pearson": 0.5750046968460083,
+            "counts_spearman": 0.5567569136619568
+        },
+        "1": {
+            "profile_pearson": 0.5811928510665894,
+            "profile_jsd": 0.3392818570137024,
+            "log_counts_pearson": 0.6047460436820984,
+            "counts_spearman": 0.6183154582977295
+        },
+        "2": {
+            "profile_pearson": 0.5925403833389282,
+            "profile_jsd": 0.34744974970817566,
+            "log_counts_pearson": 0.6311390399932861,
+            "counts_spearman": 0.634580671787262
+        },
+        "3": {
+            "profile_pearson": 0.5568637847900391,
+            "profile_jsd": 0.34710097312927246,
+            "log_counts_pearson": 0.5594579577445984,
+            "counts_spearman": 0.5559266209602356
+        },
+        "4": {
+            "profile_pearson": 0.5448459982872009,
+            "profile_jsd": 0.3584560751914978,
+            "log_counts_pearson": 0.5779489278793335,
+            "counts_spearman": 0.559914767742157
+        },
+        "5": {
+            "profile_pearson": 0.5488132238388062,
+            "profile_jsd": 0.35723379254341125,
+            "log_counts_pearson": 0.5969728231430054,
+            "counts_spearman": 0.5808804631233215
+        },
+        "6": {
+            "profile_pearson": 0.5829383730888367,
+            "profile_jsd": 0.3500678539276123,
+            "log_counts_pearson": 0.5337052345275879,
+            "counts_spearman": 0.5447679162025452
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5656702518463135,
+        "profile_jsd": 0.35103076696395874,
+        "log_counts_pearson": 0.5748615264892578,
+        "counts_spearman": 0.5665207505226135
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR632XIZ",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR632XIZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4867370128631592,
+            "profile_jsd": 0.36131852865219116,
+            "log_counts_pearson": 0.6248780488967896,
+            "counts_spearman": 0.6512723565101624
+        },
+        "1": {
+            "profile_pearson": 0.4646601676940918,
+            "profile_jsd": 0.37353622913360596,
+            "log_counts_pearson": 0.6275651454925537,
+            "counts_spearman": 0.6512876749038696
+        },
+        "2": {
+            "profile_pearson": 0.43427711725234985,
+            "profile_jsd": 0.38485994935035706,
+            "log_counts_pearson": 0.647363543510437,
+            "counts_spearman": 0.6577333807945251
+        },
+        "3": {
+            "profile_pearson": 0.5000700950622559,
+            "profile_jsd": 0.35652217268943787,
+            "log_counts_pearson": 0.6322334408760071,
+            "counts_spearman": 0.6629254221916199
+        },
+        "4": {
+            "profile_pearson": 0.49517497420310974,
+            "profile_jsd": 0.3598725199699402,
+            "log_counts_pearson": 0.6049009561538696,
+            "counts_spearman": 0.6313101649284363
+        },
+        "5": {
+            "profile_pearson": 0.4355938732624054,
+            "profile_jsd": 0.388431578874588,
+            "log_counts_pearson": 0.630476713180542,
+            "counts_spearman": 0.6372871994972229
+        },
+        "6": {
+            "profile_pearson": 0.4715975522994995,
+            "profile_jsd": 0.3750231862068176,
+            "log_counts_pearson": 0.5817421674728394,
+            "counts_spearman": 0.5920448303222656
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.46678870916366577,
+        "profile_jsd": 0.3721380829811096,
+        "log_counts_pearson": 0.6138796806335449,
+        "counts_spearman": 0.6336972117424011
+    }
+}

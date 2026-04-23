@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR656ZDH",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR656ZDH",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5713586211204529,
+            "profile_jsd": 0.3131013512611389,
+            "log_counts_pearson": 0.7547367811203003,
+            "counts_spearman": 0.7758373022079468
+        },
+        "1": {
+            "profile_pearson": 0.5542020797729492,
+            "profile_jsd": 0.31993046402931213,
+            "log_counts_pearson": 0.7714747786521912,
+            "counts_spearman": 0.7928909659385681
+        },
+        "2": {
+            "profile_pearson": 0.5506932735443115,
+            "profile_jsd": 0.32503098249435425,
+            "log_counts_pearson": 0.7606943845748901,
+            "counts_spearman": 0.7723334431648254
+        },
+        "3": {
+            "profile_pearson": 0.49915170669555664,
+            "profile_jsd": 0.3439406454563141,
+            "log_counts_pearson": 0.7558408379554749,
+            "counts_spearman": 0.7629221677780151
+        },
+        "4": {
+            "profile_pearson": 0.5324137806892395,
+            "profile_jsd": 0.335038959980011,
+            "log_counts_pearson": 0.7569183707237244,
+            "counts_spearman": 0.7749982476234436
+        },
+        "5": {
+            "profile_pearson": 0.5723206400871277,
+            "profile_jsd": 0.3109254837036133,
+            "log_counts_pearson": 0.7480981945991516,
+            "counts_spearman": 0.7694623470306396
+        },
+        "6": {
+            "profile_pearson": 0.5741544961929321,
+            "profile_jsd": 0.30375784635543823,
+            "log_counts_pearson": 0.7155135869979858,
+            "counts_spearman": 0.7303813695907593
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5520727038383484,
+        "profile_jsd": 0.3211345672607422,
+        "log_counts_pearson": 0.7473602890968323,
+        "counts_spearman": 0.7631108164787292
+    }
+}

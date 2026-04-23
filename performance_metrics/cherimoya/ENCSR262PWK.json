@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR262PWK",
+    "biosample": "type B pancreatic cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR262PWK",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5604575872421265,
+            "profile_jsd": 0.32940638065338135,
+            "log_counts_pearson": 0.7477624416351318,
+            "counts_spearman": 0.7698697447776794
+        },
+        "1": {
+            "profile_pearson": 0.5631371736526489,
+            "profile_jsd": 0.3298092484474182,
+            "log_counts_pearson": 0.769795835018158,
+            "counts_spearman": 0.7916232943534851
+        },
+        "2": {
+            "profile_pearson": 0.5486815571784973,
+            "profile_jsd": 0.3468925654888153,
+            "log_counts_pearson": 0.7665113806724548,
+            "counts_spearman": 0.7916201949119568
+        },
+        "3": {
+            "profile_pearson": 0.5580926537513733,
+            "profile_jsd": 0.33416515588760376,
+            "log_counts_pearson": 0.7311182618141174,
+            "counts_spearman": 0.7729284763336182
+        },
+        "4": {
+            "profile_pearson": 0.5339655876159668,
+            "profile_jsd": 0.3490506708621979,
+            "log_counts_pearson": 0.7179632186889648,
+            "counts_spearman": 0.7518542408943176
+        },
+        "5": {
+            "profile_pearson": 0.5116185545921326,
+            "profile_jsd": 0.3514304757118225,
+            "log_counts_pearson": 0.711997389793396,
+            "counts_spearman": 0.7331114411354065
+        },
+        "6": {
+            "profile_pearson": 0.5539596080780029,
+            "profile_jsd": 0.33856308460235596,
+            "log_counts_pearson": 0.713182270526886,
+            "counts_spearman": 0.748688280582428
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5446898937225342,
+        "profile_jsd": 0.3406420350074768,
+        "log_counts_pearson": 0.7298881411552429,
+        "counts_spearman": 0.7595769166946411
+    }
+}

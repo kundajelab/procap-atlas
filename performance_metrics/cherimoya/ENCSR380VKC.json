@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR380VKC",
+    "biosample": "heart right ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR380VKC",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5334185361862183,
+            "profile_jsd": 0.34538835287094116,
+            "log_counts_pearson": 0.7124857902526855,
+            "counts_spearman": 0.7195152044296265
+        },
+        "1": {
+            "profile_pearson": 0.5422043800354004,
+            "profile_jsd": 0.3399123549461365,
+            "log_counts_pearson": 0.7300145030021667,
+            "counts_spearman": 0.7363748550415039
+        },
+        "2": {
+            "profile_pearson": 0.532174825668335,
+            "profile_jsd": 0.3493015468120575,
+            "log_counts_pearson": 0.7137353420257568,
+            "counts_spearman": 0.7180505394935608
+        },
+        "3": {
+            "profile_pearson": 0.5308957099914551,
+            "profile_jsd": 0.3448655605316162,
+            "log_counts_pearson": 0.7137810587882996,
+            "counts_spearman": 0.7159398198127747
+        },
+        "4": {
+            "profile_pearson": 0.5292913317680359,
+            "profile_jsd": 0.34911787509918213,
+            "log_counts_pearson": 0.7132009863853455,
+            "counts_spearman": 0.7146496772766113
+        },
+        "5": {
+            "profile_pearson": 0.4573049545288086,
+            "profile_jsd": 0.38809674978256226,
+            "log_counts_pearson": 0.7087211608886719,
+            "counts_spearman": 0.7021775245666504
+        },
+        "6": {
+            "profile_pearson": 0.4793654680252075,
+            "profile_jsd": 0.3644457459449768,
+            "log_counts_pearson": 0.6644757986068726,
+            "counts_spearman": 0.6773056983947754
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5129709839820862,
+        "profile_jsd": 0.3561047315597534,
+        "log_counts_pearson": 0.7052400708198547,
+        "counts_spearman": 0.7102730870246887
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR180NBV",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR180NBV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5501726269721985,
+            "profile_jsd": 0.332019567489624,
+            "log_counts_pearson": 0.6635510325431824,
+            "counts_spearman": 0.667348325252533
+        },
+        "1": {
+            "profile_pearson": 0.49746036529541016,
+            "profile_jsd": 0.36205995082855225,
+            "log_counts_pearson": 0.6791423559188843,
+            "counts_spearman": 0.6875155568122864
+        },
+        "2": {
+            "profile_pearson": 0.5424869060516357,
+            "profile_jsd": 0.34159964323043823,
+            "log_counts_pearson": 0.6686828136444092,
+            "counts_spearman": 0.6974431872367859
+        },
+        "3": {
+            "profile_pearson": 0.5364587306976318,
+            "profile_jsd": 0.33609265089035034,
+            "log_counts_pearson": 0.6730747222900391,
+            "counts_spearman": 0.7009043097496033
+        },
+        "4": {
+            "profile_pearson": 0.5323572754859924,
+            "profile_jsd": 0.3403516411781311,
+            "log_counts_pearson": 0.6780466437339783,
+            "counts_spearman": 0.7050986289978027
+        },
+        "5": {
+            "profile_pearson": 0.4989951252937317,
+            "profile_jsd": 0.363223135471344,
+            "log_counts_pearson": 0.6036715507507324,
+            "counts_spearman": 0.6225969195365906
+        },
+        "6": {
+            "profile_pearson": 0.5245833992958069,
+            "profile_jsd": 0.34692907333374023,
+            "log_counts_pearson": 0.6283626556396484,
+            "counts_spearman": 0.6417495608329773
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5245726704597473,
+        "profile_jsd": 0.34580010175704956,
+        "log_counts_pearson": 0.6436429619789124,
+        "counts_spearman": 0.6574553847312927
+    }
+}

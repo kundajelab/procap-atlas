@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR229XTQ",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR229XTQ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5936882495880127,
+            "profile_jsd": 0.310661256313324,
+            "log_counts_pearson": 0.6899042725563049,
+            "counts_spearman": 0.7184666991233826
+        },
+        "1": {
+            "profile_pearson": 0.5889080762863159,
+            "profile_jsd": 0.31073373556137085,
+            "log_counts_pearson": 0.6887268424034119,
+            "counts_spearman": 0.6977717280387878
+        },
+        "2": {
+            "profile_pearson": 0.5862159729003906,
+            "profile_jsd": 0.3173471689224243,
+            "log_counts_pearson": 0.6895264387130737,
+            "counts_spearman": 0.7013912200927734
+        },
+        "3": {
+            "profile_pearson": 0.5937743782997131,
+            "profile_jsd": 0.30969569087028503,
+            "log_counts_pearson": 0.6902667880058289,
+            "counts_spearman": 0.690999448299408
+        },
+        "4": {
+            "profile_pearson": 0.5309277772903442,
+            "profile_jsd": 0.34617140889167786,
+            "log_counts_pearson": 0.6626698970794678,
+            "counts_spearman": 0.6533430814743042
+        },
+        "5": {
+            "profile_pearson": 0.5858902931213379,
+            "profile_jsd": 0.3186546564102173,
+            "log_counts_pearson": 0.6775394082069397,
+            "counts_spearman": 0.6764544248580933
+        },
+        "6": {
+            "profile_pearson": 0.5918866395950317,
+            "profile_jsd": 0.3203451633453369,
+            "log_counts_pearson": 0.6166367530822754,
+            "counts_spearman": 0.6337205767631531
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5805462598800659,
+        "profile_jsd": 0.3193950951099396,
+        "log_counts_pearson": 0.6682531833648682,
+        "counts_spearman": 0.6767055988311768
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR812JCT",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR812JCT",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.3882654309272766,
+            "profile_jsd": 0.4393184781074524,
+            "log_counts_pearson": 0.7206737995147705,
+            "counts_spearman": 0.721768319606781
+        },
+        "1": {
+            "profile_pearson": 0.47621482610702515,
+            "profile_jsd": 0.39284494519233704,
+            "log_counts_pearson": 0.7225686311721802,
+            "counts_spearman": 0.7376806139945984
+        },
+        "2": {
+            "profile_pearson": 0.4699122905731201,
+            "profile_jsd": 0.39685267210006714,
+            "log_counts_pearson": 0.7680272459983826,
+            "counts_spearman": 0.773282527923584
+        },
+        "3": {
+            "profile_pearson": 0.47900915145874023,
+            "profile_jsd": 0.38436099886894226,
+            "log_counts_pearson": 0.7561874985694885,
+            "counts_spearman": 0.7800734043121338
+        },
+        "4": {
+            "profile_pearson": 0.4603346586227417,
+            "profile_jsd": 0.39458927512168884,
+            "log_counts_pearson": 0.7437766194343567,
+            "counts_spearman": 0.7639767527580261
+        },
+        "5": {
+            "profile_pearson": 0.4742647707462311,
+            "profile_jsd": 0.3866516649723053,
+            "log_counts_pearson": 0.7320669889450073,
+            "counts_spearman": 0.7562431693077087
+        },
+        "6": {
+            "profile_pearson": 0.5065212845802307,
+            "profile_jsd": 0.36368921399116516,
+            "log_counts_pearson": 0.7249694466590881,
+            "counts_spearman": 0.7517596483230591
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.46313902735710144,
+        "profile_jsd": 0.39441776275634766,
+        "log_counts_pearson": 0.7332628965377808,
+        "counts_spearman": 0.7506611347198486
+    }
+}

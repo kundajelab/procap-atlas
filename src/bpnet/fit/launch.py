@@ -50,7 +50,7 @@ def main():
         type=str,
         default="GPU_GEN:AMP|GPU_GEN:LOV|GPU_GEN:HPR",
     )
-    parser.add_argument("--partition", type=str, default="akundaje")
+    parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="32G")
     parser.add_argument("--time", type=str, default="24:00:00")

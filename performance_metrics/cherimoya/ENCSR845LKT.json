@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR845LKT",
+    "biosample": "right lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR845LKT",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.44528499245643616,
+            "profile_jsd": 0.42168569564819336,
+            "log_counts_pearson": 0.6623243689537048,
+            "counts_spearman": 0.6257585287094116
+        },
+        "1": {
+            "profile_pearson": 0.43320566415786743,
+            "profile_jsd": 0.4220956563949585,
+            "log_counts_pearson": 0.6373435854911804,
+            "counts_spearman": 0.6032444834709167
+        },
+        "2": {
+            "profile_pearson": 0.44909268617630005,
+            "profile_jsd": 0.4211721420288086,
+            "log_counts_pearson": 0.6702885627746582,
+            "counts_spearman": 0.6395191550254822
+        },
+        "3": {
+            "profile_pearson": 0.42571261525154114,
+            "profile_jsd": 0.428315132856369,
+            "log_counts_pearson": 0.6362541317939758,
+            "counts_spearman": 0.5958861112594604
+        },
+        "4": {
+            "profile_pearson": 0.4345530569553375,
+            "profile_jsd": 0.4265472888946533,
+            "log_counts_pearson": 0.6271791458129883,
+            "counts_spearman": 0.5894598960876465
+        },
+        "5": {
+            "profile_pearson": 0.45445936918258667,
+            "profile_jsd": 0.41804155707359314,
+            "log_counts_pearson": 0.6758193969726562,
+            "counts_spearman": 0.653805136680603
+        },
+        "6": {
+            "profile_pearson": 0.44730353355407715,
+            "profile_jsd": 0.4157258868217468,
+            "log_counts_pearson": 0.6058147549629211,
+            "counts_spearman": 0.6067523956298828
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4414134621620178,
+        "profile_jsd": 0.42202648520469666,
+        "log_counts_pearson": 0.6447030901908875,
+        "counts_spearman": 0.6171691417694092
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR995FAO",
+    "biosample": "mucosa of descending colon",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR995FAO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5625271797180176,
+            "profile_jsd": 0.3285803198814392,
+            "log_counts_pearson": 0.7410059571266174,
+            "counts_spearman": 0.7570345401763916
+        },
+        "1": {
+            "profile_pearson": 0.550247848033905,
+            "profile_jsd": 0.334341436624527,
+            "log_counts_pearson": 0.746111273765564,
+            "counts_spearman": 0.7598825693130493
+        },
+        "2": {
+            "profile_pearson": 0.5544276833534241,
+            "profile_jsd": 0.3295625150203705,
+            "log_counts_pearson": 0.7402399182319641,
+            "counts_spearman": 0.7501388192176819
+        },
+        "3": {
+            "profile_pearson": 0.5588321089744568,
+            "profile_jsd": 0.32986974716186523,
+            "log_counts_pearson": 0.7574476003646851,
+            "counts_spearman": 0.7682754397392273
+        },
+        "4": {
+            "profile_pearson": 0.552122175693512,
+            "profile_jsd": 0.3301681578159332,
+            "log_counts_pearson": 0.7184862494468689,
+            "counts_spearman": 0.7319034337997437
+        },
+        "5": {
+            "profile_pearson": 0.5646401643753052,
+            "profile_jsd": 0.3293662667274475,
+            "log_counts_pearson": 0.7445427179336548,
+            "counts_spearman": 0.760901689529419
+        },
+        "6": {
+            "profile_pearson": 0.5705460906028748,
+            "profile_jsd": 0.3170624375343323,
+            "log_counts_pearson": 0.7044950127601624,
+            "counts_spearman": 0.7283716797828674
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5588293075561523,
+        "profile_jsd": 0.3286973834037781,
+        "log_counts_pearson": 0.7314655780792236,
+        "counts_spearman": 0.7476946711540222
+    }
+}

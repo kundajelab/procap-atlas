@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR098LLB",
+    "biosample": "endothelial cell of umbilical vein",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR098LLB",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.6278960704803467,
+            "profile_jsd": 0.28561174869537354,
+            "log_counts_pearson": 0.7401554584503174,
+            "counts_spearman": 0.7755687832832336
+        },
+        "1": {
+            "profile_pearson": 0.6047549843788147,
+            "profile_jsd": 0.2955240309238434,
+            "log_counts_pearson": 0.7554161548614502,
+            "counts_spearman": 0.7881898880004883
+        },
+        "2": {
+            "profile_pearson": 0.6107525825500488,
+            "profile_jsd": 0.2962772250175476,
+            "log_counts_pearson": 0.7319855093955994,
+            "counts_spearman": 0.7722293138504028
+        },
+        "3": {
+            "profile_pearson": 0.6156832575798035,
+            "profile_jsd": 0.2944491505622864,
+            "log_counts_pearson": 0.7242410182952881,
+            "counts_spearman": 0.7614363431930542
+        },
+        "4": {
+            "profile_pearson": 0.6031873226165771,
+            "profile_jsd": 0.2942642569541931,
+            "log_counts_pearson": 0.7320621013641357,
+            "counts_spearman": 0.7699766755104065
+        },
+        "5": {
+            "profile_pearson": 0.6224749684333801,
+            "profile_jsd": 0.2847338020801544,
+            "log_counts_pearson": 0.7406713962554932,
+            "counts_spearman": 0.7699025273323059
+        },
+        "6": {
+            "profile_pearson": 0.6255629658699036,
+            "profile_jsd": 0.2863423824310303,
+            "log_counts_pearson": 0.696316123008728,
+            "counts_spearman": 0.7255850434303284
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.6156359314918518,
+        "profile_jsd": 0.2907513380050659,
+        "log_counts_pearson": 0.7270679473876953,
+        "counts_spearman": 0.7637519240379333
+    }
+}

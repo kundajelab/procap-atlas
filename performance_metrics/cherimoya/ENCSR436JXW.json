@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR436JXW",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR436JXW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5354052186012268,
+            "profile_jsd": 0.3235817551612854,
+            "log_counts_pearson": 0.6360670924186707,
+            "counts_spearman": 0.6555846333503723
+        },
+        "1": {
+            "profile_pearson": 0.4801044464111328,
+            "profile_jsd": 0.36119961738586426,
+            "log_counts_pearson": 0.6756170392036438,
+            "counts_spearman": 0.6806827187538147
+        },
+        "2": {
+            "profile_pearson": 0.505183219909668,
+            "profile_jsd": 0.3416653573513031,
+            "log_counts_pearson": 0.6317514777183533,
+            "counts_spearman": 0.6464027166366577
+        },
+        "3": {
+            "profile_pearson": 0.515884280204773,
+            "profile_jsd": 0.33711498975753784,
+            "log_counts_pearson": 0.6122199892997742,
+            "counts_spearman": 0.6328036785125732
+        },
+        "4": {
+            "profile_pearson": 0.5016492605209351,
+            "profile_jsd": 0.34300851821899414,
+            "log_counts_pearson": 0.6389942765235901,
+            "counts_spearman": 0.6447376012802124
+        },
+        "5": {
+            "profile_pearson": 0.5133777260780334,
+            "profile_jsd": 0.3326692283153534,
+            "log_counts_pearson": 0.6239738464355469,
+            "counts_spearman": 0.6491502523422241
+        },
+        "6": {
+            "profile_pearson": 0.4824238121509552,
+            "profile_jsd": 0.35359513759613037,
+            "log_counts_pearson": 0.5666735768318176,
+            "counts_spearman": 0.5801470279693604
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5051138401031494,
+        "profile_jsd": 0.3412678837776184,
+        "log_counts_pearson": 0.6138655543327332,
+        "counts_spearman": 0.627156138420105
+    }
+}

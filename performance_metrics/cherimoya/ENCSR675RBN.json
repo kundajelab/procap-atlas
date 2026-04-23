@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR675RBN",
+    "biosample": "cerebral cortex",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR675RBN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4061247706413269,
+            "profile_jsd": 0.478859543800354,
+            "log_counts_pearson": 0.4192075729370117,
+            "counts_spearman": 0.361284077167511
+        },
+        "1": {
+            "profile_pearson": 0.3691346347332001,
+            "profile_jsd": 0.4796297550201416,
+            "log_counts_pearson": 0.2781665623188019,
+            "counts_spearman": 0.2674154043197632
+        },
+        "2": {
+            "profile_pearson": 0.4223073720932007,
+            "profile_jsd": 0.44772565364837646,
+            "log_counts_pearson": 0.2271474450826645,
+            "counts_spearman": 0.2157033085823059
+        },
+        "3": {
+            "profile_pearson": 0.4225447475910187,
+            "profile_jsd": 0.4692816138267517,
+            "log_counts_pearson": 0.337676465511322,
+            "counts_spearman": 0.31023576855659485
+        },
+        "4": {
+            "profile_pearson": 0.39803463220596313,
+            "profile_jsd": 0.47438299655914307,
+            "log_counts_pearson": 0.25985467433929443,
+            "counts_spearman": 0.29477185010910034
+        },
+        "5": {
+            "profile_pearson": 0.41138890385627747,
+            "profile_jsd": 0.4677855372428894,
+            "log_counts_pearson": 0.33317020535469055,
+            "counts_spearman": 0.33289605379104614
+        },
+        "6": {
+            "profile_pearson": 0.46569007635116577,
+            "profile_jsd": 0.43821829557418823,
+            "log_counts_pearson": 0.1615210324525833,
+            "counts_spearman": 0.21319684386253357
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.41564083099365234,
+        "profile_jsd": 0.466460645198822,
+        "log_counts_pearson": 0.278874933719635,
+        "counts_spearman": 0.27757081389427185
+    }
+}

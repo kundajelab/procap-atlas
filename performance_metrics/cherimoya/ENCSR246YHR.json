@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR246YHR",
+    "biosample": "esophagus muscularis mucosa",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR246YHR",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.45382049679756165,
+            "profile_jsd": 0.37042856216430664,
+            "log_counts_pearson": 0.7268959879875183,
+            "counts_spearman": 0.7294561862945557
+        },
+        "1": {
+            "profile_pearson": 0.48842504620552063,
+            "profile_jsd": 0.35831910371780396,
+            "log_counts_pearson": 0.7269182801246643,
+            "counts_spearman": 0.7370691895484924
+        },
+        "2": {
+            "profile_pearson": 0.4936111569404602,
+            "profile_jsd": 0.3580476641654968,
+            "log_counts_pearson": 0.7391981482505798,
+            "counts_spearman": 0.7503067255020142
+        },
+        "3": {
+            "profile_pearson": 0.4919188618659973,
+            "profile_jsd": 0.35802391171455383,
+            "log_counts_pearson": 0.7409022450447083,
+            "counts_spearman": 0.7500272393226624
+        },
+        "4": {
+            "profile_pearson": 0.48227566480636597,
+            "profile_jsd": 0.3605000972747803,
+            "log_counts_pearson": 0.728544294834137,
+            "counts_spearman": 0.7359395027160645
+        },
+        "5": {
+            "profile_pearson": 0.4946564733982086,
+            "profile_jsd": 0.35523706674575806,
+            "log_counts_pearson": 0.7434312105178833,
+            "counts_spearman": 0.7552000284194946
+        },
+        "6": {
+            "profile_pearson": 0.5102924108505249,
+            "profile_jsd": 0.33981606364250183,
+            "log_counts_pearson": 0.6972872614860535,
+            "counts_spearman": 0.712382435798645
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4873006343841553,
+        "profile_jsd": 0.3569282591342926,
+        "log_counts_pearson": 0.7258322238922119,
+        "counts_spearman": 0.7375773787498474
+    }
+}

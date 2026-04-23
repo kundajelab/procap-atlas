@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR255MUU",
+    "biosample": "progenitor cell of endocrine pancreas",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR255MUU",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5528509616851807,
+            "profile_jsd": 0.3104966878890991,
+            "log_counts_pearson": 0.6329373121261597,
+            "counts_spearman": 0.6386617422103882
+        },
+        "1": {
+            "profile_pearson": 0.564824104309082,
+            "profile_jsd": 0.30670544505119324,
+            "log_counts_pearson": 0.6713075041770935,
+            "counts_spearman": 0.6878162622451782
+        },
+        "2": {
+            "profile_pearson": 0.617001473903656,
+            "profile_jsd": 0.28259336948394775,
+            "log_counts_pearson": 0.6835054159164429,
+            "counts_spearman": 0.7072961330413818
+        },
+        "3": {
+            "profile_pearson": 0.6378980278968811,
+            "profile_jsd": 0.27267828583717346,
+            "log_counts_pearson": 0.7101662755012512,
+            "counts_spearman": 0.7361593246459961
+        },
+        "4": {
+            "profile_pearson": 0.6177096962928772,
+            "profile_jsd": 0.2803097665309906,
+            "log_counts_pearson": 0.6907705068588257,
+            "counts_spearman": 0.7113896012306213
+        },
+        "5": {
+            "profile_pearson": 0.5600178837776184,
+            "profile_jsd": 0.3048585057258606,
+            "log_counts_pearson": 0.629946231842041,
+            "counts_spearman": 0.6405429244041443
+        },
+        "6": {
+            "profile_pearson": 0.6305820941925049,
+            "profile_jsd": 0.27785933017730713,
+            "log_counts_pearson": 0.678851842880249,
+            "counts_spearman": 0.6918210387229919
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5951365828514099,
+        "profile_jsd": 0.29169753193855286,
+        "log_counts_pearson": 0.6638288497924805,
+        "counts_spearman": 0.6789969205856323
+    }
+}
