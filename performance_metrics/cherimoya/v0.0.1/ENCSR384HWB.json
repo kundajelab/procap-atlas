@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR384HWB",
+    "biosample": "ascending aorta",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR384HWB",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49151450395584106,
+            "profile_jsd": 0.35672277212142944,
+            "log_counts_pearson": 0.5514233112335205,
+            "counts_spearman": 0.5728760957717896
+        },
+        "1": {
+            "profile_pearson": 0.532055139541626,
+            "profile_jsd": 0.3324556350708008,
+            "log_counts_pearson": 0.5957562923431396,
+            "counts_spearman": 0.6250717043876648
+        },
+        "2": {
+            "profile_pearson": 0.5182099342346191,
+            "profile_jsd": 0.33958280086517334,
+            "log_counts_pearson": 0.6019976139068604,
+            "counts_spearman": 0.6272911429405212
+        },
+        "3": {
+            "profile_pearson": 0.44905364513397217,
+            "profile_jsd": 0.3734116554260254,
+            "log_counts_pearson": 0.5675691366195679,
+            "counts_spearman": 0.5770429968833923
+        },
+        "4": {
+            "profile_pearson": 0.5222218036651611,
+            "profile_jsd": 0.33720099925994873,
+            "log_counts_pearson": 0.5735079050064087,
+            "counts_spearman": 0.5956016182899475
+        },
+        "5": {
+            "profile_pearson": 0.4606046676635742,
+            "profile_jsd": 0.36751291155815125,
+            "log_counts_pearson": 0.6138828992843628,
+            "counts_spearman": 0.6319282650947571
+        },
+        "6": {
+            "profile_pearson": 0.5361788272857666,
+            "profile_jsd": 0.32574084401130676,
+            "log_counts_pearson": 0.5236383080482483,
+            "counts_spearman": 0.5354827046394348
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.49942293763160706,
+        "profile_jsd": 0.3484375476837158,
+        "log_counts_pearson": 0.5746567249298096,
+        "counts_spearman": 0.5940828919410706
+    }
+}

@@ -21,6 +21,8 @@ from bpnetlite.performance import jensen_shannon_distance, pearson_corr, spearma
 from tangermeme.io import extract_loci
 from tangermeme.predict import predict
 
+from cherimoya import Cherimoya
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
@@ -109,6 +111,8 @@ def main():
         "signals": [pl_bw_path, mn_bw_path],
         "loci": peaks_path,
         "blacklist": [BLACKLIST],
+        "n_filters": 128,
+        "n_layers": 9,
         "in_window": 2114,
         "out_window": 1000,
         "batch_size": 64,
@@ -151,9 +155,7 @@ def main():
         )
         signals.append(torch.abs(y))
 
-        model = torch.load(
-            model_paths[fold], weights_only=False, map_location=torch.device("cpu")
-        )
+        model = Cherimoya.load(model_paths[fold], device="cuda")
         preds.append(
             predict(
                 model=model,

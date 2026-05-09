@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR810UBG",
+    "biosample": "Metastatic Breast Carcinoma in the Ovary",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR810UBG",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5040445327758789,
+            "profile_jsd": 0.35505178570747375,
+            "log_counts_pearson": 0.6712852120399475,
+            "counts_spearman": 0.6768975257873535
+        },
+        "1": {
+            "profile_pearson": 0.40699613094329834,
+            "profile_jsd": 0.40699851512908936,
+            "log_counts_pearson": 0.6997596621513367,
+            "counts_spearman": 0.6949859857559204
+        },
+        "2": {
+            "profile_pearson": 0.5065742135047913,
+            "profile_jsd": 0.34918147325515747,
+            "log_counts_pearson": 0.6803539395332336,
+            "counts_spearman": 0.6959775686264038
+        },
+        "3": {
+            "profile_pearson": 0.4898075461387634,
+            "profile_jsd": 0.3539525270462036,
+            "log_counts_pearson": 0.6599350571632385,
+            "counts_spearman": 0.6741036176681519
+        },
+        "4": {
+            "profile_pearson": 0.4986395239830017,
+            "profile_jsd": 0.3497183620929718,
+            "log_counts_pearson": 0.6681525707244873,
+            "counts_spearman": 0.6789776682853699
+        },
+        "5": {
+            "profile_pearson": 0.4985430836677551,
+            "profile_jsd": 0.3565172553062439,
+            "log_counts_pearson": 0.6621482968330383,
+            "counts_spearman": 0.6752873659133911
+        },
+        "6": {
+            "profile_pearson": 0.4254942238330841,
+            "profile_jsd": 0.39456456899642944,
+            "log_counts_pearson": 0.6450446248054504,
+            "counts_spearman": 0.6522804498672485
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.47941336035728455,
+        "profile_jsd": 0.3640442490577698,
+        "log_counts_pearson": 0.6561723351478577,
+        "counts_spearman": 0.6694865822792053
+    }
+}

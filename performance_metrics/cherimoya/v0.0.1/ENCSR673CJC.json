@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR673CJC",
+    "biosample": "Metastatic Lung Carcinoma in the Adrenal Gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR673CJC",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5625811219215393,
+            "profile_jsd": 0.30859261751174927,
+            "log_counts_pearson": 0.6943705081939697,
+            "counts_spearman": 0.7255988121032715
+        },
+        "1": {
+            "profile_pearson": 0.5694331526756287,
+            "profile_jsd": 0.3068220615386963,
+            "log_counts_pearson": 0.7051916122436523,
+            "counts_spearman": 0.7426488399505615
+        },
+        "2": {
+            "profile_pearson": 0.4897623658180237,
+            "profile_jsd": 0.352006733417511,
+            "log_counts_pearson": 0.6912642121315002,
+            "counts_spearman": 0.7018110156059265
+        },
+        "3": {
+            "profile_pearson": 0.5582007169723511,
+            "profile_jsd": 0.3064795434474945,
+            "log_counts_pearson": 0.7206111550331116,
+            "counts_spearman": 0.7530201077461243
+        },
+        "4": {
+            "profile_pearson": 0.49982041120529175,
+            "profile_jsd": 0.3468675911426544,
+            "log_counts_pearson": 0.6918548345565796,
+            "counts_spearman": 0.7030373215675354
+        },
+        "5": {
+            "profile_pearson": 0.5682786703109741,
+            "profile_jsd": 0.31085333228111267,
+            "log_counts_pearson": 0.7222222685813904,
+            "counts_spearman": 0.7403928637504578
+        },
+        "6": {
+            "profile_pearson": 0.5699620246887207,
+            "profile_jsd": 0.30667775869369507,
+            "log_counts_pearson": 0.6531898379325867,
+            "counts_spearman": 0.6774282455444336
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5456505417823792,
+        "profile_jsd": 0.31987613439559937,
+        "log_counts_pearson": 0.6862835884094238,
+        "counts_spearman": 0.7069321274757385
+    }
+}

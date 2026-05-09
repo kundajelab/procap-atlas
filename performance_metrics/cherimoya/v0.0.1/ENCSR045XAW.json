@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR045XAW",
+    "biosample": "urinary bladder",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR045XAW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.46669086813926697,
+            "profile_jsd": 0.36566922068595886,
+            "log_counts_pearson": 0.7202760577201843,
+            "counts_spearman": 0.7286086082458496
+        },
+        "1": {
+            "profile_pearson": 0.48726820945739746,
+            "profile_jsd": 0.3548572361469269,
+            "log_counts_pearson": 0.7013306021690369,
+            "counts_spearman": 0.7093954682350159
+        },
+        "2": {
+            "profile_pearson": 0.44568222761154175,
+            "profile_jsd": 0.37440425157546997,
+            "log_counts_pearson": 0.7209687829017639,
+            "counts_spearman": 0.7266513109207153
+        },
+        "3": {
+            "profile_pearson": 0.5255874991416931,
+            "profile_jsd": 0.33639442920684814,
+            "log_counts_pearson": 0.7152982950210571,
+            "counts_spearman": 0.7354106903076172
+        },
+        "4": {
+            "profile_pearson": 0.5198604464530945,
+            "profile_jsd": 0.33429932594299316,
+            "log_counts_pearson": 0.7054493427276611,
+            "counts_spearman": 0.7229962348937988
+        },
+        "5": {
+            "profile_pearson": 0.5309150218963623,
+            "profile_jsd": 0.33390939235687256,
+            "log_counts_pearson": 0.711297869682312,
+            "counts_spearman": 0.7367609143257141
+        },
+        "6": {
+            "profile_pearson": 0.5300436019897461,
+            "profile_jsd": 0.3285346031188965,
+            "log_counts_pearson": 0.6802050471305847,
+            "counts_spearman": 0.6969152688980103
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5027257204055786,
+        "profile_jsd": 0.3461780846118927,
+        "log_counts_pearson": 0.7005566358566284,
+        "counts_spearman": 0.7157003879547119
+    }
+}

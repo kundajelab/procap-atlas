@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR386RDW",
+    "biosample": "subcutaneous adipose tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR386RDW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5093020796775818,
+            "profile_jsd": 0.3436609208583832,
+            "log_counts_pearson": 0.7306937575340271,
+            "counts_spearman": 0.7408952713012695
+        },
+        "1": {
+            "profile_pearson": 0.5152903199195862,
+            "profile_jsd": 0.34715089201927185,
+            "log_counts_pearson": 0.7430613040924072,
+            "counts_spearman": 0.7467706203460693
+        },
+        "2": {
+            "profile_pearson": 0.5201051831245422,
+            "profile_jsd": 0.34118351340293884,
+            "log_counts_pearson": 0.7331263422966003,
+            "counts_spearman": 0.7417722344398499
+        },
+        "3": {
+            "profile_pearson": 0.5233433246612549,
+            "profile_jsd": 0.3395838141441345,
+            "log_counts_pearson": 0.7349671721458435,
+            "counts_spearman": 0.7486211061477661
+        },
+        "4": {
+            "profile_pearson": 0.5062687397003174,
+            "profile_jsd": 0.34977829456329346,
+            "log_counts_pearson": 0.7137536406517029,
+            "counts_spearman": 0.7339655756950378
+        },
+        "5": {
+            "profile_pearson": 0.5248550772666931,
+            "profile_jsd": 0.3396620750427246,
+            "log_counts_pearson": 0.747732400894165,
+            "counts_spearman": 0.7592329382896423
+        },
+        "6": {
+            "profile_pearson": 0.529166579246521,
+            "profile_jsd": 0.3331337571144104,
+            "log_counts_pearson": 0.6924160718917847,
+            "counts_spearman": 0.7099663019180298
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5177034139633179,
+        "profile_jsd": 0.34235936403274536,
+        "log_counts_pearson": 0.7261771559715271,
+        "counts_spearman": 0.739099383354187
+    }
+}

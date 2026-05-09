@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR926PFT",
+    "biosample": "omental fat pad",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR926PFT",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5071094036102295,
+            "profile_jsd": 0.41611844301223755,
+            "log_counts_pearson": 0.3865618407726288,
+            "counts_spearman": 0.38251176476478577
+        },
+        "1": {
+            "profile_pearson": 0.4973209500312805,
+            "profile_jsd": 0.4208436608314514,
+            "log_counts_pearson": 0.39954128861427307,
+            "counts_spearman": 0.3858776092529297
+        },
+        "2": {
+            "profile_pearson": 0.5457342863082886,
+            "profile_jsd": 0.4014727473258972,
+            "log_counts_pearson": 0.4050057530403137,
+            "counts_spearman": 0.43295472860336304
+        },
+        "3": {
+            "profile_pearson": 0.5052772164344788,
+            "profile_jsd": 0.4152145981788635,
+            "log_counts_pearson": 0.3877422511577606,
+            "counts_spearman": 0.4311562180519104
+        },
+        "4": {
+            "profile_pearson": 0.48004037141799927,
+            "profile_jsd": 0.43101221323013306,
+            "log_counts_pearson": 0.35012030601501465,
+            "counts_spearman": 0.371946781873703
+        },
+        "5": {
+            "profile_pearson": 0.5001742839813232,
+            "profile_jsd": 0.42029497027397156,
+            "log_counts_pearson": 0.41307777166366577,
+            "counts_spearman": 0.3915773332118988
+        },
+        "6": {
+            "profile_pearson": 0.5286909341812134,
+            "profile_jsd": 0.40274834632873535,
+            "log_counts_pearson": 0.31073012948036194,
+            "counts_spearman": 0.33705782890319824
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5060647130012512,
+        "profile_jsd": 0.41596949100494385,
+        "log_counts_pearson": 0.3708721697330475,
+        "counts_spearman": 0.37496182322502136
+    }
+}

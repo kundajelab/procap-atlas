@@ -1,55 +1,55 @@
 {
     "experiment": "ENCSR687HZX",
     "biosample": "Metastatic Breast Carcinoma in the Brain",
-    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR687HZX",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR687HZX",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.47421324253082275,
-            "profile_jsd": 0.35719284415245056,
-            "log_counts_pearson": 0.7147045731544495,
-            "counts_spearman": 0.7228705286979675
+            "profile_pearson": 0.5126966834068298,
+            "profile_jsd": 0.3324442505836487,
+            "log_counts_pearson": 0.7292304039001465,
+            "counts_spearman": 0.7380272150039673
         },
         "1": {
-            "profile_pearson": 0.49215376377105713,
-            "profile_jsd": 0.3502524495124817,
-            "log_counts_pearson": 0.7230688333511353,
-            "counts_spearman": 0.7368124723434448
+            "profile_pearson": 0.5059287548065186,
+            "profile_jsd": 0.33064255118370056,
+            "log_counts_pearson": 0.7534022331237793,
+            "counts_spearman": 0.7632317543029785
         },
         "2": {
-            "profile_pearson": 0.4707629680633545,
-            "profile_jsd": 0.359086275100708,
-            "log_counts_pearson": 0.7137070894241333,
-            "counts_spearman": 0.7256990075111389
+            "profile_pearson": 0.4997827112674713,
+            "profile_jsd": 0.34063005447387695,
+            "log_counts_pearson": 0.730862557888031,
+            "counts_spearman": 0.7408090829849243
         },
         "3": {
-            "profile_pearson": 0.4856405556201935,
-            "profile_jsd": 0.3505449891090393,
-            "log_counts_pearson": 0.7294605374336243,
-            "counts_spearman": 0.7424923181533813
+            "profile_pearson": 0.5102192163467407,
+            "profile_jsd": 0.3314092755317688,
+            "log_counts_pearson": 0.7454989552497864,
+            "counts_spearman": 0.760587751865387
         },
         "4": {
-            "profile_pearson": 0.48849254846572876,
-            "profile_jsd": 0.35530906915664673,
-            "log_counts_pearson": 0.7031484246253967,
-            "counts_spearman": 0.7147083878517151
+            "profile_pearson": 0.492343008518219,
+            "profile_jsd": 0.3506758213043213,
+            "log_counts_pearson": 0.699809193611145,
+            "counts_spearman": 0.7021297812461853
         },
         "5": {
-            "profile_pearson": 0.45292606949806213,
-            "profile_jsd": 0.371540367603302,
-            "log_counts_pearson": 0.703608512878418,
-            "counts_spearman": 0.711389422416687
+            "profile_pearson": 0.5076024532318115,
+            "profile_jsd": 0.3315187394618988,
+            "log_counts_pearson": 0.7233466506004333,
+            "counts_spearman": 0.7410022020339966
         },
         "6": {
-            "profile_pearson": 0.5082918405532837,
-            "profile_jsd": 0.3267074227333069,
-            "log_counts_pearson": 0.6812798976898193,
-            "counts_spearman": 0.6953964829444885
+            "profile_pearson": 0.5206537246704102,
+            "profile_jsd": 0.3138497769832611,
+            "log_counts_pearson": 0.700618326663971,
+            "counts_spearman": 0.7171899080276489
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.4800644814968109,
-        "profile_jsd": 0.3540312647819519,
-        "log_counts_pearson": 0.7017799019813538,
-        "counts_spearman": 0.7176195383071899
+        "profile_pearson": 0.5069267749786377,
+        "profile_jsd": 0.33319592475891113,
+        "log_counts_pearson": 0.7139976620674133,
+        "counts_spearman": 0.7269864678382874
     }
 }

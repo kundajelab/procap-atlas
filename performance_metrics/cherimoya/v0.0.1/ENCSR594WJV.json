@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR594WJV",
+    "biosample": "cytotoxic T cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR594WJV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.547348141670227,
+            "profile_jsd": 0.3471989333629608,
+            "log_counts_pearson": 0.6696459650993347,
+            "counts_spearman": 0.6947697997093201
+        },
+        "1": {
+            "profile_pearson": 0.5381779670715332,
+            "profile_jsd": 0.3555029332637787,
+            "log_counts_pearson": 0.6508968472480774,
+            "counts_spearman": 0.6887284517288208
+        },
+        "2": {
+            "profile_pearson": 0.5309947729110718,
+            "profile_jsd": 0.35328730940818787,
+            "log_counts_pearson": 0.6402302980422974,
+            "counts_spearman": 0.6678667664527893
+        },
+        "3": {
+            "profile_pearson": 0.4581049680709839,
+            "profile_jsd": 0.39040523767471313,
+            "log_counts_pearson": 0.6108497977256775,
+            "counts_spearman": 0.6289741396903992
+        },
+        "4": {
+            "profile_pearson": 0.5433249473571777,
+            "profile_jsd": 0.3504006862640381,
+            "log_counts_pearson": 0.6359595060348511,
+            "counts_spearman": 0.6598733067512512
+        },
+        "5": {
+            "profile_pearson": 0.46673068404197693,
+            "profile_jsd": 0.38384106755256653,
+            "log_counts_pearson": 0.6317883729934692,
+            "counts_spearman": 0.6441359519958496
+        },
+        "6": {
+            "profile_pearson": 0.5432324409484863,
+            "profile_jsd": 0.34817951917648315,
+            "log_counts_pearson": 0.5793559551239014,
+            "counts_spearman": 0.6170065402984619
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5159021615982056,
+        "profile_jsd": 0.3616408109664917,
+        "log_counts_pearson": 0.6238458156585693,
+        "counts_spearman": 0.6528047323226929
+    }
+}

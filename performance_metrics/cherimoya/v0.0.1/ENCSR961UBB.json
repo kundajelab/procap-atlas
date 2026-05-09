@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR961UBB",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR961UBB",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5795899629592896,
+            "profile_jsd": 0.30796295404434204,
+            "log_counts_pearson": 0.7586219906806946,
+            "counts_spearman": 0.7761189341545105
+        },
+        "1": {
+            "profile_pearson": 0.5665872097015381,
+            "profile_jsd": 0.3181415796279907,
+            "log_counts_pearson": 0.7639191746711731,
+            "counts_spearman": 0.7865762710571289
+        },
+        "2": {
+            "profile_pearson": 0.5635260343551636,
+            "profile_jsd": 0.3193323016166687,
+            "log_counts_pearson": 0.7550196647644043,
+            "counts_spearman": 0.7774710655212402
+        },
+        "3": {
+            "profile_pearson": 0.5647555589675903,
+            "profile_jsd": 0.31684526801109314,
+            "log_counts_pearson": 0.7710034847259521,
+            "counts_spearman": 0.7897316813468933
+        },
+        "4": {
+            "profile_pearson": 0.5496352910995483,
+            "profile_jsd": 0.31774622201919556,
+            "log_counts_pearson": 0.7403579950332642,
+            "counts_spearman": 0.7682936191558838
+        },
+        "5": {
+            "profile_pearson": 0.5563861131668091,
+            "profile_jsd": 0.31540268659591675,
+            "log_counts_pearson": 0.7453110218048096,
+            "counts_spearman": 0.7715327739715576
+        },
+        "6": {
+            "profile_pearson": 0.5879553556442261,
+            "profile_jsd": 0.29696327447891235,
+            "log_counts_pearson": 0.7123042941093445,
+            "counts_spearman": 0.7397292256355286
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5660916566848755,
+        "profile_jsd": 0.31338468194007874,
+        "log_counts_pearson": 0.747449517250061,
+        "counts_spearman": 0.7710573077201843
+    }
+}

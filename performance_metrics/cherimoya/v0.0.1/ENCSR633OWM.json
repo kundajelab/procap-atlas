@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR633OWM",
+    "biosample": "pulmonary lymph node",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR633OWM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5213472247123718,
+            "profile_jsd": 0.3337322175502777,
+            "log_counts_pearson": 0.6983063817024231,
+            "counts_spearman": 0.7098737359046936
+        },
+        "1": {
+            "profile_pearson": 0.5208598375320435,
+            "profile_jsd": 0.3337979316711426,
+            "log_counts_pearson": 0.7065535187721252,
+            "counts_spearman": 0.7123414278030396
+        },
+        "2": {
+            "profile_pearson": 0.5137274265289307,
+            "profile_jsd": 0.3405250906944275,
+            "log_counts_pearson": 0.7035688757896423,
+            "counts_spearman": 0.7083447575569153
+        },
+        "3": {
+            "profile_pearson": 0.5182338953018188,
+            "profile_jsd": 0.3359360098838806,
+            "log_counts_pearson": 0.7086931467056274,
+            "counts_spearman": 0.7141889333724976
+        },
+        "4": {
+            "profile_pearson": 0.5229844450950623,
+            "profile_jsd": 0.3312336206436157,
+            "log_counts_pearson": 0.6993891000747681,
+            "counts_spearman": 0.7109385132789612
+        },
+        "5": {
+            "profile_pearson": 0.5203426480293274,
+            "profile_jsd": 0.33386293053627014,
+            "log_counts_pearson": 0.7104591727256775,
+            "counts_spearman": 0.7251081466674805
+        },
+        "6": {
+            "profile_pearson": 0.5285952091217041,
+            "profile_jsd": 0.32322657108306885,
+            "log_counts_pearson": 0.673873245716095,
+            "counts_spearman": 0.6930028200149536
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5209779143333435,
+        "profile_jsd": 0.33316993713378906,
+        "log_counts_pearson": 0.6974747180938721,
+        "counts_spearman": 0.7092021703720093
+    }
+}

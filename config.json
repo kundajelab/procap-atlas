@@ -1,0 +1,61 @@
+{
+  "model_type": "bpnet",
+  "architectures": [
+    "BPNet"
+  ],
+  "library_name": "bpnetlite",
+  "name": "PRO-cap atlas BPNet models",
+  "description": "BPNet models trained on ENCODE PRO-cap signal tracks for transcription start site analysis on GRCh38/hg38.",
+  "assay": "PRO-cap",
+  "organism": "Homo sapiens",
+  "genome_assembly": "GRCh38/hg38",
+  "task": "genomic sequence to strand-specific transcription initiation signal prediction",
+  "model_collection": {
+    "scope": "ENCODE PRO-cap atlas",
+    "unit": "one experiment accession per model directory",
+    "cross_validation_folds": 7
+  },
+  "inputs": {
+    "sequence": {
+      "alphabet": [
+        "A",
+        "C",
+        "G",
+        "T"
+      ],
+      "encoding": "one-hot",
+      "window_bp": 2114
+    }
+  },
+  "outputs": {
+    "profile_window_bp": 1000,
+    "tracks": [
+      "plus_strand",
+      "minus_strand"
+    ],
+    "heads": [
+      "profile",
+      "count"
+    ]
+  },
+  "training": {
+    "chromosome_splits": "configs/chrom_splits.yaml",
+    "default_backgrounds": [
+      {
+        "name": "gc",
+        "negative_ratio": 0.14285714285714285
+      }
+    ],
+    "reverse_complement": true,
+    "max_jitter_bp": 200
+  },
+  "hyperparameters": {
+    "n_filters": 512,
+    "n_layers": 8,
+    "count_loss_weight": 100,
+    "learning_rate": 0.0005,
+    "batch_size": 64,
+    "max_epochs": 50
+  },
+  "repository": "https://github.com/kundajelab/procap-atlas"
+}

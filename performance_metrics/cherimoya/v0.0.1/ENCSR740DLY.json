@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR740DLY",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR740DLY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5068399906158447,
+            "profile_jsd": 0.37970811128616333,
+            "log_counts_pearson": 0.699897050857544,
+            "counts_spearman": 0.7031741142272949
+        },
+        "1": {
+            "profile_pearson": 0.49084967374801636,
+            "profile_jsd": 0.39201730489730835,
+            "log_counts_pearson": 0.7121827602386475,
+            "counts_spearman": 0.7068520784378052
+        },
+        "2": {
+            "profile_pearson": 0.5080705881118774,
+            "profile_jsd": 0.38328680396080017,
+            "log_counts_pearson": 0.6830736398696899,
+            "counts_spearman": 0.6839041113853455
+        },
+        "3": {
+            "profile_pearson": 0.3650215268135071,
+            "profile_jsd": 0.44775015115737915,
+            "log_counts_pearson": 0.6753622889518738,
+            "counts_spearman": 0.6603627800941467
+        },
+        "4": {
+            "profile_pearson": 0.49231842160224915,
+            "profile_jsd": 0.3890029191970825,
+            "log_counts_pearson": 0.6632694602012634,
+            "counts_spearman": 0.6587512493133545
+        },
+        "5": {
+            "profile_pearson": 0.36470550298690796,
+            "profile_jsd": 0.4426887631416321,
+            "log_counts_pearson": 0.6785459518432617,
+            "counts_spearman": 0.6740856766700745
+        },
+        "6": {
+            "profile_pearson": 0.4766745865345001,
+            "profile_jsd": 0.38914617896080017,
+            "log_counts_pearson": 0.6423184275627136,
+            "counts_spearman": 0.653041660785675
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.45487090945243835,
+        "profile_jsd": 0.4036170542240143,
+        "log_counts_pearson": 0.6755989193916321,
+        "counts_spearman": 0.6733638644218445
+    }
+}

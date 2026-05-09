@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR997INZ",
+    "biosample": "right atrium auricular region",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR997INZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5124610662460327,
+            "profile_jsd": 0.35043179988861084,
+            "log_counts_pearson": 0.6777738332748413,
+            "counts_spearman": 0.6990036964416504
+        },
+        "1": {
+            "profile_pearson": 0.43032106757164,
+            "profile_jsd": 0.39796164631843567,
+            "log_counts_pearson": 0.6974621415138245,
+            "counts_spearman": 0.6851074695587158
+        },
+        "2": {
+            "profile_pearson": 0.527113676071167,
+            "profile_jsd": 0.35162797570228577,
+            "log_counts_pearson": 0.7008463740348816,
+            "counts_spearman": 0.7095305323600769
+        },
+        "3": {
+            "profile_pearson": 0.5157979726791382,
+            "profile_jsd": 0.3582100570201874,
+            "log_counts_pearson": 0.6944786906242371,
+            "counts_spearman": 0.7016658782958984
+        },
+        "4": {
+            "profile_pearson": 0.5083376169204712,
+            "profile_jsd": 0.35776299238204956,
+            "log_counts_pearson": 0.6726636290550232,
+            "counts_spearman": 0.6787693500518799
+        },
+        "5": {
+            "profile_pearson": 0.42310190200805664,
+            "profile_jsd": 0.4008544385433197,
+            "log_counts_pearson": 0.6796652674674988,
+            "counts_spearman": 0.6764925718307495
+        },
+        "6": {
+            "profile_pearson": 0.4685199558734894,
+            "profile_jsd": 0.37628400325775146,
+            "log_counts_pearson": 0.6387836337089539,
+            "counts_spearman": 0.642810046672821
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4804176688194275,
+        "profile_jsd": 0.37195342779159546,
+        "log_counts_pearson": 0.6703190207481384,
+        "counts_spearman": 0.6770272254943848
+    }
+}

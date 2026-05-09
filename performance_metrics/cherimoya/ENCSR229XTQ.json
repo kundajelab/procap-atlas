@@ -1,55 +1,55 @@
 {
     "experiment": "ENCSR229XTQ",
     "biosample": "skeletal muscle tissue",
-    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR229XTQ",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR229XTQ",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5936882495880127,
-            "profile_jsd": 0.310661256313324,
-            "log_counts_pearson": 0.6899042725563049,
-            "counts_spearman": 0.7184666991233826
+            "profile_pearson": 0.5495439767837524,
+            "profile_jsd": 0.3105732202529907,
+            "log_counts_pearson": 0.7212483286857605,
+            "counts_spearman": 0.7403728365898132
         },
         "1": {
-            "profile_pearson": 0.5889080762863159,
-            "profile_jsd": 0.31073373556137085,
-            "log_counts_pearson": 0.6887268424034119,
-            "counts_spearman": 0.6977717280387878
+            "profile_pearson": 0.5512391328811646,
+            "profile_jsd": 0.31181925535202026,
+            "log_counts_pearson": 0.7212419509887695,
+            "counts_spearman": 0.7337163686752319
         },
         "2": {
-            "profile_pearson": 0.5862159729003906,
-            "profile_jsd": 0.3173471689224243,
-            "log_counts_pearson": 0.6895264387130737,
-            "counts_spearman": 0.7013912200927734
+            "profile_pearson": 0.5427554249763489,
+            "profile_jsd": 0.31837737560272217,
+            "log_counts_pearson": 0.7284217476844788,
+            "counts_spearman": 0.7381059527397156
         },
         "3": {
-            "profile_pearson": 0.5937743782997131,
-            "profile_jsd": 0.30969569087028503,
-            "log_counts_pearson": 0.6902667880058289,
-            "counts_spearman": 0.690999448299408
+            "profile_pearson": 0.5603440403938293,
+            "profile_jsd": 0.3148815631866455,
+            "log_counts_pearson": 0.715191125869751,
+            "counts_spearman": 0.7277957201004028
         },
         "4": {
-            "profile_pearson": 0.5309277772903442,
-            "profile_jsd": 0.34617140889167786,
-            "log_counts_pearson": 0.6626698970794678,
-            "counts_spearman": 0.6533430814743042
+            "profile_pearson": 0.5170172452926636,
+            "profile_jsd": 0.32682013511657715,
+            "log_counts_pearson": 0.7139911651611328,
+            "counts_spearman": 0.7256693840026855
         },
         "5": {
-            "profile_pearson": 0.5858902931213379,
-            "profile_jsd": 0.3186546564102173,
-            "log_counts_pearson": 0.6775394082069397,
-            "counts_spearman": 0.6764544248580933
+            "profile_pearson": 0.5452472567558289,
+            "profile_jsd": 0.31761741638183594,
+            "log_counts_pearson": 0.7205175757408142,
+            "counts_spearman": 0.7246188521385193
         },
         "6": {
-            "profile_pearson": 0.5918866395950317,
-            "profile_jsd": 0.3203451633453369,
-            "log_counts_pearson": 0.6166367530822754,
-            "counts_spearman": 0.6337205767631531
+            "profile_pearson": 0.578257143497467,
+            "profile_jsd": 0.3150549530982971,
+            "log_counts_pearson": 0.641478419303894,
+            "counts_spearman": 0.6662857532501221
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5805462598800659,
-        "profile_jsd": 0.3193950951099396,
-        "log_counts_pearson": 0.6682531833648682,
-        "counts_spearman": 0.6767055988311768
+        "profile_pearson": 0.5476652383804321,
+        "profile_jsd": 0.31675824522972107,
+        "log_counts_pearson": 0.7107548117637634,
+        "counts_spearman": 0.7238414287567139
     }
 }

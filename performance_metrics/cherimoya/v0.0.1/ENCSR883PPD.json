@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR883PPD",
+    "biosample": "right cardiac atrium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR883PPD",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5541572570800781,
+            "profile_jsd": 0.3197731375694275,
+            "log_counts_pearson": 0.7566202878952026,
+            "counts_spearman": 0.7802826762199402
+        },
+        "1": {
+            "profile_pearson": 0.5532758831977844,
+            "profile_jsd": 0.32207202911376953,
+            "log_counts_pearson": 0.7790477871894836,
+            "counts_spearman": 0.7944258451461792
+        },
+        "2": {
+            "profile_pearson": 0.4905848503112793,
+            "profile_jsd": 0.3561188578605652,
+            "log_counts_pearson": 0.7490842342376709,
+            "counts_spearman": 0.7519368529319763
+        },
+        "3": {
+            "profile_pearson": 0.540414571762085,
+            "profile_jsd": 0.3263899087905884,
+            "log_counts_pearson": 0.7718821167945862,
+            "counts_spearman": 0.7984579801559448
+        },
+        "4": {
+            "profile_pearson": 0.5246151685714722,
+            "profile_jsd": 0.3329896628856659,
+            "log_counts_pearson": 0.7580395936965942,
+            "counts_spearman": 0.7715970277786255
+        },
+        "5": {
+            "profile_pearson": 0.5466809868812561,
+            "profile_jsd": 0.32234835624694824,
+            "log_counts_pearson": 0.7490729093551636,
+            "counts_spearman": 0.7674484848976135
+        },
+        "6": {
+            "profile_pearson": 0.5224529504776001,
+            "profile_jsd": 0.3415682315826416,
+            "log_counts_pearson": 0.7019369602203369,
+            "counts_spearman": 0.7026369571685791
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5329713821411133,
+        "profile_jsd": 0.33157777786254883,
+        "log_counts_pearson": 0.7396354079246521,
+        "counts_spearman": 0.750994861125946
+    }
+}

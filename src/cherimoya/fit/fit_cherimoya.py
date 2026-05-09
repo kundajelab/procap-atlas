@@ -146,18 +146,16 @@ def main():
         dest="backgrounds",
         default=None,
         help="background source and per-batch ratio (repeatable); "
-        "default: gc:0.1429 (1/7 negatives:positives, GC-matched only)",
+        "default: gc:0.1 (1/10 negatives:positives, GC-matched only)",
     )
 
     parser.add_argument("-o", "--output-dir", type=str, default=None)
-    parser.add_argument("--n-filters", type=int, default=None)
-    parser.add_argument("--n-layers", type=int, default=None)
-    parser.add_argument("--count-loss-weight", type=float, default=None)
-    parser.add_argument("--batch-size", type=int, default=None)
-    parser.add_argument("--lr", type=float, default=None)
-    parser.add_argument("--max-epochs", type=int, default=None)
-    parser.add_argument("--early-stopping", type=int, default=None)
-    parser.add_argument("--max-jitter", type=int, default=None)
+    parser.add_argument("--n-filters", type=int, default=128)
+    parser.add_argument("--n-layers", type=int, default=9)
+    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--max-epochs", type=int, default=100)
+    parser.add_argument("--early-stopping", type=int, default=15)
+    parser.add_argument("--max-jitter", type=int, default=50)
     parser.add_argument("--random-state", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -209,7 +207,7 @@ def main():
     # Check whether we're using the default background ratios
     using_default_backgrounds = args.backgrounds is None
     if using_default_backgrounds:
-        args.backgrounds = [("gc", 1 / 7)]
+        args.backgrounds = [("gc", 1 / 10)]
 
     # Output directory name encodes background sources and ratios only when
     # non-default backgrounds are specified
@@ -235,16 +233,18 @@ def main():
         "checkpoint": None,
         "in_window": 2114,
         "out_window": 1000,
-        "max_jitter": 200,
-        "n_filters": 96,
+        "max_jitter": 50,
+        "n_filters": 128,
         "n_layers": 9,
         "reverse_complement": True,
         "shuffle": True,
         "batch_size": 64,
-        "muon_learning_rate": 0.001,
-        "adam_learning_rate": 0.004,
+        "muon_lr": 0.025,
+        "muon_wd": 0.01,
+        "adam_lr": 0.004,
+        "adam_wd": 0.2,
         "max_epochs": 100,
-        "early_stopping": 10,
+        "early_stopping": 15,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
@@ -254,9 +254,7 @@ def main():
     cli_overrides = {
         "n_filters": args.n_filters,
         "n_layers": args.n_layers,
-        "count_loss_weight": args.count_loss_weight,
         "batch_size": args.batch_size,
-        "learning_rate": args.lr,
         "max_epochs": args.max_epochs,
         "early_stopping": args.early_stopping,
         "max_jitter": args.max_jitter,
@@ -352,28 +350,34 @@ def main():
         else:
             adam_params.append(p)
 
-    muon_optimizer = Muon(muon_params, lr=0.01)
-    adam_optimizer = AdamW(adam_params, lr=0.004)
+    muon_optimizer = Muon(
+        muon_params, lr=params["muon_lr"], weight_decay=params["muon_wd"]
+    )
+    adam_optimizer = AdamW(
+        adam_params, lr=params["adam_lr"], weight_decay=params["adam_wd"]
+    )
 
     # Warmup + cosine decay schedules
-    n_warmup = len(train_data_loader) * 5
-    n_total = len(train_data_loader) * params["max_epochs"]
+    num_warmup_epochs = 5
+    max_epochs = params["max_epochs"]
+    num_warmup_iters = len(train_data_loader) * num_warmup_epochs
+    num_decay_iters = len(train_data_loader) * max(1, max_epochs - num_warmup_epochs)
 
     muon_scheduler = SequentialLR(
         muon_optimizer,
         schedulers=[
-            LinearLR(muon_optimizer, start_factor=0.01, total_iters=n_warmup),
-            CosineAnnealingLR(muon_optimizer, T_max=n_total, eta_min=1e-5),
+            LinearLR(muon_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
+            CosineAnnealingLR(muon_optimizer, T_max=num_decay_iters, eta_min=1e-5),
         ],
-        milestones=[n_warmup],
+        milestones=[num_warmup_iters],
     )
     adam_scheduler = SequentialLR(
         adam_optimizer,
         schedulers=[
-            LinearLR(adam_optimizer, start_factor=0.01, total_iters=n_warmup),
-            CosineAnnealingLR(adam_optimizer, T_max=n_total, eta_min=1e-5),
+            LinearLR(adam_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
+            CosineAnnealingLR(adam_optimizer, T_max=num_decay_iters, eta_min=1e-5),
         ],
-        milestones=[n_warmup],
+        milestones=[num_warmup_iters],
     )
 
     # Train

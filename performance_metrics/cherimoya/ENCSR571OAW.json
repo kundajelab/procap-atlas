@@ -1,55 +1,55 @@
 {
     "experiment": "ENCSR571OAW",
     "biosample": "mesothelial cell of epicardium",
-    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR571OAW",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR571OAW",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5384848117828369,
-            "profile_jsd": 0.36739861965179443,
-            "log_counts_pearson": 0.6783453822135925,
-            "counts_spearman": 0.6622982621192932
+            "profile_pearson": 0.49654579162597656,
+            "profile_jsd": 0.3729602098464966,
+            "log_counts_pearson": 0.6985779404640198,
+            "counts_spearman": 0.6883974075317383
         },
         "1": {
-            "profile_pearson": 0.5290802121162415,
-            "profile_jsd": 0.36657625436782837,
-            "log_counts_pearson": 0.6785023212432861,
-            "counts_spearman": 0.6473863124847412
+            "profile_pearson": 0.46279460191726685,
+            "profile_jsd": 0.3783716559410095,
+            "log_counts_pearson": 0.7082028388977051,
+            "counts_spearman": 0.6867254376411438
         },
         "2": {
-            "profile_pearson": 0.5270795822143555,
-            "profile_jsd": 0.3866608440876007,
-            "log_counts_pearson": 0.652853786945343,
-            "counts_spearman": 0.6392816305160522
+            "profile_pearson": 0.47007206082344055,
+            "profile_jsd": 0.38075581192970276,
+            "log_counts_pearson": 0.7006891965866089,
+            "counts_spearman": 0.7090743184089661
         },
         "3": {
-            "profile_pearson": 0.547919511795044,
-            "profile_jsd": 0.3677974343299866,
-            "log_counts_pearson": 0.6609435677528381,
-            "counts_spearman": 0.6717001795768738
+            "profile_pearson": 0.4633977711200714,
+            "profile_jsd": 0.37924104928970337,
+            "log_counts_pearson": 0.7051193118095398,
+            "counts_spearman": 0.6992750763893127
         },
         "4": {
-            "profile_pearson": 0.5332872867584229,
-            "profile_jsd": 0.37611496448516846,
-            "log_counts_pearson": 0.6534597277641296,
-            "counts_spearman": 0.637199878692627
+            "profile_pearson": 0.4769735336303711,
+            "profile_jsd": 0.37908560037612915,
+            "log_counts_pearson": 0.6913989782333374,
+            "counts_spearman": 0.680909276008606
         },
         "5": {
-            "profile_pearson": 0.54383385181427,
-            "profile_jsd": 0.3701656460762024,
-            "log_counts_pearson": 0.6766218543052673,
-            "counts_spearman": 0.6743845343589783
+            "profile_pearson": 0.46304166316986084,
+            "profile_jsd": 0.3808152675628662,
+            "log_counts_pearson": 0.7032779455184937,
+            "counts_spearman": 0.6992124319076538
         },
         "6": {
-            "profile_pearson": 0.5426820516586304,
-            "profile_jsd": 0.378977507352829,
-            "log_counts_pearson": 0.5795257687568665,
-            "counts_spearman": 0.5755033493041992
+            "profile_pearson": 0.4665188789367676,
+            "profile_jsd": 0.3764760494232178,
+            "log_counts_pearson": 0.6492043733596802,
+            "counts_spearman": 0.6496593952178955
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5378291606903076,
-        "profile_jsd": 0.373319149017334,
-        "log_counts_pearson": 0.6386944055557251,
-        "counts_spearman": 0.617479681968689
+        "profile_pearson": 0.47194552421569824,
+        "profile_jsd": 0.37839728593826294,
+        "log_counts_pearson": 0.6921266913414001,
+        "counts_spearman": 0.6867947578430176
     }
 }

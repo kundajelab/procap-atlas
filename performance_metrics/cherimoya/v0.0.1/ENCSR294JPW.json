@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR294JPW",
+    "biosample": "left ventricle myocardium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR294JPW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5481983423233032,
+            "profile_jsd": 0.32705777883529663,
+            "log_counts_pearson": 0.7299218773841858,
+            "counts_spearman": 0.758651852607727
+        },
+        "1": {
+            "profile_pearson": 0.4710044264793396,
+            "profile_jsd": 0.3652542233467102,
+            "log_counts_pearson": 0.7292293906211853,
+            "counts_spearman": 0.7382495403289795
+        },
+        "2": {
+            "profile_pearson": 0.5313564538955688,
+            "profile_jsd": 0.3373987674713135,
+            "log_counts_pearson": 0.723142683506012,
+            "counts_spearman": 0.7400274276733398
+        },
+        "3": {
+            "profile_pearson": 0.5247423648834229,
+            "profile_jsd": 0.3422381579875946,
+            "log_counts_pearson": 0.7253523468971252,
+            "counts_spearman": 0.7409175038337708
+        },
+        "4": {
+            "profile_pearson": 0.5255950093269348,
+            "profile_jsd": 0.33890998363494873,
+            "log_counts_pearson": 0.7127757668495178,
+            "counts_spearman": 0.7408555746078491
+        },
+        "5": {
+            "profile_pearson": 0.5453230142593384,
+            "profile_jsd": 0.3281368017196655,
+            "log_counts_pearson": 0.7194828391075134,
+            "counts_spearman": 0.744537353515625
+        },
+        "6": {
+            "profile_pearson": 0.5505096912384033,
+            "profile_jsd": 0.31828972697257996,
+            "log_counts_pearson": 0.7002577185630798,
+            "counts_spearman": 0.713822066783905
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5299662351608276,
+        "profile_jsd": 0.33548879623413086,
+        "log_counts_pearson": 0.712734043598175,
+        "counts_spearman": 0.733058750629425
+    }
+}

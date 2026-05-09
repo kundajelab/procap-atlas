@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import shlex
 import subprocess
 import sys
 import textwrap
@@ -29,6 +30,8 @@ CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 FIT_SCRIPT = REPO_ROOT / "src" / "cherimoya" / "fit" / "fit_cherimoya.py"
+APPTAINER_IMAGE = Path("/scratch/users/ayhe/apptainer/cherimoya.sif")
+NUMBA_CACHE_DIR = Path("/scratch/users/ayhe/numba_cache")
 
 
 def load_n_reads():
@@ -48,12 +51,37 @@ def main():
     parser.add_argument(
         "--gpus",
         type=str,
-        default="GPU_GEN:AMP|GPU_GEN:LOV|GPU_GEN:HPR",
+        default="|".join(
+            [
+                "GPU_SKU:A100_PCIE",
+                "GPU_SKU:A100_SXM4",
+                "GPU_SKU:A40",
+                "GPU_SKU:H100_SXM5",
+                "GPU_SKU:H200_SXM5",
+                "GPU_SKU:L40S",
+            ]
+        ),
     )
     parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="32G")
-    parser.add_argument("--time", type=str, default="2:00:00")
+    parser.add_argument("--time", type=str, default="12:00:00")
+    parser.add_argument(
+        "--apptainer-image",
+        type=Path,
+        default=APPTAINER_IMAGE,
+        help=f"Apptainer image used to run Cherimoya training (default: {APPTAINER_IMAGE})",
+    )
+    parser.add_argument(
+        "--apptainer-bind",
+        action="append",
+        default=["/oak/stanford/groups/akundaje/ayhe", "/scratch/users/ayhe"],
+        help=(
+            "path to bind into the Apptainer container; may be repeated "
+            "(default: /oak and /scratch)"
+        ),
+    )
+    parser.add_argument("--apptainer-env", action="append", default=[""])
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -104,9 +132,18 @@ def main():
                 continue
 
             job_name = f"cherimoya_{exp_id}_f{fold}"
-            fit_cmd = f"python {FIT_SCRIPT} -e {exp_id} --fold {fold} -v"
+            bind_args = " ".join(
+                f"--bind {shlex.quote(path)}" for path in args.apptainer_bind
+            )
+            bind_args += ""
+            extra_fit_args = ""
             if args.fit_args:
-                fit_cmd += f" {args.fit_args}"
+                extra_fit_args = " " + args.fit_args
+            apptainer_cmd = (
+                f'apptainer exec --nv {bind_args} "$APPTAINER_IMAGE" '
+                f'python "$FIT_SCRIPT" -e {shlex.quote(exp_id)} --fold {fold} -v'
+                f"{extra_fit_args}"
+            )
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l
@@ -123,20 +160,12 @@ def main():
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
 
-                ml openblas/0.3.28
-                ml xsimd/8.1.0
-                ml xz/5.8.1
-                ml hdf5/1.14.4
-                ml arrow/22.0.0
-                ml load py-pyarrow/18.1.0_py312
-                ml lz4/1.8.0
-                ml biology
-                ml htslib
-                ml ucsc-utils
-                
-                mamba activate torch
+                mkdir -p {NUMBA_CACHE_DIR}
+                FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}
+                APPTAINER_IMAGE={shlex.quote(str(args.apptainer_image))}
+
                 nvidia-smi -L
-                {fit_cmd}
+                {apptainer_cmd}
             """)
 
             if args.dry_run:

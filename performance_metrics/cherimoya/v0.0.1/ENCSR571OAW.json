@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR571OAW",
+    "biosample": "mesothelial cell of epicardium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR571OAW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5384848117828369,
+            "profile_jsd": 0.36739861965179443,
+            "log_counts_pearson": 0.6783453822135925,
+            "counts_spearman": 0.6622982621192932
+        },
+        "1": {
+            "profile_pearson": 0.5290802121162415,
+            "profile_jsd": 0.36657625436782837,
+            "log_counts_pearson": 0.6785023212432861,
+            "counts_spearman": 0.6473863124847412
+        },
+        "2": {
+            "profile_pearson": 0.5270795822143555,
+            "profile_jsd": 0.3866608440876007,
+            "log_counts_pearson": 0.652853786945343,
+            "counts_spearman": 0.6392816305160522
+        },
+        "3": {
+            "profile_pearson": 0.547919511795044,
+            "profile_jsd": 0.3677974343299866,
+            "log_counts_pearson": 0.6609435677528381,
+            "counts_spearman": 0.6717001795768738
+        },
+        "4": {
+            "profile_pearson": 0.5332872867584229,
+            "profile_jsd": 0.37611496448516846,
+            "log_counts_pearson": 0.6534597277641296,
+            "counts_spearman": 0.637199878692627
+        },
+        "5": {
+            "profile_pearson": 0.54383385181427,
+            "profile_jsd": 0.3701656460762024,
+            "log_counts_pearson": 0.6766218543052673,
+            "counts_spearman": 0.6743845343589783
+        },
+        "6": {
+            "profile_pearson": 0.5426820516586304,
+            "profile_jsd": 0.378977507352829,
+            "log_counts_pearson": 0.5795257687568665,
+            "counts_spearman": 0.5755033493041992
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5378291606903076,
+        "profile_jsd": 0.373319149017334,
+        "log_counts_pearson": 0.6386944055557251,
+        "counts_spearman": 0.617479681968689
+    }
+}

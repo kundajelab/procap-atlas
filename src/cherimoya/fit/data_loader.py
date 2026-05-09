@@ -2,11 +2,6 @@
 # Author: Jacob Schreiber <jmschreiber91@gmail.com>
 # Code adapted from Alex Tseng, Avanti Shrikumar, and Ziga Avsec
 
-"""
-A small modification to cherimoya's PeakGenerator to support strand-specific data
-where the minus strand signal is represented by negative values.
-"""
-
 import numpy
 import torch
 from tangermeme.io import extract_loci
@@ -17,73 +12,66 @@ class PeakNegativeSampler(torch.utils.data.Dataset):
 
     Here, a set of peaks and negatives are separately loaded. These sets can be
     any size. From these sets, batches of given size are sampled that are a
-    mixture of peaks and negatives. The peaks are sampled by randomly iterating
-    over the entire set such that one epoch means one pass over the entire data
-    set. The negatives are sampled by randomly choosing regions from the
-    negatives at the given ratio to peaks, without considering whether they have
-    been selected before.
+    mixture of peaks and negatives.
 
-    Because peaks and negatives are provided as separate tensors, different
-    jittering can be used on them. This means that, for instance, jittering can
-    be used on peaks but not used on negatives.
+    Sampling is fully deterministic given ``random_state`` and the epoch
+    number. ``__getitem__(idx)`` is a pure function of ``idx`` and the
+    current epoch, so ``num_workers > 1`` produces the same per-index
+    data tuples as ``num_workers = 1`` — the DataLoader yields identical
+    batch sequences, just faster.
 
-    In the documentation below, `mj` = max_jitter.
+    Each peak is drawn exactly once per epoch; the peak/negative
+    interleaving and all augmentations are reproducible from
+    ``(random_state, epoch)``.
 
-    Note that, although the data is passed in as PyTorch tensors, they are saved
-    as numpy arrays for faster slicing during training.
-
+    In the documentation below, ``mj`` = max_jitter.
 
     Parameters
     ----------
     peak_sequences: torch.tensor, shape=(n_peaks, 4, in_window+2*mj)
-            A tensor of peak sequences that are one-hot encoded. See above for the
-            connection between the length here and jitter.
+            A tensor of peak sequences that are one-hot encoded.
 
     peak_signals: torch.tensor, shape=(n_peaks, t, out_window+2*mj)
-            A tensor of signals to predict, usually base-pair resolution integer counts.
-            This should have `t` tasks, which is usually 2 if predicting stranded outputs
-            and 1 if predicting unstranded outputs. See above for the connection between
-            the length here and jitter.
+            A tensor of signals to predict, usually base-pair resolution
+            integer counts.
 
-    peak_controls: torch.tensor, shape=(n, t, out_window+2*mj) or None, optional
-            A tenso of the control signal to take as input, usually base-pair counts, for `n`
-            examples with `t` strands and output length `out_window`. If
-            None, does not return controls.
+    peak_controls: torch.tensor, shape=(n, t, out_window+2*mj) or None,
+                    optional
+            Optional control input track for peak examples.
 
-    negative_sequences: torch.tensor, shape=(n, 4, in_window+2*max_jitter)
-            A one-hot encoded tensor of `n` example sequences, each of input
-            length `in_window`. See description above for connection with jitter.
+    negative_sequences: torch.tensor, shape=(n, 4, in_window+2*mj)
+            One-hot encoded negative sequences.
 
-    negative_signals: torch.tensor, shape=(n, t, out_window+2*max_jitter)
-            The signals to predict, usually counts, for `n` examples with
-            `t` output tasks (usually 2 if stranded, 1 otherwise), each of
-            output length `out_window`. See description above for connection
-            with jitter.
+    negative_signals: torch.tensor, shape=(n, t, out_window+2*mj)
+            Negative sequence signals.
 
-    negative_controls: torch.tensor, shape=(n, t, out_window+2*max_jitter) or None, optional
-            The control signal to take as input, usually counts, for `n`
-            examples with `t` strands and output length `out_window`. If
-            None, does not return controls.
+    negative_controls: torch.tensor or None, optional
+            Optional control input track for negative examples.
 
-    p: torch.tensor or None, shape=(n,)
-            A vector of probabilities that sum to 1 containing the sampling probability
-            of each sequence. If None, use a uniform distribution.
+    negative_ratio: float, optional
+            Ratio of negatives to peaks per epoch. ``0`` means no negative
+            draws. Default 0.1.
 
     in_window: int, optional
-            The input window size. Default is 2114.
+            The input window size. Default 2114.
 
     out_window: int, optional
-            The output window size. Default is 1000.
+            The output window size. Default 1000.
 
     max_jitter: int, optional
-            The maximum amount of jitter to add, in either direction, to the
-            midpoints that are passed in. Default is 0.
+            Maximum jitter (in either direction) applied to peaks. Default 0.
 
     reverse_complement: bool, optional
-            Whether to reverse complement-augment half of the data. Default is False.
+            Whether to reverse complement-augment half of the data. Default
+            False.
+
+    shuffle: bool, optional
+            Whether to shuffle the peak ordering each epoch. Default True.
 
     random_state: int or None, optional
-            Whether to use a deterministic seed or not.
+            Base seed for the deterministic per-epoch RNG. If None, a random
+            seed is captured once at construction time so that all forked
+            worker processes share it.
     """
 
     def __init__(
@@ -102,6 +90,15 @@ class PeakNegativeSampler(torch.utils.data.Dataset):
         shuffle=True,
         random_state=None,
     ):
+        if max_jitter < 0:
+            raise ValueError(
+                "max_jitter must be non-negative, got {}".format(max_jitter)
+            )
+        if negative_ratio < 0:
+            raise ValueError(
+                "negative_ratio must be non-negative, got {}".format(negative_ratio)
+            )
+
         self.peak_sequences = peak_sequences.numpy(force=True)
         self.peak_signals = peak_signals.numpy(force=True)
         self.n_peaks = len(self.peak_sequences)
@@ -118,62 +115,108 @@ class PeakNegativeSampler(torch.utils.data.Dataset):
             self.negative_controls = None
 
         self.negative_ratio = negative_ratio
-        self.negative_likelihood = 1 / (1 + 1 / negative_ratio)
-
         self.in_window = in_window
         self.out_window = out_window
         self.max_jitter = max_jitter
         self.reverse_complement = reverse_complement
         self.shuffle = shuffle
 
-        self.random_state = numpy.random.RandomState(random_state)
-        self.n_peaks_seen = 0
-        self.peak_ordering = None
+        # Capture one base seed at construction so every forked worker
+        # inherits the same value (2654435761 is Knuth's hash constant,
+        # spreading small epoch values across the 32-bit seed space).
+        if random_state is None:
+            random_state = int(numpy.random.randint(0, 2**31 - 1))
+        self._base_seed = int(random_state) % (2**31 - 1)
+
+        # _last_idx detects epoch boundaries by wrap-around (idx jumping
+        # backward). Each forked worker maintains its own copy.
+        self._last_idx = -1
+        self._epoch = -1
+        self._prepare_epoch(0)
 
     def __len__(self):
         return self.n_peaks + int(self.n_peaks * self.negative_ratio)
 
-    def __getitem__(self, idx):
-        if idx == 0:
-            self.peak_ordering = numpy.arange(self.n_peaks)
-            if self.shuffle:
-                self.random_state.shuffle(self.peak_ordering)
+    def _prepare_epoch(self, epoch):
+        """Recompute per-epoch arrays from the (base_seed, epoch) RNG."""
 
-        if self.random_state.uniform() >= self.negative_likelihood:
-            idx = self.peak_ordering[self.n_peaks_seen % self.n_peaks]
-            jitter = self.random_state.randint(self.max_jitter * 2)
-            label = 1
+        self._epoch = epoch
+        seed = (self._base_seed + epoch * 2654435761) % (2**31 - 1)
+        rng = numpy.random.RandomState(seed)
+        n = len(self)
 
-            X, y, X_ctl = self.peak_sequences, self.peak_signals, self.peak_controls
-            self.n_peaks_seen += 1
+        # Peak ordering — each peak appears exactly once. Kept as an
+        # attribute for introspection.
+        self.peak_ordering = (
+            rng.permutation(self.n_peaks)
+            if self.shuffle
+            else numpy.arange(self.n_peaks)
+        )
 
+        # Per-position label: True at exactly n_peaks slots, False at the
+        # remaining negative slots.
+        labels = rng.permutation(numpy.arange(n) < self.n_peaks)
+        self._labels = labels
+
+        # Per-position source index into the peak or negative tensor.
+        # max(1, n_negatives) keeps randint's bounds valid even when
+        # n_negatives == 0; the size is also 0 in that case so no values
+        # are actually written.
+        source = numpy.empty(n, dtype=numpy.int64)
+        source[labels] = self.peak_ordering
+        source[~labels] = rng.randint(
+            0, max(1, self.n_negatives), size=int((~labels).sum())
+        )
+        self._source_idx = source
+
+        # Per-position jitter (0 at negative positions) and rc flag.
+        if self.max_jitter > 0:
+            jitters = rng.randint(0, self.max_jitter * 2, size=n)
+            jitters[~labels] = 0
+            self._jitters = jitters
         else:
-            idx = self.random_state.randint(self.n_negatives)
-            jitter = 0
-            label = 0
+            self._jitters = numpy.zeros(n, dtype=numpy.int64)
 
+        if self.reverse_complement:
+            self._rc_flags = rng.randint(0, 2, size=n).astype(bool)
+        else:
+            self._rc_flags = numpy.zeros(n, dtype=bool)
+
+    def __getitem__(self, idx):
+        if idx < self._last_idx:
+            self._prepare_epoch(self._epoch + 1)
+        self._last_idx = idx
+
+        is_peak = bool(self._labels[idx])
+        src = int(self._source_idx[idx])
+        j = int(self._jitters[idx])
+
+        if is_peak:
+            X, y, X_ctl = (self.peak_sequences, self.peak_signals, self.peak_controls)
+        else:
             X, y, X_ctl = (
                 self.negative_sequences,
                 self.negative_signals,
                 self.negative_controls,
             )
 
-        Xi = torch.from_numpy(X[idx][:, jitter : jitter + self.in_window])
-        yi = torch.from_numpy(y[idx][:, jitter : jitter + self.out_window])
-        if self.peak_controls is not None:
-            Xi_ctl = torch.from_numpy(X_ctl[idx][:, jitter : jitter + self.in_window])
+        Xi = torch.from_numpy(X[src][:, j : j + self.in_window])
+        yi = torch.from_numpy(y[src][:, j : j + self.out_window])
+        Xi_ctl = (
+            torch.from_numpy(X_ctl[src][:, j : j + self.in_window])
+            if self.peak_controls is not None
+            else None
+        )
 
-        if self.reverse_complement and self.random_state.randint(2) == 1:
+        if self._rc_flags[idx]:
             Xi = torch.flip(Xi, [0, 1])
             yi = torch.flip(yi, [0, 1])
-
-            if self.peak_controls is not None:
+            if Xi_ctl is not None:
                 Xi_ctl = torch.flip(Xi_ctl, [0, 1])
 
-        if self.peak_controls is not None:
-            return Xi, torch.abs(Xi_ctl), torch.abs(yi), label
-
-        return Xi, torch.abs(yi), label
+        if Xi_ctl is not None:
+            return Xi, torch.abs(Xi_ctl), torch.abs(yi), int(is_peak)
+        return Xi, torch.abs(yi), int(is_peak)
 
 
 def PeakGenerator(
@@ -185,7 +228,7 @@ def PeakGenerator(
     chroms=None,
     in_window=2114,
     out_window=1000,
-    max_jitter=128,
+    max_jitter=50,
     negative_ratio=0.1,
     reverse_complement=True,
     shuffle=True,
@@ -195,7 +238,7 @@ def PeakGenerator(
     exclusion_lists=None,
     random_state=None,
     pin_memory=True,
-    num_workers=0,
+    num_workers=1,
     batch_size=32,
     verbose=False,
 ):
@@ -250,7 +293,7 @@ def PeakGenerator(
 
     max_jitter: int, optional
             The maximum amount of jitter to add, in either direction, to the
-            midpoints that are passed in. Default is 128.
+            midpoints that are passed in. Default is 50.
 
     negative_ratio: float, optional
             The ratio of negatives compared to peaks in each batch. A value of 1 means
@@ -290,15 +333,22 @@ def PeakGenerator(
             no filtering is performed based on exclusion zones. Default is None.
 
     random_state: int or None, optional
-            Whether to use a deterministic seed or not.
+            Base seed for the sampler's deterministic per-epoch RNG. If None,
+            a seed is captured once from system entropy.
 
     pin_memory: bool, optional
             Whether to pin page memory to make data loading onto a GPU easier.
             Default is True.
 
     num_workers: int, optional
-            The number of processes fetching data at a time to feed into a model.
-            If 0, data is fetched from the main process. Default is 0.
+            The number of processes fetching data at a time to feed into a
+            model. If 0, data is fetched from the main process (synchronous,
+            can become a bottleneck because each batch blocks the GPU).
+            Default is 1, which runs one async prefetch worker. Higher values
+            are safe and produce the **same** sequence of batches as
+            ``num_workers = 1``, just faster: ``__getitem__(idx)`` is a pure
+            function of ``idx`` and the current epoch, so all workers compute
+            the same data for any given index.
 
     batch_size: int, optional
             The number of data elements per batch. Default is 32.
@@ -331,9 +381,9 @@ def PeakGenerator(
         verbose=verbose,
     )
 
-    loci_counts = torch.abs(X_peaks[1]).sum(dim=(1, 2))
+    loci_counts = X_peaks[1].sum(dim=(1, 2))
 
-    outlier_threshold = torch.quantile(loci_counts, 0.99) * 1.2
+    outlier_threshold = torch.quantile(X_peaks[1].sum(dim=(1, 2)), 0.99) * 1.2
     outlier_idxs = loci_counts > outlier_threshold
 
     X_bg = extract_loci(
@@ -365,13 +415,11 @@ def PeakGenerator(
 
     X_gen = PeakNegativeSampler(
         peak_sequences=X_peaks[0][~outlier_idxs],
-        peak_signals=torch.abs(X_peaks[1][~outlier_idxs]),
-        peak_controls=None
-        if controls is None
-        else torch.abs(X_peaks[2][~outlier_idxs]),
+        peak_signals=X_peaks[1][~outlier_idxs],
+        peak_controls=None if controls is None else X_peaks[2][~outlier_idxs],
         negative_sequences=X_bg[0],
-        negative_signals=torch.abs(X_bg[1]),
-        negative_controls=None if controls is None else torch.abs(X_bg[2]),
+        negative_signals=X_bg[1],
+        negative_controls=None if controls is None else X_bg[2],
         negative_ratio=negative_ratio,
         in_window=in_window,
         out_window=out_window,

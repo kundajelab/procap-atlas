@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR321WCE",
+    "biosample": "neural crest cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR321WCE",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.6219578981399536,
+            "profile_jsd": 0.28793078660964966,
+            "log_counts_pearson": 0.7373798489570618,
+            "counts_spearman": 0.7765493988990784
+        },
+        "1": {
+            "profile_pearson": 0.6124599575996399,
+            "profile_jsd": 0.29913556575775146,
+            "log_counts_pearson": 0.7291702032089233,
+            "counts_spearman": 0.7651293873786926
+        },
+        "2": {
+            "profile_pearson": 0.6152300238609314,
+            "profile_jsd": 0.29405248165130615,
+            "log_counts_pearson": 0.7015868425369263,
+            "counts_spearman": 0.7566006779670715
+        },
+        "3": {
+            "profile_pearson": 0.6240909099578857,
+            "profile_jsd": 0.2908500134944916,
+            "log_counts_pearson": 0.7244043946266174,
+            "counts_spearman": 0.7624223828315735
+        },
+        "4": {
+            "profile_pearson": 0.6214523911476135,
+            "profile_jsd": 0.29337963461875916,
+            "log_counts_pearson": 0.7334287166595459,
+            "counts_spearman": 0.7623918056488037
+        },
+        "5": {
+            "profile_pearson": 0.6223583221435547,
+            "profile_jsd": 0.28742310404777527,
+            "log_counts_pearson": 0.7164183259010315,
+            "counts_spearman": 0.747550904750824
+        },
+        "6": {
+            "profile_pearson": 0.6352593898773193,
+            "profile_jsd": 0.2817875146865845,
+            "log_counts_pearson": 0.6933272480964661,
+            "counts_spearman": 0.7195863127708435
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.6214733719825745,
+        "profile_jsd": 0.2906307876110077,
+        "log_counts_pearson": 0.7164721488952637,
+        "counts_spearman": 0.7526898384094238
+    }
+}

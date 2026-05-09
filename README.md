@@ -196,6 +196,17 @@ python src/bpnet/motifcompendium/cluster_motifs.py
 
 Output: `count_similarity_distribution.html`, `profile_similarity_distribution.html`
 
+For an unfiltered MotifCompendium run that retains all clustered motifs, use the
+separate all-motifs pipeline:
+
+```bash
+python src/bpnet/motifcompendium/cluster_motifs_all.py
+```
+
+Output: `motifcompendium/bpnet_all_motifs/`. The cluster metadata TSV and
+cluster report HTML/PDF include `total_seqlets`, the summed number of seqlets per
+final motif cluster.
+
 ### 12. Train Cherimoya model
 
 Trains a [Cherimoya](https://github.com/jmschrei/cherimoya) model for a single experiment using the same 7-fold chromosome cross-validation scheme as BPNet. The production training script uses a Triton fused dilated conv+norm kernel (`CheriBlock`). Training uses a dual-optimizer setup: Muon for the bulk 2D weight matrices (linear layers in each block) and AdamW for everything else (input/output convolutions, biases, scalars), both with warmup + cosine decay schedules.

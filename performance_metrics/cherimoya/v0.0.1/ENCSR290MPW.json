@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR290MPW",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR290MPW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5236228704452515,
+            "profile_jsd": 0.3590075373649597,
+            "log_counts_pearson": 0.7168407440185547,
+            "counts_spearman": 0.7238454222679138
+        },
+        "1": {
+            "profile_pearson": 0.5262883901596069,
+            "profile_jsd": 0.3585314452648163,
+            "log_counts_pearson": 0.733524739742279,
+            "counts_spearman": 0.7334787845611572
+        },
+        "2": {
+            "profile_pearson": 0.4394339323043823,
+            "profile_jsd": 0.3995392620563507,
+            "log_counts_pearson": 0.7039031386375427,
+            "counts_spearman": 0.6949247717857361
+        },
+        "3": {
+            "profile_pearson": 0.5356034636497498,
+            "profile_jsd": 0.3543100953102112,
+            "log_counts_pearson": 0.7164494395256042,
+            "counts_spearman": 0.7201176285743713
+        },
+        "4": {
+            "profile_pearson": 0.528520941734314,
+            "profile_jsd": 0.3545728921890259,
+            "log_counts_pearson": 0.7049753665924072,
+            "counts_spearman": 0.713948667049408
+        },
+        "5": {
+            "profile_pearson": 0.5325784683227539,
+            "profile_jsd": 0.3541983366012573,
+            "log_counts_pearson": 0.7185478806495667,
+            "counts_spearman": 0.7263766527175903
+        },
+        "6": {
+            "profile_pearson": 0.45406168699264526,
+            "profile_jsd": 0.3871939778327942,
+            "log_counts_pearson": 0.6462841033935547,
+            "counts_spearman": 0.6561105251312256
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5072587132453918,
+        "profile_jsd": 0.3665071129798889,
+        "log_counts_pearson": 0.7001931667327881,
+        "counts_spearman": 0.7050504684448242
+    }
+}
