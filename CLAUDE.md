@@ -19,10 +19,12 @@ Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-
   - `gc_match_run.py` — Runs `gc_match.py` for every experiment in the config, writing bgzip-compressed output to `data/processed/negatives/`. Supports multiprocessing via `-j/--jobs` flag (default 1 worker).
   - `count_reads.py` — Counts total reads in the processed BigWig files for each experiment using `pybigtools`. Sums `value * (end - start)` over all intervals via `records()`; minus-strand values are negated in the BigWig so their total is taken as absolute value. Writes TSV to `configs/n_reads.txt` by default (`--tsv` to override).
 - **`configs/`** — Generated YAML experiment config (produced by `generate_config.py`) and chromosome fold splits (`chrom_splits.yaml`, 7 folds for cross-validation).
+- **`config.json`** — Root-level Hugging Face model metadata for the BPNet atlas. Keep this at the model repo root when uploading; Hugging Face uses default query files such as `config.json` for model download tracking.
 - **`src/bpnet/`** — BPNet deep learning model training and evaluation:
   - `fit/fit_bpnet.py` — Consolidated BPNet training script with configurable background sampling. Accepts repeatable `--background NAME:RATIO` arguments (names: `ccre`, `gc`) where RATIO is negatives-per-positive contributed by that source. Sources are pooled proportionally. Default: `gc:1/7` (no cCREs; `negative_ratio=1/7`, giving 1/8 of each batch as negatives). Output directory defaults to `models/bpnet/{experiment}`; when `--background` is explicitly specified the suffix encodes the config (e.g. `{experiment}_gc0.1`).
   - `fit/launch.py` — Submits SLURM jobs to train BPNet models, one per (experiment, fold) pair. Skips experiments with fewer than `--min-reads` total reads (default: 10M) and folds where the model file already exists. Extra arguments forwarded to `fit_bpnet.py` via `--fit-args`. Logs to `logs/bpnet/`.
   - `benchmark/benchmark_bpnet.py` — Evaluates a trained BPNet across all folds on held-out test chromosomes. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. Reports per-fold and genome-wide profile Pearson, profile JSD, log-counts Pearson, and counts Spearman. Always writes results to `performance_metrics/bpnet/{model_dir_name}.json`.
+  - `model_upload.py` — Uploads BPNet model artifacts, `configs/`, and root `config.json` to the Hugging Face model repo `adamyhe/procap-atlas`. The root `config.json` enables standard Hugging Face model download tracking for this custom BPNet collection.
   - `attribute/attribute_bpnet.py` — Computes DeepLIFT/SHAP attributions across all folds for a trained BPNet, averaging fold attributions genome-wide. Defaults to `models/bpnet/{experiment}`; use `--model-dir` to override. `--head` selects profile or count head. Does not require signal BigWigs (peak loci only). Output: `attributions/bpnet/{model_dir_name}_{head}.npz`.
   - `attribute/save_ohe.py` — Extracts and saves one-hot-encoded sequences for all peaks of a given experiment to `attributions/bpnet/{experiment}_ohe.npz`. Run separately from attributions.
   - `attribute/run_ohe.py` — Runs `save_ohe.py` for all experiments asynchronously. Skips experiments where the OHE file already exists; `-j/--jobs` controls concurrency (default: 4); `--min-reads` and `--dry-run` supported.
@@ -84,11 +86,12 @@ python src/preprocess/count_reads.py       # Count reads per experiment → conf
 ### Model Training
 
 ```bash
-python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0                                          # Train BPNet, default backgrounds (ccre+gc at 1/14 each)
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0                                          # Train BPNet, default GC background (1/7)
 python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background gc:0.1               # GC negatives only
 python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0 --background ccre:0.05 --background gc:0.05  # custom ratios
 python src/bpnet/fit/launch.py                     # submit all experiments x 7 folds via SLURM
 python src/bpnet/fit/launch.py --dry-run           # preview sbatch scripts without submitting
+python src/bpnet/model_upload.py                   # upload BPNet models/configs/config.json to Hugging Face
 ```
 
 ### Cherimoya Training

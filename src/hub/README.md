@@ -12,6 +12,7 @@ Experiments are grouped into supertracks by biosample (cell type or tissue). Eac
 
 - **Signal** (`{exp_id}_signal`) — multiWig container showing plus-strand (red) and minus-strand (blue) PRO-cap signal. Plus-strand values are positive; minus-strand values are stored negative in the BigWig and appear below the axis automatically.
 - **Peaks** (`{exp_id}_peaks`) — merged bidirectional and unidirectional TSS peak calls in bigBed format.
+- **Attributions** (`{exp_id}_attribution`) — BPNet profile/count attribution BigWigs displayed as UCSC dynseq tracks using `logo on`.
 
 ## Generating the hub files
 
@@ -21,9 +22,19 @@ Hub files are generated from `configs/experiment_config.yaml`. BigWig files are 
 python src/hub/generate_hub.py --email you@example.com
 python src/hub/generate_hub.py --email you@example.com --output-dir /other/dir
 python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
+python src/hub/generate_hub.py --email you@example.com --no-attributions
 ```
 
 Output: `hub/hub.txt`, `hub/genomes.txt`, `hub/hg38/trackDb.txt`
+
+Before regenerating the hub with attribution tracks, convert BPNet attribution NPZ files to BigWigs:
+
+```bash
+python src/bpnet/attribute/launch_bigwig_conversion.py --dry-run
+python src/bpnet/attribute/launch_bigwig_conversion.py
+```
+
+Converted attribution BigWigs are referenced at `attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig`. UCSC displays these as base-resolution dynseq logos through the `logo on` BigWig setting.
 
 ## Converting peaks to bigBed
 
@@ -79,3 +90,4 @@ data/processed/peaks/
 ```
 
 BigWig files are served directly from `data/processed/bigwigs/` and are not stored here.
+Attribution BigWigs are served directly from `attributions/bpnet/bigwigs/`.

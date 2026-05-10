@@ -8,12 +8,14 @@ Reads configs/experiment_config.yaml and writes:
 
 Experiments are grouped into supertracks by biosample, sorted alphabetically.
 Each experiment gets a multiWig container for plus/minus strand BigWigs and a
-separate bigBed track for peak calls.
+separate bigBed track for peak calls. BPNet attribution BigWigs can also be
+exposed as UCSC dynseq tracks.
 
 Usage:
     python src/hub/generate_hub.py --email you@example.com
     python src/hub/generate_hub.py --email you@example.com --output-dir /path/to/hub
     python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
+    python src/hub/generate_hub.py --email you@example.com --no-attributions
 """
 
 import argparse
@@ -78,6 +80,10 @@ def bigbed_url(base_url, bb_filename):
     return f"{base_url}/data/processed/peaks/{bb_filename}"
 
 
+def attribution_bigwig_url(base_url, exp_id, head):
+    return f"{base_url}/attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig"
+
+
 def write_hub_txt(output_dir, base_url, email):
     (output_dir / "hub.txt").write_text(HUB_TXT_TEMPLATE.format(base_url=base_url, email=email))
 
@@ -90,7 +96,7 @@ def is_uncapped(exp):
     return "uncapped" in exp.get("library_construction", "").lower()
 
 
-def write_trackdb(output_dir, experiments, base_url):
+def write_trackdb(output_dir, experiments, base_url, attribution_heads):
     # Group by biosample
     by_biosample = {}
     for exp_id, exp in experiments.items():
@@ -184,6 +190,42 @@ def write_trackdb(output_dir, experiments, base_url):
                     "",
                 ]
 
+            # BPNet attribution dynseq tracks
+            if attribution_heads:
+                attr_name = f"{exp_id}_attribution"
+                lines += [
+                    f"track {attr_name}",
+                    "compositeTrack on",
+                    f"superTrack {st_name}",
+                    "type bigWig",
+                    f"shortLabel {make_short_label(biosample, exp_id, ' attr')}",
+                    f"longLabel {long_signal} BPNet Attributions",
+                    f"visibility {'hide' if is_uncapped(exp) else 'full'}",
+                    "autoScale on",
+                    "alwaysZero on",
+                    "maxHeightPixels 128:64:16",
+                    "",
+                ]
+
+                for priority, head in enumerate(attribution_heads, start=1):
+                    head_label = "Profile" if head == "profile" else "Count"
+                    default_visibility = "full" if head == "profile" else "hide"
+                    lines += [
+                        f"    track {exp_id}_attr_{head}",
+                        f"    parent {attr_name}",
+                        f"    bigDataUrl {attribution_bigwig_url(base_url, exp_id, head)}",
+                        f"    shortLabel {(short_signal + ' ' + head[:4])[:17]}",
+                        f"    longLabel {long_signal} BPNet {head_label} Attributions",
+                        "    type bigWig",
+                        "    logo on",
+                        "    autoScale on",
+                        "    alwaysZero on",
+                        "    maxHeightPixels 128:64:16",
+                        f"    visibility {default_visibility}",
+                        f"    priority {priority}",
+                        "",
+                    ]
+
     trackdb_path = output_dir / "hg38" / "trackDb.txt"
     trackdb_path.parent.mkdir(parents=True, exist_ok=True)
     trackdb_path.write_text("\n".join(lines))
@@ -199,7 +241,25 @@ def main():
     )
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, metavar="URL")
     parser.add_argument("--email", required=True, metavar="EMAIL")
+    parser.add_argument(
+        "--attribution-head",
+        type=str,
+        action="append",
+        choices=["profile", "count"],
+        default=None,
+        metavar="HEAD",
+        help="BPNet attribution head(s) to include; repeatable (default: profile count)",
+    )
+    parser.add_argument(
+        "--no-attributions",
+        action="store_true",
+        help="omit BPNet attribution dynseq tracks",
+    )
     args = parser.parse_args()
+
+    attribution_heads = [] if args.no_attributions else args.attribution_head
+    if attribution_heads is None:
+        attribution_heads = ["profile", "count"]
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
@@ -209,7 +269,7 @@ def main():
 
     write_hub_txt(args.output_dir, args.base_url, args.email)
     write_genomes_txt(args.output_dir)
-    write_trackdb(args.output_dir, experiments, args.base_url)
+    write_trackdb(args.output_dir, experiments, args.base_url, attribution_heads)
 
     n = len(experiments)
     print(f"Wrote hub for {n} experiments to {args.output_dir}/")

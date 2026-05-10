@@ -11,5 +11,6 @@ dependencies:
   - ucsc-hubcheck
   - pip:
     - pyyaml
+    - pybigtools
     - cherimoya
     - bpnet-lite

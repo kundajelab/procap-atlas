@@ -1,13 +1,14 @@
 import argparse
 import html
+import inspect
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import MotifCompendium
 import MotifCompendium.utils.analysis as utils_analysis
 import pandas as pd
 import yaml
+from matplotlib.backends.backend_pdf import PdfPages
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -31,6 +32,7 @@ def load_experiments(min_reads, blacklist):
         )
     )
 
+    # Skip blacklisted, uncapped, and low quality experiments.
     experiments = []
     for exp_id, meta in config["experiments"].items():
         if exp_id in blacklist:
@@ -60,6 +62,19 @@ def assign_jaspar_labels(mc):
         )
     else:
         print(f"  JASPAR file not found at {JASPAR_PATH}, skipping annotation")
+
+
+def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on, weight_col):
+    cluster_kwargs = {
+        "similarity_threshold": similarity_threshold,
+        "save_name": save_name,
+        "cluster_on": cluster_on,
+    }
+    if "weight_col" in inspect.signature(mc.cluster).parameters:
+        cluster_kwargs["weight_col"] = weight_col
+    else:
+        cluster_kwargs["cluster_on_weight"] = weight_col
+    mc.cluster(**cluster_kwargs)
 
 
 def write_cluster_metadata(mc, head):
@@ -130,7 +145,7 @@ def cluster_summary_html(cluster_metadata):
   final cluster.</p>
   <table border="1" cellspacing="0" cellpadding="4">
     <thead><tr>{header}</tr></thead>
-    <tbody>{''.join(rows)}</tbody>
+    <tbody>{"".join(rows)}</tbody>
   </table>
 </section>
 """
@@ -235,13 +250,13 @@ def process_head(head, h5_paths, within_threshold, across_threshold):
         similarity_threshold=within_threshold,
         save_name="cluster_within_model",
         cluster_within="model",
-        cluster_on_weight="num_seqlets",
     )
-    mc.cluster(
+    weighted_cluster_on(
+        mc,
         similarity_threshold=across_threshold,
         save_name="cluster_final",
         cluster_on="cluster_within_model",
-        cluster_on_weight="num_seqlets",
+        weight_col="num_seqlets",
     )
     mc.save(str(MC_DIR / f"motifcompendium_{head}_all_clustered.mc"))
 

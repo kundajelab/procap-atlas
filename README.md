@@ -32,7 +32,7 @@ conda activate motifcompendium
 pip install -e .
 ```
 
-Scripts in `src/bpnet/motifcompendium/` should be run inside this environment after modisco outputs have been generated (step 10).
+Scripts in `src/bpnet/motifcompendium/` should be run inside this environment after modisco outputs have been generated (step 11).
 
 ## Usage
 
@@ -137,9 +137,19 @@ python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR882DWM --model-dir models/
 
 Output: `performance_metrics/bpnet/{model_dir_name}.json`
 
-### 9. Compute attributions
+### 9. Upload BPNet models to Hugging Face
 
-Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Custom model directories can be loaded using `--model-dir` if not using defaults. `--head` selects the profile or count output head. One-hot-encoded sequences must be saved separately with `save_ohe.py` before running modisco (step 10).
+The repository includes a top-level `config.json` with BPNet atlas metadata for the Hugging Face model repo. Hugging Face uses root-level config files such as `config.json` as default query files for model download statistics, so keep this file in the model repo root when uploading.
+
+```bash
+python src/bpnet/model_upload.py
+```
+
+This uploads the BPNet model folder, `configs/`, and root `config.json` to `adamyhe/procap-atlas`.
+
+### 10. Compute attributions
+
+Computes DeepLIFT/SHAP attributions across all folds, averaged genome-wide. Custom model directories can be loaded using `--model-dir` if not using defaults. `--head` selects the profile or count output head. One-hot-encoded sequences must be saved separately with `save_ohe.py` before running modisco (step 11).
 
 ```bash
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
@@ -158,9 +168,9 @@ python src/bpnet/attribute/launch.py --head profile --head count  # both heads
 python src/bpnet/attribute/launch.py --dry-run                    # preview without submitting
 ```
 
-### 10. Run tf-modisco
+### 11. Run tf-modisco
 
-Discovers sequence motifs from DeepLIFT/SHAP attributions using [tf-MoDISco](https://github.com/jmschrei/tfmodisco-lite). Requires both the attribution `.npz` and OHE `.npz` files from step 9.
+Discovers sequence motifs from DeepLIFT/SHAP attributions using [tf-MoDISco](https://github.com/jmschrei/tfmodisco-lite). Requires both the attribution `.npz` and OHE `.npz` files from step 10.
 
 Modisco runs in two stages: `modisco motifs` (compute-intensive, multi-CPU) then `modisco report` (lightweight, generates HTML report with JASPAR motif matches). These are submitted as separate SLURM jobs to allow the heavier motifs step to be restarted independently if it times out.
 
@@ -185,7 +195,7 @@ python src/bpnet/modisco/relaunch_timeout.py --time 4-00:00:00   # custom extend
 
 Output: `modisco/bpnet/{exp_id}_{head}.modisco.h5`, `modisco/bpnet/{exp_id}_{head}.modisco/`
 
-### 11. Cluster motifs across experiments
+### 12. Cluster motifs across experiments
 
 Clusters modisco motifs across all experiments using [MotifCompendium](https://github.com/kundajelab/MotifCompendium). Run inside the `motifcompendium` or `motifcompendium-gpu` conda environment (see installation above). The script expects modisco `.h5` files to be present in the working directory (or adjust glob paths in the script).
 
@@ -207,7 +217,7 @@ Output: `motifcompendium/bpnet_all_motifs/`. The cluster metadata TSV and
 cluster report HTML/PDF include `total_seqlets`, the summed number of seqlets per
 final motif cluster.
 
-### 12. Train Cherimoya model
+### 13. Train Cherimoya model
 
 Trains a [Cherimoya](https://github.com/jmschrei/cherimoya) model for a single experiment using the same 7-fold chromosome cross-validation scheme as BPNet. The production training script uses a Triton fused dilated conv+norm kernel (`CheriBlock`). Training uses a dual-optimizer setup: Muon for the bulk 2D weight matrices (linear layers in each block) and AdamW for everything else (input/output convolutions, biases, scalars), both with warmup + cosine decay schedules.
 
@@ -228,7 +238,7 @@ python src/cherimoya/fit/launch.py             # all experiments x 7 folds
 python src/cherimoya/fit/launch.py --dry-run   # preview without submitting
 ```
 
-### 13. Benchmark Cherimoya model
+### 14. Benchmark Cherimoya model
 
 Evaluates trained Cherimoya models across all folds on held-out test chromosomes. Optionally saves scaled predictions.
 
@@ -262,6 +272,7 @@ I will try to keep this hub online for as long as my accounts at Stanford remain
 ```
 data_manifests/          # ENCODE file URLs, experiment metadata, archive blacklist
 configs/                 # Generated YAML experiment config, chromosome fold splits
+config.json              # Hugging Face BPNet model metadata and download tracking query file
 src/
   download/              # Bash download scripts
   preprocess/            # Python preprocessing scripts
@@ -275,6 +286,7 @@ src/
     generate_hub.py      # Generate hub.txt, genomes.txt, trackDb.txt from experiment config
     convert_peaks_bigbed.py  # Convert peak BED.gz files to bigBed format
   bpnet/                 # BPNet deep learning model
+    model_upload.py            # Upload BPNet artifacts, configs, and config.json to Hugging Face
     fit/fit_bpnet.py           # BPNet training script with configurable background sampling
     fit/launch.py              # SLURM job submission for training
     benchmark/benchmark_bpnet.py     # BPNet evaluation across folds → performance_metrics/
