@@ -1,0 +1,5065 @@
+{
+  "experiments": [
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR882DWM",
+      "flags": [
+        "red_uncapped"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": true,
+      "mn_reads": 13712815,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14206466,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "description": [
+              "uncapped"
+            ],
+            "library_construction": [
+              "uncapped"
+            ]
+          },
+          "flag": "red",
+          "reason": "uncapped experiment",
+          "rule": "metadata contains uncapped"
+        }
+      ],
+      "total_reads": 27919281,
+      "uncapped_fields": {
+        "description": [
+          "uncapped"
+        ],
+        "library_construction": [
+          "uncapped"
+        ]
+      }
+    },
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR114HGS",
+      "flags": [
+        "red_uncapped"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": true,
+      "mn_reads": 13555473,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14050011,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "description": [
+              "uncapped"
+            ],
+            "library_construction": [
+              "uncapped"
+            ]
+          },
+          "flag": "red",
+          "reason": "uncapped experiment",
+          "rule": "metadata contains uncapped"
+        }
+      ],
+      "total_reads": 27605484,
+      "uncapped_fields": {
+        "description": [
+          "uncapped"
+        ],
+        "library_construction": [
+          "uncapped"
+        ]
+      }
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR165QKR",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 23011302,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 23269890,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 46281192,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR197JLW",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 12177545,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 12336819,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 24514364,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR100EDZ",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 16451256,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 16717966,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 33169222,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR273ORE",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 12624400,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 12736337,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 25360737,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right ventricle myocardium",
+      "experiment": "ENCSR124RWD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14891106,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14953970,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29845076,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "WTC11",
+      "experiment": "ENCSR178XKL",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12865387,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13033808,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 25899195,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Liver Carcinoma in the Lung",
+      "experiment": "ENCSR720EXP",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6450310,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6513897,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 12,964,207 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 12964207
+        }
+      ],
+      "total_reads": 12964207,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "liver",
+      "experiment": "ENCSR753TEA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10492244,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10521242,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 21013486,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart left ventricle",
+      "experiment": "ENCSR961UBB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15366492,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15384209,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30750701,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "LUHMES",
+      "experiment": "ENCSR796JNK",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10538882,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10599224,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 21138106,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "colonic mucosa",
+      "experiment": "ENCSR784YIV",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 17274225,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17572346,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 34846571,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "upper lobe of left lung",
+      "experiment": "ENCSR478DAN",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6970276,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7105531,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 14,075,807 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 14075807
+        }
+      ],
+      "total_reads": 14075807,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Colon Carcinoma Metastatic in the Lung",
+      "experiment": "ENCSR666GXV",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9520623,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9526627,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,047,250 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19047250
+        }
+      ],
+      "total_reads": 19047250,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HEK293",
+      "experiment": "ENCSR520PUD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 27077407,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 27272668,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 54350075,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "spleen",
+      "experiment": "ENCSR417NJC",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15280531,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15400338,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30680869,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "GM23338",
+      "experiment": "ENCSR215OJB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 32029565,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 32476128,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 64505693,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cerebellum",
+      "experiment": "ENCSR053UMZ",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 4872158,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 4625900,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 9,498,058 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 9498058
+        }
+      ],
+      "total_reads": 9498058,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR867EQV",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 22463344,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 22762321,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 45225665,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "subcutaneous adipose tissue",
+      "experiment": "ENCSR386RDW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15024944,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15074771,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30099715,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right lobe of liver",
+      "experiment": "ENCSR694RPO",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15889142,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15874668,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31763810,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "osteocyte",
+      "experiment": "ENCSR248SVP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10805026,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 11009266,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 21814292,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right lobe of liver",
+      "experiment": "ENCSR992HBP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16234832,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16289889,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 32524721,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "lower lobe of left lung",
+      "experiment": "ENCSR967RHN",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 20018027,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 20432390,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 40450417,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Peyer's patch",
+      "experiment": "ENCSR757HMG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 20244072,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 20538978,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 40783050,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "REH cell",
+      "experiment": "ENCSR983JFU",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 23734614,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 23828774,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 47563388,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Colon Carcinoma Metastatic in the Brain",
+      "experiment": "ENCSR644TYW",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 4418375,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 4465900,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 8,884,275 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 8884275
+        }
+      ],
+      "total_reads": 8884275,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "testis",
+      "experiment": "ENCSR542IVL",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15814513,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15904632,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31719145,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "spleen",
+      "experiment": "ENCSR821MIF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10483569,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10515610,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20999179,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "adrenal gland",
+      "experiment": "ENCSR970ACM",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12697201,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13091878,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 25789079,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cardiac septum",
+      "experiment": "ENCSR484CAZ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14553235,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14777422,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29330657,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Colon Carcinoma Metastatic in the Brain",
+      "experiment": "ENCSR074XYR",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6884825,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6929194,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 13,814,019 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 13814019
+        }
+      ],
+      "total_reads": 13814019,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "skeletal muscle tissue",
+      "experiment": "ENCSR636RVF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15074554,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14919780,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29994334,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "colic lymph node",
+      "experiment": "ENCSR122BHP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15194316,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15258030,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30452346,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "gallbladder",
+      "experiment": "ENCSR282COG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14875961,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15125994,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30001955,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ileum",
+      "experiment": "ENCSR618ZHM",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 11992767,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 12221804,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 24214571,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR940QKZ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 27955404,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 27743506,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 55698910,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "monocyte",
+      "experiment": "ENCSR093JST",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14167944,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14479519,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28647463,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Colon Carcinoma Metastatic in the Lung",
+      "experiment": "ENCSR331QXJ",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6309578,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6360063,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 12,669,641 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 12669641
+        }
+      ],
+      "total_reads": 12669641,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right lobe of liver",
+      "experiment": "ENCSR575NNF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15515577,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15695265,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31210842,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cerebral cortex",
+      "experiment": "ENCSR915VCN",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15931140,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15870985,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31802125,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR766KPR",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 19567371,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 19463689,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 39031060,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "uterus",
+      "experiment": "ENCSR399LAD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 23934526,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 23837597,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 47772123,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "thyroid gland",
+      "experiment": "ENCSR756CCD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 19861679,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 20201961,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 40063640,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right common carotid artery plus branches",
+      "experiment": "ENCSR023NXW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 24081336,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 23962780,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 48044116,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "bronchial lymph node",
+      "experiment": "ENCSR266TET",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 22905373,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 23050822,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 45956195,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "urinary bladder",
+      "experiment": "ENCSR045XAW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13330415,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13523667,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 26854082,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Ovary",
+      "experiment": "ENCSR934ZMQ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13810993,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13902789,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 27713782,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR118KGX",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 8576792,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 8673170,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 17,249,962 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 17249962
+        }
+      ],
+      "total_reads": 17249962,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "left common carotid artery plus branches",
+      "experiment": "ENCSR296MTV",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3778037,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3933309,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 7,711,346 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 7711346
+        }
+      ],
+      "total_reads": 7711346,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "breast",
+      "experiment": "ENCSR212GWU",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7983628,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 8005118,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 15,988,746 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 15988746
+        }
+      ],
+      "total_reads": 15988746,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "adrenal gland",
+      "experiment": "ENCSR408RHY",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15778082,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15990787,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31768869,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cytotoxic T cell",
+      "experiment": "ENCSR594WJV",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9636694,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9664562,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,301,256 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19301256
+        }
+      ],
+      "total_reads": 19301256,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "spleen",
+      "experiment": "ENCSR797AOQ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16276976,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16390851,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 32667827,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cerebral cortex",
+      "experiment": "ENCSR675RBN",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 103617,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 104025,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 207,642 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 207642
+        }
+      ],
+      "total_reads": 207642,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart left ventricle",
+      "experiment": "ENCSR812JCT",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14384436,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14493863,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28878299,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR740DLY",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14485244,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14572259,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29057503,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "sternocleidomastoid",
+      "experiment": "ENCSR964OON",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13571390,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13716878,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 27288268,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right cardiac atrium",
+      "experiment": "ENCSR883PPD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13051698,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13148884,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 26200582,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "vermiform appendix",
+      "experiment": "ENCSR784FKF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15701305,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15916051,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31617356,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR273JQN",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 27047478,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 27431155,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 54478633,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR074XOP",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 24520430,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 24767749,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 49288179,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR635SXX",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 19447898,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 19661538,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 39109436,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR990FJB",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 17074540,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 17262232,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 34336772,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR261OWE",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 17188183,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 17421587,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 34609770,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR932TRR",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 16316522,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 16534624,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 32851146,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR604EBH",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7066991,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7133512,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 14,200,503 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 14200503
+        }
+      ],
+      "total_reads": 14200503,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "SUDHL5",
+      "experiment": "ENCSR124AWE",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9121455,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9170046,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 18,291,501 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 18291501
+        }
+      ],
+      "total_reads": 18291501,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "stomach",
+      "experiment": "ENCSR548GOG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13953078,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14233803,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28186881,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ReNcell CX",
+      "experiment": "ENCSR973QQI",
+      "flags": [
+        "yellow_low_reads",
+        "red_manual"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 8681793,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 8793246,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 17,475,039 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 17475039
+        },
+        {
+          "flag": "red",
+          "reason": "poor TSS-positioning",
+          "rule": "manual red-list"
+        }
+      ],
+      "total_reads": 17475039,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HEK293T",
+      "experiment": "ENCSR473KVF",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 30793702,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 30594669,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 61388371,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR382HFH",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10353550,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10582528,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20936078,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peritoneum",
+      "experiment": "ENCSR624CVP",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 1123200,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 1156851,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 2,280,051 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 2280051
+        }
+      ],
+      "total_reads": 2280051,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR575EOB",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9624274,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9866497,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,490,771 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19490771
+        }
+      ],
+      "total_reads": 19490771,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR701MOE",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9164848,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9305776,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 18,470,624 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 18470624
+        }
+      ],
+      "total_reads": 18470624,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "aorta",
+      "experiment": "ENCSR657PSE",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 4392855,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 4515745,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 8,908,600 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 8908600
+        }
+      ],
+      "total_reads": 8908600,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "fallopian tube",
+      "experiment": "ENCSR472ETC",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 21883008,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 21885831,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 43768839,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "tibial nerve",
+      "experiment": "ENCSR077MAX",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10104472,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10056889,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20161361,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart left ventricle",
+      "experiment": "ENCSR426RMA",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9459220,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9553430,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,012,650 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19012650
+        }
+      ],
+      "total_reads": 19012650,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR489FZB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 27321962,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 27432493,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 54754455,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "mesenteric fat pad",
+      "experiment": "ENCSR683FOJ",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 1848181,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 1880710,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 3,728,891 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 3728891
+        }
+      ],
+      "total_reads": 3728891,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "helper T cell",
+      "experiment": "ENCSR683YVU",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16768949,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16771463,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 33540412,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR574ZMF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 27295213,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 27075701,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 54370914,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Karpas-422",
+      "experiment": "ENCSR245UIS",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 4690543,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 4857682,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 9,548,225 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 9548225
+        }
+      ],
+      "total_reads": 9548225,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "rectum",
+      "experiment": "ENCSR836XBB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 41486806,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 42238114,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 83724920,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ureter",
+      "experiment": "ENCSR526QVD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10284852,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10390867,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20675719,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Liver Carcinoma in the Adrenal Gland",
+      "experiment": "ENCSR876AEQ",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7772784,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7646145,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 15,418,929 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 15418929
+        }
+      ],
+      "total_reads": 15418929,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "skeletal muscle tissue",
+      "experiment": "ENCSR229XTQ",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3754710,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3858395,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 7,613,105 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 7613105
+        }
+      ],
+      "total_reads": 7613105,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "left lung",
+      "experiment": "ENCSR659YNL",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 17175232,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17516233,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 34691465,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "neutrophil",
+      "experiment": "ENCSR282IJP",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 2579807,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 2631412,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 5,211,219 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 5211219
+        }
+      ],
+      "total_reads": 5211219,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR888DKJ",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 4357006,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 4389130,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 8,746,136 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 8746136
+        }
+      ],
+      "total_reads": 8746136,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "duodenum",
+      "experiment": "ENCSR754LBG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10479499,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10727656,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 21207155,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR250REI",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15397511,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15523270,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30920781,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR180NBV",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 5114922,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 5187687,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 10,302,609 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 10302609
+        }
+      ],
+      "total_reads": 10302609,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "body of pancreas",
+      "experiment": "ENCSR739MOQ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14634265,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14797231,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29431496,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "trachea",
+      "experiment": "ENCSR117JKC",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13339788,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13552409,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 26892197,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR008TSD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16776867,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17170487,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 33947354,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR723JIC",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15387396,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15596966,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30984362,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR980TGS",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16451044,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16620442,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 33071486,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "B cell",
+      "experiment": "ENCSR083AMN",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 24569438,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 24680772,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 49250210,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR756TPG",
+      "flags": [
+        "yellow_low_reads",
+        "red_uncapped"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": true,
+      "mn_reads": 6274739,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6471366,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 12,746,105 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 12746105
+        },
+        {
+          "fields": {
+            "description": [
+              "uncapped"
+            ],
+            "library_construction": [
+              "uncapped"
+            ]
+          },
+          "flag": "red",
+          "reason": "uncapped experiment",
+          "rule": "metadata contains uncapped"
+        }
+      ],
+      "total_reads": 12746105,
+      "uncapped_fields": {
+        "description": [
+          "uncapped"
+        ],
+        "library_construction": [
+          "uncapped"
+        ]
+      }
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR089CQL",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12442342,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 12721332,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 25163674,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "left ventricle myocardium",
+      "experiment": "ENCSR294JPW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14480743,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14573483,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29054226,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "neural crest cell",
+      "experiment": "ENCSR321WCE",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 18140318,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 18358744,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 36499062,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR357VUN",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 42895612,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 42775018,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 85670630,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "breast epithelium",
+      "experiment": "ENCSR393PGX",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7148872,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7273495,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 14,422,367 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 14422367
+        }
+      ],
+      "total_reads": 14422367,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pancreas",
+      "experiment": "ENCSR489BCG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16491643,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16751628,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 33243271,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "liver",
+      "experiment": "ENCSR243MVI",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3659345,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3650765,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 7,310,110 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 7310110
+        }
+      ],
+      "total_reads": 7310110,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pancreas",
+      "experiment": "ENCSR104MSL",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7921625,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 8003230,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 15,924,855 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 15924855
+        }
+      ],
+      "total_reads": 15924855,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "lower leg skin",
+      "experiment": "ENCSR928ZWP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16223756,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16358801,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 32582557,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "liver",
+      "experiment": "ENCSR331UGM",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 25873850,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 25809699,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 51683549,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Liver Carcinoma in the Lung",
+      "experiment": "ENCSR149WMX",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9983443,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10041076,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20024519,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pulmonary lymph node",
+      "experiment": "ENCSR633OWM",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15828260,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15908233,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31736493,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ascending aorta",
+      "experiment": "ENCSR384HWB",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 5191447,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 5311053,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 10,502,500 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 10502500
+        }
+      ],
+      "total_reads": 10502500,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "upper lobe of left lung",
+      "experiment": "ENCSR347PQY",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9813768,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9758696,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,572,464 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19572464
+        }
+      ],
+      "total_reads": 19572464,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "OCI-LY7",
+      "experiment": "ENCSR335ZMZ",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9559605,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9604955,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,164,560 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19164560
+        }
+      ],
+      "total_reads": 19164560,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "uterus",
+      "experiment": "ENCSR657RPS",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13782224,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13811824,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 27594048,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR149ZRX",
+      "flags": [
+        "yellow_low_reads",
+        "red_uncapped"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": true,
+      "mn_reads": 5529695,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 5687168,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 11,216,863 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 11216863
+        },
+        {
+          "fields": {
+            "description": [
+              "uncapped"
+            ],
+            "library_construction": [
+              "uncapped"
+            ]
+          },
+          "flag": "red",
+          "reason": "uncapped experiment",
+          "rule": "metadata contains uncapped"
+        }
+      ],
+      "total_reads": 11216863,
+      "uncapped_fields": {
+        "description": [
+          "uncapped"
+        ],
+        "library_construction": [
+          "uncapped"
+        ]
+      }
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR834OVY",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14291395,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14431245,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28722640,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "type B pancreatic cell",
+      "experiment": "ENCSR262PWK",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10175176,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10415317,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20590493,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Liver Carcinoma in the Adrenal Gland",
+      "experiment": "ENCSR300AAD",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 5423378,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 5324312,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 10,747,690 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 10747690
+        }
+      ],
+      "total_reads": 10747690,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR900SLO",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 19646586,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 19826257,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 39472843,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR687HZX",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 25917864,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 25966959,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 51884823,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "lung",
+      "experiment": "ENCSR997YHR",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3770140,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3885366,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 7,655,506 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 7655506
+        }
+      ],
+      "total_reads": 7655506,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pancreas",
+      "experiment": "ENCSR744JVA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 17609472,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17943314,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 35552786,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pancreas",
+      "experiment": "ENCSR338WJS",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16556327,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16806356,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 33362683,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cerebellum",
+      "experiment": "ENCSR407CCJ",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3478325,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3358206,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 6,836,531 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 6836531
+        }
+      ],
+      "total_reads": 6836531,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "penis",
+      "experiment": "ENCSR155NVW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 11591903,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 11794123,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 23386026,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "testis",
+      "experiment": "ENCSR305RPP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15368061,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15383610,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30751671,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart left ventricle",
+      "experiment": "ENCSR290MPW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14408222,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14591287,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28999509,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "spleen",
+      "experiment": "ENCSR219NJB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 27080278,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 26839803,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 53920081,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart right ventricle",
+      "experiment": "ENCSR219QKX",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12140285,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 12176402,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 24316687,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart left ventricle",
+      "experiment": "ENCSR656ZDH",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15083411,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15160113,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30243524,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR065NDB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14317643,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14413931,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28731574,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "transverse colon",
+      "experiment": "ENCSR769SLJ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 20077640,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 20451415,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 40529055,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cytotoxic T cell",
+      "experiment": "ENCSR069DQH",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 20577567,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 20673261,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 41250828,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Ovary",
+      "experiment": "ENCSR617JRP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10205708,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10273763,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20479471,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "paraaortic lymph node",
+      "experiment": "ENCSR100PNA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15342014,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15472725,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30814739,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "left lobe of liver",
+      "experiment": "ENCSR065QHA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15064622,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15221015,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30285637,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "bronchus",
+      "experiment": "ENCSR233GRN",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 18336495,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 18464442,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 36800937,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right atrium auricular region",
+      "experiment": "ENCSR997INZ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 18581491,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 18677406,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 37258897,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "thyroid gland",
+      "experiment": "ENCSR431MXP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16181976,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16339496,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 32521472,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "progenitor cell of endocrine pancreas",
+      "experiment": "ENCSR255MUU",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13624071,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13854735,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 27478806,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Lung Carcinoma in the Adrenal Gland",
+      "experiment": "ENCSR673CJC",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 8942767,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9027296,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 17,970,063 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 17970063
+        }
+      ],
+      "total_reads": 17970063,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "gastroesophageal sphincter",
+      "experiment": "ENCSR946MDO",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15827697,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15912618,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31740315,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "monocyte",
+      "experiment": "ENCSR841GXY",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14685774,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15293249,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29979023,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR296XBI",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16992460,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17096353,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 34088813,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "liver",
+      "experiment": "ENCSR072JHG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15340261,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15374783,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30715044,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "uterus",
+      "experiment": "ENCSR883HAT",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 17847493,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17955212,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 35802705,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR360MUR",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 20496400,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "genetically modified"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "genetically modified"
+      ],
+      "pl_reads": 20753793,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "genetically modified"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 41250193,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR871CUV",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 13666830,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 13846001,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 27512831,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart left ventricle",
+      "experiment": "ENCSR676YGJ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15922311,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16110665,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 32032976,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "mesothelial cell of epicardium",
+      "experiment": "ENCSR571OAW",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 2728969,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 2819612,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 5,548,581 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 5548581
+        }
+      ],
+      "total_reads": 5548581,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "skeletal muscle tissue",
+      "experiment": "ENCSR632XIZ",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7521716,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7666351,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 15,188,067 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 15188067
+        }
+      ],
+      "total_reads": 15188067,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "sigmoid colon",
+      "experiment": "ENCSR179FHG",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3120987,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3202815,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 6,323,802 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 6323802
+        }
+      ],
+      "total_reads": 6323802,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "esophagus muscularis mucosa",
+      "experiment": "ENCSR246YHR",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 21286948,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 21375172,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 42662120,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "SP-49",
+      "experiment": "ENCSR353ZXW",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 3180257,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 3258200,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 6,438,457 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 6438457
+        }
+      ],
+      "total_reads": 6438457,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right lobe of liver",
+      "experiment": "ENCSR845LKT",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15367876,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15448618,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30816494,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "sciatic nerve",
+      "experiment": "ENCSR794VAJ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 27694434,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 27824448,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 55518882,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR610POV",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13347890,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13493039,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 26840929,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "left colon",
+      "experiment": "ENCSR220OLX",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13588311,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13818491,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 27406802,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR966RLG",
+      "flags": [
+        "red_low_reads",
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 4455598,
+      "overall_flag": "red",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 4524985,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 8,980,583 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 8980583
+        },
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 8980583,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "neuron",
+      "experiment": "ENCSR342WAR",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 24747047,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 25178368,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 49925415,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "suprapubic skin",
+      "experiment": "ENCSR956DBV",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6018422,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6192622,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 12,211,044 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 12211044
+        }
+      ],
+      "total_reads": 12211044,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR482XCK",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 38051894,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 38705970,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 76757864,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "astrocyte",
+      "experiment": "ENCSR516KII",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 5325461,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 5380616,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 10,706,077 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 10706077
+        }
+      ],
+      "total_reads": 10706077,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "vagina",
+      "experiment": "ENCSR280NVT",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 22530275,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 22513313,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 45043588,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "psoas muscle",
+      "experiment": "ENCSR245HPE",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7630450,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7629451,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 15,259,901 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 15259901
+        }
+      ],
+      "total_reads": 15259901,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR889QVM",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14206260,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14127307,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28333567,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR712UDA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12045172,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 12155698,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 24200870,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "omental fat pad",
+      "experiment": "ENCSR926PFT",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 348789,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 359387,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 708,176 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 708176
+        }
+      ],
+      "total_reads": 708176,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "testis",
+      "experiment": "ENCSR679CMZ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14798064,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14939053,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29737117,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "tibial artery",
+      "experiment": "ENCSR642TRG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14982218,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15078456,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30060674,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "T-cell",
+      "experiment": "ENCSR723NVI",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9994659,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10127665,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20122324,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Pancreatic Carcinoma in the Ovary",
+      "experiment": "ENCSR175VMO",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 8776136,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9024520,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 17,800,656 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 17800656
+        }
+      ],
+      "total_reads": 17800656,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HCT116",
+      "experiment": "ENCSR718AQM",
+      "flags": [
+        "yellow_low_reads",
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 5545962,
+      "overall_flag": "yellow",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "crispr",
+          "genetically modified",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "5-phenyl",
+        "crispr",
+        "genetically modified",
+        "indole-3-acetic acid",
+        "treated"
+      ],
+      "pl_reads": 5672242,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 11,218,204 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 11218204
+        },
+        {
+          "fields": {
+            "biosample_summary": [
+              "5-phenyl",
+              "crispr",
+              "genetically modified",
+              "indole-3-acetic acid",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 11218204,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "adrenal gland",
+      "experiment": "ENCSR516YGD",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 19228498,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 19653071,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 38881569,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "uterus",
+      "experiment": "ENCSR015HKC",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 20423889,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 20260009,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 40683898,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "H9",
+      "experiment": "ENCSR359PWL",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 25827092,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 26309892,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 52136984,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "prostate gland",
+      "experiment": "ENCSR845TMF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 21536700,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 21465227,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 43001927,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "endothelial cell",
+      "experiment": "ENCSR222JNI",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 25405458,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 25656162,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 51061620,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR216FUJ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15317759,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15648996,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30966755,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "bile duct",
+      "experiment": "ENCSR889PCF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15408599,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15433228,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30841827,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "esophagus squamous epithelium",
+      "experiment": "ENCSR153AON",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 22302170,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 22523414,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 44825584,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR436JXW",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6232187,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6185623,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 12,417,810 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 12417810
+        }
+      ],
+      "total_reads": 12417810,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "kidney",
+      "experiment": "ENCSR660UDB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15071967,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15227345,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30299312,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "gastrocnemius medialis",
+      "experiment": "ENCSR235BZZ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14285313,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14339443,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 28624756,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "lower lobe of left lung",
+      "experiment": "ENCSR216UNW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 19575197,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 19993181,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 39568378,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Brain",
+      "experiment": "ENCSR813CRU",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13470880,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13662570,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 27133450,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "natural killer cell",
+      "experiment": "ENCSR829KWG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12548309,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 12691822,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 25240131,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "heart right ventricle",
+      "experiment": "ENCSR380VKC",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14549574,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14796671,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29346245,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR220XSM",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 21930403,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 22171427,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 44101830,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "HEK293T",
+      "experiment": "ENCSR733DAS",
+      "flags": [
+        "perturbation"
+      ],
+      "is_perturbation": true,
+      "is_uncapped": false,
+      "mn_reads": 33720487,
+      "overall_flag": "green",
+      "perturbation_fields": {
+        "biosample_summary": [
+          "crispr",
+          "dtag",
+          "genetically modified",
+          "treated"
+        ]
+      },
+      "perturbation_keywords": [
+        "crispr",
+        "dtag",
+        "genetically modified",
+        "treated"
+      ],
+      "pl_reads": 33559859,
+      "read_flag": "green",
+      "reasons": [
+        {
+          "fields": {
+            "biosample_summary": [
+              "crispr",
+              "dtag",
+              "genetically modified",
+              "treated"
+            ]
+          },
+          "flag": "perturb",
+          "reason": "metadata matched perturbation keywords: crispr, dtag, genetically modified, treated",
+          "rule": "metadata keyword match"
+        }
+      ],
+      "total_reads": 67280346,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "liver",
+      "experiment": "ENCSR269FMG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15640841,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15824525,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31465366,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "mucosa of descending colon",
+      "experiment": "ENCSR995FAO",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15881790,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16105129,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31986919,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "endodermal cell",
+      "experiment": "ENCSR443GRP",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16947883,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17221162,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 34169045,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "anterior vena cava",
+      "experiment": "ENCSR881RXX",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10378529,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10590010,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20968539,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "SEM",
+      "experiment": "ENCSR944DTY",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 16100426,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16345322,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 32445748,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "left cardiac atrium",
+      "experiment": "ENCSR270EGA",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9600925,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9700394,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,301,319 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19301319
+        }
+      ],
+      "total_reads": 19301319,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pulmonary artery",
+      "experiment": "ENCSR368ARY",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 6658725,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 6845863,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 13,504,588 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 13504588
+        }
+      ],
+      "total_reads": 13504588,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "psoas muscle",
+      "experiment": "ENCSR521BLL",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7695919,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7639494,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 15,335,413 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 15335413
+        }
+      ],
+      "total_reads": 15335413,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "cerebellum",
+      "experiment": "ENCSR062QYF",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 23800540,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 23591993,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 47392533,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "NALM6",
+      "experiment": "ENCSR526XOQ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 17677095,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 17752759,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 35429854,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR386UFU",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 11604646,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 11792912,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 23397558,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "peripheral blood mononuclear cell",
+      "experiment": "ENCSR795NHV",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 5101656,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 5140752,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 10,242,408 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 10242408
+        }
+      ],
+      "total_reads": 10242408,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "jejunum",
+      "experiment": "ENCSR255VLW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15064779,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15334201,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 30398980,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "ovary",
+      "experiment": "ENCSR087CGY",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 21318517,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 21159777,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 42478294,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "breast",
+      "experiment": "ENCSR374RDU",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10304383,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 10287080,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 20591463,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "A549",
+      "experiment": "ENCSR219IHS",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 4482460,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 4575957,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 9,058,417 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 9058417
+        }
+      ],
+      "total_reads": 9058417,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Pfeiffer",
+      "experiment": "ENCSR683YIA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 12456240,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 12466761,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 24923001,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Metastatic Breast Carcinoma in the Ovary",
+      "experiment": "ENCSR810UBG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 13310089,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 13260645,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 26570734,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "right ventricle myocardium",
+      "experiment": "ENCSR959JOB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 14547991,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 14651837,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 29199828,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "parotid gland",
+      "experiment": "ENCSR431OQI",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 7258828,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 7157674,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 14,416,502 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 14416502
+        }
+      ],
+      "total_reads": 14416502,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "spinal cord",
+      "experiment": "ENCSR353JON",
+      "flags": [
+        "red_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 114433,
+      "overall_flag": "red",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 112859,
+      "read_flag": "red",
+      "reasons": [
+        {
+          "flag": "red",
+          "reason": "total reads 227,292 < 10,000,000",
+          "rule": "total_reads < red_read_threshold",
+          "threshold": 10000000,
+          "value": 227292
+        }
+      ],
+      "total_reads": 227292,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "pancreas",
+      "experiment": "ENCSR374OGG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15798564,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 16096336,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31894900,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "helper T cell",
+      "experiment": "ENCSR528FMA",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 26053709,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 26238050,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 52291759,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "breast",
+      "experiment": "ENCSR500IHG",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 10996778,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 11208000,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 22204778,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "endothelial cell of umbilical vein",
+      "experiment": "ENCSR098LLB",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 15581835,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 15692384,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 31274219,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "A673",
+      "experiment": "ENCSR046BCI",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 17978342,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 18257871,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 36236213,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Calu3",
+      "experiment": "ENCSR935RNW",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 22848269,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 23221800,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 46070069,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "MCF 10A",
+      "experiment": "ENCSR799DGV",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 46257993,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 46145728,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 92403721,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "K562",
+      "experiment": "ENCSR261KBX",
+      "flags": [
+        "yellow_low_reads"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 9505498,
+      "overall_flag": "yellow",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 9605200,
+      "read_flag": "yellow",
+      "reasons": [
+        {
+          "flag": "yellow",
+          "reason": "total reads 19,110,698 < 20,000,000",
+          "rule": "total_reads < yellow_read_threshold",
+          "threshold": 20000000,
+          "value": 19110698
+        }
+      ],
+      "total_reads": 19110698,
+      "uncapped_fields": {}
+    },
+    {
+      "biosample": "Caco-2",
+      "experiment": "ENCSR100LIJ",
+      "flags": [
+        "green"
+      ],
+      "is_perturbation": false,
+      "is_uncapped": false,
+      "mn_reads": 21184659,
+      "overall_flag": "green",
+      "perturbation_fields": {},
+      "perturbation_keywords": [],
+      "pl_reads": 21378407,
+      "read_flag": "green",
+      "reasons": [],
+      "total_reads": 42563066,
+      "uncapped_fields": {}
+    }
+  ],
+  "metadata": {
+    "config": "/Users/adamhe/github/procap-atlas/configs/experiment_config.yaml",
+    "manual_red_experiments": {
+      "ENCSR973QQI": "poor TSS-positioning"
+    },
+    "perturbation_definition_source": "src/metaformer/procap_config_to_promoterai.py DEFAULT_EXCLUDE_KEYWORDS and METADATA_FIELDS",
+    "perturbation_keywords": [
+      "5-phenyl",
+      "crispr",
+      "deplet",
+      "dtag",
+      "gene-silencing",
+      "genetically modified",
+      "indole-3-acetic acid",
+      "knock",
+      "perturb",
+      "treated",
+      "treatment"
+    ],
+    "perturbation_metadata_fields": [
+      "biosample",
+      "biosample_summary",
+      "description",
+      "library_construction"
+    ],
+    "read_counts": "/Users/adamhe/github/procap-atlas/configs/n_reads.txt",
+    "red_read_threshold": 10000000,
+    "yellow_read_threshold": 20000000
+  }
+}

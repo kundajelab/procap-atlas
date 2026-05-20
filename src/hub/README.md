@@ -12,7 +12,7 @@ Experiments are grouped into supertracks by biosample (cell type or tissue). Eac
 
 - **Signal** (`{exp_id}_signal`) — multiWig container showing plus-strand (red) and minus-strand (blue) PRO-cap signal. Plus-strand values are positive; minus-strand values are stored negative in the BigWig and appear below the axis automatically.
 - **Peaks** (`{exp_id}_peaks`) — merged bidirectional and unidirectional TSS peak calls in bigBed format.
-- **Attributions** (`{exp_id}_attribution`) — BPNet profile/count attribution BigWigs displayed as UCSC dynseq tracks using `logo on`.
+- **Attributions** (`{exp_id}_attr_profile`, `{exp_id}_attr_count`) — BPNet profile/count attribution BigWigs displayed as standalone UCSC dynseq tracks using `logo on`.
 
 ## Generating the hub files
 
@@ -22,6 +22,7 @@ Hub files are generated from `configs/experiment_config.yaml`. BigWig files are 
 python src/hub/generate_hub.py --email you@example.com
 python src/hub/generate_hub.py --email you@example.com --output-dir /other/dir
 python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
+python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
 python src/hub/generate_hub.py --email you@example.com --no-attributions
 ```
 
@@ -35,6 +36,22 @@ python src/bpnet/attribute/launch_bigwig_conversion.py
 ```
 
 Converted attribution BigWigs are referenced at `attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig`. UCSC displays these as base-resolution dynseq logos through the `logo on` BigWig setting.
+
+To host BigWig track assets on Hugging Face instead of serving them from Mitra:
+
+```bash
+python src/bpnet/benchmark/launch_bigwig_conversion.py --dry-run
+python src/bpnet/benchmark/launch_bigwig_conversion.py
+python src/hub/upload_tracks_hf.py --dry-run
+python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks
+python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
+```
+
+HF dataset layout:
+
+- `observed/{exp_id}_{strand}.bigWig`
+- `predicted/bpnet/{exp_id}_{strand}.bigWig`
+- `attributions/bpnet/{exp_id}_{head}.bigWig`
 
 ## Converting peaks to bigBed
 

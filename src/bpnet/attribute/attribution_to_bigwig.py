@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert observed BPNet attribution scores from NPZ to BigWig.
+"""Convert observed BPNet attribution scores from NPZ to dynseq BigWig.
 
 The attribution scripts save hypothetical attributions with one channel per
 base. This converter multiplies those scores by the matching one-hot-encoded
@@ -7,6 +7,10 @@ sequence and sums across channels, leaving only the score for the observed
 nucleotide at each position.
 
 Overlapping attribution windows are averaged base-by-base before writing.
+By default, each nonzero score is emitted as its own one-base interval. This
+matches UCSC dynseq's base-resolution logo renderer more reliably than compact
+bedGraph-style spans, which are fine for normal BigWig bars but can disappear
+when zoomed all the way in.
 
 Usage:
     python src/bpnet/attribute/attribution_to_bigwig.py -e ENCSR882DWM
@@ -290,6 +294,44 @@ def iter_averaged_intervals(
             yield from _emit_cluster(chrom, cluster_start, cluster_end, cluster, scores)
 
 
+def iter_base_intervals(
+    windows_by_chrom: dict[str, list[tuple[int, int, int, int, int]]],
+    scores: np.ndarray,
+    chrom_order: list[str],
+):
+    """Yield one-base BigWig intervals after overlap averaging."""
+    for chrom in chrom_order:
+        windows = windows_by_chrom.get(chrom)
+        if not windows:
+            continue
+
+        cluster = []
+        cluster_start = None
+        cluster_end = None
+
+        for window in windows:
+            start, end, score_start, score_end, idx = window
+            if cluster and start >= cluster_end:
+                yield from _emit_base_cluster(
+                    chrom, cluster_start, cluster_end, cluster, scores
+                )
+                cluster = []
+                cluster_start = None
+                cluster_end = None
+
+            if not cluster:
+                cluster_start = start
+                cluster_end = end
+            else:
+                cluster_end = max(cluster_end, end)
+            cluster.append((start, end, score_start, score_end, idx))
+
+        if cluster:
+            yield from _emit_base_cluster(
+                chrom, cluster_start, cluster_end, cluster, scores
+            )
+
+
 def _emit_cluster(chrom, cluster_start, cluster_end, cluster, scores):
     length = cluster_end - cluster_start
     sums = np.zeros(length, dtype=np.float64)
@@ -316,6 +358,26 @@ def _emit_cluster(chrom, cluster_start, cluster_end, cluster, scores):
             j += 1
         yield chrom, cluster_start + i, cluster_start + j, value
         i = j
+
+
+def _emit_base_cluster(chrom, cluster_start, cluster_end, cluster, scores):
+    length = cluster_end - cluster_start
+    sums = np.zeros(length, dtype=np.float64)
+    counts = np.zeros(length, dtype=np.uint32)
+
+    for start, end, score_start, score_end, idx in cluster:
+        dst_start = start - cluster_start
+        dst_end = end - cluster_start
+        sums[dst_start:dst_end] += scores[idx, score_start:score_end]
+        counts[dst_start:dst_end] += 1
+
+    covered = counts > 0
+    averaged = np.zeros(length, dtype=np.float64)
+    averaged[covered] = sums[covered] / counts[covered]
+
+    for i, value in enumerate(averaged):
+        if covered[i] and value != 0:
+            yield chrom, cluster_start + i, cluster_start + i + 1, float(value)
 
 
 def write_bigwig(output: Path, chrom_sizes: dict[str, int], intervals) -> None:
@@ -346,6 +408,14 @@ def main():
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--config", type=Path, default=CONFIG_PATH)
     parser.add_argument("--in-window", type=int, default=2114)
+    parser.add_argument(
+        "--merge-equal-values",
+        action="store_true",
+        help=(
+            "write compact bedGraph-style spans for adjacent equal scores; "
+            "default writes one-base intervals for UCSC dynseq logos"
+        ),
+    )
     args = parser.parse_args()
 
     try:
@@ -379,7 +449,12 @@ def main():
             in_window=args.in_window,
         )
         windows = make_windows(loci, scores, chrom_sizes, args.in_window)
-        intervals = iter_averaged_intervals(windows, scores, list(chrom_sizes.keys()))
+        interval_fn = (
+            iter_averaged_intervals
+            if args.merge_equal_values
+            else iter_base_intervals
+        )
+        intervals = interval_fn(windows, scores, list(chrom_sizes.keys()))
         write_bigwig(args.output, chrom_sizes, intervals)
         print(f"Wrote {args.output}")
     except Exception as e:

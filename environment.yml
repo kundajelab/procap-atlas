@@ -9,8 +9,10 @@ dependencies:
   - ucsc-bedgraphtobigwig
   - ucsc-bedtobigbed
   - ucsc-hubcheck
+  - matplotlib
   - pip:
     - pyyaml
     - pybigtools
+    - huggingface_hub
     - cherimoya
     - bpnet-lite

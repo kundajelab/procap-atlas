@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from src.bpnet.attribute.attribution_to_bigwig import (
+    iter_base_intervals,
     iter_averaged_intervals,
     make_windows,
     observed_attribution,
@@ -57,6 +58,32 @@ def test_iter_averaged_intervals_averages_overlaps():
         ("chr1", 0, 1, 1.0),
         ("chr1", 1, 2, 2.0),
         ("chr1", 2, 3, 6.5),
+        ("chr1", 3, 4, 12.0),
+        ("chr1", 4, 5, 30.0),
+        ("chr1", 5, 6, 40.0),
+    ]
+
+
+def test_iter_base_intervals_keeps_one_base_resolution():
+    scores = np.array(
+        [
+            [1.0, 1.0, 0.0, 4.0],
+            [10.0, 20.0, 30.0, 40.0],
+        ]
+    )
+    windows = {
+        "chr1": [
+            (0, 4, 0, 4, 0),
+            (2, 6, 0, 4, 1),
+        ]
+    }
+
+    intervals = list(iter_base_intervals(windows, scores, ["chr1"]))
+
+    assert intervals == [
+        ("chr1", 0, 1, 1.0),
+        ("chr1", 1, 2, 1.0),
+        ("chr1", 2, 3, 5.0),
         ("chr1", 3, 4, 12.0),
         ("chr1", 4, 5, 30.0),
         ("chr1", 5, 6, 40.0),

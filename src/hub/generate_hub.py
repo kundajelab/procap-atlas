@@ -15,6 +15,7 @@ Usage:
     python src/hub/generate_hub.py --email you@example.com
     python src/hub/generate_hub.py --email you@example.com --output-dir /path/to/hub
     python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
+    python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
     python src/hub/generate_hub.py --email you@example.com --no-attributions
 """
 
@@ -71,7 +72,13 @@ def make_long_label(exp, exp_id):
     return label[:100]
 
 
-def bigwig_url(base_url, processed_path):
+def clean_base_url(url):
+    return url.rstrip("/") if url else None
+
+
+def bigwig_url(base_url, track_base_url, processed_path, exp_id, strand):
+    if track_base_url:
+        return f"{track_base_url}/observed/{exp_id}_{strand}.bigWig"
     filename = Path(processed_path).name
     return f"{base_url}/data/processed/bigwigs/{filename}"
 
@@ -80,8 +87,14 @@ def bigbed_url(base_url, bb_filename):
     return f"{base_url}/data/processed/peaks/{bb_filename}"
 
 
-def attribution_bigwig_url(base_url, exp_id, head):
+def attribution_bigwig_url(base_url, track_base_url, exp_id, head):
+    if track_base_url:
+        return f"{track_base_url}/attributions/bpnet/{exp_id}_{head}.bigWig"
     return f"{base_url}/attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig"
+
+
+def predicted_bigwig_url(track_base_url, exp_id, strand):
+    return f"{track_base_url}/predicted/bpnet/{exp_id}_{strand}.bigWig"
 
 
 def write_hub_txt(output_dir, base_url, email):
@@ -96,7 +109,14 @@ def is_uncapped(exp):
     return "uncapped" in exp.get("library_construction", "").lower()
 
 
-def write_trackdb(output_dir, experiments, base_url, attribution_heads):
+def write_trackdb(
+    output_dir,
+    experiments,
+    base_url,
+    attribution_heads,
+    track_base_url=None,
+    include_predictions=False,
+):
     # Group by biosample
     by_biosample = {}
     for exp_id, exp in experiments.items():
@@ -148,7 +168,7 @@ def write_trackdb(output_dir, experiments, base_url, attribution_heads):
                 lines += [
                     f"    track {exp_id}_pl",
                     f"    parent {signal_name}",
-                    f"    bigDataUrl {bigwig_url(base_url, pl_path)}",
+                    f"    bigDataUrl {bigwig_url(base_url, track_base_url, pl_path, exp_id, 'pl')}",
                     f"    shortLabel {(short_signal + ' (+)')[:17]}",
                     f"    longLabel {long_signal} (+)",
                     "    type bigWig 0 40",
@@ -165,7 +185,7 @@ def write_trackdb(output_dir, experiments, base_url, attribution_heads):
                 lines += [
                     f"    track {exp_id}_mn",
                     f"    parent {signal_name}",
-                    f"    bigDataUrl {bigwig_url(base_url, mn_path)}",
+                    f"    bigDataUrl {bigwig_url(base_url, track_base_url, mn_path, exp_id, 'mn')}",
                     f"    shortLabel {(short_signal + ' (-)')[:17]}",
                     f"    longLabel {long_signal} (-)",
                     "    type bigWig -40 0",
@@ -176,6 +196,42 @@ def write_trackdb(output_dir, experiments, base_url, attribution_heads):
                     "    priority 2",
                     "",
                 ]
+
+            # BPNet predicted signal tracks. These are intended for HF-hosted
+            # BigWigs and stay hidden by default.
+            if include_predictions:
+                pred_name = f"{exp_id}_predicted"
+                lines += [
+                    f"track {pred_name}",
+                    "compositeTrack on",
+                    f"superTrack {st_name}",
+                    "type bigWig",
+                    f"shortLabel {make_short_label(biosample, exp_id, ' pred')}",
+                    f"longLabel {long_signal} BPNet Predicted Signal",
+                    "visibility hide",
+                    "windowingFunction maximum",
+                    "maxHeightPixels 128:64:11",
+                    "",
+                ]
+                for strand, color, alt_color, value_range, priority in [
+                    ("pl", "197,0,11", "255,0,0", "0 40", 1),
+                    ("mn", "0,132,209", "0,0,255", "-40 0", 2),
+                ]:
+                    label = "(+)" if strand == "pl" else "(-)"
+                    lines += [
+                        f"    track {exp_id}_pred_{strand}",
+                        f"    parent {pred_name}",
+                        f"    bigDataUrl {predicted_bigwig_url(track_base_url, exp_id, strand)}",
+                        f"    shortLabel {(short_signal + ' pred ' + label)[:17]}",
+                        f"    longLabel {long_signal} BPNet Predicted Signal {label}",
+                        f"    type bigWig {value_range}",
+                        "    autoScale on",
+                        f"    color {color}",
+                        f"    altColor {alt_color}",
+                        "    visibility full",
+                        f"    priority {priority}",
+                        "",
+                    ]
 
             # Peaks track
             if peaks_path:
@@ -190,39 +246,29 @@ def write_trackdb(output_dir, experiments, base_url, attribution_heads):
                     "",
                 ]
 
-            # BPNet attribution dynseq tracks
+            # BPNet attribution dynseq tracks. Keep these as standalone
+            # bigWig tracks because UCSC's dynseq logo display is track-level.
             if attribution_heads:
-                attr_name = f"{exp_id}_attribution"
-                lines += [
-                    f"track {attr_name}",
-                    "compositeTrack on",
-                    f"superTrack {st_name}",
-                    "type bigWig",
-                    f"shortLabel {make_short_label(biosample, exp_id, ' attr')}",
-                    f"longLabel {long_signal} BPNet Attributions",
-                    f"visibility {'hide' if is_uncapped(exp) else 'full'}",
-                    "autoScale on",
-                    "alwaysZero on",
-                    "maxHeightPixels 128:64:16",
-                    "",
-                ]
-
                 for priority, head in enumerate(attribution_heads, start=1):
                     head_label = "Profile" if head == "profile" else "Count"
-                    default_visibility = "full" if head == "profile" else "hide"
+                    if is_uncapped(exp):
+                        default_visibility = "hide"
+                    else:
+                        default_visibility = "full" if head == "profile" else "hide"
                     lines += [
-                        f"    track {exp_id}_attr_{head}",
-                        f"    parent {attr_name}",
-                        f"    bigDataUrl {attribution_bigwig_url(base_url, exp_id, head)}",
-                        f"    shortLabel {(short_signal + ' ' + head[:4])[:17]}",
-                        f"    longLabel {long_signal} BPNet {head_label} Attributions",
-                        "    type bigWig",
-                        "    logo on",
-                        "    autoScale on",
-                        "    alwaysZero on",
-                        "    maxHeightPixels 128:64:16",
-                        f"    visibility {default_visibility}",
-                        f"    priority {priority}",
+                        f"track {exp_id}_attr_{head}",
+                        f"superTrack {st_name}",
+                        f"bigDataUrl {attribution_bigwig_url(base_url, track_base_url, exp_id, head)}",
+                        f"shortLabel {(short_signal + ' ' + head[:4])[:17]}",
+                        f"longLabel {long_signal} BPNet {head_label} Attributions",
+                        "type bigWig",
+                        "logo on",
+                        "autoScale off",
+                        "alwaysZero on",
+                        "mouseOverFunction noAverage",
+                        "maxHeightPixels 128:64:16",
+                        f"visibility {default_visibility}",
+                        f"priority {10 + priority}",
                         "",
                     ]
 
@@ -240,6 +286,12 @@ def main():
         "--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, metavar="DIR"
     )
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, metavar="URL")
+    parser.add_argument(
+        "--track-base-url",
+        default=None,
+        metavar="URL",
+        help="base URL for observed/predicted/attribution BigWigs, e.g. a Hugging Face dataset resolve URL",
+    )
     parser.add_argument("--email", required=True, metavar="EMAIL")
     parser.add_argument(
         "--attribution-head",
@@ -255,11 +307,18 @@ def main():
         action="store_true",
         help="omit BPNet attribution dynseq tracks",
     )
+    parser.add_argument(
+        "--predictions",
+        action="store_true",
+        help="include BPNet predicted signal tracks (enabled automatically with --track-base-url)",
+    )
     args = parser.parse_args()
 
     attribution_heads = [] if args.no_attributions else args.attribution_head
     if attribution_heads is None:
         attribution_heads = ["profile", "count"]
+    track_base_url = clean_base_url(args.track_base_url)
+    include_predictions = args.predictions or bool(track_base_url)
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
@@ -269,7 +328,14 @@ def main():
 
     write_hub_txt(args.output_dir, args.base_url, args.email)
     write_genomes_txt(args.output_dir)
-    write_trackdb(args.output_dir, experiments, args.base_url, attribution_heads)
+    write_trackdb(
+        args.output_dir,
+        experiments,
+        args.base_url,
+        attribution_heads,
+        track_base_url=track_base_url,
+        include_predictions=include_predictions,
+    )
 
     n = len(experiments)
     print(f"Wrote hub for {n} experiments to {args.output_dir}/")

@@ -1,11 +1,14 @@
 import argparse
 import html
 import inspect
+import shutil
+import subprocess
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import MotifCompendium
 import MotifCompendium.utils.analysis as utils_analysis
+import MotifCompendium.utils.motif as utils_motif
 import pandas as pd
 import yaml
 from matplotlib.backends.backend_pdf import PdfPages
@@ -88,7 +91,7 @@ def write_cluster_metadata(mc, head):
             posneg=("posneg", "first"),
         )
         .reset_index()
-        .sort_values("cluster_final")
+        .sort_values("total_seqlets", ascending=False)
     )
 
     if "JASPAR_score0" in mc.metadata.columns:
@@ -110,6 +113,35 @@ def write_cluster_metadata(mc, head):
     agg.to_csv(metadata_path, sep="\t", index=False)
     print(f"{head}: cluster metadata saved to {metadata_path}")
     return agg
+
+
+def cluster_average_with_metadata(mc):
+    return mc.cluster_averages(
+        "cluster_final",
+        weight_col="num_seqlets",
+        aggregations=[
+            ("cluster_final", "count", "n_motifs"),
+            ("num_seqlets", "sum", "total_seqlets"),
+            ("model", "unique", "n_experiments"),
+            ("model", "concat", "experiments"),
+            ("posneg", "concat", "posneg"),
+        ],
+    )
+
+
+def ensure_forward_reverse_logos(mc, logo_trimming=True):
+    if "logo (fwd)" not in mc.images():
+        mc.add_logos(
+            mc.get_standard_motif_stack(),
+            "logo (fwd)",
+            logo_trimming,
+        )
+    if "logo (rev)" not in mc.images():
+        mc.add_logos(
+            utils_motif.reverse_complement(mc.get_standard_motif_stack()),
+            "logo (rev)",
+            logo_trimming,
+        )
 
 
 def cluster_summary_html(cluster_metadata):
@@ -163,6 +195,21 @@ def inject_cluster_summary(report_path, title, cluster_metadata):
     else:
         report_html = summary_html + report_html
 
+    report_path.write_text(report_html)
+
+
+def write_cluster_summary_html(cluster_metadata, report_path, title):
+    report_html = f"""<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{html.escape(title)}</title>
+</head>
+<body>
+  {cluster_summary_html(cluster_metadata)}
+</body>
+</html>
+"""
     report_path.write_text(report_html)
 
 
@@ -226,9 +273,36 @@ def write_cluster_report_pdf(report_path, pdf_path, title, cluster_metadata):
             page.pdf(path=str(pdf_path), format="Letter", print_background=True)
             browser.close()
         print(f"  PDF cluster report saved to {pdf_path}")
+        return
     except Exception as exc:
-        print(f"  HTML-to-PDF render failed ({exc}); writing metadata PDF instead")
-        write_cluster_metadata_pdf(pdf_path, title, cluster_metadata)
+        print(f"  Playwright HTML-to-PDF render failed ({exc})")
+
+    for browser_name in (
+        "chromium",
+        "chromium-browser",
+        "google-chrome",
+        "google-chrome-stable",
+    ):
+        browser_path = shutil.which(browser_name)
+        if browser_path is None:
+            continue
+        cmd = [
+            browser_path,
+            "--headless",
+            "--disable-gpu",
+            "--no-sandbox",
+            f"--print-to-pdf={pdf_path}",
+            report_path.resolve().as_uri(),
+        ]
+        try:
+            subprocess.run(cmd, check=True)
+            print(f"  PDF cluster report saved to {pdf_path}")
+            return
+        except subprocess.CalledProcessError as exc:
+            print(f"  {browser_name} HTML-to-PDF render failed ({exc})")
+
+    print("  No HTML-to-PDF renderer worked; writing metadata PDF instead")
+    write_cluster_metadata_pdf(pdf_path, title, cluster_metadata)
 
 
 def process_head(head, h5_paths, within_threshold, across_threshold):
@@ -272,8 +346,10 @@ def process_head(head, h5_paths, within_threshold, across_threshold):
         str(MC_DIR / f"motifcompendium_{head}_cluster_averages.h5"),
         weight_col="num_seqlets",
     )
-    mc_avg = mc.cluster_averages("cluster_final")
+    mc_avg = cluster_average_with_metadata(mc)
     assign_jaspar_labels(mc_avg)
+    ensure_forward_reverse_logos(mc_avg)
+    mc_avg = mc_avg.sort("total_seqlets", ascending=False)
     utils_analysis.export_compendium_meme(
         mc_avg,
         str(MC_DIR / f"motifcompendium_{head}_cluster_averages.meme"),
@@ -282,19 +358,32 @@ def process_head(head, h5_paths, within_threshold, across_threshold):
     cluster_metadata = write_cluster_metadata(mc, head)
 
     report_path = MC_DIR / f"motifcompendium_{head}_cluster_report.html"
-    mc_avg.summary_table_html(str(report_path))
-    inject_cluster_summary(
-        report_path,
-        f"MotifCompendium {head} cluster report, all motifs retained",
+    report_columns = [
+        "name",
+        "source_cluster",
+        "total_seqlets",
+        "n_motifs",
+        "n_experiments",
+        "posneg",
+        "JASPAR_name0",
+        "JASPAR_score0",
+    ]
+    report_columns = [c for c in report_columns if c in mc_avg.columns()]
+    mc_avg.summary_table_html(str(report_path), columns=report_columns)
+    summary_path = MC_DIR / f"motifcompendium_{head}_cluster_summary.html"
+    write_cluster_summary_html(
         cluster_metadata,
+        summary_path,
+        f"MotifCompendium {head} cluster summary, all motifs retained",
     )
-    write_cluster_report_pdf(
-        report_path,
-        MC_DIR / f"motifcompendium_{head}_cluster_report.pdf",
-        f"MotifCompendium {head} cluster report, all motifs retained",
-        cluster_metadata,
-    )
+    # write_cluster_report_pdf(
+    #    report_path,
+    #    MC_DIR / f"motifcompendium_{head}_cluster_report.pdf",
+    #    f"MotifCompendium {head} cluster report, all motifs retained",
+    #    cluster_metadata,
+    # )
     print(f"{head}: cluster report saved to {report_path}")
+    print(f"{head}: cluster summary saved to {summary_path}")
 
     cluster_html_dir = MC_DIR / f"motifcompendium_{head}_clusters"
     cluster_html_dir.mkdir(exist_ok=True)
@@ -348,8 +437,8 @@ def main():
     parser.add_argument(
         "--across-threshold",
         type=float,
-        default=0.85,
-        help="Similarity threshold for cross-experiment clustering (default: 0.85)",
+        default=0.90,
+        help="Similarity threshold for cross-experiment clustering (default: 0.90)",
     )
     parser.add_argument(
         "--max-cpus",
