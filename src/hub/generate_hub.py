@@ -83,7 +83,9 @@ def bigwig_url(base_url, track_base_url, processed_path, exp_id, strand):
     return f"{base_url}/data/processed/bigwigs/{filename}"
 
 
-def bigbed_url(base_url, bb_filename):
+def bigbed_url(base_url, track_base_url, bb_filename):
+    if track_base_url:
+        return f"{track_base_url}/peaks/bigbed/{bb_filename}"
     return f"{base_url}/data/processed/peaks/{bb_filename}"
 
 
@@ -91,10 +93,6 @@ def attribution_bigwig_url(base_url, track_base_url, exp_id, head):
     if track_base_url:
         return f"{track_base_url}/attributions/bpnet/{exp_id}_{head}.bigWig"
     return f"{base_url}/attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig"
-
-
-def predicted_bigwig_url(track_base_url, exp_id, strand):
-    return f"{track_base_url}/predicted/bpnet/{exp_id}_{strand}.bigWig"
 
 
 def write_hub_txt(output_dir, base_url, email):
@@ -115,7 +113,6 @@ def write_trackdb(
     base_url,
     attribution_heads,
     track_base_url=None,
-    include_predictions=False,
 ):
     # Group by biosample
     by_biosample = {}
@@ -197,49 +194,13 @@ def write_trackdb(
                     "",
                 ]
 
-            # BPNet predicted signal tracks. These are intended for HF-hosted
-            # BigWigs and stay hidden by default.
-            if include_predictions:
-                pred_name = f"{exp_id}_predicted"
-                lines += [
-                    f"track {pred_name}",
-                    "compositeTrack on",
-                    f"superTrack {st_name}",
-                    "type bigWig",
-                    f"shortLabel {make_short_label(biosample, exp_id, ' pred')}",
-                    f"longLabel {long_signal} BPNet Predicted Signal",
-                    "visibility hide",
-                    "windowingFunction maximum",
-                    "maxHeightPixels 128:64:11",
-                    "",
-                ]
-                for strand, color, alt_color, value_range, priority in [
-                    ("pl", "197,0,11", "255,0,0", "0 40", 1),
-                    ("mn", "0,132,209", "0,0,255", "-40 0", 2),
-                ]:
-                    label = "(+)" if strand == "pl" else "(-)"
-                    lines += [
-                        f"    track {exp_id}_pred_{strand}",
-                        f"    parent {pred_name}",
-                        f"    bigDataUrl {predicted_bigwig_url(track_base_url, exp_id, strand)}",
-                        f"    shortLabel {(short_signal + ' pred ' + label)[:17]}",
-                        f"    longLabel {long_signal} BPNet Predicted Signal {label}",
-                        f"    type bigWig {value_range}",
-                        "    autoScale on",
-                        f"    color {color}",
-                        f"    altColor {alt_color}",
-                        "    visibility full",
-                        f"    priority {priority}",
-                        "",
-                    ]
-
             # Peaks track
             if peaks_path:
                 lines += [
                     f"track {exp_id}_peaks",
                     f"superTrack {st_name}",
                     "type bigBed 3 +",
-                    f"bigDataUrl {bigbed_url(base_url, bb_filename)}",
+                    f"bigDataUrl {bigbed_url(base_url, track_base_url, bb_filename)}",
                     f"shortLabel {make_short_label(biosample, exp_id, ' pk')}",
                     f"longLabel {long_signal} Peaks",
                     f"visibility {'hide' if is_uncapped(exp) else 'dense'}",
@@ -290,7 +251,7 @@ def main():
         "--track-base-url",
         default=None,
         metavar="URL",
-        help="base URL for observed/predicted/attribution BigWigs, e.g. a Hugging Face dataset resolve URL",
+        help="base URL for observed/attribution BigWigs, e.g. a Hugging Face dataset resolve URL",
     )
     parser.add_argument("--email", required=True, metavar="EMAIL")
     parser.add_argument(
@@ -307,18 +268,12 @@ def main():
         action="store_true",
         help="omit BPNet attribution dynseq tracks",
     )
-    parser.add_argument(
-        "--predictions",
-        action="store_true",
-        help="include BPNet predicted signal tracks (enabled automatically with --track-base-url)",
-    )
     args = parser.parse_args()
 
     attribution_heads = [] if args.no_attributions else args.attribution_head
     if attribution_heads is None:
         attribution_heads = ["profile", "count"]
     track_base_url = clean_base_url(args.track_base_url)
-    include_predictions = args.predictions or bool(track_base_url)
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
@@ -334,7 +289,6 @@ def main():
         args.base_url,
         attribution_heads,
         track_base_url=track_base_url,
-        include_predictions=include_predictions,
     )
 
     n = len(experiments)

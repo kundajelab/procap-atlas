@@ -2,6 +2,10 @@
 
 Cherimoya training mirrors the BPNet workflow: one model per experiment and chromosome fold, using the processed PRO-cap BigWigs and peak BED files from `configs/experiment_config.yaml`.
 
+## Status
+
+Cherimoya training and benchmarking are complete, but Cherimoya models are not ready for deployment yet. Treat the current scripts as the training and evaluation workflow, not as a public deployment pipeline.
+
 The production entry point is:
 
 ```bash
@@ -18,6 +22,8 @@ Cluster launchers use Apptainer by default:
 python src/cherimoya/fit/launch.py --dry-run
 python src/cherimoya/fit/launch.py --min-reads 20000000 --fit-args "--max-epochs 100"
 ```
+
+These launcher defaults are for the Sherlock HPC environment. Apptainer is a Sherlock-specific workaround for its older compiler and OS stack, not a general Cherimoya requirement. Review partitions, bind paths, module setup, image paths, and resource requests before using these launchers on another cluster.
 
 Benchmark and consolidation:
 

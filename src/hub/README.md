@@ -4,15 +4,15 @@ UCSC track hub for the ENCODE PRO-cap atlas, covering 224 experiments across 126
 
 Hub URL: `https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas/hub/hub.txt`
 
-To load: in UCSC Genome Browser, go to **My Data → Track Hubs → My Hubs** and paste the URL above.
+To load: in UCSC Genome Browser, go to **My Data -> Track Hubs -> My Hubs** and paste the URL above.
 
 ## Track organization
 
 Experiments are grouped into supertracks by biosample (cell type or tissue). Each experiment has:
 
-- **Signal** (`{exp_id}_signal`) — multiWig container showing plus-strand (red) and minus-strand (blue) PRO-cap signal. Plus-strand values are positive; minus-strand values are stored negative in the BigWig and appear below the axis automatically.
-- **Peaks** (`{exp_id}_peaks`) — merged bidirectional and unidirectional TSS peak calls in bigBed format.
-- **Attributions** (`{exp_id}_attr_profile`, `{exp_id}_attr_count`) — BPNet profile/count attribution BigWigs displayed as standalone UCSC dynseq tracks using `logo on`.
+- **Signal** (`{exp_id}_signal`) - multiWig container showing plus-strand (red) and minus-strand (blue) PRO-cap signal. Plus-strand values are positive; minus-strand values are stored negative in the BigWig and appear below the axis automatically.
+- **Peaks** (`{exp_id}_peaks`) - merged bidirectional and unidirectional TSS peak calls in bigBed format.
+- **Attributions** (`{exp_id}_attr_profile`, `{exp_id}_attr_count`) - BPNet profile/count attribution BigWigs displayed as standalone UCSC dynseq tracks using `logo on`.
 
 ## Generating the hub files
 
@@ -37,7 +37,9 @@ python src/bpnet/attribute/launch_bigwig_conversion.py
 
 Converted attribution BigWigs are referenced at `attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig`. UCSC displays these as base-resolution dynseq logos through the `logo on` BigWig setting.
 
-To host BigWig track assets on Hugging Face instead of serving them from Mitra:
+The attribution BigWig launcher is a SLURM helper with Sherlock defaults. Use `--dry-run` first and adjust resources, partitions, modules, and paths before running it on another cluster.
+
+To host track assets on Hugging Face instead of serving them from Mitra:
 
 ```bash
 python src/bpnet/benchmark/launch_bigwig_conversion.py --dry-run
@@ -50,7 +52,8 @@ python src/hub/generate_hub.py --email you@example.com --track-base-url https://
 HF dataset layout:
 
 - `observed/{exp_id}_{strand}.bigWig`
-- `predicted/bpnet/{exp_id}_{strand}.bigWig`
+- `peaks/bed/{exp_id}_{biosample}.bed.gz`
+- `peaks/bigbed/{exp_id}_{biosample}_peaks.bb`
 - `attributions/bpnet/{exp_id}_{head}.bigWig`
 
 ## Converting peaks to bigBed
@@ -95,16 +98,18 @@ Requires `hubCheck` from UCSC Kent tools.
 
 ```
 hub/
-├── hub.txt                    # Hub descriptor
-├── genomes.txt                # Genome assembly reference
-├── procap_peak.as             # AutoSQL schema for bigBed tracks
-└── hg38/
-    └── trackDb.txt            # Track definitions (generated)
++-- hub.txt                    # Hub descriptor
++-- genomes.txt                # Genome assembly reference
++-- procap_peak.as             # AutoSQL schema for bigBed tracks
++-- hg38/
+    +-- trackDb.txt            # Track definitions (generated)
 
 data/processed/peaks/
-├── {exp}_{biosample}.bed.gz           # Source peak files
-└── {exp}_{biosample}_peaks.bb         # Converted bigBed (default output location)
++-- {exp}_{biosample}.bed.gz           # Source peak files
++-- {exp}_{biosample}_peaks.bb         # Converted bigBed (default output location)
 ```
 
-BigWig files are served directly from `data/processed/bigwigs/` and are not stored here.
-Attribution BigWigs are served directly from `attributions/bpnet/bigwigs/`.
+Observed signal BigWigs are served from `data/processed/bigwigs/` by default.
+Peak bigBeds are served from `data/processed/peaks/` by default.
+Attribution BigWigs are served from `attributions/bpnet/bigwigs/` by default.
+When `--track-base-url` is set, observed BigWigs, peak bigBeds, and attribution BigWigs are referenced from the external track asset base URL.

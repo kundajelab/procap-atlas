@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Upload UCSC track BigWigs to a Hugging Face dataset repo.
+"""Upload UCSC track assets to a Hugging Face dataset repo.
 
 Usage:
     python src/hub/upload_tracks_hf.py --dry-run
-    python src/hub/upload_tracks_hf.py --include observed --include attributions
+    python src/hub/upload_tracks_hf.py --include observed --include attributions --include peaks
 """
 
 import argparse
+import re
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -18,11 +19,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_REPO_ID = "adamyhe/procap-atlas-tracks"
 DEFAULT_REVISION = "main"
-INCLUDES = ("observed", "predicted", "attributions")
+INCLUDES = ("observed", "attributions", "peaks")
+
+
+def sanitize_name(s):
+    return re.sub(r"[^\w-]", "_", s).strip("_")
 
 
 def hf_resolve_url(repo_id: str, revision: str, path_in_repo: str) -> str:
-    return f"https://huggingface.co/datasets/{repo_id}/resolve/{revision}/{path_in_repo}"
+    return (
+        f"https://huggingface.co/datasets/{repo_id}/resolve/{revision}/{path_in_repo}"
+    )
 
 
 def validate_range_url(url: str):
@@ -56,18 +63,34 @@ def collect_uploads(experiments, includes, heads):
                 else:
                     missing.append((local, dest))
 
-        if "predicted" in includes:
-            for strand in ["pl", "mn"]:
-                local = REPO_ROOT / "predictions" / "bpnet" / "bigwigs" / f"{exp_id}_{strand}.bigWig"
-                dest = f"predicted/bpnet/{exp_id}_{strand}.bigWig"
-                if local.exists():
-                    uploads.append((local, dest))
+        if "peaks" in includes:
+            bed_path = processed.get("peaks", "")
+            if bed_path:
+                local_bed = REPO_ROOT / bed_path
+                dest_bed = f"peaks/bed/{Path(bed_path).name}"
+                if local_bed.exists():
+                    uploads.append((local_bed, dest_bed))
                 else:
-                    missing.append((local, dest))
+                    missing.append((local_bed, dest_bed))
+
+                biosample_clean = sanitize_name(exp.get("biosample", "unknown"))
+                bb_name = f"{exp_id}_{biosample_clean}_peaks.bb"
+                local_bb = local_bed.with_name(bb_name)
+                dest_bb = f"peaks/bigbed/{bb_name}"
+                if local_bb.exists():
+                    uploads.append((local_bb, dest_bb))
+                else:
+                    missing.append((local_bb, dest_bb))
 
         if "attributions" in includes:
             for head in heads:
-                local = REPO_ROOT / "attributions" / "bpnet" / "bigwigs" / f"{exp_id}_{head}.bigWig"
+                local = (
+                    REPO_ROOT
+                    / "attributions"
+                    / "bpnet"
+                    / "bigwigs"
+                    / f"{exp_id}_{head}.bigWig"
+                )
                 dest = f"attributions/bpnet/{exp_id}_{head}.bigWig"
                 if local.exists():
                     uploads.append((local, dest))
@@ -123,7 +146,9 @@ def main():
         config = yaml.safe_load(f)
     uploads, missing = collect_uploads(config["experiments"], includes, heads)
 
-    print(f"Found {len(uploads)} files to upload; {len(missing)} expected files missing")
+    print(
+        f"Found {len(uploads)} files to upload; {len(missing)} expected files missing"
+    )
     if missing:
         print("Missing examples:")
         for local, dest in missing[:10]:
