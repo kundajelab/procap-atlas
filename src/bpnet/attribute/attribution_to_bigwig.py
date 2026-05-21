@@ -7,10 +7,8 @@ sequence and sums across channels, leaving only the score for the observed
 nucleotide at each position.
 
 Overlapping attribution windows are averaged base-by-base before writing.
-By default, each nonzero score is emitted as its own one-base interval. This
-matches UCSC dynseq's base-resolution logo renderer more reliably than compact
-bedGraph-style spans, which are fine for normal BigWig bars but can disappear
-when zoomed all the way in.
+Signed scores are preserved by default because UCSC dynseq can render both
+positive and negative nucleotide heights.
 
 Usage:
     python src/bpnet/attribute/attribution_to_bigwig.py -e ENCSR882DWM
@@ -72,6 +70,35 @@ def observed_attribution(attributions: np.ndarray, ohe: np.ndarray) -> np.ndarra
         )
     channel_axis = 1 if 1 in channel_axes else channel_axes[0]
     return np.sum(attributions * ohe, axis=channel_axis)
+
+
+def transform_scores(
+    scores: np.ndarray,
+    mode: str = "raw",
+    scale: float = 100.0,
+    percentile: float = 99.5,
+) -> np.ndarray:
+    """Return optionally transformed scores."""
+    if mode == "raw":
+        return scores
+    if mode == "positive":
+        transformed = np.maximum(scores, 0)
+    elif mode == "negative":
+        transformed = np.maximum(-scores, 0)
+    elif mode == "absolute":
+        transformed = np.abs(scores)
+    else:
+        raise ValueError(f"unknown dynseq score mode: {mode}")
+
+    positive = transformed[transformed > 0]
+    if positive.size == 0:
+        return transformed
+
+    denominator = np.percentile(positive, percentile)
+    if denominator <= 0:
+        return transformed
+
+    return np.clip(transformed / denominator, 0, 1) * scale
 
 
 def load_chrom_sizes(path: Path) -> dict[str, int]:
@@ -409,6 +436,29 @@ def main():
     parser.add_argument("--config", type=Path, default=CONFIG_PATH)
     parser.add_argument("--in-window", type=int, default=2114)
     parser.add_argument(
+        "--score-mode",
+        choices=["positive", "negative", "absolute", "raw"],
+        default="raw",
+        help=(
+            "optional observed-attribution score transform; "
+            "'raw' preserves signed scores, "
+            "'positive' keeps positive contributions, 'negative' keeps "
+            "negative-contribution magnitudes, and 'absolute' uses magnitude"
+        ),
+    )
+    parser.add_argument(
+        "--dynseq-scale",
+        type=float,
+        default=100.0,
+        help="maximum value after dynseq normalization",
+    )
+    parser.add_argument(
+        "--dynseq-percentile",
+        type=float,
+        default=99.5,
+        help="positive score percentile mapped to --dynseq-scale",
+    )
+    parser.add_argument(
         "--merge-equal-values",
         action="store_true",
         help=(
@@ -432,6 +482,12 @@ def main():
         attributions = load_npz_array(args.attr_npz, "attribution")
         ohe = load_npz_array(args.ohe_npz, "OHE")
         scores = observed_attribution(attributions, ohe)
+        scores = transform_scores(
+            scores,
+            mode=args.score_mode,
+            scale=args.dynseq_scale,
+            percentile=args.dynseq_percentile,
+        )
         if scores.shape[1] != args.in_window:
             raise ValueError(
                 f"--in-window is {args.in_window}, but attribution length is "

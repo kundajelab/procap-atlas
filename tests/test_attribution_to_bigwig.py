@@ -9,6 +9,7 @@ from src.bpnet.attribute.attribution_to_bigwig import (
     iter_averaged_intervals,
     make_windows,
     observed_attribution,
+    transform_scores,
     write_bigwig,
 )
 
@@ -36,6 +37,40 @@ def test_observed_attribution_sums_only_ohe_channel():
     )
 
     np.testing.assert_array_equal(observed_attribution(attrs, ohe), [[1.0, 5.0, 12.0]])
+
+
+def test_transform_scores_preserves_raw_signed_scores():
+    scores = np.array([[-2.0, 0.0, 1.0, 2.0, 10.0]])
+
+    transformed = transform_scores(scores, mode="raw")
+
+    np.testing.assert_array_equal(transformed, scores)
+
+
+def test_transform_scores_scales_positive_scores():
+    scores = np.array([[-2.0, 0.0, 1.0, 2.0, 10.0]])
+
+    transformed = transform_scores(
+        scores,
+        mode="positive",
+        scale=100.0,
+        percentile=100.0,
+    )
+
+    np.testing.assert_array_equal(transformed, [[0.0, 0.0, 10.0, 20.0, 100.0]])
+
+
+def test_transform_scores_can_keep_negative_magnitudes():
+    scores = np.array([[-4.0, -2.0, 1.0]])
+
+    transformed = transform_scores(
+        scores,
+        mode="negative",
+        scale=100.0,
+        percentile=100.0,
+    )
+
+    np.testing.assert_array_equal(transformed, [[100.0, 50.0, 0.0]])
 
 
 def test_iter_averaged_intervals_averages_overlaps():

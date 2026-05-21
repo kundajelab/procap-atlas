@@ -263,7 +263,7 @@ def write_trackdb(
                         f"longLabel {long_signal} BPNet {head_label} Attributions",
                         "type bigWig",
                         "logo on",
-                        "autoScale off",
+                        "autoScale on",
                         "alwaysZero on",
                         "mouseOverFunction noAverage",
                         "maxHeightPixels 128:64:16",

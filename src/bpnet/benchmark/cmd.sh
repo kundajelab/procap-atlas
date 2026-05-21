@@ -1,1 +1,0 @@
-for f in ../../../models/bpnet/*; do name=$(basename $f); echo python benchmark_bpnet.py -e $name -v -o; done | simple_gpu_scheduler --gpus 0 1 2
