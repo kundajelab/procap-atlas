@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR478DAN",
+    "biosample": "upper lobe of left lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR478DAN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5762537717819214,
+            "profile_jsd": 0.3228387236595154,
+            "log_counts_pearson": 0.7235456109046936,
+            "counts_spearman": 0.7242116928100586
+        },
+        "1": {
+            "profile_pearson": 0.5784716606140137,
+            "profile_jsd": 0.32303696870803833,
+            "log_counts_pearson": 0.7365379333496094,
+            "counts_spearman": 0.7614755034446716
+        },
+        "2": {
+            "profile_pearson": 0.5775948166847229,
+            "profile_jsd": 0.3313715159893036,
+            "log_counts_pearson": 0.734835147857666,
+            "counts_spearman": 0.7562695741653442
+        },
+        "3": {
+            "profile_pearson": 0.5769346952438354,
+            "profile_jsd": 0.32230693101882935,
+            "log_counts_pearson": 0.7232660055160522,
+            "counts_spearman": 0.7352696657180786
+        },
+        "4": {
+            "profile_pearson": 0.5692418813705444,
+            "profile_jsd": 0.32708823680877686,
+            "log_counts_pearson": 0.7075082063674927,
+            "counts_spearman": 0.7301785349845886
+        },
+        "5": {
+            "profile_pearson": 0.5847298502922058,
+            "profile_jsd": 0.31909388303756714,
+            "log_counts_pearson": 0.7303683161735535,
+            "counts_spearman": 0.7405303120613098
+        },
+        "6": {
+            "profile_pearson": 0.5890687108039856,
+            "profile_jsd": 0.3235066533088684,
+            "log_counts_pearson": 0.6728247404098511,
+            "counts_spearman": 0.6965224146842957
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5789350271224976,
+        "profile_jsd": 0.3238872289657593,
+        "log_counts_pearson": 0.716074526309967,
+        "counts_spearman": 0.7345770001411438
+    }
+}

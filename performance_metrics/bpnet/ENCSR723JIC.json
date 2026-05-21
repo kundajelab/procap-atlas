@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR723JIC",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR723JIC",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4177580773830414,
+            "profile_jsd": 0.4205397367477417,
+            "log_counts_pearson": 0.6903915405273438,
+            "counts_spearman": 0.6865776777267456
+        },
+        "1": {
+            "profile_pearson": 0.4031846523284912,
+            "profile_jsd": 0.43032097816467285,
+            "log_counts_pearson": 0.7049553394317627,
+            "counts_spearman": 0.6935686469078064
+        },
+        "2": {
+            "profile_pearson": 0.3982207179069519,
+            "profile_jsd": 0.4309554100036621,
+            "log_counts_pearson": 0.6579861044883728,
+            "counts_spearman": 0.650571882724762
+        },
+        "3": {
+            "profile_pearson": 0.3915363848209381,
+            "profile_jsd": 0.4377102851867676,
+            "log_counts_pearson": 0.7063263654708862,
+            "counts_spearman": 0.6898599863052368
+        },
+        "4": {
+            "profile_pearson": 0.405076801776886,
+            "profile_jsd": 0.4282548427581787,
+            "log_counts_pearson": 0.6716461777687073,
+            "counts_spearman": 0.6602110266685486
+        },
+        "5": {
+            "profile_pearson": 0.3947133421897888,
+            "profile_jsd": 0.4320431351661682,
+            "log_counts_pearson": 0.7180336713790894,
+            "counts_spearman": 0.7078782916069031
+        },
+        "6": {
+            "profile_pearson": 0.39495015144348145,
+            "profile_jsd": 0.43169400095939636,
+            "log_counts_pearson": 0.639155924320221,
+            "counts_spearman": 0.6403850317001343
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.40025198459625244,
+        "profile_jsd": 0.4304906725883484,
+        "log_counts_pearson": 0.6781665682792664,
+        "counts_spearman": 0.6703283190727234
+    }
+}

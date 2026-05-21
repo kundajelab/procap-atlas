@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR992HBP",
+    "biosample": "right lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR992HBP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.544018566608429,
+            "profile_jsd": 0.335970938205719,
+            "log_counts_pearson": 0.7001554369926453,
+            "counts_spearman": 0.7081736922264099
+        },
+        "1": {
+            "profile_pearson": 0.5329058766365051,
+            "profile_jsd": 0.3405376374721527,
+            "log_counts_pearson": 0.6989068388938904,
+            "counts_spearman": 0.7057567834854126
+        },
+        "2": {
+            "profile_pearson": 0.5372378826141357,
+            "profile_jsd": 0.33955952525138855,
+            "log_counts_pearson": 0.7059381008148193,
+            "counts_spearman": 0.7083491683006287
+        },
+        "3": {
+            "profile_pearson": 0.5425511598587036,
+            "profile_jsd": 0.33426737785339355,
+            "log_counts_pearson": 0.6955411434173584,
+            "counts_spearman": 0.7015248537063599
+        },
+        "4": {
+            "profile_pearson": 0.5259902477264404,
+            "profile_jsd": 0.3441559374332428,
+            "log_counts_pearson": 0.7190266251564026,
+            "counts_spearman": 0.7181110382080078
+        },
+        "5": {
+            "profile_pearson": 0.5399869680404663,
+            "profile_jsd": 0.33241987228393555,
+            "log_counts_pearson": 0.7020777463912964,
+            "counts_spearman": 0.7161719799041748
+        },
+        "6": {
+            "profile_pearson": 0.5465421676635742,
+            "profile_jsd": 0.32843291759490967,
+            "log_counts_pearson": 0.6732511520385742,
+            "counts_spearman": 0.6898649334907532
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5381022691726685,
+        "profile_jsd": 0.33652937412261963,
+        "log_counts_pearson": 0.6972554922103882,
+        "counts_spearman": 0.7064366340637207
+    }
+}

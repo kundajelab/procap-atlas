@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR175VMO",
+    "biosample": "Metastatic Pancreatic Carcinoma in the Ovary",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR175VMO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5576190948486328,
+            "profile_jsd": 0.32212257385253906,
+            "log_counts_pearson": 0.6501294374465942,
+            "counts_spearman": 0.6581435799598694
+        },
+        "1": {
+            "profile_pearson": 0.552979052066803,
+            "profile_jsd": 0.3155801296234131,
+            "log_counts_pearson": 0.6817710995674133,
+            "counts_spearman": 0.7000432014465332
+        },
+        "2": {
+            "profile_pearson": 0.5369266867637634,
+            "profile_jsd": 0.33188217878341675,
+            "log_counts_pearson": 0.6808664202690125,
+            "counts_spearman": 0.6883779764175415
+        },
+        "3": {
+            "profile_pearson": 0.5559098124504089,
+            "profile_jsd": 0.3176000714302063,
+            "log_counts_pearson": 0.663241982460022,
+            "counts_spearman": 0.6828252077102661
+        },
+        "4": {
+            "profile_pearson": 0.5368375182151794,
+            "profile_jsd": 0.3318599760532379,
+            "log_counts_pearson": 0.6539915204048157,
+            "counts_spearman": 0.6635082364082336
+        },
+        "5": {
+            "profile_pearson": 0.5468953847885132,
+            "profile_jsd": 0.3079735040664673,
+            "log_counts_pearson": 0.6974329352378845,
+            "counts_spearman": 0.7306800484657288
+        },
+        "6": {
+            "profile_pearson": 0.5659147500991821,
+            "profile_jsd": 0.3132087290287018,
+            "log_counts_pearson": 0.6227800250053406,
+            "counts_spearman": 0.6285634636878967
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5500456690788269,
+        "profile_jsd": 0.31940653920173645,
+        "log_counts_pearson": 0.6462173461914062,
+        "counts_spearman": 0.6603753566741943
+    }
+}

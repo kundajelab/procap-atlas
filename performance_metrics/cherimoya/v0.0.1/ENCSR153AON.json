@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR153AON",
+    "biosample": "esophagus squamous epithelium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR153AON",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5312554240226746,
+            "profile_jsd": 0.3496481776237488,
+            "log_counts_pearson": 0.7437548637390137,
+            "counts_spearman": 0.7345913052558899
+        },
+        "1": {
+            "profile_pearson": 0.5252847075462341,
+            "profile_jsd": 0.35261088609695435,
+            "log_counts_pearson": 0.7423235177993774,
+            "counts_spearman": 0.7269734144210815
+        },
+        "2": {
+            "profile_pearson": 0.5178606510162354,
+            "profile_jsd": 0.35118573904037476,
+            "log_counts_pearson": 0.7436766624450684,
+            "counts_spearman": 0.7321166396141052
+        },
+        "3": {
+            "profile_pearson": 0.5204963684082031,
+            "profile_jsd": 0.3521806001663208,
+            "log_counts_pearson": 0.7495840787887573,
+            "counts_spearman": 0.7436941266059875
+        },
+        "4": {
+            "profile_pearson": 0.5165589451789856,
+            "profile_jsd": 0.349087655544281,
+            "log_counts_pearson": 0.7274512648582458,
+            "counts_spearman": 0.7215260863304138
+        },
+        "5": {
+            "profile_pearson": 0.5198753476142883,
+            "profile_jsd": 0.3543611764907837,
+            "log_counts_pearson": 0.7511885166168213,
+            "counts_spearman": 0.7404904961585999
+        },
+        "6": {
+            "profile_pearson": 0.5316163897514343,
+            "profile_jsd": 0.33773571252822876,
+            "log_counts_pearson": 0.7114130258560181,
+            "counts_spearman": 0.7201724052429199
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5229458212852478,
+        "profile_jsd": 0.34994053840637207,
+        "log_counts_pearson": 0.7377493381500244,
+        "counts_spearman": 0.7313084006309509
+    }
+}

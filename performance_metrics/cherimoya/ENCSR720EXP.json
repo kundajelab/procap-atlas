@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR720EXP",
+    "biosample": "Metastatic Liver Carcinoma in the Lung",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR720EXP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.582770049571991,
+            "profile_jsd": 0.2976979613304138,
+            "log_counts_pearson": 0.7304732799530029,
+            "counts_spearman": 0.7551488876342773
+        },
+        "1": {
+            "profile_pearson": 0.5723092555999756,
+            "profile_jsd": 0.3061698079109192,
+            "log_counts_pearson": 0.7461594343185425,
+            "counts_spearman": 0.7844706773757935
+        },
+        "2": {
+            "profile_pearson": 0.5704445838928223,
+            "profile_jsd": 0.3063943386077881,
+            "log_counts_pearson": 0.740153968334198,
+            "counts_spearman": 0.7783804535865784
+        },
+        "3": {
+            "profile_pearson": 0.5839817523956299,
+            "profile_jsd": 0.30200809240341187,
+            "log_counts_pearson": 0.7330853343009949,
+            "counts_spearman": 0.7674862146377563
+        },
+        "4": {
+            "profile_pearson": 0.5722612142562866,
+            "profile_jsd": 0.3058438301086426,
+            "log_counts_pearson": 0.7209146022796631,
+            "counts_spearman": 0.7468785643577576
+        },
+        "5": {
+            "profile_pearson": 0.5663847923278809,
+            "profile_jsd": 0.3061453700065613,
+            "log_counts_pearson": 0.7450504302978516,
+            "counts_spearman": 0.769176721572876
+        },
+        "6": {
+            "profile_pearson": 0.567962646484375,
+            "profile_jsd": 0.3085630536079407,
+            "log_counts_pearson": 0.675267219543457,
+            "counts_spearman": 0.7065936923027039
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5728410482406616,
+        "profile_jsd": 0.30485284328460693,
+        "log_counts_pearson": 0.7283638119697571,
+        "counts_spearman": 0.7588332891464233
+    }
+}

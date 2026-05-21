@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR967RHN",
+    "biosample": "lower lobe of left lung",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR967RHN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5363017916679382,
+            "profile_jsd": 0.32337093353271484,
+            "log_counts_pearson": 0.8244276642799377,
+            "counts_spearman": 0.8380170464515686
+        },
+        "1": {
+            "profile_pearson": 0.5398337244987488,
+            "profile_jsd": 0.3298830986022949,
+            "log_counts_pearson": 0.8278706669807434,
+            "counts_spearman": 0.8466755151748657
+        },
+        "2": {
+            "profile_pearson": 0.519159734249115,
+            "profile_jsd": 0.33453524112701416,
+            "log_counts_pearson": 0.8125745058059692,
+            "counts_spearman": 0.8322532773017883
+        },
+        "3": {
+            "profile_pearson": 0.531269371509552,
+            "profile_jsd": 0.32987135648727417,
+            "log_counts_pearson": 0.8233963847160339,
+            "counts_spearman": 0.8417400121688843
+        },
+        "4": {
+            "profile_pearson": 0.5168502926826477,
+            "profile_jsd": 0.33770751953125,
+            "log_counts_pearson": 0.8067028522491455,
+            "counts_spearman": 0.8269811272621155
+        },
+        "5": {
+            "profile_pearson": 0.5327651500701904,
+            "profile_jsd": 0.3286268711090088,
+            "log_counts_pearson": 0.8198548555374146,
+            "counts_spearman": 0.8364092707633972
+        },
+        "6": {
+            "profile_pearson": 0.523468017578125,
+            "profile_jsd": 0.33424416184425354,
+            "log_counts_pearson": 0.7707046866416931,
+            "counts_spearman": 0.7954111695289612
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5285972356796265,
+        "profile_jsd": 0.33100834488868713,
+        "log_counts_pearson": 0.8121513724327087,
+        "counts_spearman": 0.8313761353492737
+    }
+}

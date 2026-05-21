@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR739MOQ",
+    "biosample": "body of pancreas",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR739MOQ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5044748187065125,
+            "profile_jsd": 0.3143904507160187,
+            "log_counts_pearson": 0.7396265864372253,
+            "counts_spearman": 0.7584984302520752
+        },
+        "1": {
+            "profile_pearson": 0.5080037713050842,
+            "profile_jsd": 0.3169667720794678,
+            "log_counts_pearson": 0.7208737134933472,
+            "counts_spearman": 0.7515168786048889
+        },
+        "2": {
+            "profile_pearson": 0.5169010758399963,
+            "profile_jsd": 0.3142595887184143,
+            "log_counts_pearson": 0.740058183670044,
+            "counts_spearman": 0.7614123225212097
+        },
+        "3": {
+            "profile_pearson": 0.4926982820034027,
+            "profile_jsd": 0.31702709197998047,
+            "log_counts_pearson": 0.7290910482406616,
+            "counts_spearman": 0.7522134780883789
+        },
+        "4": {
+            "profile_pearson": 0.518616259098053,
+            "profile_jsd": 0.32518965005874634,
+            "log_counts_pearson": 0.7103409767150879,
+            "counts_spearman": 0.7132300138473511
+        },
+        "5": {
+            "profile_pearson": 0.49941328167915344,
+            "profile_jsd": 0.3194630742073059,
+            "log_counts_pearson": 0.7289320230484009,
+            "counts_spearman": 0.7497950196266174
+        },
+        "6": {
+            "profile_pearson": 0.4950467646121979,
+            "profile_jsd": 0.3215141296386719,
+            "log_counts_pearson": 0.6875174641609192,
+            "counts_spearman": 0.7090238928794861
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5052803158760071,
+        "profile_jsd": 0.31860968470573425,
+        "log_counts_pearson": 0.7125469446182251,
+        "counts_spearman": 0.734414279460907
+    }
+}

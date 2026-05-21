@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR246YHR",
+    "biosample": "esophagus muscularis mucosa",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR246YHR",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.47054746747016907,
+            "profile_jsd": 0.3633275032043457,
+            "log_counts_pearson": 0.7175968289375305,
+            "counts_spearman": 0.7351085543632507
+        },
+        "1": {
+            "profile_pearson": 0.47253838181495667,
+            "profile_jsd": 0.3750775158405304,
+            "log_counts_pearson": 0.717178463935852,
+            "counts_spearman": 0.7253544926643372
+        },
+        "2": {
+            "profile_pearson": 0.4744555950164795,
+            "profile_jsd": 0.36800146102905273,
+            "log_counts_pearson": 0.7089933753013611,
+            "counts_spearman": 0.7280151844024658
+        },
+        "3": {
+            "profile_pearson": 0.47534269094467163,
+            "profile_jsd": 0.3708965480327606,
+            "log_counts_pearson": 0.7167436480522156,
+            "counts_spearman": 0.7336536645889282
+        },
+        "4": {
+            "profile_pearson": 0.46055638790130615,
+            "profile_jsd": 0.3753814995288849,
+            "log_counts_pearson": 0.7265790104866028,
+            "counts_spearman": 0.7319942116737366
+        },
+        "5": {
+            "profile_pearson": 0.4717092216014862,
+            "profile_jsd": 0.3697364330291748,
+            "log_counts_pearson": 0.719883918762207,
+            "counts_spearman": 0.7337954044342041
+        },
+        "6": {
+            "profile_pearson": 0.49341022968292236,
+            "profile_jsd": 0.35389840602874756,
+            "log_counts_pearson": 0.6862967610359192,
+            "counts_spearman": 0.7029834389686584
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4735131561756134,
+        "profile_jsd": 0.3686373233795166,
+        "log_counts_pearson": 0.7078812718391418,
+        "counts_spearman": 0.7231229543685913
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR431OQI",
+    "biosample": "parotid gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR431OQI",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5358351469039917,
+            "profile_jsd": 0.32093435525894165,
+            "log_counts_pearson": 0.6297816038131714,
+            "counts_spearman": 0.6562604904174805
+        },
+        "1": {
+            "profile_pearson": 0.5372211933135986,
+            "profile_jsd": 0.32723915576934814,
+            "log_counts_pearson": 0.6278985738754272,
+            "counts_spearman": 0.6548674702644348
+        },
+        "2": {
+            "profile_pearson": 0.5331565141677856,
+            "profile_jsd": 0.32488998770713806,
+            "log_counts_pearson": 0.6183500289916992,
+            "counts_spearman": 0.6444880366325378
+        },
+        "3": {
+            "profile_pearson": 0.46247169375419617,
+            "profile_jsd": 0.3708589971065521,
+            "log_counts_pearson": 0.6130169034004211,
+            "counts_spearman": 0.6238416433334351
+        },
+        "4": {
+            "profile_pearson": 0.46945643424987793,
+            "profile_jsd": 0.3609996438026428,
+            "log_counts_pearson": 0.5866696834564209,
+            "counts_spearman": 0.6042051911354065
+        },
+        "5": {
+            "profile_pearson": 0.5399220585823059,
+            "profile_jsd": 0.3278205990791321,
+            "log_counts_pearson": 0.6302421689033508,
+            "counts_spearman": 0.6611830592155457
+        },
+        "6": {
+            "profile_pearson": 0.46173974871635437,
+            "profile_jsd": 0.3675283193588257,
+            "log_counts_pearson": 0.554755687713623,
+            "counts_spearman": 0.5645861029624939
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5059641599655151,
+        "profile_jsd": 0.3433070778846741,
+        "log_counts_pearson": 0.6027671694755554,
+        "counts_spearman": 0.6223371624946594
+    }
+}

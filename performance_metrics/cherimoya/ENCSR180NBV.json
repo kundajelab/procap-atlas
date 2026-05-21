@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR180NBV",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR180NBV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5115553736686707,
+            "profile_jsd": 0.329531192779541,
+            "log_counts_pearson": 0.6875467300415039,
+            "counts_spearman": 0.7113434672355652
+        },
+        "1": {
+            "profile_pearson": 0.5413874387741089,
+            "profile_jsd": 0.3329622447490692,
+            "log_counts_pearson": 0.697475016117096,
+            "counts_spearman": 0.7053217887878418
+        },
+        "2": {
+            "profile_pearson": 0.5324373245239258,
+            "profile_jsd": 0.3302765190601349,
+            "log_counts_pearson": 0.7097859382629395,
+            "counts_spearman": 0.7408813834190369
+        },
+        "3": {
+            "profile_pearson": 0.5171242952346802,
+            "profile_jsd": 0.32614666223526,
+            "log_counts_pearson": 0.7164153456687927,
+            "counts_spearman": 0.7455777525901794
+        },
+        "4": {
+            "profile_pearson": 0.504101037979126,
+            "profile_jsd": 0.3393489718437195,
+            "log_counts_pearson": 0.7058700323104858,
+            "counts_spearman": 0.7367227673530579
+        },
+        "5": {
+            "profile_pearson": 0.5353540182113647,
+            "profile_jsd": 0.32846641540527344,
+            "log_counts_pearson": 0.6356295943260193,
+            "counts_spearman": 0.6782775521278381
+        },
+        "6": {
+            "profile_pearson": 0.5272314548492432,
+            "profile_jsd": 0.33103835582733154,
+            "log_counts_pearson": 0.6780398488044739,
+            "counts_spearman": 0.7086785435676575
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5233261585235596,
+        "profile_jsd": 0.3313322365283966,
+        "log_counts_pearson": 0.6720923781394958,
+        "counts_spearman": 0.7029088139533997
+    }
+}

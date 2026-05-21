@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR353JON",
+    "biosample": "spinal cord",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR353JON",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.41442495584487915,
+            "profile_jsd": 0.4232902526855469,
+            "log_counts_pearson": 0.3398469090461731,
+            "counts_spearman": 0.3182515501976013
+        },
+        "1": {
+            "profile_pearson": 0.4357611835002899,
+            "profile_jsd": 0.4182926416397095,
+            "log_counts_pearson": 0.365381121635437,
+            "counts_spearman": 0.37633150815963745
+        },
+        "2": {
+            "profile_pearson": 0.0697283148765564,
+            "profile_jsd": 0.6765449643135071,
+            "log_counts_pearson": 0.15449053049087524,
+            "counts_spearman": 0.12556710839271545
+        },
+        "3": {
+            "profile_pearson": 0.4313903748989105,
+            "profile_jsd": 0.41722697019577026,
+            "log_counts_pearson": 0.356488436460495,
+            "counts_spearman": 0.36277514696121216
+        },
+        "4": {
+            "profile_pearson": 0.41071856021881104,
+            "profile_jsd": 0.41369232535362244,
+            "log_counts_pearson": 0.3522001802921295,
+            "counts_spearman": 0.3868747353553772
+        },
+        "5": {
+            "profile_pearson": 0.04346608370542526,
+            "profile_jsd": 0.6776083707809448,
+            "log_counts_pearson": 0.15795676410198212,
+            "counts_spearman": 0.17096465826034546
+        },
+        "6": {
+            "profile_pearson": 0.4435710608959198,
+            "profile_jsd": 0.4164607524871826,
+            "log_counts_pearson": 0.26122841238975525,
+            "counts_spearman": 0.23826032876968384
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.17590878903865814,
+        "profile_jsd": 0.5290412902832031,
+        "log_counts_pearson": 0.08470361679792404,
+        "counts_spearman": 0.1404624581336975
+    }
+}

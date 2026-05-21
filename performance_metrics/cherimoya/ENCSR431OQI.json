@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR431OQI",
+    "biosample": "parotid gland",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR431OQI",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.531116783618927,
+            "profile_jsd": 0.31085526943206787,
+            "log_counts_pearson": 0.6666033267974854,
+            "counts_spearman": 0.7002148032188416
+        },
+        "1": {
+            "profile_pearson": 0.5494998693466187,
+            "profile_jsd": 0.3182942867279053,
+            "log_counts_pearson": 0.6265134811401367,
+            "counts_spearman": 0.6409216523170471
+        },
+        "2": {
+            "profile_pearson": 0.5504823923110962,
+            "profile_jsd": 0.3212445378303528,
+            "log_counts_pearson": 0.6313530206680298,
+            "counts_spearman": 0.6431388854980469
+        },
+        "3": {
+            "profile_pearson": 0.5280277132987976,
+            "profile_jsd": 0.3153717517852783,
+            "log_counts_pearson": 0.6543574333190918,
+            "counts_spearman": 0.6806297302246094
+        },
+        "4": {
+            "profile_pearson": 0.5184760093688965,
+            "profile_jsd": 0.33704087138175964,
+            "log_counts_pearson": 0.5910213589668274,
+            "counts_spearman": 0.600839376449585
+        },
+        "5": {
+            "profile_pearson": 0.5219231247901917,
+            "profile_jsd": 0.33917081356048584,
+            "log_counts_pearson": 0.6303896307945251,
+            "counts_spearman": 0.6383640766143799
+        },
+        "6": {
+            "profile_pearson": 0.5246667861938477,
+            "profile_jsd": 0.31533992290496826,
+            "log_counts_pearson": 0.5918713212013245,
+            "counts_spearman": 0.6122839450836182
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5318000316619873,
+        "profile_jsd": 0.32378363609313965,
+        "log_counts_pearson": 0.5802550315856934,
+        "counts_spearman": 0.5953370928764343
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR676YGJ",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR676YGJ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4988022446632385,
+            "profile_jsd": 0.362337589263916,
+            "log_counts_pearson": 0.6776902079582214,
+            "counts_spearman": 0.6816122531890869
+        },
+        "1": {
+            "profile_pearson": 0.4888489246368408,
+            "profile_jsd": 0.3647509217262268,
+            "log_counts_pearson": 0.6972780227661133,
+            "counts_spearman": 0.6950317025184631
+        },
+        "2": {
+            "profile_pearson": 0.4900886118412018,
+            "profile_jsd": 0.3637956380844116,
+            "log_counts_pearson": 0.6744693517684937,
+            "counts_spearman": 0.6742850542068481
+        },
+        "3": {
+            "profile_pearson": 0.48676225543022156,
+            "profile_jsd": 0.36680853366851807,
+            "log_counts_pearson": 0.6978094577789307,
+            "counts_spearman": 0.6864784359931946
+        },
+        "4": {
+            "profile_pearson": 0.48484528064727783,
+            "profile_jsd": 0.36729854345321655,
+            "log_counts_pearson": 0.6834146976470947,
+            "counts_spearman": 0.6761710047721863
+        },
+        "5": {
+            "profile_pearson": 0.49649113416671753,
+            "profile_jsd": 0.36505502462387085,
+            "log_counts_pearson": 0.6937857270240784,
+            "counts_spearman": 0.693196713924408
+        },
+        "6": {
+            "profile_pearson": 0.5164557695388794,
+            "profile_jsd": 0.34481048583984375,
+            "log_counts_pearson": 0.6582081317901611,
+            "counts_spearman": 0.6752196550369263
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.49385184049606323,
+        "profile_jsd": 0.3624383807182312,
+        "log_counts_pearson": 0.6800888180732727,
+        "counts_spearman": 0.6824381351470947
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR882DWM",
+    "biosample": "K562",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR882DWM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49195215106010437,
+            "profile_jsd": 0.4191821217536926,
+            "log_counts_pearson": 0.20069408416748047,
+            "counts_spearman": 0.18477857112884521
+        },
+        "1": {
+            "profile_pearson": 0.4724161624908447,
+            "profile_jsd": 0.433405339717865,
+            "log_counts_pearson": 0.17124028503894806,
+            "counts_spearman": 0.16297011077404022
+        },
+        "2": {
+            "profile_pearson": 0.4923388361930847,
+            "profile_jsd": 0.4141969680786133,
+            "log_counts_pearson": 0.12350933998823166,
+            "counts_spearman": 0.11835230141878128
+        },
+        "3": {
+            "profile_pearson": 0.4836861789226532,
+            "profile_jsd": 0.4225948452949524,
+            "log_counts_pearson": 0.09910035878419876,
+            "counts_spearman": 0.09089186787605286
+        },
+        "4": {
+            "profile_pearson": 0.4870638847351074,
+            "profile_jsd": 0.4162312150001526,
+            "log_counts_pearson": 0.16886816918849945,
+            "counts_spearman": 0.159060537815094
+        },
+        "5": {
+            "profile_pearson": 0.4776269793510437,
+            "profile_jsd": 0.42337489128112793,
+            "log_counts_pearson": 0.22546318173408508,
+            "counts_spearman": 0.2077237069606781
+        },
+        "6": {
+            "profile_pearson": 0.48768800497055054,
+            "profile_jsd": 0.42455774545669556,
+            "log_counts_pearson": 0.15860018134117126,
+            "counts_spearman": 0.15084807574748993
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48485425114631653,
+        "profile_jsd": 0.4214215576648712,
+        "log_counts_pearson": 0.12534920871257782,
+        "counts_spearman": 0.11237753927707672
+    }
+}

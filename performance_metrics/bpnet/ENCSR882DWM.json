@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR882DWM",
+    "biosample": "K562",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR882DWM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.41267767548561096,
+            "profile_jsd": 0.45761945843696594,
+            "log_counts_pearson": 0.18770256638526917,
+            "counts_spearman": 0.18729256093502045
+        },
+        "1": {
+            "profile_pearson": 0.4209691882133484,
+            "profile_jsd": 0.45443013310432434,
+            "log_counts_pearson": 0.2191089540719986,
+            "counts_spearman": 0.21752089262008667
+        },
+        "2": {
+            "profile_pearson": 0.4319038987159729,
+            "profile_jsd": 0.4490208923816681,
+            "log_counts_pearson": 0.19215865433216095,
+            "counts_spearman": 0.1850520819425583
+        },
+        "3": {
+            "profile_pearson": 0.42928963899612427,
+            "profile_jsd": 0.4493190348148346,
+            "log_counts_pearson": 0.14319179952144623,
+            "counts_spearman": 0.13812872767448425
+        },
+        "4": {
+            "profile_pearson": 0.4356059730052948,
+            "profile_jsd": 0.4467248320579529,
+            "log_counts_pearson": 0.21767368912696838,
+            "counts_spearman": 0.21663931012153625
+        },
+        "5": {
+            "profile_pearson": 0.40601813793182373,
+            "profile_jsd": 0.46445202827453613,
+            "log_counts_pearson": 0.1989048570394516,
+            "counts_spearman": 0.18290799856185913
+        },
+        "6": {
+            "profile_pearson": 0.42008331418037415,
+            "profile_jsd": 0.45817238092422485,
+            "log_counts_pearson": 0.15954487025737762,
+            "counts_spearman": 0.14943988621234894
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.42217934131622314,
+        "profile_jsd": 0.45440858602523804,
+        "log_counts_pearson": 0.17963533103466034,
+        "counts_spearman": 0.17742645740509033
+    }
+}

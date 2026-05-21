@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR262PWK",
+    "biosample": "type B pancreatic cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR262PWK",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4851914048194885,
+            "profile_jsd": 0.3689523935317993,
+            "log_counts_pearson": 0.6943379640579224,
+            "counts_spearman": 0.7111507058143616
+        },
+        "1": {
+            "profile_pearson": 0.47902172803878784,
+            "profile_jsd": 0.36706358194351196,
+            "log_counts_pearson": 0.7498176097869873,
+            "counts_spearman": 0.7546886801719666
+        },
+        "2": {
+            "profile_pearson": 0.48081544041633606,
+            "profile_jsd": 0.3682267367839813,
+            "log_counts_pearson": 0.743075966835022,
+            "counts_spearman": 0.7584183812141418
+        },
+        "3": {
+            "profile_pearson": 0.49013957381248474,
+            "profile_jsd": 0.3660684823989868,
+            "log_counts_pearson": 0.7117324471473694,
+            "counts_spearman": 0.7360334992408752
+        },
+        "4": {
+            "profile_pearson": 0.4518139362335205,
+            "profile_jsd": 0.381447970867157,
+            "log_counts_pearson": 0.7059042453765869,
+            "counts_spearman": 0.7158496379852295
+        },
+        "5": {
+            "profile_pearson": 0.49025335907936096,
+            "profile_jsd": 0.3637821078300476,
+            "log_counts_pearson": 0.7246406078338623,
+            "counts_spearman": 0.7359810471534729
+        },
+        "6": {
+            "profile_pearson": 0.47734755277633667,
+            "profile_jsd": 0.37390244007110596,
+            "log_counts_pearson": 0.6812418103218079,
+            "counts_spearman": 0.6986110210418701
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4794599413871765,
+        "profile_jsd": 0.3702659010887146,
+        "log_counts_pearson": 0.7112849354743958,
+        "counts_spearman": 0.7231228351593018
+    }
+}

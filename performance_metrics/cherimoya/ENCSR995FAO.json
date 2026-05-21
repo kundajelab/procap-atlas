@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR995FAO",
+    "biosample": "mucosa of descending colon",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR995FAO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5374032258987427,
+            "profile_jsd": 0.335470587015152,
+            "log_counts_pearson": 0.7305842638015747,
+            "counts_spearman": 0.7281770706176758
+        },
+        "1": {
+            "profile_pearson": 0.5695995092391968,
+            "profile_jsd": 0.3124394118785858,
+            "log_counts_pearson": 0.7771829962730408,
+            "counts_spearman": 0.7874506115913391
+        },
+        "2": {
+            "profile_pearson": 0.5550619959831238,
+            "profile_jsd": 0.33053669333457947,
+            "log_counts_pearson": 0.7377015352249146,
+            "counts_spearman": 0.7353600263595581
+        },
+        "3": {
+            "profile_pearson": 0.5561168193817139,
+            "profile_jsd": 0.32942306995391846,
+            "log_counts_pearson": 0.7456853985786438,
+            "counts_spearman": 0.7463799715042114
+        },
+        "4": {
+            "profile_pearson": 0.5401451587677002,
+            "profile_jsd": 0.33487340807914734,
+            "log_counts_pearson": 0.7261527180671692,
+            "counts_spearman": 0.7222088575363159
+        },
+        "5": {
+            "profile_pearson": 0.5863616466522217,
+            "profile_jsd": 0.3063383102416992,
+            "log_counts_pearson": 0.76274174451828,
+            "counts_spearman": 0.7771623134613037
+        },
+        "6": {
+            "profile_pearson": 0.5693492889404297,
+            "profile_jsd": 0.30867528915405273,
+            "log_counts_pearson": 0.7200639843940735,
+            "counts_spearman": 0.7471843361854553
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5601514577865601,
+        "profile_jsd": 0.32221341133117676,
+        "log_counts_pearson": 0.7192686796188354,
+        "counts_spearman": 0.7257469296455383
+    }
+}

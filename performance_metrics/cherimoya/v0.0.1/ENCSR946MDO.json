@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR946MDO",
+    "biosample": "gastroesophageal sphincter",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR946MDO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5274988412857056,
+            "profile_jsd": 0.342357337474823,
+            "log_counts_pearson": 0.6984321475028992,
+            "counts_spearman": 0.7235013246536255
+        },
+        "1": {
+            "profile_pearson": 0.49363020062446594,
+            "profile_jsd": 0.36864984035491943,
+            "log_counts_pearson": 0.7026904821395874,
+            "counts_spearman": 0.7133915424346924
+        },
+        "2": {
+            "profile_pearson": 0.5374990105628967,
+            "profile_jsd": 0.3412327170372009,
+            "log_counts_pearson": 0.706666886806488,
+            "counts_spearman": 0.7287275791168213
+        },
+        "3": {
+            "profile_pearson": 0.45605704188346863,
+            "profile_jsd": 0.38685107231140137,
+            "log_counts_pearson": 0.7086190581321716,
+            "counts_spearman": 0.7162765264511108
+        },
+        "4": {
+            "profile_pearson": 0.5131086707115173,
+            "profile_jsd": 0.3516412377357483,
+            "log_counts_pearson": 0.6957795023918152,
+            "counts_spearman": 0.7131931781768799
+        },
+        "5": {
+            "profile_pearson": 0.5139868259429932,
+            "profile_jsd": 0.34960317611694336,
+            "log_counts_pearson": 0.7042677998542786,
+            "counts_spearman": 0.7231560349464417
+        },
+        "6": {
+            "profile_pearson": 0.5342182517051697,
+            "profile_jsd": 0.3336423635482788,
+            "log_counts_pearson": 0.6640676259994507,
+            "counts_spearman": 0.6823862195014954
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5110380053520203,
+        "profile_jsd": 0.35291266441345215,
+        "log_counts_pearson": 0.6897650361061096,
+        "counts_spearman": 0.7064628601074219
+    }
+}

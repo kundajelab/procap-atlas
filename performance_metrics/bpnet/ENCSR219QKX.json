@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR219QKX",
+    "biosample": "heart right ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR219QKX",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5159244537353516,
+            "profile_jsd": 0.3529002368450165,
+            "log_counts_pearson": 0.7099401950836182,
+            "counts_spearman": 0.7302675247192383
+        },
+        "1": {
+            "profile_pearson": 0.5137361884117126,
+            "profile_jsd": 0.34904277324676514,
+            "log_counts_pearson": 0.7456276416778564,
+            "counts_spearman": 0.7609429359436035
+        },
+        "2": {
+            "profile_pearson": 0.49719899892807007,
+            "profile_jsd": 0.3559044599533081,
+            "log_counts_pearson": 0.7222497463226318,
+            "counts_spearman": 0.7416946291923523
+        },
+        "3": {
+            "profile_pearson": 0.5001772046089172,
+            "profile_jsd": 0.3589246869087219,
+            "log_counts_pearson": 0.7414841055870056,
+            "counts_spearman": 0.7514868974685669
+        },
+        "4": {
+            "profile_pearson": 0.5018611550331116,
+            "profile_jsd": 0.3558029234409332,
+            "log_counts_pearson": 0.7271251678466797,
+            "counts_spearman": 0.7503426671028137
+        },
+        "5": {
+            "profile_pearson": 0.4994250535964966,
+            "profile_jsd": 0.3547132611274719,
+            "log_counts_pearson": 0.7229481339454651,
+            "counts_spearman": 0.7420183420181274
+        },
+        "6": {
+            "profile_pearson": 0.5303003191947937,
+            "profile_jsd": 0.3339574337005615,
+            "log_counts_pearson": 0.6902198195457458,
+            "counts_spearman": 0.7021896243095398
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5077274441719055,
+        "profile_jsd": 0.35178595781326294,
+        "log_counts_pearson": 0.717443585395813,
+        "counts_spearman": 0.7363024353981018
+    }
+}

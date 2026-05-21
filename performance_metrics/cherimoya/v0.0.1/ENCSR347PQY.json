@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR347PQY",
+    "biosample": "upper lobe of left lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR347PQY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5202087163925171,
+            "profile_jsd": 0.3425022065639496,
+            "log_counts_pearson": 0.6562490463256836,
+            "counts_spearman": 0.6713464260101318
+        },
+        "1": {
+            "profile_pearson": 0.5210185050964355,
+            "profile_jsd": 0.3357786536216736,
+            "log_counts_pearson": 0.6432740092277527,
+            "counts_spearman": 0.6723610758781433
+        },
+        "2": {
+            "profile_pearson": 0.5240432024002075,
+            "profile_jsd": 0.3343203067779541,
+            "log_counts_pearson": 0.6382996439933777,
+            "counts_spearman": 0.666537880897522
+        },
+        "3": {
+            "profile_pearson": 0.5187856554985046,
+            "profile_jsd": 0.33452385663986206,
+            "log_counts_pearson": 0.6349291205406189,
+            "counts_spearman": 0.6637154817581177
+        },
+        "4": {
+            "profile_pearson": 0.4634340703487396,
+            "profile_jsd": 0.3722887337207794,
+            "log_counts_pearson": 0.6122567653656006,
+            "counts_spearman": 0.6273837089538574
+        },
+        "5": {
+            "profile_pearson": 0.5153705477714539,
+            "profile_jsd": 0.334430456161499,
+            "log_counts_pearson": 0.6387580633163452,
+            "counts_spearman": 0.6707198619842529
+        },
+        "6": {
+            "profile_pearson": 0.5182796120643616,
+            "profile_jsd": 0.32908183336257935,
+            "log_counts_pearson": 0.5725018382072449,
+            "counts_spearman": 0.5914002060890198
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5117151737213135,
+        "profile_jsd": 0.34078332781791687,
+        "log_counts_pearson": 0.6228559017181396,
+        "counts_spearman": 0.646973729133606
+    }
+}

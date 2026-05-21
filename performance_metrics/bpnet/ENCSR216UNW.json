@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR216UNW",
+    "biosample": "lower lobe of left lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR216UNW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.40802448987960815,
+            "profile_jsd": 0.42705124616622925,
+            "log_counts_pearson": 0.8068817257881165,
+            "counts_spearman": 0.8077182769775391
+        },
+        "1": {
+            "profile_pearson": 0.38752952218055725,
+            "profile_jsd": 0.4317334294319153,
+            "log_counts_pearson": 0.8028737902641296,
+            "counts_spearman": 0.804114580154419
+        },
+        "2": {
+            "profile_pearson": 0.3935683071613312,
+            "profile_jsd": 0.4369131326675415,
+            "log_counts_pearson": 0.7974510788917542,
+            "counts_spearman": 0.7966256737709045
+        },
+        "3": {
+            "profile_pearson": 0.3859086334705353,
+            "profile_jsd": 0.43186378479003906,
+            "log_counts_pearson": 0.8091808557510376,
+            "counts_spearman": 0.8087672591209412
+        },
+        "4": {
+            "profile_pearson": 0.3778574764728546,
+            "profile_jsd": 0.4407099485397339,
+            "log_counts_pearson": 0.7924069166183472,
+            "counts_spearman": 0.7926446199417114
+        },
+        "5": {
+            "profile_pearson": 0.40133342146873474,
+            "profile_jsd": 0.4240197241306305,
+            "log_counts_pearson": 0.8008102774620056,
+            "counts_spearman": 0.8084444999694824
+        },
+        "6": {
+            "profile_pearson": 0.40453726053237915,
+            "profile_jsd": 0.4207794666290283,
+            "log_counts_pearson": 0.7543551921844482,
+            "counts_spearman": 0.7693243026733398
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.39412635564804077,
+        "profile_jsd": 0.4301412105560303,
+        "log_counts_pearson": 0.7853521704673767,
+        "counts_spearman": 0.7914028763771057
+    }
+}

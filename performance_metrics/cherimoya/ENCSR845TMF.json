@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR845TMF",
+    "biosample": "prostate gland",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR845TMF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5309631824493408,
+            "profile_jsd": 0.33029764890670776,
+            "log_counts_pearson": 0.7674349546432495,
+            "counts_spearman": 0.7669760584831238
+        },
+        "1": {
+            "profile_pearson": 0.5269137024879456,
+            "profile_jsd": 0.34050580859184265,
+            "log_counts_pearson": 0.7734819650650024,
+            "counts_spearman": 0.7670267224311829
+        },
+        "2": {
+            "profile_pearson": 0.5216091871261597,
+            "profile_jsd": 0.32720643281936646,
+            "log_counts_pearson": 0.7776408195495605,
+            "counts_spearman": 0.7865090370178223
+        },
+        "3": {
+            "profile_pearson": 0.5192636847496033,
+            "profile_jsd": 0.32282817363739014,
+            "log_counts_pearson": 0.7772982120513916,
+            "counts_spearman": 0.7845640182495117
+        },
+        "4": {
+            "profile_pearson": 0.5131202936172485,
+            "profile_jsd": 0.3244000971317291,
+            "log_counts_pearson": 0.7675945162773132,
+            "counts_spearman": 0.7776365876197815
+        },
+        "5": {
+            "profile_pearson": 0.5227885842323303,
+            "profile_jsd": 0.3229069411754608,
+            "log_counts_pearson": 0.7811798453330994,
+            "counts_spearman": 0.7949259877204895
+        },
+        "6": {
+            "profile_pearson": 0.5337681174278259,
+            "profile_jsd": 0.30941861867904663,
+            "log_counts_pearson": 0.7413134574890137,
+            "counts_spearman": 0.7551000714302063
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5241543650627136,
+        "profile_jsd": 0.3248715400695801,
+        "log_counts_pearson": 0.7546589374542236,
+        "counts_spearman": 0.7650823593139648
+    }
+}

@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/pytorch:25.10-py3
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        git wget curl build-essential \
+        samtools bedtools tabix \
+        libcurl4-openssl-dev libssl-dev libbz2-dev liblzma-dev zlib1g-dev
+    rm -rf /var/lib/apt/lists/*
+
+    python -m pip install --upgrade pip setuptools wheel
+
+    # Cherimoya + likely genomics/CLI dependencies
+    python -m pip install pynvml cherimoya
+
+    # Optional but useful for source/debugging
+    python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam macs3
+
+%environment
+    export PYTHONNOUSERSITE=1
+    export NUMBA_CACHE_DIR=/tmp/numba_cache/
+    export TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor_cache
+    export TRITON_CACHE_DIR=/tmp/triton_cache
+    export XDG_CACHE_HOME=/tmp/.cache
+
+%runscript
+    exec "$@"

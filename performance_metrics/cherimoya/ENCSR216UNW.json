@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR216UNW",
+    "biosample": "lower lobe of left lung",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR216UNW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.517535924911499,
+            "profile_jsd": 0.36448293924331665,
+            "log_counts_pearson": 0.8284077048301697,
+            "counts_spearman": 0.8294768333435059
+        },
+        "1": {
+            "profile_pearson": 0.5105722546577454,
+            "profile_jsd": 0.37500396370887756,
+            "log_counts_pearson": 0.8280847668647766,
+            "counts_spearman": 0.8253541588783264
+        },
+        "2": {
+            "profile_pearson": 0.4844321012496948,
+            "profile_jsd": 0.40101757645606995,
+            "log_counts_pearson": 0.8119063973426819,
+            "counts_spearman": 0.8000645041465759
+        },
+        "3": {
+            "profile_pearson": 0.5054049491882324,
+            "profile_jsd": 0.3710203766822815,
+            "log_counts_pearson": 0.8283359408378601,
+            "counts_spearman": 0.8279827237129211
+        },
+        "4": {
+            "profile_pearson": 0.4991369843482971,
+            "profile_jsd": 0.374430775642395,
+            "log_counts_pearson": 0.8123654723167419,
+            "counts_spearman": 0.810375988483429
+        },
+        "5": {
+            "profile_pearson": 0.5215729475021362,
+            "profile_jsd": 0.3758697509765625,
+            "log_counts_pearson": 0.8281435966491699,
+            "counts_spearman": 0.8235563635826111
+        },
+        "6": {
+            "profile_pearson": 0.5054550170898438,
+            "profile_jsd": 0.3732740581035614,
+            "log_counts_pearson": 0.7889487743377686,
+            "counts_spearman": 0.8016758561134338
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5067341923713684,
+        "profile_jsd": 0.3760472238063812,
+        "log_counts_pearson": 0.8110439777374268,
+        "counts_spearman": 0.8118759393692017
+    }
+}

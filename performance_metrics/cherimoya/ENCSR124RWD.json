@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR124RWD",
+    "biosample": "right ventricle myocardium",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR124RWD",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5760318040847778,
+            "profile_jsd": 0.3162025511264801,
+            "log_counts_pearson": 0.7416849732398987,
+            "counts_spearman": 0.7504348158836365
+        },
+        "1": {
+            "profile_pearson": 0.5597143769264221,
+            "profile_jsd": 0.3115312159061432,
+            "log_counts_pearson": 0.7668072581291199,
+            "counts_spearman": 0.7931906580924988
+        },
+        "2": {
+            "profile_pearson": 0.5467870235443115,
+            "profile_jsd": 0.3337397277355194,
+            "log_counts_pearson": 0.7359071969985962,
+            "counts_spearman": 0.7415332198143005
+        },
+        "3": {
+            "profile_pearson": 0.5541883111000061,
+            "profile_jsd": 0.320751428604126,
+            "log_counts_pearson": 0.7422304153442383,
+            "counts_spearman": 0.7510702013969421
+        },
+        "4": {
+            "profile_pearson": 0.5410961508750916,
+            "profile_jsd": 0.3180069625377655,
+            "log_counts_pearson": 0.7546446919441223,
+            "counts_spearman": 0.7840785980224609
+        },
+        "5": {
+            "profile_pearson": 0.5617958307266235,
+            "profile_jsd": 0.30810174345970154,
+            "log_counts_pearson": 0.7541599869728088,
+            "counts_spearman": 0.7832324504852295
+        },
+        "6": {
+            "profile_pearson": 0.5831209421157837,
+            "profile_jsd": 0.2998949885368347,
+            "log_counts_pearson": 0.6983040571212769,
+            "counts_spearman": 0.7068473100662231
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5599437355995178,
+        "profile_jsd": 0.31495022773742676,
+        "log_counts_pearson": 0.7322033643722534,
+        "counts_spearman": 0.7525597214698792
+    }
+}

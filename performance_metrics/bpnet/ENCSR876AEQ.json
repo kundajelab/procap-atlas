@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR876AEQ",
+    "biosample": "Metastatic Liver Carcinoma in the Adrenal Gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR876AEQ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.48959511518478394,
+            "profile_jsd": 0.35563772916793823,
+            "log_counts_pearson": 0.6206603050231934,
+            "counts_spearman": 0.6304558515548706
+        },
+        "1": {
+            "profile_pearson": 0.4943404197692871,
+            "profile_jsd": 0.35666733980178833,
+            "log_counts_pearson": 0.6409162878990173,
+            "counts_spearman": 0.6510323882102966
+        },
+        "2": {
+            "profile_pearson": 0.49693572521209717,
+            "profile_jsd": 0.35395359992980957,
+            "log_counts_pearson": 0.5874122977256775,
+            "counts_spearman": 0.6095667481422424
+        },
+        "3": {
+            "profile_pearson": 0.4731094241142273,
+            "profile_jsd": 0.36701899766921997,
+            "log_counts_pearson": 0.637530505657196,
+            "counts_spearman": 0.6451027393341064
+        },
+        "4": {
+            "profile_pearson": 0.4807274341583252,
+            "profile_jsd": 0.3679567277431488,
+            "log_counts_pearson": 0.6214211583137512,
+            "counts_spearman": 0.6333402991294861
+        },
+        "5": {
+            "profile_pearson": 0.4863074719905853,
+            "profile_jsd": 0.37003856897354126,
+            "log_counts_pearson": 0.6583941578865051,
+            "counts_spearman": 0.6628540754318237
+        },
+        "6": {
+            "profile_pearson": 0.5043221712112427,
+            "profile_jsd": 0.35567253828048706,
+            "log_counts_pearson": 0.5998556017875671,
+            "counts_spearman": 0.6089515686035156
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4893583059310913,
+        "profile_jsd": 0.361503005027771,
+        "log_counts_pearson": 0.6089270710945129,
+        "counts_spearman": 0.6200689673423767
+    }
+}

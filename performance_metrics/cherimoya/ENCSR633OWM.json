@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR633OWM",
+    "biosample": "pulmonary lymph node",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR633OWM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5335915088653564,
+            "profile_jsd": 0.31156668066978455,
+            "log_counts_pearson": 0.7278730273246765,
+            "counts_spearman": 0.7417775988578796
+        },
+        "1": {
+            "profile_pearson": 0.5469373464584351,
+            "profile_jsd": 0.31983065605163574,
+            "log_counts_pearson": 0.7048143744468689,
+            "counts_spearman": 0.6991565823554993
+        },
+        "2": {
+            "profile_pearson": 0.5406334400177002,
+            "profile_jsd": 0.3156440258026123,
+            "log_counts_pearson": 0.7303699851036072,
+            "counts_spearman": 0.7393017411231995
+        },
+        "3": {
+            "profile_pearson": 0.5386533737182617,
+            "profile_jsd": 0.32721805572509766,
+            "log_counts_pearson": 0.7127962708473206,
+            "counts_spearman": 0.7083004713058472
+        },
+        "4": {
+            "profile_pearson": 0.5274986028671265,
+            "profile_jsd": 0.3326469957828522,
+            "log_counts_pearson": 0.6981619596481323,
+            "counts_spearman": 0.6949230432510376
+        },
+        "5": {
+            "profile_pearson": 0.5479762554168701,
+            "profile_jsd": 0.3103179335594177,
+            "log_counts_pearson": 0.7371956706047058,
+            "counts_spearman": 0.749076247215271
+        },
+        "6": {
+            "profile_pearson": 0.5595717430114746,
+            "profile_jsd": 0.3109726905822754,
+            "log_counts_pearson": 0.6702251434326172,
+            "counts_spearman": 0.6794167757034302
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5424930453300476,
+        "profile_jsd": 0.3177792429924011,
+        "log_counts_pearson": 0.6880272030830383,
+        "counts_spearman": 0.6946115493774414
+    }
+}

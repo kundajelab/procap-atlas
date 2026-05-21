@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR386RDW",
+    "biosample": "subcutaneous adipose tissue",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR386RDW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5373705625534058,
+            "profile_jsd": 0.33185863494873047,
+            "log_counts_pearson": 0.7270382642745972,
+            "counts_spearman": 0.7308557629585266
+        },
+        "1": {
+            "profile_pearson": 0.5189484357833862,
+            "profile_jsd": 0.3466604948043823,
+            "log_counts_pearson": 0.73213791847229,
+            "counts_spearman": 0.7260895371437073
+        },
+        "2": {
+            "profile_pearson": 0.5082535743713379,
+            "profile_jsd": 0.35620999336242676,
+            "log_counts_pearson": 0.7323979735374451,
+            "counts_spearman": 0.7273021340370178
+        },
+        "3": {
+            "profile_pearson": 0.5314834117889404,
+            "profile_jsd": 0.3411601781845093,
+            "log_counts_pearson": 0.7424649000167847,
+            "counts_spearman": 0.7404263019561768
+        },
+        "4": {
+            "profile_pearson": 0.5198640823364258,
+            "profile_jsd": 0.3390069305896759,
+            "log_counts_pearson": 0.7279385924339294,
+            "counts_spearman": 0.7290456295013428
+        },
+        "5": {
+            "profile_pearson": 0.5355406999588013,
+            "profile_jsd": 0.3212958872318268,
+            "log_counts_pearson": 0.7618305683135986,
+            "counts_spearman": 0.7773728966712952
+        },
+        "6": {
+            "profile_pearson": 0.5437107682228088,
+            "profile_jsd": 0.3230292499065399,
+            "log_counts_pearson": 0.700050413608551,
+            "counts_spearman": 0.7092265486717224
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5286434888839722,
+        "profile_jsd": 0.3362394869327545,
+        "log_counts_pearson": 0.7186247110366821,
+        "counts_spearman": 0.7226276993751526
+    }
+}

@@ -1,3 +1,0 @@
-# Python requirements for pip install. See README.md for details on other dependencies.
-pyyaml
-tqdm

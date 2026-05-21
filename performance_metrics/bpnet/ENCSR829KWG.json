@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR829KWG",
+    "biosample": "natural killer cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR829KWG",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.488370805978775,
+            "profile_jsd": 0.3493795096874237,
+            "log_counts_pearson": 0.586881697177887,
+            "counts_spearman": 0.6125933527946472
+        },
+        "1": {
+            "profile_pearson": 0.47812706232070923,
+            "profile_jsd": 0.35068565607070923,
+            "log_counts_pearson": 0.6233876347541809,
+            "counts_spearman": 0.6366897225379944
+        },
+        "2": {
+            "profile_pearson": 0.46674835681915283,
+            "profile_jsd": 0.3568131923675537,
+            "log_counts_pearson": 0.5930256247520447,
+            "counts_spearman": 0.6176802515983582
+        },
+        "3": {
+            "profile_pearson": 0.48321130871772766,
+            "profile_jsd": 0.34827762842178345,
+            "log_counts_pearson": 0.5911167860031128,
+            "counts_spearman": 0.6092050671577454
+        },
+        "4": {
+            "profile_pearson": 0.4768664240837097,
+            "profile_jsd": 0.3561493754386902,
+            "log_counts_pearson": 0.5853921175003052,
+            "counts_spearman": 0.6072517037391663
+        },
+        "5": {
+            "profile_pearson": 0.4840703308582306,
+            "profile_jsd": 0.3537403345108032,
+            "log_counts_pearson": 0.6203641891479492,
+            "counts_spearman": 0.6370120048522949
+        },
+        "6": {
+            "profile_pearson": 0.4781310558319092,
+            "profile_jsd": 0.3521977365016937,
+            "log_counts_pearson": 0.5238400101661682,
+            "counts_spearman": 0.5460540056228638
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.479716956615448,
+        "profile_jsd": 0.35284513235092163,
+        "log_counts_pearson": 0.5777077078819275,
+        "counts_spearman": 0.599743664264679
+    }
+}

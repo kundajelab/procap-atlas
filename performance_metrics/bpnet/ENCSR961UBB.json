@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR961UBB",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR961UBB",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5266139507293701,
+            "profile_jsd": 0.33256053924560547,
+            "log_counts_pearson": 0.7444741129875183,
+            "counts_spearman": 0.7605493068695068
+        },
+        "1": {
+            "profile_pearson": 0.5186253786087036,
+            "profile_jsd": 0.3490223288536072,
+            "log_counts_pearson": 0.7502266764640808,
+            "counts_spearman": 0.7704231142997742
+        },
+        "2": {
+            "profile_pearson": 0.5116281509399414,
+            "profile_jsd": 0.34558796882629395,
+            "log_counts_pearson": 0.7543929219245911,
+            "counts_spearman": 0.7692417502403259
+        },
+        "3": {
+            "profile_pearson": 0.5179556012153625,
+            "profile_jsd": 0.34171146154403687,
+            "log_counts_pearson": 0.7571684122085571,
+            "counts_spearman": 0.7679208517074585
+        },
+        "4": {
+            "profile_pearson": 0.5081360340118408,
+            "profile_jsd": 0.34440669417381287,
+            "log_counts_pearson": 0.7404448390007019,
+            "counts_spearman": 0.7582863569259644
+        },
+        "5": {
+            "profile_pearson": 0.5091140866279602,
+            "profile_jsd": 0.34107813239097595,
+            "log_counts_pearson": 0.7373382449150085,
+            "counts_spearman": 0.7532699704170227
+        },
+        "6": {
+            "profile_pearson": 0.5398446321487427,
+            "profile_jsd": 0.3256951570510864,
+            "log_counts_pearson": 0.7119556665420532,
+            "counts_spearman": 0.7237808108329773
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5182955265045166,
+        "profile_jsd": 0.3399912416934967,
+        "log_counts_pearson": 0.733636200428009,
+        "counts_spearman": 0.7519131898880005
+    }
+}

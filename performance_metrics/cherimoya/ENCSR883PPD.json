@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR883PPD",
+    "biosample": "right cardiac atrium",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR883PPD",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5463688373565674,
+            "profile_jsd": 0.3110847473144531,
+            "log_counts_pearson": 0.7734686136245728,
+            "counts_spearman": 0.7964063882827759
+        },
+        "1": {
+            "profile_pearson": 0.5368600487709045,
+            "profile_jsd": 0.31688541173934937,
+            "log_counts_pearson": 0.8047128319740295,
+            "counts_spearman": 0.8248814940452576
+        },
+        "2": {
+            "profile_pearson": 0.5001324415206909,
+            "profile_jsd": 0.3538411855697632,
+            "log_counts_pearson": 0.7515744566917419,
+            "counts_spearman": 0.7472270727157593
+        },
+        "3": {
+            "profile_pearson": 0.5324579477310181,
+            "profile_jsd": 0.31669729948043823,
+            "log_counts_pearson": 0.7924584150314331,
+            "counts_spearman": 0.8205617666244507
+        },
+        "4": {
+            "profile_pearson": 0.5245904326438904,
+            "profile_jsd": 0.31860488653182983,
+            "log_counts_pearson": 0.7820601463317871,
+            "counts_spearman": 0.8057162761688232
+        },
+        "5": {
+            "profile_pearson": 0.5413007736206055,
+            "profile_jsd": 0.31119978427886963,
+            "log_counts_pearson": 0.7704350352287292,
+            "counts_spearman": 0.7928972244262695
+        },
+        "6": {
+            "profile_pearson": 0.5539839267730713,
+            "profile_jsd": 0.30528759956359863,
+            "log_counts_pearson": 0.7398540377616882,
+            "counts_spearman": 0.7614589333534241
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5341233015060425,
+        "profile_jsd": 0.31788814067840576,
+        "log_counts_pearson": 0.719194233417511,
+        "counts_spearman": 0.7426313161849976
+    }
+}

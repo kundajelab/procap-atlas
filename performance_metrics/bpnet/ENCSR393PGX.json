@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR393PGX",
+    "biosample": "breast epithelium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR393PGX",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49939054250717163,
+            "profile_jsd": 0.3498327136039734,
+            "log_counts_pearson": 0.6736694574356079,
+            "counts_spearman": 0.6660611033439636
+        },
+        "1": {
+            "profile_pearson": 0.49750179052352905,
+            "profile_jsd": 0.3495520055294037,
+            "log_counts_pearson": 0.697746753692627,
+            "counts_spearman": 0.7095555663108826
+        },
+        "2": {
+            "profile_pearson": 0.5168308019638062,
+            "profile_jsd": 0.35378485918045044,
+            "log_counts_pearson": 0.6766985654830933,
+            "counts_spearman": 0.687281608581543
+        },
+        "3": {
+            "profile_pearson": 0.5013400316238403,
+            "profile_jsd": 0.34337693452835083,
+            "log_counts_pearson": 0.6836640238761902,
+            "counts_spearman": 0.6872552037239075
+        },
+        "4": {
+            "profile_pearson": 0.4837397336959839,
+            "profile_jsd": 0.35868385434150696,
+            "log_counts_pearson": 0.6596251130104065,
+            "counts_spearman": 0.6646109819412231
+        },
+        "5": {
+            "profile_pearson": 0.49137499928474426,
+            "profile_jsd": 0.35426780581474304,
+            "log_counts_pearson": 0.6624723076820374,
+            "counts_spearman": 0.6591240167617798
+        },
+        "6": {
+            "profile_pearson": 0.5062867999076843,
+            "profile_jsd": 0.3538200855255127,
+            "log_counts_pearson": 0.6302402019500732,
+            "counts_spearman": 0.6394489407539368
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5000298619270325,
+        "profile_jsd": 0.35272499918937683,
+        "log_counts_pearson": 0.6406168937683105,
+        "counts_spearman": 0.6340725421905518
+    }
+}

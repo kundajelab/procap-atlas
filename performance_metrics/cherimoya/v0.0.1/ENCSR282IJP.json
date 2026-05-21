@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR282IJP",
+    "biosample": "neutrophil",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR282IJP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5286128520965576,
+            "profile_jsd": 0.35850751399993896,
+            "log_counts_pearson": 0.43948906660079956,
+            "counts_spearman": 0.4597417116165161
+        },
+        "1": {
+            "profile_pearson": 0.5136098861694336,
+            "profile_jsd": 0.3678627610206604,
+            "log_counts_pearson": 0.4619825482368469,
+            "counts_spearman": 0.4883560836315155
+        },
+        "2": {
+            "profile_pearson": 0.5171343088150024,
+            "profile_jsd": 0.36980709433555603,
+            "log_counts_pearson": 0.44340014457702637,
+            "counts_spearman": 0.48771095275878906
+        },
+        "3": {
+            "profile_pearson": 0.5271403193473816,
+            "profile_jsd": 0.36465388536453247,
+            "log_counts_pearson": 0.4768299460411072,
+            "counts_spearman": 0.5044124126434326
+        },
+        "4": {
+            "profile_pearson": 0.5441364049911499,
+            "profile_jsd": 0.3683217167854309,
+            "log_counts_pearson": 0.3706521689891815,
+            "counts_spearman": 0.3882204592227936
+        },
+        "5": {
+            "profile_pearson": 0.5379554629325867,
+            "profile_jsd": 0.3572300374507904,
+            "log_counts_pearson": 0.4699232578277588,
+            "counts_spearman": 0.4916639029979706
+        },
+        "6": {
+            "profile_pearson": 0.5172635316848755,
+            "profile_jsd": 0.3629152476787567,
+            "log_counts_pearson": 0.40328341722488403,
+            "counts_spearman": 0.4346868097782135
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.526650607585907,
+        "profile_jsd": 0.36369991302490234,
+        "log_counts_pearson": 0.42874714732170105,
+        "counts_spearman": 0.4556233882904053
+    }
+}

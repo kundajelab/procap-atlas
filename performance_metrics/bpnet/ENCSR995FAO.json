@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR995FAO",
+    "biosample": "mucosa of descending colon",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR995FAO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4926409125328064,
+            "profile_jsd": 0.3631562888622284,
+            "log_counts_pearson": 0.719464123249054,
+            "counts_spearman": 0.7308329939842224
+        },
+        "1": {
+            "profile_pearson": 0.4999408721923828,
+            "profile_jsd": 0.35961228609085083,
+            "log_counts_pearson": 0.7443948984146118,
+            "counts_spearman": 0.748367965221405
+        },
+        "2": {
+            "profile_pearson": 0.488942414522171,
+            "profile_jsd": 0.3647896945476532,
+            "log_counts_pearson": 0.7342962622642517,
+            "counts_spearman": 0.7332945466041565
+        },
+        "3": {
+            "profile_pearson": 0.5012698173522949,
+            "profile_jsd": 0.3595860004425049,
+            "log_counts_pearson": 0.7513039708137512,
+            "counts_spearman": 0.7568211555480957
+        },
+        "4": {
+            "profile_pearson": 0.5011070966720581,
+            "profile_jsd": 0.3589559495449066,
+            "log_counts_pearson": 0.7163519263267517,
+            "counts_spearman": 0.723247766494751
+        },
+        "5": {
+            "profile_pearson": 0.49880251288414,
+            "profile_jsd": 0.35829493403434753,
+            "log_counts_pearson": 0.7184507250785828,
+            "counts_spearman": 0.7280724048614502
+        },
+        "6": {
+            "profile_pearson": 0.5047187209129333,
+            "profile_jsd": 0.35228580236434937,
+            "log_counts_pearson": 0.6673883199691772,
+            "counts_spearman": 0.6883247494697571
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4981068968772888,
+        "profile_jsd": 0.3595091700553894,
+        "log_counts_pearson": 0.7139654755592346,
+        "counts_spearman": 0.7248005867004395
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR089CQL",
+    "biosample": "T-cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR089CQL",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5407991409301758,
+            "profile_jsd": 0.2970866560935974,
+            "log_counts_pearson": 0.6280048489570618,
+            "counts_spearman": 0.6514726877212524
+        },
+        "1": {
+            "profile_pearson": 0.5445090532302856,
+            "profile_jsd": 0.30109041929244995,
+            "log_counts_pearson": 0.6389917731285095,
+            "counts_spearman": 0.6646310091018677
+        },
+        "2": {
+            "profile_pearson": 0.5397630333900452,
+            "profile_jsd": 0.30215317010879517,
+            "log_counts_pearson": 0.598848819732666,
+            "counts_spearman": 0.6253641843795776
+        },
+        "3": {
+            "profile_pearson": 0.5502626895904541,
+            "profile_jsd": 0.2989348769187927,
+            "log_counts_pearson": 0.6144765615463257,
+            "counts_spearman": 0.6473621129989624
+        },
+        "4": {
+            "profile_pearson": 0.5418275594711304,
+            "profile_jsd": 0.3024718165397644,
+            "log_counts_pearson": 0.596294641494751,
+            "counts_spearman": 0.6141368746757507
+        },
+        "5": {
+            "profile_pearson": 0.5522549152374268,
+            "profile_jsd": 0.296503484249115,
+            "log_counts_pearson": 0.6229235529899597,
+            "counts_spearman": 0.6474781036376953
+        },
+        "6": {
+            "profile_pearson": 0.5562459230422974,
+            "profile_jsd": 0.2962258756160736,
+            "log_counts_pearson": 0.586502194404602,
+            "counts_spearman": 0.6227613687515259
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5464180707931519,
+        "profile_jsd": 0.2993001937866211,
+        "log_counts_pearson": 0.6107340455055237,
+        "counts_spearman": 0.6372242569923401
+    }
+}

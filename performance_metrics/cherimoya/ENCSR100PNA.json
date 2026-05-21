@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR100PNA",
+    "biosample": "paraaortic lymph node",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR100PNA",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5612117052078247,
+            "profile_jsd": 0.30178213119506836,
+            "log_counts_pearson": 0.7482856512069702,
+            "counts_spearman": 0.7606751322746277
+        },
+        "1": {
+            "profile_pearson": 0.5667200088500977,
+            "profile_jsd": 0.3045474886894226,
+            "log_counts_pearson": 0.7590684294700623,
+            "counts_spearman": 0.7666343450546265
+        },
+        "2": {
+            "profile_pearson": 0.5605827569961548,
+            "profile_jsd": 0.30875635147094727,
+            "log_counts_pearson": 0.7486497759819031,
+            "counts_spearman": 0.755606472492218
+        },
+        "3": {
+            "profile_pearson": 0.5830650329589844,
+            "profile_jsd": 0.30671006441116333,
+            "log_counts_pearson": 0.7328701615333557,
+            "counts_spearman": 0.7357083559036255
+        },
+        "4": {
+            "profile_pearson": 0.5593674182891846,
+            "profile_jsd": 0.3155336380004883,
+            "log_counts_pearson": 0.7258628606796265,
+            "counts_spearman": 0.7313296794891357
+        },
+        "5": {
+            "profile_pearson": 0.5458275675773621,
+            "profile_jsd": 0.30970650911331177,
+            "log_counts_pearson": 0.7581160664558411,
+            "counts_spearman": 0.7752322554588318
+        },
+        "6": {
+            "profile_pearson": 0.5637549161911011,
+            "profile_jsd": 0.30167606472969055,
+            "log_counts_pearson": 0.7159832119941711,
+            "counts_spearman": 0.7315263152122498
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5611099004745483,
+        "profile_jsd": 0.3071865439414978,
+        "log_counts_pearson": 0.7219022512435913,
+        "counts_spearman": 0.7359161376953125
+    }
+}

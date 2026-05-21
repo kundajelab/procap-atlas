@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR769SLJ",
+    "biosample": "transverse colon",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR769SLJ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5538896322250366,
+            "profile_jsd": 0.3045739531517029,
+            "log_counts_pearson": 0.7548390626907349,
+            "counts_spearman": 0.7645792365074158
+        },
+        "1": {
+            "profile_pearson": 0.5336455702781677,
+            "profile_jsd": 0.33013832569122314,
+            "log_counts_pearson": 0.7539442181587219,
+            "counts_spearman": 0.7485410571098328
+        },
+        "2": {
+            "profile_pearson": 0.5287452936172485,
+            "profile_jsd": 0.3341062068939209,
+            "log_counts_pearson": 0.7393849492073059,
+            "counts_spearman": 0.7349854111671448
+        },
+        "3": {
+            "profile_pearson": 0.5465539693832397,
+            "profile_jsd": 0.3088257312774658,
+            "log_counts_pearson": 0.7682953476905823,
+            "counts_spearman": 0.7786574363708496
+        },
+        "4": {
+            "profile_pearson": 0.5471619367599487,
+            "profile_jsd": 0.32168424129486084,
+            "log_counts_pearson": 0.7307130098342896,
+            "counts_spearman": 0.7297725081443787
+        },
+        "5": {
+            "profile_pearson": 0.5707749724388123,
+            "profile_jsd": 0.3137071132659912,
+            "log_counts_pearson": 0.7425025105476379,
+            "counts_spearman": 0.743357241153717
+        },
+        "6": {
+            "profile_pearson": 0.5349134206771851,
+            "profile_jsd": 0.3282736837863922,
+            "log_counts_pearson": 0.6910040974617004,
+            "counts_spearman": 0.6955276131629944
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5462464094161987,
+        "profile_jsd": 0.3196026086807251,
+        "log_counts_pearson": 0.726959764957428,
+        "counts_spearman": 0.7300127148628235
+    }
+}

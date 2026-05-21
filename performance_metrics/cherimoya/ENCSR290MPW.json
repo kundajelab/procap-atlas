@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR290MPW",
+    "biosample": "heart left ventricle",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR290MPW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5389131307601929,
+            "profile_jsd": 0.35205549001693726,
+            "log_counts_pearson": 0.7210792899131775,
+            "counts_spearman": 0.7138837575912476
+        },
+        "1": {
+            "profile_pearson": 0.5280164480209351,
+            "profile_jsd": 0.35702577233314514,
+            "log_counts_pearson": 0.7311424612998962,
+            "counts_spearman": 0.7168800830841064
+        },
+        "2": {
+            "profile_pearson": 0.5561718940734863,
+            "profile_jsd": 0.34377896785736084,
+            "log_counts_pearson": 0.7146583795547485,
+            "counts_spearman": 0.7122179865837097
+        },
+        "3": {
+            "profile_pearson": 0.5538005828857422,
+            "profile_jsd": 0.34447401762008667,
+            "log_counts_pearson": 0.7239189147949219,
+            "counts_spearman": 0.7165018320083618
+        },
+        "4": {
+            "profile_pearson": 0.5603379607200623,
+            "profile_jsd": 0.337469220161438,
+            "log_counts_pearson": 0.7143496870994568,
+            "counts_spearman": 0.7121837735176086
+        },
+        "5": {
+            "profile_pearson": 0.5511189699172974,
+            "profile_jsd": 0.3318108320236206,
+            "log_counts_pearson": 0.7410955429077148,
+            "counts_spearman": 0.7517966628074646
+        },
+        "6": {
+            "profile_pearson": 0.5689948201179504,
+            "profile_jsd": 0.32579272985458374,
+            "log_counts_pearson": 0.6976869106292725,
+            "counts_spearman": 0.708567202091217
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5515767335891724,
+        "profile_jsd": 0.3412991166114807,
+        "log_counts_pearson": 0.7117128968238831,
+        "counts_spearman": 0.7114187479019165
+    }
+}

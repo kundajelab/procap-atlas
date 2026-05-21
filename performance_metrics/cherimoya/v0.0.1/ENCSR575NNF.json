@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR575NNF",
+    "biosample": "right lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR575NNF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5462135076522827,
+            "profile_jsd": 0.3456436097621918,
+            "log_counts_pearson": 0.7015305161476135,
+            "counts_spearman": 0.6979151368141174
+        },
+        "1": {
+            "profile_pearson": 0.545727014541626,
+            "profile_jsd": 0.34877777099609375,
+            "log_counts_pearson": 0.7035506367683411,
+            "counts_spearman": 0.7112663984298706
+        },
+        "2": {
+            "profile_pearson": 0.5373260378837585,
+            "profile_jsd": 0.34855660796165466,
+            "log_counts_pearson": 0.6889489889144897,
+            "counts_spearman": 0.6931209564208984
+        },
+        "3": {
+            "profile_pearson": 0.5298470854759216,
+            "profile_jsd": 0.35404688119888306,
+            "log_counts_pearson": 0.6736173033714294,
+            "counts_spearman": 0.6773319840431213
+        },
+        "4": {
+            "profile_pearson": 0.5349964499473572,
+            "profile_jsd": 0.3493529260158539,
+            "log_counts_pearson": 0.6777471303939819,
+            "counts_spearman": 0.6921361684799194
+        },
+        "5": {
+            "profile_pearson": 0.5433530807495117,
+            "profile_jsd": 0.3497878611087799,
+            "log_counts_pearson": 0.6830875277519226,
+            "counts_spearman": 0.7023454904556274
+        },
+        "6": {
+            "profile_pearson": 0.5520691871643066,
+            "profile_jsd": 0.34331637620925903,
+            "log_counts_pearson": 0.6498077511787415,
+            "counts_spearman": 0.664228618144989
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5409448742866516,
+        "profile_jsd": 0.34873127937316895,
+        "log_counts_pearson": 0.68197101354599,
+        "counts_spearman": 0.6917166113853455
+    }
+}

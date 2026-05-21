@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR967RHN",
+    "biosample": "lower lobe of left lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR967RHN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4756404757499695,
+            "profile_jsd": 0.3661302924156189,
+            "log_counts_pearson": 0.7886391878128052,
+            "counts_spearman": 0.8008396625518799
+        },
+        "1": {
+            "profile_pearson": 0.46798351407051086,
+            "profile_jsd": 0.3757927417755127,
+            "log_counts_pearson": 0.7916848063468933,
+            "counts_spearman": 0.8118137717247009
+        },
+        "2": {
+            "profile_pearson": 0.463149756193161,
+            "profile_jsd": 0.3741803765296936,
+            "log_counts_pearson": 0.7778471112251282,
+            "counts_spearman": 0.798522412776947
+        },
+        "3": {
+            "profile_pearson": 0.47412922978401184,
+            "profile_jsd": 0.3673490881919861,
+            "log_counts_pearson": 0.7997909188270569,
+            "counts_spearman": 0.8141984343528748
+        },
+        "4": {
+            "profile_pearson": 0.45720893144607544,
+            "profile_jsd": 0.3813939690589905,
+            "log_counts_pearson": 0.7825571894645691,
+            "counts_spearman": 0.7894729375839233
+        },
+        "5": {
+            "profile_pearson": 0.46588289737701416,
+            "profile_jsd": 0.3706136643886566,
+            "log_counts_pearson": 0.785413384437561,
+            "counts_spearman": 0.8010870814323425
+        },
+        "6": {
+            "profile_pearson": 0.46192866563796997,
+            "profile_jsd": 0.3739752471446991,
+            "log_counts_pearson": 0.733121395111084,
+            "counts_spearman": 0.748784601688385
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.466025173664093,
+        "profile_jsd": 0.37271949648857117,
+        "log_counts_pearson": 0.7722665667533875,
+        "counts_spearman": 0.788827121257782
+    }
+}

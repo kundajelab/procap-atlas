@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR266TET",
+    "biosample": "bronchial lymph node",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR266TET",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.47614189982414246,
+            "profile_jsd": 0.3549346625804901,
+            "log_counts_pearson": 0.7121251225471497,
+            "counts_spearman": 0.7097331881523132
+        },
+        "1": {
+            "profile_pearson": 0.4803144335746765,
+            "profile_jsd": 0.3575434684753418,
+            "log_counts_pearson": 0.6992129683494568,
+            "counts_spearman": 0.6995200514793396
+        },
+        "2": {
+            "profile_pearson": 0.48181477189064026,
+            "profile_jsd": 0.35871782898902893,
+            "log_counts_pearson": 0.7042701244354248,
+            "counts_spearman": 0.7040543556213379
+        },
+        "3": {
+            "profile_pearson": 0.4851917624473572,
+            "profile_jsd": 0.355763703584671,
+            "log_counts_pearson": 0.6880483627319336,
+            "counts_spearman": 0.6834294199943542
+        },
+        "4": {
+            "profile_pearson": 0.47002509236335754,
+            "profile_jsd": 0.35929667949676514,
+            "log_counts_pearson": 0.6936851143836975,
+            "counts_spearman": 0.6986561417579651
+        },
+        "5": {
+            "profile_pearson": 0.4787704348564148,
+            "profile_jsd": 0.3607771396636963,
+            "log_counts_pearson": 0.7173929810523987,
+            "counts_spearman": 0.7144123315811157
+        },
+        "6": {
+            "profile_pearson": 0.49266839027404785,
+            "profile_jsd": 0.3418641686439514,
+            "log_counts_pearson": 0.6578546762466431,
+            "counts_spearman": 0.6801191568374634
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4807148277759552,
+        "profile_jsd": 0.35623249411582947,
+        "log_counts_pearson": 0.689991295337677,
+        "counts_spearman": 0.695229709148407
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR784FKF",
+    "biosample": "vermiform appendix",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR784FKF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5658026933670044,
+            "profile_jsd": 0.3115309476852417,
+            "log_counts_pearson": 0.7730149626731873,
+            "counts_spearman": 0.7898310422897339
+        },
+        "1": {
+            "profile_pearson": 0.5547442436218262,
+            "profile_jsd": 0.3318817615509033,
+            "log_counts_pearson": 0.7657232880592346,
+            "counts_spearman": 0.770350992679596
+        },
+        "2": {
+            "profile_pearson": 0.5460218191146851,
+            "profile_jsd": 0.3192344903945923,
+            "log_counts_pearson": 0.771847128868103,
+            "counts_spearman": 0.7897909879684448
+        },
+        "3": {
+            "profile_pearson": 0.5477120876312256,
+            "profile_jsd": 0.33194267749786377,
+            "log_counts_pearson": 0.7586683034896851,
+            "counts_spearman": 0.764307975769043
+        },
+        "4": {
+            "profile_pearson": 0.5542924404144287,
+            "profile_jsd": 0.3190385103225708,
+            "log_counts_pearson": 0.7762218713760376,
+            "counts_spearman": 0.7899681329727173
+        },
+        "5": {
+            "profile_pearson": 0.5612688064575195,
+            "profile_jsd": 0.3149819076061249,
+            "log_counts_pearson": 0.7840870022773743,
+            "counts_spearman": 0.8011642694473267
+        },
+        "6": {
+            "profile_pearson": 0.5675917267799377,
+            "profile_jsd": 0.3080548048019409,
+            "log_counts_pearson": 0.7413883209228516,
+            "counts_spearman": 0.7661690711975098
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5566724538803101,
+        "profile_jsd": 0.31933528184890747,
+        "log_counts_pearson": 0.7562646269798279,
+        "counts_spearman": 0.7750504612922668
+    }
+}

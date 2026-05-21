@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR248SVP",
+    "biosample": "osteocyte",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR248SVP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5849507451057434,
+            "profile_jsd": 0.2970869541168213,
+            "log_counts_pearson": 0.6828688383102417,
+            "counts_spearman": 0.7088360786437988
+        },
+        "1": {
+            "profile_pearson": 0.568554699420929,
+            "profile_jsd": 0.30127620697021484,
+            "log_counts_pearson": 0.7184535264968872,
+            "counts_spearman": 0.731982946395874
+        },
+        "2": {
+            "profile_pearson": 0.5657598376274109,
+            "profile_jsd": 0.3045705258846283,
+            "log_counts_pearson": 0.6999516487121582,
+            "counts_spearman": 0.7181745767593384
+        },
+        "3": {
+            "profile_pearson": 0.5755249857902527,
+            "profile_jsd": 0.30173981189727783,
+            "log_counts_pearson": 0.716823399066925,
+            "counts_spearman": 0.7530680298805237
+        },
+        "4": {
+            "profile_pearson": 0.5573076605796814,
+            "profile_jsd": 0.30944305658340454,
+            "log_counts_pearson": 0.6970038414001465,
+            "counts_spearman": 0.7135277986526489
+        },
+        "5": {
+            "profile_pearson": 0.5803985595703125,
+            "profile_jsd": 0.3021409511566162,
+            "log_counts_pearson": 0.6894665956497192,
+            "counts_spearman": 0.7194017767906189
+        },
+        "6": {
+            "profile_pearson": 0.5308935642242432,
+            "profile_jsd": 0.32996666431427,
+            "log_counts_pearson": 0.6354392170906067,
+            "counts_spearman": 0.6361057758331299
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5676304697990417,
+        "profile_jsd": 0.3066885769367218,
+        "log_counts_pearson": 0.6890787482261658,
+        "counts_spearman": 0.7095301151275635
+    }
+}

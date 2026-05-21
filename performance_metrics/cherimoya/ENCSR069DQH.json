@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR069DQH",
+    "biosample": "cytotoxic T cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR069DQH",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5089843273162842,
+            "profile_jsd": 0.3368320167064667,
+            "log_counts_pearson": 0.7162302732467651,
+            "counts_spearman": 0.7335726022720337
+        },
+        "1": {
+            "profile_pearson": 0.4956241846084595,
+            "profile_jsd": 0.35163557529449463,
+            "log_counts_pearson": 0.7136369943618774,
+            "counts_spearman": 0.7278497219085693
+        },
+        "2": {
+            "profile_pearson": 0.5072383880615234,
+            "profile_jsd": 0.3427309989929199,
+            "log_counts_pearson": 0.6951197385787964,
+            "counts_spearman": 0.7199759483337402
+        },
+        "3": {
+            "profile_pearson": 0.5113191604614258,
+            "profile_jsd": 0.34538689255714417,
+            "log_counts_pearson": 0.7215599417686462,
+            "counts_spearman": 0.7335271239280701
+        },
+        "4": {
+            "profile_pearson": 0.5077239871025085,
+            "profile_jsd": 0.3448707163333893,
+            "log_counts_pearson": 0.6909681558609009,
+            "counts_spearman": 0.7057288289070129
+        },
+        "5": {
+            "profile_pearson": 0.5077822208404541,
+            "profile_jsd": 0.3434266149997711,
+            "log_counts_pearson": 0.7099481225013733,
+            "counts_spearman": 0.7294051051139832
+        },
+        "6": {
+            "profile_pearson": 0.5075523257255554,
+            "profile_jsd": 0.3411608040332794,
+            "log_counts_pearson": 0.6571136713027954,
+            "counts_spearman": 0.682796835899353
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5062513947486877,
+        "profile_jsd": 0.3436471223831177,
+        "log_counts_pearson": 0.7001950740814209,
+        "counts_spearman": 0.7188674807548523
+    }
+}

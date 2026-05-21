@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR632XIZ",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR632XIZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5246222019195557,
+            "profile_jsd": 0.33681127429008484,
+            "log_counts_pearson": 0.6299638748168945,
+            "counts_spearman": 0.6475020051002502
+        },
+        "1": {
+            "profile_pearson": 0.4900050759315491,
+            "profile_jsd": 0.3433891832828522,
+            "log_counts_pearson": 0.6730939149856567,
+            "counts_spearman": 0.7084135413169861
+        },
+        "2": {
+            "profile_pearson": 0.5152420997619629,
+            "profile_jsd": 0.34234994649887085,
+            "log_counts_pearson": 0.6539772748947144,
+            "counts_spearman": 0.6646488904953003
+        },
+        "3": {
+            "profile_pearson": 0.5084733963012695,
+            "profile_jsd": 0.33829283714294434,
+            "log_counts_pearson": 0.6660609841346741,
+            "counts_spearman": 0.7057284116744995
+        },
+        "4": {
+            "profile_pearson": 0.4786646366119385,
+            "profile_jsd": 0.3514178991317749,
+            "log_counts_pearson": 0.6524496078491211,
+            "counts_spearman": 0.679877519607544
+        },
+        "5": {
+            "profile_pearson": 0.4827114939689636,
+            "profile_jsd": 0.3432166874408722,
+            "log_counts_pearson": 0.6555882692337036,
+            "counts_spearman": 0.6922487020492554
+        },
+        "6": {
+            "profile_pearson": 0.5403425693511963,
+            "profile_jsd": 0.3365447223186493,
+            "log_counts_pearson": 0.5853598713874817,
+            "counts_spearman": 0.5979053378105164
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5039786100387573,
+        "profile_jsd": 0.3421960473060608,
+        "log_counts_pearson": 0.6364738345146179,
+        "counts_spearman": 0.6618629693984985
+    }
+}

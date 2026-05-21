@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR970ACM",
+    "biosample": "adrenal gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR970ACM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5617270469665527,
+            "profile_jsd": 0.3285713195800781,
+            "log_counts_pearson": 0.7407093644142151,
+            "counts_spearman": 0.7628363370895386
+        },
+        "1": {
+            "profile_pearson": 0.5382242202758789,
+            "profile_jsd": 0.3480701446533203,
+            "log_counts_pearson": 0.750006377696991,
+            "counts_spearman": 0.7795583009719849
+        },
+        "2": {
+            "profile_pearson": 0.4792565107345581,
+            "profile_jsd": 0.37851953506469727,
+            "log_counts_pearson": 0.7257752418518066,
+            "counts_spearman": 0.731049120426178
+        },
+        "3": {
+            "profile_pearson": 0.49082523584365845,
+            "profile_jsd": 0.37122291326522827,
+            "log_counts_pearson": 0.7349093556404114,
+            "counts_spearman": 0.746074378490448
+        },
+        "4": {
+            "profile_pearson": 0.5434527397155762,
+            "profile_jsd": 0.34167712926864624,
+            "log_counts_pearson": 0.7045245170593262,
+            "counts_spearman": 0.7362350225448608
+        },
+        "5": {
+            "profile_pearson": 0.5437148213386536,
+            "profile_jsd": 0.34096646308898926,
+            "log_counts_pearson": 0.7436189651489258,
+            "counts_spearman": 0.7678285241127014
+        },
+        "6": {
+            "profile_pearson": 0.4864301383495331,
+            "profile_jsd": 0.36244696378707886,
+            "log_counts_pearson": 0.7001767754554749,
+            "counts_spearman": 0.7064684629440308
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5224628448486328,
+        "profile_jsd": 0.35196030139923096,
+        "log_counts_pearson": 0.7245334386825562,
+        "counts_spearman": 0.7434436082839966
+    }
+}

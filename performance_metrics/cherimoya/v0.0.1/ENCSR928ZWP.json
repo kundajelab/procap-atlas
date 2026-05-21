@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR928ZWP",
+    "biosample": "lower leg skin",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR928ZWP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4987662434577942,
+            "profile_jsd": 0.34465399384498596,
+            "log_counts_pearson": 0.7449605464935303,
+            "counts_spearman": 0.7643156051635742
+        },
+        "1": {
+            "profile_pearson": 0.49458274245262146,
+            "profile_jsd": 0.34566399455070496,
+            "log_counts_pearson": 0.7658548951148987,
+            "counts_spearman": 0.7852745652198792
+        },
+        "2": {
+            "profile_pearson": 0.4983537197113037,
+            "profile_jsd": 0.34681910276412964,
+            "log_counts_pearson": 0.7511074542999268,
+            "counts_spearman": 0.7664188146591187
+        },
+        "3": {
+            "profile_pearson": 0.5059630870819092,
+            "profile_jsd": 0.3422486484050751,
+            "log_counts_pearson": 0.7622687220573425,
+            "counts_spearman": 0.7769944667816162
+        },
+        "4": {
+            "profile_pearson": 0.4928007125854492,
+            "profile_jsd": 0.3427233099937439,
+            "log_counts_pearson": 0.7414872646331787,
+            "counts_spearman": 0.7569130659103394
+        },
+        "5": {
+            "profile_pearson": 0.4241207540035248,
+            "profile_jsd": 0.3782826066017151,
+            "log_counts_pearson": 0.7301005125045776,
+            "counts_spearman": 0.7368495464324951
+        },
+        "6": {
+            "profile_pearson": 0.5094862580299377,
+            "profile_jsd": 0.3343178629875183,
+            "log_counts_pearson": 0.7137712240219116,
+            "counts_spearman": 0.7300315499305725
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4855261743068695,
+        "profile_jsd": 0.34905362129211426,
+        "log_counts_pearson": 0.7421190142631531,
+        "counts_spearman": 0.7577727437019348
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR008TSD",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR008TSD",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5597328543663025,
+            "profile_jsd": 0.29705488681793213,
+            "log_counts_pearson": 0.749858558177948,
+            "counts_spearman": 0.7679257988929749
+        },
+        "1": {
+            "profile_pearson": 0.5648403763771057,
+            "profile_jsd": 0.3087320923805237,
+            "log_counts_pearson": 0.7526607513427734,
+            "counts_spearman": 0.7603055834770203
+        },
+        "2": {
+            "profile_pearson": 0.5540628433227539,
+            "profile_jsd": 0.3176506757736206,
+            "log_counts_pearson": 0.7231752276420593,
+            "counts_spearman": 0.7285900115966797
+        },
+        "3": {
+            "profile_pearson": 0.556721568107605,
+            "profile_jsd": 0.3114299774169922,
+            "log_counts_pearson": 0.7406756281852722,
+            "counts_spearman": 0.745613157749176
+        },
+        "4": {
+            "profile_pearson": 0.5697200894355774,
+            "profile_jsd": 0.3074972629547119,
+            "log_counts_pearson": 0.7126399874687195,
+            "counts_spearman": 0.7208022475242615
+        },
+        "5": {
+            "profile_pearson": 0.572221577167511,
+            "profile_jsd": 0.3049408197402954,
+            "log_counts_pearson": 0.7020589113235474,
+            "counts_spearman": 0.7185447216033936
+        },
+        "6": {
+            "profile_pearson": 0.5705206990242004,
+            "profile_jsd": 0.29966217279434204,
+            "log_counts_pearson": 0.6881237030029297,
+            "counts_spearman": 0.7116695642471313
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5651718378067017,
+        "profile_jsd": 0.30601081252098083,
+        "log_counts_pearson": 0.705767810344696,
+        "counts_spearman": 0.7200958132743835
+    }
+}

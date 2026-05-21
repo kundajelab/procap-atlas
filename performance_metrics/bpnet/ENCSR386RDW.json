@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR386RDW",
+    "biosample": "subcutaneous adipose tissue",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR386RDW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49111777544021606,
+            "profile_jsd": 0.3558158874511719,
+            "log_counts_pearson": 0.7050098180770874,
+            "counts_spearman": 0.7240611910820007
+        },
+        "1": {
+            "profile_pearson": 0.49126553535461426,
+            "profile_jsd": 0.3600082993507385,
+            "log_counts_pearson": 0.7235263586044312,
+            "counts_spearman": 0.7316262125968933
+        },
+        "2": {
+            "profile_pearson": 0.48963624238967896,
+            "profile_jsd": 0.36671698093414307,
+            "log_counts_pearson": 0.7254260182380676,
+            "counts_spearman": 0.7292634844779968
+        },
+        "3": {
+            "profile_pearson": 0.4832339584827423,
+            "profile_jsd": 0.3622089922428131,
+            "log_counts_pearson": 0.7310369610786438,
+            "counts_spearman": 0.7437919974327087
+        },
+        "4": {
+            "profile_pearson": 0.4787258803844452,
+            "profile_jsd": 0.362140417098999,
+            "log_counts_pearson": 0.714914083480835,
+            "counts_spearman": 0.7289010882377625
+        },
+        "5": {
+            "profile_pearson": 0.48686814308166504,
+            "profile_jsd": 0.3642311096191406,
+            "log_counts_pearson": 0.7340084314346313,
+            "counts_spearman": 0.7451449632644653
+        },
+        "6": {
+            "profile_pearson": 0.4922083914279938,
+            "profile_jsd": 0.3472663164138794,
+            "log_counts_pearson": 0.6867876052856445,
+            "counts_spearman": 0.7020717263221741
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4873034358024597,
+        "profile_jsd": 0.36028844118118286,
+        "log_counts_pearson": 0.7136374711990356,
+        "counts_spearman": 0.7281603813171387
+    }
+}

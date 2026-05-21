@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR980TGS",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR980TGS",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5013366341590881,
+            "profile_jsd": 0.3600273132324219,
+            "log_counts_pearson": 0.724995493888855,
+            "counts_spearman": 0.7301638126373291
+        },
+        "1": {
+            "profile_pearson": 0.5268959999084473,
+            "profile_jsd": 0.3485352396965027,
+            "log_counts_pearson": 0.7546092867851257,
+            "counts_spearman": 0.7592492699623108
+        },
+        "2": {
+            "profile_pearson": 0.5065844058990479,
+            "profile_jsd": 0.3595799207687378,
+            "log_counts_pearson": 0.7437816858291626,
+            "counts_spearman": 0.7482543587684631
+        },
+        "3": {
+            "profile_pearson": 0.5281755924224854,
+            "profile_jsd": 0.32793575525283813,
+            "log_counts_pearson": 0.7668805718421936,
+            "counts_spearman": 0.7825052738189697
+        },
+        "4": {
+            "profile_pearson": 0.5070047974586487,
+            "profile_jsd": 0.35505229234695435,
+            "log_counts_pearson": 0.7296347618103027,
+            "counts_spearman": 0.7347940802574158
+        },
+        "5": {
+            "profile_pearson": 0.5395829677581787,
+            "profile_jsd": 0.33414268493652344,
+            "log_counts_pearson": 0.7090870141983032,
+            "counts_spearman": 0.7251989245414734
+        },
+        "6": {
+            "profile_pearson": 0.5417273044586182,
+            "profile_jsd": 0.33700138330459595,
+            "log_counts_pearson": 0.6884531378746033,
+            "counts_spearman": 0.7008032202720642
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.522171676158905,
+        "profile_jsd": 0.34545737504959106,
+        "log_counts_pearson": 0.7128171920776367,
+        "counts_spearman": 0.7236254215240479
+    }
+}

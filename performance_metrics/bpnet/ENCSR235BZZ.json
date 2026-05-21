@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR235BZZ",
+    "biosample": "gastrocnemius medialis",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR235BZZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.454138845205307,
+            "profile_jsd": 0.3723902404308319,
+            "log_counts_pearson": 0.6335341334342957,
+            "counts_spearman": 0.6455971598625183
+        },
+        "1": {
+            "profile_pearson": 0.442751944065094,
+            "profile_jsd": 0.3827630579471588,
+            "log_counts_pearson": 0.6233723759651184,
+            "counts_spearman": 0.6392407417297363
+        },
+        "2": {
+            "profile_pearson": 0.46340423822402954,
+            "profile_jsd": 0.37322670221328735,
+            "log_counts_pearson": 0.6556286811828613,
+            "counts_spearman": 0.6591809988021851
+        },
+        "3": {
+            "profile_pearson": 0.46415066719055176,
+            "profile_jsd": 0.36784377694129944,
+            "log_counts_pearson": 0.6699719429016113,
+            "counts_spearman": 0.6789096593856812
+        },
+        "4": {
+            "profile_pearson": 0.44143545627593994,
+            "profile_jsd": 0.37673166394233704,
+            "log_counts_pearson": 0.6527208685874939,
+            "counts_spearman": 0.6610069274902344
+        },
+        "5": {
+            "profile_pearson": 0.44238829612731934,
+            "profile_jsd": 0.3766496777534485,
+            "log_counts_pearson": 0.6633674502372742,
+            "counts_spearman": 0.6678996086120605
+        },
+        "6": {
+            "profile_pearson": 0.4771503806114197,
+            "profile_jsd": 0.36055341362953186,
+            "log_counts_pearson": 0.5774011611938477,
+            "counts_spearman": 0.5887401103973389
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4541167914867401,
+        "profile_jsd": 0.3732474446296692,
+        "log_counts_pearson": 0.6374221444129944,
+        "counts_spearman": 0.6486382484436035
+    }
+}

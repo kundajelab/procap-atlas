@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR992HBP",
+    "biosample": "right lobe of liver",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR992HBP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5568861961364746,
+            "profile_jsd": 0.3127395808696747,
+            "log_counts_pearson": 0.7211045622825623,
+            "counts_spearman": 0.7282817959785461
+        },
+        "1": {
+            "profile_pearson": 0.5435502529144287,
+            "profile_jsd": 0.32060134410858154,
+            "log_counts_pearson": 0.7316651940345764,
+            "counts_spearman": 0.7330104112625122
+        },
+        "2": {
+            "profile_pearson": 0.5458320379257202,
+            "profile_jsd": 0.33478373289108276,
+            "log_counts_pearson": 0.7018475532531738,
+            "counts_spearman": 0.6913138628005981
+        },
+        "3": {
+            "profile_pearson": 0.5338011980056763,
+            "profile_jsd": 0.3386117219924927,
+            "log_counts_pearson": 0.7097024917602539,
+            "counts_spearman": 0.6955993175506592
+        },
+        "4": {
+            "profile_pearson": 0.5547704696655273,
+            "profile_jsd": 0.32018131017684937,
+            "log_counts_pearson": 0.7228575348854065,
+            "counts_spearman": 0.7336063981056213
+        },
+        "5": {
+            "profile_pearson": 0.542325496673584,
+            "profile_jsd": 0.3348156213760376,
+            "log_counts_pearson": 0.7065989971160889,
+            "counts_spearman": 0.6996721625328064
+        },
+        "6": {
+            "profile_pearson": 0.5443553328514099,
+            "profile_jsd": 0.3336861729621887,
+            "log_counts_pearson": 0.665870189666748,
+            "counts_spearman": 0.6679323315620422
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5463265776634216,
+        "profile_jsd": 0.32782864570617676,
+        "log_counts_pearson": 0.6942651271820068,
+        "counts_spearman": 0.6941391229629517
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR956DBV",
+    "biosample": "suprapubic skin",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR956DBV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5548816919326782,
+            "profile_jsd": 0.31700748205184937,
+            "log_counts_pearson": 0.7159208655357361,
+            "counts_spearman": 0.7425826787948608
+        },
+        "1": {
+            "profile_pearson": 0.5632719993591309,
+            "profile_jsd": 0.31864187121391296,
+            "log_counts_pearson": 0.7434883713722229,
+            "counts_spearman": 0.7730756402015686
+        },
+        "2": {
+            "profile_pearson": 0.5519958734512329,
+            "profile_jsd": 0.3244611620903015,
+            "log_counts_pearson": 0.7183647751808167,
+            "counts_spearman": 0.7500688433647156
+        },
+        "3": {
+            "profile_pearson": 0.5647612810134888,
+            "profile_jsd": 0.31522151827812195,
+            "log_counts_pearson": 0.7466601729393005,
+            "counts_spearman": 0.7693326473236084
+        },
+        "4": {
+            "profile_pearson": 0.5452073216438293,
+            "profile_jsd": 0.32592782378196716,
+            "log_counts_pearson": 0.7113436460494995,
+            "counts_spearman": 0.7431387901306152
+        },
+        "5": {
+            "profile_pearson": 0.5442303419113159,
+            "profile_jsd": 0.3217911720275879,
+            "log_counts_pearson": 0.7140125632286072,
+            "counts_spearman": 0.7422338724136353
+        },
+        "6": {
+            "profile_pearson": 0.5604910254478455,
+            "profile_jsd": 0.3199620246887207,
+            "log_counts_pearson": 0.6675464510917664,
+            "counts_spearman": 0.7018089294433594
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5542321801185608,
+        "profile_jsd": 0.32066014409065247,
+        "log_counts_pearson": 0.7153912782669067,
+        "counts_spearman": 0.7450791001319885
+    }
+}

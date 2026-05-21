@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR829KWG",
+    "biosample": "natural killer cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR829KWG",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5163151621818542,
+            "profile_jsd": 0.3128991723060608,
+            "log_counts_pearson": 0.6871145367622375,
+            "counts_spearman": 0.7100809216499329
+        },
+        "1": {
+            "profile_pearson": 0.5329921245574951,
+            "profile_jsd": 0.3243095576763153,
+            "log_counts_pearson": 0.6379786729812622,
+            "counts_spearman": 0.6471843719482422
+        },
+        "2": {
+            "profile_pearson": 0.5091835260391235,
+            "profile_jsd": 0.3159526586532593,
+            "log_counts_pearson": 0.661137580871582,
+            "counts_spearman": 0.6997182369232178
+        },
+        "3": {
+            "profile_pearson": 0.5233345627784729,
+            "profile_jsd": 0.30864962935447693,
+            "log_counts_pearson": 0.6680154800415039,
+            "counts_spearman": 0.6930927038192749
+        },
+        "4": {
+            "profile_pearson": 0.5071427822113037,
+            "profile_jsd": 0.3201163411140442,
+            "log_counts_pearson": 0.6602892279624939,
+            "counts_spearman": 0.6817115545272827
+        },
+        "5": {
+            "profile_pearson": 0.5153038501739502,
+            "profile_jsd": 0.3151164650917053,
+            "log_counts_pearson": 0.6686633825302124,
+            "counts_spearman": 0.6989782452583313
+        },
+        "6": {
+            "profile_pearson": 0.5188804864883423,
+            "profile_jsd": 0.3116651475429535,
+            "log_counts_pearson": 0.6147937178611755,
+            "counts_spearman": 0.6448522806167603
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5171096324920654,
+        "profile_jsd": 0.31539520621299744,
+        "log_counts_pearson": 0.6425938010215759,
+        "counts_spearman": 0.6687958836555481
+    }
+}

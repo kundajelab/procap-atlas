@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR575EOB",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR575EOB",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5088339447975159,
+            "profile_jsd": 0.3580503463745117,
+            "log_counts_pearson": 0.6981655955314636,
+            "counts_spearman": 0.7100699543952942
+        },
+        "1": {
+            "profile_pearson": 0.49267470836639404,
+            "profile_jsd": 0.36152249574661255,
+            "log_counts_pearson": 0.7022489309310913,
+            "counts_spearman": 0.723046600818634
+        },
+        "2": {
+            "profile_pearson": 0.48451316356658936,
+            "profile_jsd": 0.3656933307647705,
+            "log_counts_pearson": 0.7222316265106201,
+            "counts_spearman": 0.7352887392044067
+        },
+        "3": {
+            "profile_pearson": 0.49978384375572205,
+            "profile_jsd": 0.3619728684425354,
+            "log_counts_pearson": 0.7091150879859924,
+            "counts_spearman": 0.7302993535995483
+        },
+        "4": {
+            "profile_pearson": 0.48734885454177856,
+            "profile_jsd": 0.36335793137550354,
+            "log_counts_pearson": 0.698562502861023,
+            "counts_spearman": 0.7219092845916748
+        },
+        "5": {
+            "profile_pearson": 0.4825561046600342,
+            "profile_jsd": 0.3664689064025879,
+            "log_counts_pearson": 0.6544404625892639,
+            "counts_spearman": 0.6826251745223999
+        },
+        "6": {
+            "profile_pearson": 0.5123363137245178,
+            "profile_jsd": 0.3623250722885132,
+            "log_counts_pearson": 0.6462745070457458,
+            "counts_spearman": 0.6576077938079834
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4943705201148987,
+        "profile_jsd": 0.36287975311279297,
+        "log_counts_pearson": 0.6771687865257263,
+        "counts_spearman": 0.7017399072647095
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR683FOJ",
+    "biosample": "mesenteric fat pad",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR683FOJ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5161073803901672,
+            "profile_jsd": 0.35170412063598633,
+            "log_counts_pearson": 0.6575267910957336,
+            "counts_spearman": 0.6578291654586792
+        },
+        "1": {
+            "profile_pearson": 0.5129741430282593,
+            "profile_jsd": 0.3530426025390625,
+            "log_counts_pearson": 0.6635467410087585,
+            "counts_spearman": 0.670654296875
+        },
+        "2": {
+            "profile_pearson": 0.4953349232673645,
+            "profile_jsd": 0.3605886697769165,
+            "log_counts_pearson": 0.6681461334228516,
+            "counts_spearman": 0.6756244897842407
+        },
+        "3": {
+            "profile_pearson": 0.5058045387268066,
+            "profile_jsd": 0.3517741560935974,
+            "log_counts_pearson": 0.6544029116630554,
+            "counts_spearman": 0.6557543277740479
+        },
+        "4": {
+            "profile_pearson": 0.490164577960968,
+            "profile_jsd": 0.36387908458709717,
+            "log_counts_pearson": 0.643913745880127,
+            "counts_spearman": 0.6440258622169495
+        },
+        "5": {
+            "profile_pearson": 0.5041471719741821,
+            "profile_jsd": 0.3583373427391052,
+            "log_counts_pearson": 0.6525956988334656,
+            "counts_spearman": 0.6581081748008728
+        },
+        "6": {
+            "profile_pearson": 0.5349339842796326,
+            "profile_jsd": 0.34705638885498047,
+            "log_counts_pearson": 0.5858514904975891,
+            "counts_spearman": 0.6012396812438965
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5082476139068604,
+        "profile_jsd": 0.35532912611961365,
+        "log_counts_pearson": 0.6451414227485657,
+        "counts_spearman": 0.6510790586471558
+    }
+}

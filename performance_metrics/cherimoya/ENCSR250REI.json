@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR250REI",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR250REI",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5306784510612488,
+            "profile_jsd": 0.3367239236831665,
+            "log_counts_pearson": 0.7689608931541443,
+            "counts_spearman": 0.7857369780540466
+        },
+        "1": {
+            "profile_pearson": 0.5333444476127625,
+            "profile_jsd": 0.3487858772277832,
+            "log_counts_pearson": 0.7669583559036255,
+            "counts_spearman": 0.7798706889152527
+        },
+        "2": {
+            "profile_pearson": 0.5276435613632202,
+            "profile_jsd": 0.3465803861618042,
+            "log_counts_pearson": 0.753730833530426,
+            "counts_spearman": 0.7727800607681274
+        },
+        "3": {
+            "profile_pearson": 0.5307811498641968,
+            "profile_jsd": 0.3435315489768982,
+            "log_counts_pearson": 0.7734559178352356,
+            "counts_spearman": 0.7881162762641907
+        },
+        "4": {
+            "profile_pearson": 0.5205607414245605,
+            "profile_jsd": 0.34932172298431396,
+            "log_counts_pearson": 0.7478452324867249,
+            "counts_spearman": 0.7611325979232788
+        },
+        "5": {
+            "profile_pearson": 0.535735011100769,
+            "profile_jsd": 0.3414742052555084,
+            "log_counts_pearson": 0.7636640667915344,
+            "counts_spearman": 0.7793773412704468
+        },
+        "6": {
+            "profile_pearson": 0.5287343263626099,
+            "profile_jsd": 0.34519949555397034,
+            "log_counts_pearson": 0.7159945368766785,
+            "counts_spearman": 0.7401630878448486
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5297518968582153,
+        "profile_jsd": 0.34451836347579956,
+        "log_counts_pearson": 0.7554872632026672,
+        "counts_spearman": 0.7722746729850769
+    }
+}

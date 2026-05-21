@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR023NXW",
+    "biosample": "right common carotid artery plus branches",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR023NXW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4991394281387329,
+            "profile_jsd": 0.3462466597557068,
+            "log_counts_pearson": 0.7260617017745972,
+            "counts_spearman": 0.7279545664787292
+        },
+        "1": {
+            "profile_pearson": 0.4954904615879059,
+            "profile_jsd": 0.3452136814594269,
+            "log_counts_pearson": 0.7175895571708679,
+            "counts_spearman": 0.7150283455848694
+        },
+        "2": {
+            "profile_pearson": 0.5168039798736572,
+            "profile_jsd": 0.32867783308029175,
+            "log_counts_pearson": 0.751610279083252,
+            "counts_spearman": 0.7674185037612915
+        },
+        "3": {
+            "profile_pearson": 0.520600438117981,
+            "profile_jsd": 0.3270227313041687,
+            "log_counts_pearson": 0.7500682473182678,
+            "counts_spearman": 0.7629736661911011
+        },
+        "4": {
+            "profile_pearson": 0.4961342513561249,
+            "profile_jsd": 0.33116090297698975,
+            "log_counts_pearson": 0.7311834692955017,
+            "counts_spearman": 0.7431902289390564
+        },
+        "5": {
+            "profile_pearson": 0.5100164413452148,
+            "profile_jsd": 0.3418145179748535,
+            "log_counts_pearson": 0.7431631088256836,
+            "counts_spearman": 0.7457068562507629
+        },
+        "6": {
+            "profile_pearson": 0.5284309983253479,
+            "profile_jsd": 0.3132954239845276,
+            "log_counts_pearson": 0.7074225544929504,
+            "counts_spearman": 0.7244060635566711
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5087741017341614,
+        "profile_jsd": 0.33355700969696045,
+        "log_counts_pearson": 0.7037621140480042,
+        "counts_spearman": 0.7161867618560791
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR575NNF",
+    "biosample": "right lobe of liver",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR575NNF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.521177351474762,
+            "profile_jsd": 0.3604653775691986,
+            "log_counts_pearson": 0.6962320804595947,
+            "counts_spearman": 0.6802303791046143
+        },
+        "1": {
+            "profile_pearson": 0.5138647556304932,
+            "profile_jsd": 0.36898574233055115,
+            "log_counts_pearson": 0.7018343210220337,
+            "counts_spearman": 0.6819764375686646
+        },
+        "2": {
+            "profile_pearson": 0.511300802230835,
+            "profile_jsd": 0.3658367395401001,
+            "log_counts_pearson": 0.6980290412902832,
+            "counts_spearman": 0.6743062138557434
+        },
+        "3": {
+            "profile_pearson": 0.5036700963973999,
+            "profile_jsd": 0.3667537271976471,
+            "log_counts_pearson": 0.6813033223152161,
+            "counts_spearman": 0.6557748913764954
+        },
+        "4": {
+            "profile_pearson": 0.5422931909561157,
+            "profile_jsd": 0.35047227144241333,
+            "log_counts_pearson": 0.6847928762435913,
+            "counts_spearman": 0.6805238723754883
+        },
+        "5": {
+            "profile_pearson": 0.5165398120880127,
+            "profile_jsd": 0.36416536569595337,
+            "log_counts_pearson": 0.6969813704490662,
+            "counts_spearman": 0.6770934462547302
+        },
+        "6": {
+            "profile_pearson": 0.5288746953010559,
+            "profile_jsd": 0.35351768136024475,
+            "log_counts_pearson": 0.6528679132461548,
+            "counts_spearman": 0.6509975790977478
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5193209052085876,
+        "profile_jsd": 0.3618181347846985,
+        "log_counts_pearson": 0.6876782774925232,
+        "counts_spearman": 0.6723529100418091
+    }
+}

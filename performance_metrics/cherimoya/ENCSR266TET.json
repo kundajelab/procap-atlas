@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR266TET",
+    "biosample": "bronchial lymph node",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR266TET",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5167863368988037,
+            "profile_jsd": 0.3210739493370056,
+            "log_counts_pearson": 0.7362086772918701,
+            "counts_spearman": 0.7331495881080627
+        },
+        "1": {
+            "profile_pearson": 0.470804899930954,
+            "profile_jsd": 0.36127519607543945,
+            "log_counts_pearson": 0.7064613699913025,
+            "counts_spearman": 0.6777123212814331
+        },
+        "2": {
+            "profile_pearson": 0.509953498840332,
+            "profile_jsd": 0.3441285490989685,
+            "log_counts_pearson": 0.7134665846824646,
+            "counts_spearman": 0.696325957775116
+        },
+        "3": {
+            "profile_pearson": 0.5223515033721924,
+            "profile_jsd": 0.3222060799598694,
+            "log_counts_pearson": 0.7367701530456543,
+            "counts_spearman": 0.7245709300041199
+        },
+        "4": {
+            "profile_pearson": 0.5015769004821777,
+            "profile_jsd": 0.34446096420288086,
+            "log_counts_pearson": 0.7130318880081177,
+            "counts_spearman": 0.6998372673988342
+        },
+        "5": {
+            "profile_pearson": 0.5180584192276001,
+            "profile_jsd": 0.3235010802745819,
+            "log_counts_pearson": 0.7408635020256042,
+            "counts_spearman": 0.7389944791793823
+        },
+        "6": {
+            "profile_pearson": 0.5312108993530273,
+            "profile_jsd": 0.3130840063095093,
+            "log_counts_pearson": 0.7110951542854309,
+            "counts_spearman": 0.7210730314254761
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5103805661201477,
+        "profile_jsd": 0.3327142894268036,
+        "log_counts_pearson": 0.6856714487075806,
+        "counts_spearman": 0.6793193221092224
+    }
+}

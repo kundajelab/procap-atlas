@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR216FUJ",
+    "biosample": "Metastatic Breast Carcinoma in the Brain",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR216FUJ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.529737651348114,
+            "profile_jsd": 0.32298022508621216,
+            "log_counts_pearson": 0.7427107095718384,
+            "counts_spearman": 0.7646002173423767
+        },
+        "1": {
+            "profile_pearson": 0.49149301648139954,
+            "profile_jsd": 0.3606071472167969,
+            "log_counts_pearson": 0.755153477191925,
+            "counts_spearman": 0.763986349105835
+        },
+        "2": {
+            "profile_pearson": 0.5070122480392456,
+            "profile_jsd": 0.33764347434043884,
+            "log_counts_pearson": 0.7762895822525024,
+            "counts_spearman": 0.8006096482276917
+        },
+        "3": {
+            "profile_pearson": 0.5139805674552917,
+            "profile_jsd": 0.3562914729118347,
+            "log_counts_pearson": 0.7540698647499084,
+            "counts_spearman": 0.7610350251197815
+        },
+        "4": {
+            "profile_pearson": 0.4929194450378418,
+            "profile_jsd": 0.34308403730392456,
+            "log_counts_pearson": 0.7231178879737854,
+            "counts_spearman": 0.7508864402770996
+        },
+        "5": {
+            "profile_pearson": 0.5124396681785583,
+            "profile_jsd": 0.33022791147232056,
+            "log_counts_pearson": 0.7536247968673706,
+            "counts_spearman": 0.7730135917663574
+        },
+        "6": {
+            "profile_pearson": 0.5214448571205139,
+            "profile_jsd": 0.32956990599632263,
+            "log_counts_pearson": 0.7020143866539001,
+            "counts_spearman": 0.7299739122390747
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5098329782485962,
+        "profile_jsd": 0.338828980922699,
+        "log_counts_pearson": 0.7198540568351746,
+        "counts_spearman": 0.7453609704971313
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR694RPO",
+    "biosample": "right lobe of liver",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR694RPO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.438048392534256,
+            "profile_jsd": 0.39491814374923706,
+            "log_counts_pearson": 0.64158034324646,
+            "counts_spearman": 0.6335286498069763
+        },
+        "1": {
+            "profile_pearson": 0.4209756851196289,
+            "profile_jsd": 0.39915555715560913,
+            "log_counts_pearson": 0.6103034615516663,
+            "counts_spearman": 0.61728835105896
+        },
+        "2": {
+            "profile_pearson": 0.4367803931236267,
+            "profile_jsd": 0.39170461893081665,
+            "log_counts_pearson": 0.6412073373794556,
+            "counts_spearman": 0.6386184096336365
+        },
+        "3": {
+            "profile_pearson": 0.42339110374450684,
+            "profile_jsd": 0.39658981561660767,
+            "log_counts_pearson": 0.6275777220726013,
+            "counts_spearman": 0.6145248413085938
+        },
+        "4": {
+            "profile_pearson": 0.42553284764289856,
+            "profile_jsd": 0.3986892104148865,
+            "log_counts_pearson": 0.6351019740104675,
+            "counts_spearman": 0.6268789768218994
+        },
+        "5": {
+            "profile_pearson": 0.4352235198020935,
+            "profile_jsd": 0.39556437730789185,
+            "log_counts_pearson": 0.6370242834091187,
+            "counts_spearman": 0.6372003555297852
+        },
+        "6": {
+            "profile_pearson": 0.4486934244632721,
+            "profile_jsd": 0.38991791009902954,
+            "log_counts_pearson": 0.590333878993988,
+            "counts_spearman": 0.6014909744262695
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4320969581604004,
+        "profile_jsd": 0.39565110206604004,
+        "log_counts_pearson": 0.6180129051208496,
+        "counts_spearman": 0.6188362836837769
+    }
+}

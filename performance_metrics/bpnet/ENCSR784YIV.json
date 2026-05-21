@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR784YIV",
+    "biosample": "colonic mucosa",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR784YIV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.48822104930877686,
+            "profile_jsd": 0.36298656463623047,
+            "log_counts_pearson": 0.727207362651825,
+            "counts_spearman": 0.7453745603561401
+        },
+        "1": {
+            "profile_pearson": 0.4942914843559265,
+            "profile_jsd": 0.3672278821468353,
+            "log_counts_pearson": 0.7518728971481323,
+            "counts_spearman": 0.7551409602165222
+        },
+        "2": {
+            "profile_pearson": 0.47903501987457275,
+            "profile_jsd": 0.36694175004959106,
+            "log_counts_pearson": 0.7403995394706726,
+            "counts_spearman": 0.7469401955604553
+        },
+        "3": {
+            "profile_pearson": 0.48223617672920227,
+            "profile_jsd": 0.370057076215744,
+            "log_counts_pearson": 0.7577280402183533,
+            "counts_spearman": 0.7656286358833313
+        },
+        "4": {
+            "profile_pearson": 0.4793343245983124,
+            "profile_jsd": 0.36251139640808105,
+            "log_counts_pearson": 0.7367260456085205,
+            "counts_spearman": 0.7453709244728088
+        },
+        "5": {
+            "profile_pearson": 0.48782822489738464,
+            "profile_jsd": 0.3620939254760742,
+            "log_counts_pearson": 0.7368876934051514,
+            "counts_spearman": 0.7418235540390015
+        },
+        "6": {
+            "profile_pearson": 0.49911263585090637,
+            "profile_jsd": 0.3522122800350189,
+            "log_counts_pearson": 0.6983195543289185,
+            "counts_spearman": 0.7127232551574707
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48708030581474304,
+        "profile_jsd": 0.36343878507614136,
+        "log_counts_pearson": 0.7271403074264526,
+        "counts_spearman": 0.7385587692260742
+    }
+}

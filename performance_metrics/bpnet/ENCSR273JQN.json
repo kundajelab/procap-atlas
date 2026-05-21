@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR273JQN",
+    "biosample": "HCT116",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR273JQN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5796253681182861,
+            "profile_jsd": 0.3037034273147583,
+            "log_counts_pearson": 0.7289528846740723,
+            "counts_spearman": 0.7556539177894592
+        },
+        "1": {
+            "profile_pearson": 0.5949540138244629,
+            "profile_jsd": 0.2883065938949585,
+            "log_counts_pearson": 0.7426239252090454,
+            "counts_spearman": 0.7675308585166931
+        },
+        "2": {
+            "profile_pearson": 0.5914589762687683,
+            "profile_jsd": 0.30169937014579773,
+            "log_counts_pearson": 0.7184618711471558,
+            "counts_spearman": 0.7445895075798035
+        },
+        "3": {
+            "profile_pearson": 0.5820831060409546,
+            "profile_jsd": 0.2960636615753174,
+            "log_counts_pearson": 0.7246590852737427,
+            "counts_spearman": 0.7530306577682495
+        },
+        "4": {
+            "profile_pearson": 0.5762495994567871,
+            "profile_jsd": 0.3024854063987732,
+            "log_counts_pearson": 0.7103530168533325,
+            "counts_spearman": 0.739475429058075
+        },
+        "5": {
+            "profile_pearson": 0.5847539901733398,
+            "profile_jsd": 0.29542970657348633,
+            "log_counts_pearson": 0.7221894860267639,
+            "counts_spearman": 0.7470289468765259
+        },
+        "6": {
+            "profile_pearson": 0.588385283946991,
+            "profile_jsd": 0.28946125507354736,
+            "log_counts_pearson": 0.6834760308265686,
+            "counts_spearman": 0.704547643661499
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5849956274032593,
+        "profile_jsd": 0.296843945980072,
+        "log_counts_pearson": 0.7119559049606323,
+        "counts_spearman": 0.7411641478538513
+    }
+}

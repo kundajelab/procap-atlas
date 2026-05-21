@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR235BZZ",
+    "biosample": "gastrocnemius medialis",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR235BZZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49275386333465576,
+            "profile_jsd": 0.3452377915382385,
+            "log_counts_pearson": 0.6575568318367004,
+            "counts_spearman": 0.6689777970314026
+        },
+        "1": {
+            "profile_pearson": 0.47750043869018555,
+            "profile_jsd": 0.35549649596214294,
+            "log_counts_pearson": 0.6504509449005127,
+            "counts_spearman": 0.6609743237495422
+        },
+        "2": {
+            "profile_pearson": 0.46345141530036926,
+            "profile_jsd": 0.36832404136657715,
+            "log_counts_pearson": 0.6655035018920898,
+            "counts_spearman": 0.660199761390686
+        },
+        "3": {
+            "profile_pearson": 0.49366945028305054,
+            "profile_jsd": 0.3482193946838379,
+            "log_counts_pearson": 0.6641164422035217,
+            "counts_spearman": 0.6775185465812683
+        },
+        "4": {
+            "profile_pearson": 0.47808483242988586,
+            "profile_jsd": 0.3574310839176178,
+            "log_counts_pearson": 0.6583815813064575,
+            "counts_spearman": 0.6668244004249573
+        },
+        "5": {
+            "profile_pearson": 0.48914214968681335,
+            "profile_jsd": 0.3522033095359802,
+            "log_counts_pearson": 0.6611368060112,
+            "counts_spearman": 0.6684017777442932
+        },
+        "6": {
+            "profile_pearson": 0.49824416637420654,
+            "profile_jsd": 0.34177568554878235,
+            "log_counts_pearson": 0.6038215160369873,
+            "counts_spearman": 0.6213144063949585
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.48399123549461365,
+        "profile_jsd": 0.3527383506298065,
+        "log_counts_pearson": 0.647963285446167,
+        "counts_spearman": 0.6567039489746094
+    }
+}

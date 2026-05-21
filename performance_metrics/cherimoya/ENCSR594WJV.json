@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR594WJV",
+    "biosample": "cytotoxic T cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR594WJV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5235439538955688,
+            "profile_jsd": 0.34060126543045044,
+            "log_counts_pearson": 0.6919671893119812,
+            "counts_spearman": 0.7174077033996582
+        },
+        "1": {
+            "profile_pearson": 0.5169631242752075,
+            "profile_jsd": 0.34635576605796814,
+            "log_counts_pearson": 0.7027506828308105,
+            "counts_spearman": 0.7338443994522095
+        },
+        "2": {
+            "profile_pearson": 0.5120297074317932,
+            "profile_jsd": 0.34679317474365234,
+            "log_counts_pearson": 0.6742386817932129,
+            "counts_spearman": 0.7049024105072021
+        },
+        "3": {
+            "profile_pearson": 0.5310449004173279,
+            "profile_jsd": 0.33893662691116333,
+            "log_counts_pearson": 0.6979784369468689,
+            "counts_spearman": 0.7174296379089355
+        },
+        "4": {
+            "profile_pearson": 0.5214951634407043,
+            "profile_jsd": 0.34612134099006653,
+            "log_counts_pearson": 0.6638537049293518,
+            "counts_spearman": 0.6848562359809875
+        },
+        "5": {
+            "profile_pearson": 0.5275712609291077,
+            "profile_jsd": 0.3390079736709595,
+            "log_counts_pearson": 0.6855445504188538,
+            "counts_spearman": 0.7157483100891113
+        },
+        "6": {
+            "profile_pearson": 0.5223283767700195,
+            "profile_jsd": 0.34281763434410095,
+            "log_counts_pearson": 0.6298900842666626,
+            "counts_spearman": 0.6613451242446899
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5221315622329712,
+        "profile_jsd": 0.3428177237510681,
+        "log_counts_pearson": 0.6769565939903259,
+        "counts_spearman": 0.704419732093811
+    }
+}

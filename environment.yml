@@ -1,0 +1,18 @@
+name: procap-atlas
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12.0
+  - samtools
+  - ucsc-bigwigmerge
+  - ucsc-bedgraphtobigwig
+  - ucsc-bedtobigbed
+  - ucsc-hubcheck
+  - matplotlib
+  - pip:
+    - pyyaml
+    - pybigtools
+    - huggingface_hub
+    - cherimoya
+    - bpnet-lite

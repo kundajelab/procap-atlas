@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR926PFT",
+    "biosample": "omental fat pad",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR926PFT",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.3389486074447632,
+            "profile_jsd": 0.4547654092311859,
+            "log_counts_pearson": 0.43570634722709656,
+            "counts_spearman": 0.4381393790245056
+        },
+        "1": {
+            "profile_pearson": 0.3699205219745636,
+            "profile_jsd": 0.4450896978378296,
+            "log_counts_pearson": 0.48584163188934326,
+            "counts_spearman": 0.4865966737270355
+        },
+        "2": {
+            "profile_pearson": 0.35965558886528015,
+            "profile_jsd": 0.4427071809768677,
+            "log_counts_pearson": 0.5402262210845947,
+            "counts_spearman": 0.5490185618400574
+        },
+        "3": {
+            "profile_pearson": 0.3903907835483551,
+            "profile_jsd": 0.43823736906051636,
+            "log_counts_pearson": 0.47286418080329895,
+            "counts_spearman": 0.5080905556678772
+        },
+        "4": {
+            "profile_pearson": 0.3283337354660034,
+            "profile_jsd": 0.463969886302948,
+            "log_counts_pearson": 0.4430447220802307,
+            "counts_spearman": 0.4529920816421509
+        },
+        "5": {
+            "profile_pearson": 0.34546807408332825,
+            "profile_jsd": 0.45324790477752686,
+            "log_counts_pearson": 0.5011441707611084,
+            "counts_spearman": 0.48881980776786804
+        },
+        "6": {
+            "profile_pearson": 0.3696978986263275,
+            "profile_jsd": 0.4416549801826477,
+            "log_counts_pearson": 0.4134225845336914,
+            "counts_spearman": 0.4104890525341034
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.35544100403785706,
+        "profile_jsd": 0.44827204942703247,
+        "log_counts_pearson": 0.4713851511478424,
+        "counts_spearman": 0.47611552476882935
+    }
+}

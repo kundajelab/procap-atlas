@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR946MDO",
+    "biosample": "gastroesophageal sphincter",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR946MDO",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5331757664680481,
+            "profile_jsd": 0.3448007106781006,
+            "log_counts_pearson": 0.7006219029426575,
+            "counts_spearman": 0.7085344791412354
+        },
+        "1": {
+            "profile_pearson": 0.5138608813285828,
+            "profile_jsd": 0.3531821370124817,
+            "log_counts_pearson": 0.7036727070808411,
+            "counts_spearman": 0.706841766834259
+        },
+        "2": {
+            "profile_pearson": 0.5320748686790466,
+            "profile_jsd": 0.3420083522796631,
+            "log_counts_pearson": 0.7016704678535461,
+            "counts_spearman": 0.7114102244377136
+        },
+        "3": {
+            "profile_pearson": 0.5522328615188599,
+            "profile_jsd": 0.33300936222076416,
+            "log_counts_pearson": 0.7135968208312988,
+            "counts_spearman": 0.7278733849525452
+        },
+        "4": {
+            "profile_pearson": 0.5259689092636108,
+            "profile_jsd": 0.34414729475975037,
+            "log_counts_pearson": 0.7024503946304321,
+            "counts_spearman": 0.7103090286254883
+        },
+        "5": {
+            "profile_pearson": 0.5313570499420166,
+            "profile_jsd": 0.3268449306488037,
+            "log_counts_pearson": 0.7333738803863525,
+            "counts_spearman": 0.75726318359375
+        },
+        "6": {
+            "profile_pearson": 0.5577844977378845,
+            "profile_jsd": 0.3256714642047882,
+            "log_counts_pearson": 0.6616984605789185,
+            "counts_spearman": 0.6751697659492493
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.534741997718811,
+        "profile_jsd": 0.3380250930786133,
+        "log_counts_pearson": 0.6815241575241089,
+        "counts_spearman": 0.6957946419715881
+    }
+}

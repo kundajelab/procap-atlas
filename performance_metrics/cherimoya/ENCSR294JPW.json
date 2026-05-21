@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR294JPW",
+    "biosample": "left ventricle myocardium",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR294JPW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5619227886199951,
+            "profile_jsd": 0.3205301761627197,
+            "log_counts_pearson": 0.7320205569267273,
+            "counts_spearman": 0.7456655502319336
+        },
+        "1": {
+            "profile_pearson": 0.539086103439331,
+            "profile_jsd": 0.33150017261505127,
+            "log_counts_pearson": 0.7381063103675842,
+            "counts_spearman": 0.7475634217262268
+        },
+        "2": {
+            "profile_pearson": 0.48871397972106934,
+            "profile_jsd": 0.3673167824745178,
+            "log_counts_pearson": 0.715378999710083,
+            "counts_spearman": 0.7158433198928833
+        },
+        "3": {
+            "profile_pearson": 0.5341188311576843,
+            "profile_jsd": 0.334436297416687,
+            "log_counts_pearson": 0.7228067517280579,
+            "counts_spearman": 0.7276256680488586
+        },
+        "4": {
+            "profile_pearson": 0.5065469145774841,
+            "profile_jsd": 0.34581512212753296,
+            "log_counts_pearson": 0.7243648767471313,
+            "counts_spearman": 0.7288738489151001
+        },
+        "5": {
+            "profile_pearson": 0.5411787629127502,
+            "profile_jsd": 0.3191389739513397,
+            "log_counts_pearson": 0.736283004283905,
+            "counts_spearman": 0.7683525681495667
+        },
+        "6": {
+            "profile_pearson": 0.5713497400283813,
+            "profile_jsd": 0.30873703956604004,
+            "log_counts_pearson": 0.682640552520752,
+            "counts_spearman": 0.6962026953697205
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5364177227020264,
+        "profile_jsd": 0.331400066614151,
+        "log_counts_pearson": 0.6925820708274841,
+        "counts_spearman": 0.7054892778396606
+    }
+}

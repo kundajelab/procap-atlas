@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR296MTV",
+    "biosample": "left common carotid artery plus branches",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR296MTV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4620353877544403,
+            "profile_jsd": 0.3813467025756836,
+            "log_counts_pearson": 0.5990407466888428,
+            "counts_spearman": 0.5721959471702576
+        },
+        "1": {
+            "profile_pearson": 0.4733089208602905,
+            "profile_jsd": 0.3793162405490875,
+            "log_counts_pearson": 0.6113191246986389,
+            "counts_spearman": 0.5907626748085022
+        },
+        "2": {
+            "profile_pearson": 0.48232221603393555,
+            "profile_jsd": 0.3697877526283264,
+            "log_counts_pearson": 0.5808648467063904,
+            "counts_spearman": 0.5753351449966431
+        },
+        "3": {
+            "profile_pearson": 0.48218369483947754,
+            "profile_jsd": 0.37262672185897827,
+            "log_counts_pearson": 0.6110647320747375,
+            "counts_spearman": 0.6000217199325562
+        },
+        "4": {
+            "profile_pearson": 0.4871782958507538,
+            "profile_jsd": 0.3741527795791626,
+            "log_counts_pearson": 0.5885986685752869,
+            "counts_spearman": 0.5880720615386963
+        },
+        "5": {
+            "profile_pearson": 0.4872291088104248,
+            "profile_jsd": 0.3699380159378052,
+            "log_counts_pearson": 0.6042289733886719,
+            "counts_spearman": 0.5840664505958557
+        },
+        "6": {
+            "profile_pearson": 0.48273056745529175,
+            "profile_jsd": 0.37979549169540405,
+            "log_counts_pearson": 0.5219694375991821,
+            "counts_spearman": 0.5149694085121155
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4786309599876404,
+        "profile_jsd": 0.3753059506416321,
+        "log_counts_pearson": 0.5718046426773071,
+        "counts_spearman": 0.5508552193641663
+    }
+}

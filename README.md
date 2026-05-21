@@ -1,123 +1,147 @@
 # PRO-cap atlas
 
-Preprocessing and deep learning-based analysis of the ENCODE PRO-cap atlas. PRO-cap (Precision Run-On sequencing with cap selection) data is used for transcription start site (TSS) analysis on the human genome (GRCh38/hg38).
+Preprocessing, modeling, and atlas-level analysis for ENCODE PRO-cap data on the
+human genome (GRCh38/hg38). PRO-cap (Precision Run-On sequencing with cap
+selection) profiles transcription start sites and promoter-proximal initiation.
 
-## Prerequisites
+This repository contains the data preparation pipeline, trained-model workflows,
+benchmarking scripts, attribution and motif analysis utilities, and UCSC track
+hub generation code used for the atlas.
 
-- `wget`, `gunzip` -- file downloading and decompression
-- `samtools` -- FASTA indexing
-- GNU `parallel` -- parallel downloads
-- `bigWigMerge`, `bedGraphToBigWig` ([UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/)) -- BigWig merging
-- Python 3.10+ with `pyyaml` (`pip install pyyaml`)
+## Status
 
-## Sample installation with mamba
+- **BPNet** is the primary deployed model family. Training, benchmarking,
+  attribution, MoDISco, motif clustering, Hugging Face upload, and track hub
+  support are documented in [`src/bpnet/`](src/bpnet/README.md).
+- **Cherimoya** model training and benchmarking are complete, but the models are
+  not ready for deployment yet. See [`src/cherimoya/`](src/cherimoya/README.md)
+  for current training and evaluation workflows.
+- **MetaFormer / PromoterAI** support is still in development. The scripts in
+  [`src/metaformer/`](src/metaformer/README.md) are experimental helpers and
+  cluster templates.
+- **ProCapNet** code is retained for legacy model benchmarking only. See
+  [`src/procapnet/`](src/procapnet/README.md).
+
+## Environment
+
+Python and command-line dependencies are specified in `environment.yml`:
 
 ```bash
-# Create and activate mamba environment
-mamba create -n procap-atlas python=3.12 -y
+mamba env create -f environment.yml
 mamba activate procap-atlas
-
-# Install command-line tools
-mamba install -c bioconda -c conda-forge samtools ucsc-bigwigmerge ucsc-bedgraphtobigwig -y
-# Usually not needed.
-# mamba install -c conda-forge parallel wget -y
-
-# Install Python dependencies
-pip install pyyaml
 ```
 
-## Usage
+Some workflows also require external tools:
 
-### 1. Download data
+- `wget`, `parallel`, `samtools`, `bgzip`
+- UCSC Kent tools: `bigWigMerge`, `bedGraphToBigWig`, `bedToBigBed`, `hubCheck`
+- Optional cluster tools: `sbatch`, `apptainer`
 
-Download scripts can be run from anywhere in the project directory, but we run them from root when possible for consistency:
+MotifCompendium clustering uses a separate environment. See
+[`src/bpnet/README.md`](src/bpnet/README.md#motif-clustering).
+
+## Quickstart
+
+Run the main atlas pipeline from the repository root:
 
 ```bash
-# Download and index GRCh38 reference genome
+# 1. Download raw inputs
 bash src/download/download_genome.sh
-
-# Download plus/minus strand BigWig files (8 parallel jobs)
 bash src/download/download_bigwigs.sh
-
-# Download bidirectional peak BED files (4 parallel jobs)
 bash src/download/download_peaks.sh
-```
+bash src/download/download_annotations.sh
 
-### 2. Generate experiment config
-
-Cross-references the experiment report TSV with manifest URL files to produce a YAML config. Archived file IDs listed in `data_manifests/archive_blacklist.txt` are excluded. When bidirectional peaks are missing for an experiment, divergent peaks are used as a fallback (with a warning).
-
-```bash
+# 2. Build the experiment config and processed tracks
 python src/preprocess/generate_config.py
-```
-
-Output: `configs/experiment_config.yaml`
-
-### 3. Merge replicate BigWig files
-
-Merges replicate BigWig files per experiment, keeping plus and minus strands separate. Single-replicate experiments are copied without reprocessing.
-
-```bash
 python src/preprocess/merge_bigwigs.py
-```
-
-Output: `data/processed/bigwigs/{experiment}_{biosample}_{strand}.bigWig`
-
-### 4. Merge and process peak files
-
-Merge bidirectional and unidirectional peak BED files per experiment into a single processed file. Falls back to copying when only one peak type is available.
-
-```bash
 python src/preprocess/process_peaks.py
+python src/preprocess/filter_peaks_run.py
+python src/preprocess/make_union_peaks.py
+python src/preprocess/gc_match_run.py
+python src/preprocess/count_reads.py
+
+# 3. Train and evaluate BPNet
+python src/bpnet/fit/fit_bpnet.py -e ENCSR882DWM --fold 0
+python src/bpnet/benchmark/benchmark_bpnet.py -e ENCSR882DWM
+
+# 4. Generate model attributions and motif analyses
+python src/bpnet/attribute/save_ohe.py -e ENCSR882DWM
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
+python src/bpnet/modisco/launch.py --dry-run
+
+# 5. Build browser tracks
+python src/hub/convert_peaks_bigbed.py --dry-run
+python src/hub/generate_hub.py --email you@example.com
 ```
 
-Output: `data/processed/peaks/{experiment}_{biosample}.bed.gz`
+Most commands support additional options for parallelism, read-count filters,
+custom model directories, dry runs, and SLURM submission. The directory READMEs
+below are the source of truth for those details.
 
-### 5. Generate GC-matched negatives
+All SLURM launch scripts in this repository use hard-coded defaults for the
+Sherlock HPC environment. Apptainer usage is also a Sherlock-specific workaround,
+not a general requirement for every cluster.
 
-For each experiment, generates GC-matched negative regions from the genome, optionally filtering by signal strength using both strand BigWigs. Output is bgzip-compressed BED.
+## Workflow Guides
 
-```bash
-python src/preprocess/gc_match_run.py          # default 1 worker
-python src/preprocess/gc_match_run.py -j 8     # 8 parallel workers
+- [`src/download/`](src/download/README.md): reference genome, ENCODE BigWig,
+  peak BED, and GENCODE downloads.
+- [`src/preprocess/`](src/preprocess/README.md): manifest parsing, BigWig
+  merging, peak merging/filtering, union peaks, GC negatives, and read counts.
+- [`src/bpnet/`](src/bpnet/README.md): BPNet training, benchmarking,
+  attributions, MoDISco, motif clustering, uploads, and model track conversion.
+- [`src/cherimoya/`](src/cherimoya/README.md): Cherimoya training,
+  benchmarking, and architecture sweeps.
+- [`src/hub/`](src/hub/README.md): UCSC track hub generation, bigBed
+  conversion, Hugging Face track hosting, and validation.
+- [`src/analysis/`](src/analysis/README.md): atlas-level count correlations and
+  model warning flags.
+- [`src/metaplot/`](src/metaplot/README.md): TSS-centered PRO-cap metaplots and
+  heatmaps.
+- [`src/metaformer/`](src/metaformer/README.md): in-development PromoterAI /
+  MetaFormer helpers.
+- [`src/procapnet/`](src/procapnet/README.md): legacy ProCapNet benchmarking.
+
+## Repository Layout
+
+```text
+data_manifests/   ENCODE URL manifests, experiment metadata, archive blacklist
+configs/          Generated experiment config, chromosome splits, read counts
+config.json       Hugging Face BPNet model metadata
+src/download/     Download scripts for genome, signals, peaks, annotations
+src/preprocess/   Processing pipeline for experiment-level model inputs
+src/bpnet/        Primary BPNet model training, evaluation, attribution, motifs
+src/cherimoya/    Cherimoya model training and evaluation, not deployed yet
+src/hub/          UCSC track hub and track asset utilities
+src/analysis/     Atlas-level correlation and warning-flag analyses
+src/metaplot/     TSS-centered signal plots
+src/metaformer/   Experimental PromoterAI / MetaFormer helpers
+src/procapnet/    Legacy ProCapNet benchmark helper
+tests/            Unit tests, currently focused on attribution BigWig helpers
+data/             Gitignored downloaded and processed data
+models/           Gitignored trained model artifacts
 ```
 
-Output: `data/processed/negatives/{experiment}_{biosample}_{peak_type}_gc_negatives.bed.gz`
+## Data Layout
 
-### 6. Train BNBPNet model
+After download and preprocessing, the working data directory is organized as:
 
-Trains a BNBPNet model for a single experiment using 7-fold chromosome cross-validation. Fold `i` is held out for testing, fold `(i+1) % 7` for validation, and the remaining 5 folds for training. Chromosome splits are defined in `configs/chrom_splits.yaml`.
-
-```bash
-python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0
-python src/bpnet/fit/fit.py -e ENCSR882DWM --fold 0 --max-epochs 50 --lr 0.001
+```text
+data/
++-- hg38.fa
++-- hg38.fa.fai
++-- hg38.chrom.sizes
++-- raw/
+|   +-- bigwigs/
+|   +-- peaks/
++-- processed/
+    +-- bigwigs/
+    +-- peaks/
+    +-- negatives/
 ```
 
-Output: `models/bpnet/{experiment}/`
+The public UCSC track hub is:
 
-## Project structure
-
-```
-data_manifests/          # ENCODE file URLs, experiment metadata, archive blacklist
-configs/                 # Generated YAML experiment config, chromosome fold splits.
-src/
-  download/              # Bash download scripts
-  preprocess/            # Python preprocessing scripts
-    generate_config.py   # Manifest parsing and config generation
-    merge_bigwigs.py     # Replicate BigWig merging
-    process_peaks.py     # Merge bidirectional + unidirectional peaks
-    gc_match.py          # GC-matched negative region extraction (adapted from tangermeme)
-    gc_match_run.py      # Runs gc_match for all experiments in config
-  bpnet/                 # BPNet deep learning model
-    fit/fit.py           # BNBPNet training script (per experiment + fold)
-  alphagenome/           # AlphaGenome analysis (planned)
-data/                    # gitignored, created by scripts
-  hg38.fa                # Reference genome + index
-  raw/                   # Downloaded files (per replicate)
-    bigwigs/
-    peaks/
-  processed/             # Merged/renamed files (per experiment)
-    bigwigs/
-    peaks/
-    negatives/
+```text
+https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas/hub/hub.txt
 ```

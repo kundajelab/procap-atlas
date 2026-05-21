@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR679CMZ",
+    "biosample": "testis",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR679CMZ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5435011386871338,
+            "profile_jsd": 0.31979188323020935,
+            "log_counts_pearson": 0.7588719129562378,
+            "counts_spearman": 0.7784268856048584
+        },
+        "1": {
+            "profile_pearson": 0.5368242263793945,
+            "profile_jsd": 0.330685019493103,
+            "log_counts_pearson": 0.7663910984992981,
+            "counts_spearman": 0.7821954488754272
+        },
+        "2": {
+            "profile_pearson": 0.45560774207115173,
+            "profile_jsd": 0.37167221307754517,
+            "log_counts_pearson": 0.7441248893737793,
+            "counts_spearman": 0.7504220604896545
+        },
+        "3": {
+            "profile_pearson": 0.5307775735855103,
+            "profile_jsd": 0.3272882401943207,
+            "log_counts_pearson": 0.7654356956481934,
+            "counts_spearman": 0.7784229516983032
+        },
+        "4": {
+            "profile_pearson": 0.5214447379112244,
+            "profile_jsd": 0.33331459760665894,
+            "log_counts_pearson": 0.7559133172035217,
+            "counts_spearman": 0.7697226405143738
+        },
+        "5": {
+            "profile_pearson": 0.5423946380615234,
+            "profile_jsd": 0.327379047870636,
+            "log_counts_pearson": 0.7734496593475342,
+            "counts_spearman": 0.7925328016281128
+        },
+        "6": {
+            "profile_pearson": 0.5401314496994019,
+            "profile_jsd": 0.3228330612182617,
+            "log_counts_pearson": 0.7139096260070801,
+            "counts_spearman": 0.7339016199111938
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5258446335792542,
+        "profile_jsd": 0.3332929015159607,
+        "log_counts_pearson": 0.749332845211029,
+        "counts_spearman": 0.7655217051506042
+    }
+}

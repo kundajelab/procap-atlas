@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR219QKX",
+    "biosample": "heart right ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR219QKX",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.562075138092041,
+            "profile_jsd": 0.3205919563770294,
+            "log_counts_pearson": 0.7392235994338989,
+            "counts_spearman": 0.7622895836830139
+        },
+        "1": {
+            "profile_pearson": 0.49239444732666016,
+            "profile_jsd": 0.36227619647979736,
+            "log_counts_pearson": 0.7471372485160828,
+            "counts_spearman": 0.7574663162231445
+        },
+        "2": {
+            "profile_pearson": 0.5287103652954102,
+            "profile_jsd": 0.34812819957733154,
+            "log_counts_pearson": 0.7404006719589233,
+            "counts_spearman": 0.7495728135108948
+        },
+        "3": {
+            "profile_pearson": 0.559585690498352,
+            "profile_jsd": 0.3247876465320587,
+            "log_counts_pearson": 0.7568753361701965,
+            "counts_spearman": 0.7757765650749207
+        },
+        "4": {
+            "profile_pearson": 0.5640206933021545,
+            "profile_jsd": 0.326036661863327,
+            "log_counts_pearson": 0.7359556555747986,
+            "counts_spearman": 0.766920268535614
+        },
+        "5": {
+            "profile_pearson": 0.558301568031311,
+            "profile_jsd": 0.3219912350177765,
+            "log_counts_pearson": 0.7346303462982178,
+            "counts_spearman": 0.7532290816307068
+        },
+        "6": {
+            "profile_pearson": 0.5195578336715698,
+            "profile_jsd": 0.3344166576862335,
+            "log_counts_pearson": 0.6921391487121582,
+            "counts_spearman": 0.6955146193504333
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5424237251281738,
+        "profile_jsd": 0.3330174684524536,
+        "log_counts_pearson": 0.7303490042686462,
+        "counts_spearman": 0.7467494606971741
+    }
+}

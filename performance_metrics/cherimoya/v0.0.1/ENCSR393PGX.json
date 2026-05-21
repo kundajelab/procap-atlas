@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR393PGX",
+    "biosample": "breast epithelium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR393PGX",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5449753999710083,
+            "profile_jsd": 0.3251029849052429,
+            "log_counts_pearson": 0.6855924129486084,
+            "counts_spearman": 0.6982775330543518
+        },
+        "1": {
+            "profile_pearson": 0.5445009469985962,
+            "profile_jsd": 0.3257363438606262,
+            "log_counts_pearson": 0.7206265926361084,
+            "counts_spearman": 0.7426179647445679
+        },
+        "2": {
+            "profile_pearson": 0.48910582065582275,
+            "profile_jsd": 0.3568574786186218,
+            "log_counts_pearson": 0.6827399730682373,
+            "counts_spearman": 0.6774951219558716
+        },
+        "3": {
+            "profile_pearson": 0.5327693223953247,
+            "profile_jsd": 0.3293769359588623,
+            "log_counts_pearson": 0.6967523694038391,
+            "counts_spearman": 0.7103672623634338
+        },
+        "4": {
+            "profile_pearson": 0.5268113613128662,
+            "profile_jsd": 0.3405211269855499,
+            "log_counts_pearson": 0.672398567199707,
+            "counts_spearman": 0.6737138628959656
+        },
+        "5": {
+            "profile_pearson": 0.48537278175354004,
+            "profile_jsd": 0.3492511212825775,
+            "log_counts_pearson": 0.6640509963035583,
+            "counts_spearman": 0.6582587957382202
+        },
+        "6": {
+            "profile_pearson": 0.5531878471374512,
+            "profile_jsd": 0.3237541913986206,
+            "log_counts_pearson": 0.6372867226600647,
+            "counts_spearman": 0.6476371884346008
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5238956212997437,
+        "profile_jsd": 0.3366071581840515,
+        "log_counts_pearson": 0.6726672053337097,
+        "counts_spearman": 0.6755313277244568
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR246YHR",
+    "biosample": "esophagus muscularis mucosa",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR246YHR",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4978363513946533,
+            "profile_jsd": 0.3543776273727417,
+            "log_counts_pearson": 0.7349587678909302,
+            "counts_spearman": 0.7343339920043945
+        },
+        "1": {
+            "profile_pearson": 0.5181671380996704,
+            "profile_jsd": 0.3338789939880371,
+            "log_counts_pearson": 0.7484140992164612,
+            "counts_spearman": 0.7569018602371216
+        },
+        "2": {
+            "profile_pearson": 0.5200868844985962,
+            "profile_jsd": 0.34997209906578064,
+            "log_counts_pearson": 0.742649257183075,
+            "counts_spearman": 0.7403039932250977
+        },
+        "3": {
+            "profile_pearson": 0.5166260600090027,
+            "profile_jsd": 0.3448125422000885,
+            "log_counts_pearson": 0.7485611438751221,
+            "counts_spearman": 0.747056245803833
+        },
+        "4": {
+            "profile_pearson": 0.5125559568405151,
+            "profile_jsd": 0.34556418657302856,
+            "log_counts_pearson": 0.7356324791908264,
+            "counts_spearman": 0.734345555305481
+        },
+        "5": {
+            "profile_pearson": 0.5182726383209229,
+            "profile_jsd": 0.33235475420951843,
+            "log_counts_pearson": 0.7646988034248352,
+            "counts_spearman": 0.7784984111785889
+        },
+        "6": {
+            "profile_pearson": 0.5358734130859375,
+            "profile_jsd": 0.3297361135482788,
+            "log_counts_pearson": 0.7041041851043701,
+            "counts_spearman": 0.7107436060905457
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5165984630584717,
+        "profile_jsd": 0.34099364280700684,
+        "log_counts_pearson": 0.7197520732879639,
+        "counts_spearman": 0.7258796691894531
+    }
+}

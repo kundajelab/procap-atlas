@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR642TRG",
+    "biosample": "tibial artery",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR642TRG",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.45862480998039246,
+            "profile_jsd": 0.35943055152893066,
+            "log_counts_pearson": 0.6774348020553589,
+            "counts_spearman": 0.6906517148017883
+        },
+        "1": {
+            "profile_pearson": 0.4563097059726715,
+            "profile_jsd": 0.3734598755836487,
+            "log_counts_pearson": 0.6691482663154602,
+            "counts_spearman": 0.7005333304405212
+        },
+        "2": {
+            "profile_pearson": 0.45949020981788635,
+            "profile_jsd": 0.37245506048202515,
+            "log_counts_pearson": 0.6835812330245972,
+            "counts_spearman": 0.7013649344444275
+        },
+        "3": {
+            "profile_pearson": 0.46891435980796814,
+            "profile_jsd": 0.3679414391517639,
+            "log_counts_pearson": 0.6769483685493469,
+            "counts_spearman": 0.6936184167861938
+        },
+        "4": {
+            "profile_pearson": 0.4498090147972107,
+            "profile_jsd": 0.37373679876327515,
+            "log_counts_pearson": 0.6606778502464294,
+            "counts_spearman": 0.6802615523338318
+        },
+        "5": {
+            "profile_pearson": 0.46432483196258545,
+            "profile_jsd": 0.36637264490127563,
+            "log_counts_pearson": 0.6975553631782532,
+            "counts_spearman": 0.706348180770874
+        },
+        "6": {
+            "profile_pearson": 0.47343552112579346,
+            "profile_jsd": 0.3569296598434448,
+            "log_counts_pearson": 0.6209467053413391,
+            "counts_spearman": 0.63646000623703
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.46191728115081787,
+        "profile_jsd": 0.36738160252571106,
+        "log_counts_pearson": 0.6642770171165466,
+        "counts_spearman": 0.6841410994529724
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR342WAR",
+    "biosample": "neuron",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR342WAR",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5622202157974243,
+            "profile_jsd": 0.3049468398094177,
+            "log_counts_pearson": 0.6764913201332092,
+            "counts_spearman": 0.6818485260009766
+        },
+        "1": {
+            "profile_pearson": 0.5547611713409424,
+            "profile_jsd": 0.30325546860694885,
+            "log_counts_pearson": 0.7066469192504883,
+            "counts_spearman": 0.7200440168380737
+        },
+        "2": {
+            "profile_pearson": 0.5476802587509155,
+            "profile_jsd": 0.3065919876098633,
+            "log_counts_pearson": 0.6923860907554626,
+            "counts_spearman": 0.7095454335212708
+        },
+        "3": {
+            "profile_pearson": 0.5453716516494751,
+            "profile_jsd": 0.3139875829219818,
+            "log_counts_pearson": 0.6874821186065674,
+            "counts_spearman": 0.6865098476409912
+        },
+        "4": {
+            "profile_pearson": 0.5533590316772461,
+            "profile_jsd": 0.3031737506389618,
+            "log_counts_pearson": 0.6865741610527039,
+            "counts_spearman": 0.6864898800849915
+        },
+        "5": {
+            "profile_pearson": 0.5514250993728638,
+            "profile_jsd": 0.3065255284309387,
+            "log_counts_pearson": 0.6853219866752625,
+            "counts_spearman": 0.6858605146408081
+        },
+        "6": {
+            "profile_pearson": 0.5641454458236694,
+            "profile_jsd": 0.29496678709983826,
+            "log_counts_pearson": 0.6528241038322449,
+            "counts_spearman": 0.6446043848991394
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5540261268615723,
+        "profile_jsd": 0.3047025799751282,
+        "log_counts_pearson": 0.6763817667961121,
+        "counts_spearman": 0.6809945106506348
+    }
+}

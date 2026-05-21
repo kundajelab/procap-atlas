@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR881RXX",
+    "biosample": "anterior vena cava",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR881RXX",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5803514719009399,
+            "profile_jsd": 0.2959286570549011,
+            "log_counts_pearson": 0.7428544163703918,
+            "counts_spearman": 0.7646437883377075
+        },
+        "1": {
+            "profile_pearson": 0.5677715539932251,
+            "profile_jsd": 0.31820768117904663,
+            "log_counts_pearson": 0.7298604249954224,
+            "counts_spearman": 0.7400885820388794
+        },
+        "2": {
+            "profile_pearson": 0.566618800163269,
+            "profile_jsd": 0.3127804398536682,
+            "log_counts_pearson": 0.7292191386222839,
+            "counts_spearman": 0.7398508191108704
+        },
+        "3": {
+            "profile_pearson": 0.5736747980117798,
+            "profile_jsd": 0.3016135096549988,
+            "log_counts_pearson": 0.7652574777603149,
+            "counts_spearman": 0.7891793847084045
+        },
+        "4": {
+            "profile_pearson": 0.5458422303199768,
+            "profile_jsd": 0.3098335266113281,
+            "log_counts_pearson": 0.7478289604187012,
+            "counts_spearman": 0.7700743079185486
+        },
+        "5": {
+            "profile_pearson": 0.5799605846405029,
+            "profile_jsd": 0.2969666123390198,
+            "log_counts_pearson": 0.7544816136360168,
+            "counts_spearman": 0.7812859416007996
+        },
+        "6": {
+            "profile_pearson": 0.5662275552749634,
+            "profile_jsd": 0.3002474308013916,
+            "log_counts_pearson": 0.6913308501243591,
+            "counts_spearman": 0.7117727994918823
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5685800313949585,
+        "profile_jsd": 0.30477553606033325,
+        "log_counts_pearson": 0.7202211618423462,
+        "counts_spearman": 0.7445811033248901
+    }
+}

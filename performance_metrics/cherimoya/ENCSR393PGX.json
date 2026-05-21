@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR393PGX",
+    "biosample": "breast epithelium",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR393PGX",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5264098644256592,
+            "profile_jsd": 0.3180108666419983,
+            "log_counts_pearson": 0.7216629981994629,
+            "counts_spearman": 0.7383050322532654
+        },
+        "1": {
+            "profile_pearson": 0.5081636905670166,
+            "profile_jsd": 0.3231275677680969,
+            "log_counts_pearson": 0.7489520311355591,
+            "counts_spearman": 0.7759498357772827
+        },
+        "2": {
+            "profile_pearson": 0.530684769153595,
+            "profile_jsd": 0.3206418752670288,
+            "log_counts_pearson": 0.729327380657196,
+            "counts_spearman": 0.7474706768989563
+        },
+        "3": {
+            "profile_pearson": 0.5439107418060303,
+            "profile_jsd": 0.3131687045097351,
+            "log_counts_pearson": 0.7332271337509155,
+            "counts_spearman": 0.7556014060974121
+        },
+        "4": {
+            "profile_pearson": 0.5014902353286743,
+            "profile_jsd": 0.32701218128204346,
+            "log_counts_pearson": 0.7005878686904907,
+            "counts_spearman": 0.7178915739059448
+        },
+        "5": {
+            "profile_pearson": 0.5226510167121887,
+            "profile_jsd": 0.3193134665489197,
+            "log_counts_pearson": 0.7191863059997559,
+            "counts_spearman": 0.7341458201408386
+        },
+        "6": {
+            "profile_pearson": 0.5399737358093262,
+            "profile_jsd": 0.31787291169166565,
+            "log_counts_pearson": 0.6796037554740906,
+            "counts_spearman": 0.6987716555595398
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5249297618865967,
+        "profile_jsd": 0.3200957775115967,
+        "log_counts_pearson": 0.7177073955535889,
+        "counts_spearman": 0.7369779944419861
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR636RVF",
+    "biosample": "skeletal muscle tissue",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR636RVF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5138158798217773,
+            "profile_jsd": 0.3240276873111725,
+            "log_counts_pearson": 0.629330039024353,
+            "counts_spearman": 0.6526687145233154
+        },
+        "1": {
+            "profile_pearson": 0.5219448208808899,
+            "profile_jsd": 0.33543860912323,
+            "log_counts_pearson": 0.6005746126174927,
+            "counts_spearman": 0.6001196503639221
+        },
+        "2": {
+            "profile_pearson": 0.5061709880828857,
+            "profile_jsd": 0.32260191440582275,
+            "log_counts_pearson": 0.6343098878860474,
+            "counts_spearman": 0.6506791114807129
+        },
+        "3": {
+            "profile_pearson": 0.5171331167221069,
+            "profile_jsd": 0.31987184286117554,
+            "log_counts_pearson": 0.6428327560424805,
+            "counts_spearman": 0.6681468486785889
+        },
+        "4": {
+            "profile_pearson": 0.5299978256225586,
+            "profile_jsd": 0.3252466917037964,
+            "log_counts_pearson": 0.5950908064842224,
+            "counts_spearman": 0.60833740234375
+        },
+        "5": {
+            "profile_pearson": 0.5057485103607178,
+            "profile_jsd": 0.3251095414161682,
+            "log_counts_pearson": 0.6354387998580933,
+            "counts_spearman": 0.650360643863678
+        },
+        "6": {
+            "profile_pearson": 0.5498439073562622,
+            "profile_jsd": 0.3191238045692444,
+            "log_counts_pearson": 0.5611662864685059,
+            "counts_spearman": 0.5656362175941467
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5196441411972046,
+        "profile_jsd": 0.3244686722755432,
+        "log_counts_pearson": 0.6027993559837341,
+        "counts_spearman": 0.6169713139533997
+    }
+}

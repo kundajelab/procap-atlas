@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR386UFU",
+    "biosample": "peripheral blood mononuclear cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR386UFU",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5630062818527222,
+            "profile_jsd": 0.3497084379196167,
+            "log_counts_pearson": 0.7279157042503357,
+            "counts_spearman": 0.7313486337661743
+        },
+        "1": {
+            "profile_pearson": 0.5511977076530457,
+            "profile_jsd": 0.3662984371185303,
+            "log_counts_pearson": 0.7364099025726318,
+            "counts_spearman": 0.7263613343238831
+        },
+        "2": {
+            "profile_pearson": 0.5611635446548462,
+            "profile_jsd": 0.3541700541973114,
+            "log_counts_pearson": 0.6882666349411011,
+            "counts_spearman": 0.6885045170783997
+        },
+        "3": {
+            "profile_pearson": 0.5533310174942017,
+            "profile_jsd": 0.3606494665145874,
+            "log_counts_pearson": 0.7467839121818542,
+            "counts_spearman": 0.745189905166626
+        },
+        "4": {
+            "profile_pearson": 0.5424803495407104,
+            "profile_jsd": 0.3606896996498108,
+            "log_counts_pearson": 0.6840469837188721,
+            "counts_spearman": 0.6805209517478943
+        },
+        "5": {
+            "profile_pearson": 0.5576183795928955,
+            "profile_jsd": 0.3545437157154083,
+            "log_counts_pearson": 0.7190380096435547,
+            "counts_spearman": 0.7138925194740295
+        },
+        "6": {
+            "profile_pearson": 0.5301276445388794,
+            "profile_jsd": 0.3631812036037445,
+            "log_counts_pearson": 0.643790602684021,
+            "counts_spearman": 0.6493345499038696
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.550957202911377,
+        "profile_jsd": 0.3584688901901245,
+        "log_counts_pearson": 0.7051813006401062,
+        "counts_spearman": 0.7046567797660828
+    }
+}

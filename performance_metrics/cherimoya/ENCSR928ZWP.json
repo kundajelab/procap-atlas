@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR928ZWP",
+    "biosample": "lower leg skin",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR928ZWP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5165088176727295,
+            "profile_jsd": 0.32162219285964966,
+            "log_counts_pearson": 0.7744283676147461,
+            "counts_spearman": 0.7921234965324402
+        },
+        "1": {
+            "profile_pearson": 0.5250742435455322,
+            "profile_jsd": 0.3296930193901062,
+            "log_counts_pearson": 0.7933714985847473,
+            "counts_spearman": 0.8067312240600586
+        },
+        "2": {
+            "profile_pearson": 0.5014547109603882,
+            "profile_jsd": 0.33022668957710266,
+            "log_counts_pearson": 0.775981068611145,
+            "counts_spearman": 0.7923480868339539
+        },
+        "3": {
+            "profile_pearson": 0.5247548818588257,
+            "profile_jsd": 0.3206990361213684,
+            "log_counts_pearson": 0.7870818376541138,
+            "counts_spearman": 0.8028294444084167
+        },
+        "4": {
+            "profile_pearson": 0.5047054290771484,
+            "profile_jsd": 0.32846471667289734,
+            "log_counts_pearson": 0.7610033750534058,
+            "counts_spearman": 0.7788454294204712
+        },
+        "5": {
+            "profile_pearson": 0.5072818398475647,
+            "profile_jsd": 0.3252967596054077,
+            "log_counts_pearson": 0.7695671916007996,
+            "counts_spearman": 0.7901052832603455
+        },
+        "6": {
+            "profile_pearson": 0.5249468684196472,
+            "profile_jsd": 0.31742262840270996,
+            "log_counts_pearson": 0.737364649772644,
+            "counts_spearman": 0.7561511397361755
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5142297148704529,
+        "profile_jsd": 0.32491815090179443,
+        "log_counts_pearson": 0.7707345485687256,
+        "counts_spearman": 0.7886134386062622
+    }
+}

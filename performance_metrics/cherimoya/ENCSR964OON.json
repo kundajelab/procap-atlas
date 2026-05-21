@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR964OON",
+    "biosample": "sternocleidomastoid",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR964OON",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5661618709564209,
+            "profile_jsd": 0.2966230511665344,
+            "log_counts_pearson": 0.777485728263855,
+            "counts_spearman": 0.7989867329597473
+        },
+        "1": {
+            "profile_pearson": 0.5678771138191223,
+            "profile_jsd": 0.30313563346862793,
+            "log_counts_pearson": 0.7923920154571533,
+            "counts_spearman": 0.8159711360931396
+        },
+        "2": {
+            "profile_pearson": 0.5686802864074707,
+            "profile_jsd": 0.3007042109966278,
+            "log_counts_pearson": 0.7888407111167908,
+            "counts_spearman": 0.8118765950202942
+        },
+        "3": {
+            "profile_pearson": 0.567676305770874,
+            "profile_jsd": 0.2986117899417877,
+            "log_counts_pearson": 0.789058268070221,
+            "counts_spearman": 0.811129093170166
+        },
+        "4": {
+            "profile_pearson": 0.5538089275360107,
+            "profile_jsd": 0.30335158109664917,
+            "log_counts_pearson": 0.7737452387809753,
+            "counts_spearman": 0.7957035303115845
+        },
+        "5": {
+            "profile_pearson": 0.5691251158714294,
+            "profile_jsd": 0.29708027839660645,
+            "log_counts_pearson": 0.7928091287612915,
+            "counts_spearman": 0.810452401638031
+        },
+        "6": {
+            "profile_pearson": 0.5651007890701294,
+            "profile_jsd": 0.30158764123916626,
+            "log_counts_pearson": 0.7334864139556885,
+            "counts_spearman": 0.753872811794281
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5656057596206665,
+        "profile_jsd": 0.30034732818603516,
+        "log_counts_pearson": 0.7787274122238159,
+        "counts_spearman": 0.8000725507736206
+    }
+}

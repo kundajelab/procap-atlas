@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR114HGS",
+    "biosample": "K562",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR114HGS",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.45236027240753174,
+            "profile_jsd": 0.43931305408477783,
+            "log_counts_pearson": 0.2339019626379013,
+            "counts_spearman": 0.22065876424312592
+        },
+        "1": {
+            "profile_pearson": 0.3962569236755371,
+            "profile_jsd": 0.47375792264938354,
+            "log_counts_pearson": 0.15612690150737762,
+            "counts_spearman": 0.1454785317182541
+        },
+        "2": {
+            "profile_pearson": 0.5029787421226501,
+            "profile_jsd": 0.40366172790527344,
+            "log_counts_pearson": 0.19767428934574127,
+            "counts_spearman": 0.18862944841384888
+        },
+        "3": {
+            "profile_pearson": 0.480271577835083,
+            "profile_jsd": 0.4190199375152588,
+            "log_counts_pearson": 0.13293887674808502,
+            "counts_spearman": 0.11665184050798416
+        },
+        "4": {
+            "profile_pearson": 0.4782252609729767,
+            "profile_jsd": 0.4159003496170044,
+            "log_counts_pearson": 0.19349229335784912,
+            "counts_spearman": 0.1839912086725235
+        },
+        "5": {
+            "profile_pearson": 0.4651617109775543,
+            "profile_jsd": 0.4267365336418152,
+            "log_counts_pearson": 0.22967129945755005,
+            "counts_spearman": 0.21570464968681335
+        },
+        "6": {
+            "profile_pearson": 0.47409293055534363,
+            "profile_jsd": 0.4319939911365509,
+            "log_counts_pearson": 0.14491556584835052,
+            "counts_spearman": 0.1302611380815506
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4664386212825775,
+        "profile_jsd": 0.4293472170829773,
+        "log_counts_pearson": 0.1465814709663391,
+        "counts_spearman": 0.1276191771030426
+    }
+}

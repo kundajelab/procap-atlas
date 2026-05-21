@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR571OAW",
+    "biosample": "mesothelial cell of epicardium",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR571OAW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49424028396606445,
+            "profile_jsd": 0.39745405316352844,
+            "log_counts_pearson": 0.6050147414207458,
+            "counts_spearman": 0.5636956095695496
+        },
+        "1": {
+            "profile_pearson": 0.479907751083374,
+            "profile_jsd": 0.4014822840690613,
+            "log_counts_pearson": 0.6219452619552612,
+            "counts_spearman": 0.5546779632568359
+        },
+        "2": {
+            "profile_pearson": 0.46996521949768066,
+            "profile_jsd": 0.41698163747787476,
+            "log_counts_pearson": 0.6326868534088135,
+            "counts_spearman": 0.5984551310539246
+        },
+        "3": {
+            "profile_pearson": 0.4973384141921997,
+            "profile_jsd": 0.39675676822662354,
+            "log_counts_pearson": 0.6293564438819885,
+            "counts_spearman": 0.6253438591957092
+        },
+        "4": {
+            "profile_pearson": 0.49178534746170044,
+            "profile_jsd": 0.40734630823135376,
+            "log_counts_pearson": 0.6095209121704102,
+            "counts_spearman": 0.573786199092865
+        },
+        "5": {
+            "profile_pearson": 0.4814625382423401,
+            "profile_jsd": 0.401555597782135,
+            "log_counts_pearson": 0.6120627522468567,
+            "counts_spearman": 0.5791085362434387
+        },
+        "6": {
+            "profile_pearson": 0.48555436730384827,
+            "profile_jsd": 0.4015587568283081,
+            "log_counts_pearson": 0.5376946330070496,
+            "counts_spearman": 0.49132978916168213
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.485195517539978,
+        "profile_jsd": 0.4033602774143219,
+        "log_counts_pearson": 0.5877447724342346,
+        "counts_spearman": 0.5446436405181885
+    }
+}

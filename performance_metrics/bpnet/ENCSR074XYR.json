@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR074XYR",
+    "biosample": "Colon Carcinoma Metastatic in the Brain",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR074XYR",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4873499274253845,
+            "profile_jsd": 0.3534068465232849,
+            "log_counts_pearson": 0.6696446537971497,
+            "counts_spearman": 0.6698580384254456
+        },
+        "1": {
+            "profile_pearson": 0.4775499105453491,
+            "profile_jsd": 0.3508112132549286,
+            "log_counts_pearson": 0.6353859305381775,
+            "counts_spearman": 0.6510165333747864
+        },
+        "2": {
+            "profile_pearson": 0.4885064363479614,
+            "profile_jsd": 0.3555269241333008,
+            "log_counts_pearson": 0.655059814453125,
+            "counts_spearman": 0.6555763483047485
+        },
+        "3": {
+            "profile_pearson": 0.4834057688713074,
+            "profile_jsd": 0.3502596914768219,
+            "log_counts_pearson": 0.6446062326431274,
+            "counts_spearman": 0.6600265502929688
+        },
+        "4": {
+            "profile_pearson": 0.48159492015838623,
+            "profile_jsd": 0.3560240566730499,
+            "log_counts_pearson": 0.6269400715827942,
+            "counts_spearman": 0.6401573419570923
+        },
+        "5": {
+            "profile_pearson": 0.48564720153808594,
+            "profile_jsd": 0.3565289080142975,
+            "log_counts_pearson": 0.617454469203949,
+            "counts_spearman": 0.6300752758979797
+        },
+        "6": {
+            "profile_pearson": 0.48478856682777405,
+            "profile_jsd": 0.3561971187591553,
+            "log_counts_pearson": 0.5534217953681946,
+            "counts_spearman": 0.5629467964172363
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4838404655456543,
+        "profile_jsd": 0.3541586399078369,
+        "log_counts_pearson": 0.6183607578277588,
+        "counts_spearman": 0.6261374354362488
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR347PQY",
+    "biosample": "upper lobe of left lung",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR347PQY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5429720878601074,
+            "profile_jsd": 0.33016282320022583,
+            "log_counts_pearson": 0.6609140038490295,
+            "counts_spearman": 0.6655747294425964
+        },
+        "1": {
+            "profile_pearson": 0.5157814025878906,
+            "profile_jsd": 0.3455374240875244,
+            "log_counts_pearson": 0.6547219753265381,
+            "counts_spearman": 0.6557048559188843
+        },
+        "2": {
+            "profile_pearson": 0.5347115397453308,
+            "profile_jsd": 0.32803502678871155,
+            "log_counts_pearson": 0.6524534225463867,
+            "counts_spearman": 0.6632531881332397
+        },
+        "3": {
+            "profile_pearson": 0.5379913449287415,
+            "profile_jsd": 0.32951289415359497,
+            "log_counts_pearson": 0.650865375995636,
+            "counts_spearman": 0.6575542688369751
+        },
+        "4": {
+            "profile_pearson": 0.5328460931777954,
+            "profile_jsd": 0.32500332593917847,
+            "log_counts_pearson": 0.6523298621177673,
+            "counts_spearman": 0.6602447628974915
+        },
+        "5": {
+            "profile_pearson": 0.524299144744873,
+            "profile_jsd": 0.32964086532592773,
+            "log_counts_pearson": 0.6595284938812256,
+            "counts_spearman": 0.6669995188713074
+        },
+        "6": {
+            "profile_pearson": 0.5534630417823792,
+            "profile_jsd": 0.3185040354728699,
+            "log_counts_pearson": 0.5822012424468994,
+            "counts_spearman": 0.5931216478347778
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5340721607208252,
+        "profile_jsd": 0.3292492628097534,
+        "log_counts_pearson": 0.6422731280326843,
+        "counts_spearman": 0.6502291560173035
+    }
+}

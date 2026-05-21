@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR331QXJ",
+    "biosample": "Colon Carcinoma Metastatic in the Lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR331QXJ",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5156975388526917,
+            "profile_jsd": 0.33983951807022095,
+            "log_counts_pearson": 0.6126769185066223,
+            "counts_spearman": 0.6412587761878967
+        },
+        "1": {
+            "profile_pearson": 0.5072858333587646,
+            "profile_jsd": 0.35044753551483154,
+            "log_counts_pearson": 0.674286425113678,
+            "counts_spearman": 0.6971170902252197
+        },
+        "2": {
+            "profile_pearson": 0.5022025108337402,
+            "profile_jsd": 0.35132360458374023,
+            "log_counts_pearson": 0.6260814666748047,
+            "counts_spearman": 0.6521292328834534
+        },
+        "3": {
+            "profile_pearson": 0.4902115762233734,
+            "profile_jsd": 0.3572615385055542,
+            "log_counts_pearson": 0.6120155453681946,
+            "counts_spearman": 0.6370116472244263
+        },
+        "4": {
+            "profile_pearson": 0.48863357305526733,
+            "profile_jsd": 0.35623064637184143,
+            "log_counts_pearson": 0.6406845450401306,
+            "counts_spearman": 0.6644622683525085
+        },
+        "5": {
+            "profile_pearson": 0.4992559552192688,
+            "profile_jsd": 0.35476619005203247,
+            "log_counts_pearson": 0.6384437680244446,
+            "counts_spearman": 0.6514398455619812
+        },
+        "6": {
+            "profile_pearson": 0.5030934810638428,
+            "profile_jsd": 0.353542685508728,
+            "log_counts_pearson": 0.5805390477180481,
+            "counts_spearman": 0.600317656993866
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5000947713851929,
+        "profile_jsd": 0.3521275818347931,
+        "log_counts_pearson": 0.6095801591873169,
+        "counts_spearman": 0.6290315985679626
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR720EXP",
+    "biosample": "Metastatic Liver Carcinoma in the Lung",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR720EXP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5408958196640015,
+            "profile_jsd": 0.33457228541374207,
+            "log_counts_pearson": 0.6548398733139038,
+            "counts_spearman": 0.6723749041557312
+        },
+        "1": {
+            "profile_pearson": 0.5433357954025269,
+            "profile_jsd": 0.3379685580730438,
+            "log_counts_pearson": 0.697612464427948,
+            "counts_spearman": 0.7129907011985779
+        },
+        "2": {
+            "profile_pearson": 0.545200765132904,
+            "profile_jsd": 0.34077930450439453,
+            "log_counts_pearson": 0.679697573184967,
+            "counts_spearman": 0.7011463046073914
+        },
+        "3": {
+            "profile_pearson": 0.543546736240387,
+            "profile_jsd": 0.3458271324634552,
+            "log_counts_pearson": 0.6900680661201477,
+            "counts_spearman": 0.702150285243988
+        },
+        "4": {
+            "profile_pearson": 0.530290961265564,
+            "profile_jsd": 0.3415551781654358,
+            "log_counts_pearson": 0.6643478274345398,
+            "counts_spearman": 0.6732835173606873
+        },
+        "5": {
+            "profile_pearson": 0.5293134450912476,
+            "profile_jsd": 0.3417891263961792,
+            "log_counts_pearson": 0.6891700029373169,
+            "counts_spearman": 0.6890998482704163
+        },
+        "6": {
+            "profile_pearson": 0.5269298553466797,
+            "profile_jsd": 0.3464251160621643,
+            "log_counts_pearson": 0.6118302941322327,
+            "counts_spearman": 0.6258718967437744
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5367249250411987,
+        "profile_jsd": 0.3412480354309082,
+        "log_counts_pearson": 0.6652029156684875,
+        "counts_spearman": 0.6767624020576477
+    }
+}

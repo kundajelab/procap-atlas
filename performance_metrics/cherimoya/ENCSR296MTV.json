@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR296MTV",
+    "biosample": "left common carotid artery plus branches",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR296MTV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.49976426362991333,
+            "profile_jsd": 0.34045761823654175,
+            "log_counts_pearson": 0.649752676486969,
+            "counts_spearman": 0.6671885848045349
+        },
+        "1": {
+            "profile_pearson": 0.52818363904953,
+            "profile_jsd": 0.3478638529777527,
+            "log_counts_pearson": 0.6262184381484985,
+            "counts_spearman": 0.6026017665863037
+        },
+        "2": {
+            "profile_pearson": 0.49829167127609253,
+            "profile_jsd": 0.34392049908638,
+            "log_counts_pearson": 0.6495142579078674,
+            "counts_spearman": 0.6793252229690552
+        },
+        "3": {
+            "profile_pearson": 0.4980925917625427,
+            "profile_jsd": 0.33711743354797363,
+            "log_counts_pearson": 0.6641796827316284,
+            "counts_spearman": 0.6758795380592346
+        },
+        "4": {
+            "profile_pearson": 0.49160003662109375,
+            "profile_jsd": 0.3455011248588562,
+            "log_counts_pearson": 0.6481638550758362,
+            "counts_spearman": 0.660808801651001
+        },
+        "5": {
+            "profile_pearson": 0.5022810697555542,
+            "profile_jsd": 0.3398955762386322,
+            "log_counts_pearson": 0.6672256588935852,
+            "counts_spearman": 0.6708559393882751
+        },
+        "6": {
+            "profile_pearson": 0.5180367231369019,
+            "profile_jsd": 0.3413725793361664,
+            "log_counts_pearson": 0.6142902374267578,
+            "counts_spearman": 0.6407670974731445
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5039634704589844,
+        "profile_jsd": 0.3422500193119049,
+        "log_counts_pearson": 0.6062180995941162,
+        "counts_spearman": 0.6227014064788818
+    }
+}

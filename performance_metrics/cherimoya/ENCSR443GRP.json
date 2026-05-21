@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR443GRP",
+    "biosample": "endodermal cell",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR443GRP",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5764761567115784,
+            "profile_jsd": 0.30195462703704834,
+            "log_counts_pearson": 0.7593520879745483,
+            "counts_spearman": 0.7869933247566223
+        },
+        "1": {
+            "profile_pearson": 0.5731161832809448,
+            "profile_jsd": 0.3071988821029663,
+            "log_counts_pearson": 0.7766211628913879,
+            "counts_spearman": 0.8067106604576111
+        },
+        "2": {
+            "profile_pearson": 0.5679516792297363,
+            "profile_jsd": 0.3092268109321594,
+            "log_counts_pearson": 0.754315197467804,
+            "counts_spearman": 0.7831042408943176
+        },
+        "3": {
+            "profile_pearson": 0.5781493186950684,
+            "profile_jsd": 0.3053804636001587,
+            "log_counts_pearson": 0.7644760012626648,
+            "counts_spearman": 0.7967442274093628
+        },
+        "4": {
+            "profile_pearson": 0.5589099526405334,
+            "profile_jsd": 0.3067466914653778,
+            "log_counts_pearson": 0.7558748126029968,
+            "counts_spearman": 0.7842671275138855
+        },
+        "5": {
+            "profile_pearson": 0.5774344205856323,
+            "profile_jsd": 0.30337169766426086,
+            "log_counts_pearson": 0.767549991607666,
+            "counts_spearman": 0.7989774942398071
+        },
+        "6": {
+            "profile_pearson": 0.5772345066070557,
+            "profile_jsd": 0.3032596707344055,
+            "log_counts_pearson": 0.7407718896865845,
+            "counts_spearman": 0.7676219344139099
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5726737380027771,
+        "profile_jsd": 0.3051060140132904,
+        "log_counts_pearson": 0.7595651745796204,
+        "counts_spearman": 0.7888078093528748
+    }
+}

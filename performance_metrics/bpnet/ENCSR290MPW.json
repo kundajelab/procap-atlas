@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR290MPW",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR290MPW",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.48705124855041504,
+            "profile_jsd": 0.37943235039711,
+            "log_counts_pearson": 0.7113927006721497,
+            "counts_spearman": 0.7195412516593933
+        },
+        "1": {
+            "profile_pearson": 0.4895765483379364,
+            "profile_jsd": 0.3750195801258087,
+            "log_counts_pearson": 0.7240835428237915,
+            "counts_spearman": 0.725683867931366
+        },
+        "2": {
+            "profile_pearson": 0.49301740527153015,
+            "profile_jsd": 0.37582331895828247,
+            "log_counts_pearson": 0.6999033093452454,
+            "counts_spearman": 0.7073782086372375
+        },
+        "3": {
+            "profile_pearson": 0.4971778392791748,
+            "profile_jsd": 0.3775765001773834,
+            "log_counts_pearson": 0.7121060490608215,
+            "counts_spearman": 0.7155831456184387
+        },
+        "4": {
+            "profile_pearson": 0.49269604682922363,
+            "profile_jsd": 0.3773753046989441,
+            "log_counts_pearson": 0.6960523128509521,
+            "counts_spearman": 0.70449298620224
+        },
+        "5": {
+            "profile_pearson": 0.49400585889816284,
+            "profile_jsd": 0.3763158917427063,
+            "log_counts_pearson": 0.6985109448432922,
+            "counts_spearman": 0.7088529467582703
+        },
+        "6": {
+            "profile_pearson": 0.5040068626403809,
+            "profile_jsd": 0.36285191774368286,
+            "log_counts_pearson": 0.6804649233818054,
+            "counts_spearman": 0.6986889243125916
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4936562180519104,
+        "profile_jsd": 0.3752012848854065,
+        "log_counts_pearson": 0.6999301910400391,
+        "counts_spearman": 0.7111502885818481
+    }
+}

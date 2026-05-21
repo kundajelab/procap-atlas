@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR255MUU",
+    "biosample": "progenitor cell of endocrine pancreas",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR255MUU",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.6020218729972839,
+            "profile_jsd": 0.27252817153930664,
+            "log_counts_pearson": 0.7177552580833435,
+            "counts_spearman": 0.7404063940048218
+        },
+        "1": {
+            "profile_pearson": 0.59184730052948,
+            "profile_jsd": 0.27990537881851196,
+            "log_counts_pearson": 0.7454965710639954,
+            "counts_spearman": 0.7740787267684937
+        },
+        "2": {
+            "profile_pearson": 0.600180983543396,
+            "profile_jsd": 0.279005229473114,
+            "log_counts_pearson": 0.7230519652366638,
+            "counts_spearman": 0.7471395134925842
+        },
+        "3": {
+            "profile_pearson": 0.6003454327583313,
+            "profile_jsd": 0.2785922884941101,
+            "log_counts_pearson": 0.73828125,
+            "counts_spearman": 0.7684063911437988
+        },
+        "4": {
+            "profile_pearson": 0.5914328098297119,
+            "profile_jsd": 0.28170347213745117,
+            "log_counts_pearson": 0.7210866212844849,
+            "counts_spearman": 0.7464234232902527
+        },
+        "5": {
+            "profile_pearson": 0.6011737585067749,
+            "profile_jsd": 0.27685680985450745,
+            "log_counts_pearson": 0.728644073009491,
+            "counts_spearman": 0.7499272227287292
+        },
+        "6": {
+            "profile_pearson": 0.5978835225105286,
+            "profile_jsd": 0.2798457443714142,
+            "log_counts_pearson": 0.7043200731277466,
+            "counts_spearman": 0.7284973859786987
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5980712175369263,
+        "profile_jsd": 0.2780495882034302,
+        "log_counts_pearson": 0.7247886061668396,
+        "counts_spearman": 0.7497501373291016
+    }
+}

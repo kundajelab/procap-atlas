@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR478DAN",
+    "biosample": "upper lobe of left lung",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR478DAN",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5580143928527832,
+            "profile_jsd": 0.31871235370635986,
+            "log_counts_pearson": 0.7453906536102295,
+            "counts_spearman": 0.7636079788208008
+        },
+        "1": {
+            "profile_pearson": 0.5453450679779053,
+            "profile_jsd": 0.3217751085758209,
+            "log_counts_pearson": 0.7520460486412048,
+            "counts_spearman": 0.786458432674408
+        },
+        "2": {
+            "profile_pearson": 0.5630553960800171,
+            "profile_jsd": 0.32275867462158203,
+            "log_counts_pearson": 0.753536581993103,
+            "counts_spearman": 0.7843904495239258
+        },
+        "3": {
+            "profile_pearson": 0.5524428486824036,
+            "profile_jsd": 0.3189924359321594,
+            "log_counts_pearson": 0.7478755116462708,
+            "counts_spearman": 0.7779979109764099
+        },
+        "4": {
+            "profile_pearson": 0.5601378679275513,
+            "profile_jsd": 0.32559943199157715,
+            "log_counts_pearson": 0.7332722544670105,
+            "counts_spearman": 0.7632408142089844
+        },
+        "5": {
+            "profile_pearson": 0.5526552200317383,
+            "profile_jsd": 0.3177310824394226,
+            "log_counts_pearson": 0.7474209070205688,
+            "counts_spearman": 0.7721295952796936
+        },
+        "6": {
+            "profile_pearson": 0.5536753535270691,
+            "profile_jsd": 0.3219427466392517,
+            "log_counts_pearson": 0.7036389708518982,
+            "counts_spearman": 0.7323154211044312
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5553671717643738,
+        "profile_jsd": 0.3205246329307556,
+        "log_counts_pearson": 0.7399868965148926,
+        "counts_spearman": 0.7682098150253296
+    }
+}

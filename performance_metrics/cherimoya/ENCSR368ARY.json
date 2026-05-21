@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR368ARY",
+    "biosample": "pulmonary artery",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR368ARY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5545085072517395,
+            "profile_jsd": 0.30797722935676575,
+            "log_counts_pearson": 0.7013500332832336,
+            "counts_spearman": 0.7288968563079834
+        },
+        "1": {
+            "profile_pearson": 0.5592262744903564,
+            "profile_jsd": 0.30890047550201416,
+            "log_counts_pearson": 0.7280786633491516,
+            "counts_spearman": 0.7596870064735413
+        },
+        "2": {
+            "profile_pearson": 0.5463284254074097,
+            "profile_jsd": 0.31172263622283936,
+            "log_counts_pearson": 0.7304137349128723,
+            "counts_spearman": 0.7628546357154846
+        },
+        "3": {
+            "profile_pearson": 0.5570511817932129,
+            "profile_jsd": 0.3054540157318115,
+            "log_counts_pearson": 0.7250707745552063,
+            "counts_spearman": 0.7460761666297913
+        },
+        "4": {
+            "profile_pearson": 0.5353737473487854,
+            "profile_jsd": 0.33387625217437744,
+            "log_counts_pearson": 0.6744263172149658,
+            "counts_spearman": 0.6803918480873108
+        },
+        "5": {
+            "profile_pearson": 0.5272961854934692,
+            "profile_jsd": 0.3473367691040039,
+            "log_counts_pearson": 0.6962443590164185,
+            "counts_spearman": 0.6999306082725525
+        },
+        "6": {
+            "profile_pearson": 0.5671614408493042,
+            "profile_jsd": 0.306470662355423,
+            "log_counts_pearson": 0.6474052667617798,
+            "counts_spearman": 0.665015697479248
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5478797554969788,
+        "profile_jsd": 0.3193854093551636,
+        "log_counts_pearson": 0.6043171882629395,
+        "counts_spearman": 0.6179068088531494
+    }
+}

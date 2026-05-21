@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR408RHY",
+    "biosample": "adrenal gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR408RHY",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.518714964389801,
+            "profile_jsd": 0.3471919000148773,
+            "log_counts_pearson": 0.7470565438270569,
+            "counts_spearman": 0.7569150328636169
+        },
+        "1": {
+            "profile_pearson": 0.5198872089385986,
+            "profile_jsd": 0.3474598526954651,
+            "log_counts_pearson": 0.7455607652664185,
+            "counts_spearman": 0.7635810971260071
+        },
+        "2": {
+            "profile_pearson": 0.514518678188324,
+            "profile_jsd": 0.35358038544654846,
+            "log_counts_pearson": 0.7400413751602173,
+            "counts_spearman": 0.7516800165176392
+        },
+        "3": {
+            "profile_pearson": 0.5218169689178467,
+            "profile_jsd": 0.34613436460494995,
+            "log_counts_pearson": 0.7452592849731445,
+            "counts_spearman": 0.7631449699401855
+        },
+        "4": {
+            "profile_pearson": 0.5168287754058838,
+            "profile_jsd": 0.3518211245536804,
+            "log_counts_pearson": 0.6867543458938599,
+            "counts_spearman": 0.7167501449584961
+        },
+        "5": {
+            "profile_pearson": 0.5266335606575012,
+            "profile_jsd": 0.33957305550575256,
+            "log_counts_pearson": 0.7235429883003235,
+            "counts_spearman": 0.7436774969100952
+        },
+        "6": {
+            "profile_pearson": 0.5198057293891907,
+            "profile_jsd": 0.3441692888736725,
+            "log_counts_pearson": 0.6920841932296753,
+            "counts_spearman": 0.7089880704879761
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5199409127235413,
+        "profile_jsd": 0.3467390239238739,
+        "log_counts_pearson": 0.7200376391410828,
+        "counts_spearman": 0.7406951189041138
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR594WJV",
+    "biosample": "cytotoxic T cell",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR594WJV",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4581584632396698,
+            "profile_jsd": 0.38516420125961304,
+            "log_counts_pearson": 0.6202779412269592,
+            "counts_spearman": 0.6417873501777649
+        },
+        "1": {
+            "profile_pearson": 0.43886297941207886,
+            "profile_jsd": 0.3996213674545288,
+            "log_counts_pearson": 0.6432644724845886,
+            "counts_spearman": 0.6654735803604126
+        },
+        "2": {
+            "profile_pearson": 0.44144243001937866,
+            "profile_jsd": 0.3964197635650635,
+            "log_counts_pearson": 0.6192589402198792,
+            "counts_spearman": 0.6364802718162537
+        },
+        "3": {
+            "profile_pearson": 0.4633437693119049,
+            "profile_jsd": 0.38721975684165955,
+            "log_counts_pearson": 0.6198709011077881,
+            "counts_spearman": 0.6377789378166199
+        },
+        "4": {
+            "profile_pearson": 0.45069169998168945,
+            "profile_jsd": 0.3939730226993561,
+            "log_counts_pearson": 0.6096141338348389,
+            "counts_spearman": 0.6346064805984497
+        },
+        "5": {
+            "profile_pearson": 0.4685303270816803,
+            "profile_jsd": 0.38890761137008667,
+            "log_counts_pearson": 0.6321899890899658,
+            "counts_spearman": 0.6573790311813354
+        },
+        "6": {
+            "profile_pearson": 0.45069801807403564,
+            "profile_jsd": 0.39129531383514404,
+            "log_counts_pearson": 0.5521003603935242,
+            "counts_spearman": 0.5703935623168945
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.45374834537506104,
+        "profile_jsd": 0.3919139504432678,
+        "log_counts_pearson": 0.6069507598876953,
+        "counts_spearman": 0.6269074082374573
+    }
+}

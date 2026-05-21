@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR673CJC",
+    "biosample": "Metastatic Lung Carcinoma in the Adrenal Gland",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR673CJC",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.5159366726875305,
+            "profile_jsd": 0.34533601999282837,
+            "log_counts_pearson": 0.68874192237854,
+            "counts_spearman": 0.700304388999939
+        },
+        "1": {
+            "profile_pearson": 0.5258736610412598,
+            "profile_jsd": 0.3278905153274536,
+            "log_counts_pearson": 0.7083519697189331,
+            "counts_spearman": 0.7262156009674072
+        },
+        "2": {
+            "profile_pearson": 0.5176726579666138,
+            "profile_jsd": 0.33955132961273193,
+            "log_counts_pearson": 0.7049183249473572,
+            "counts_spearman": 0.7222083806991577
+        },
+        "3": {
+            "profile_pearson": 0.5004746913909912,
+            "profile_jsd": 0.34031763672828674,
+            "log_counts_pearson": 0.7142762541770935,
+            "counts_spearman": 0.7374489903450012
+        },
+        "4": {
+            "profile_pearson": 0.5052802562713623,
+            "profile_jsd": 0.3406429886817932,
+            "log_counts_pearson": 0.6974658966064453,
+            "counts_spearman": 0.7136150002479553
+        },
+        "5": {
+            "profile_pearson": 0.5142874121665955,
+            "profile_jsd": 0.34357720613479614,
+            "log_counts_pearson": 0.684521496295929,
+            "counts_spearman": 0.7142167687416077
+        },
+        "6": {
+            "profile_pearson": 0.5287294387817383,
+            "profile_jsd": 0.33229613304138184,
+            "log_counts_pearson": 0.6221262216567993,
+            "counts_spearman": 0.6357229948043823
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.51503986120224,
+        "profile_jsd": 0.3388749957084656,
+        "log_counts_pearson": 0.6634763479232788,
+        "counts_spearman": 0.6804807782173157
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR784FKF",
+    "biosample": "vermiform appendix",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR784FKF",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4472319483757019,
+            "profile_jsd": 0.38314223289489746,
+            "log_counts_pearson": 0.7209684252738953,
+            "counts_spearman": 0.7265101075172424
+        },
+        "1": {
+            "profile_pearson": 0.5364776849746704,
+            "profile_jsd": 0.3435753583908081,
+            "log_counts_pearson": 0.7603474259376526,
+            "counts_spearman": 0.7804616689682007
+        },
+        "2": {
+            "profile_pearson": 0.5376222133636475,
+            "profile_jsd": 0.3366072177886963,
+            "log_counts_pearson": 0.7541136145591736,
+            "counts_spearman": 0.7744671702384949
+        },
+        "3": {
+            "profile_pearson": 0.5353438258171082,
+            "profile_jsd": 0.33871057629585266,
+            "log_counts_pearson": 0.7549507021903992,
+            "counts_spearman": 0.7732158899307251
+        },
+        "4": {
+            "profile_pearson": 0.5277050137519836,
+            "profile_jsd": 0.3427375555038452,
+            "log_counts_pearson": 0.7523759007453918,
+            "counts_spearman": 0.7607772350311279
+        },
+        "5": {
+            "profile_pearson": 0.5424038171768188,
+            "profile_jsd": 0.3361584544181824,
+            "log_counts_pearson": 0.767509400844574,
+            "counts_spearman": 0.7816724181175232
+        },
+        "6": {
+            "profile_pearson": 0.5608140230178833,
+            "profile_jsd": 0.32561439275741577,
+            "log_counts_pearson": 0.7170090675354004,
+            "counts_spearman": 0.7411260604858398
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5269158482551575,
+        "profile_jsd": 0.3442266583442688,
+        "log_counts_pearson": 0.7441504001617432,
+        "counts_spearman": 0.7610767483711243
+    }
+}

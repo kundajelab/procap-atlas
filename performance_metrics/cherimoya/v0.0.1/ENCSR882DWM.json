@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR882DWM",
+    "biosample": "K562",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/cherimoya/ENCSR882DWM",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.4785679578781128,
+            "profile_jsd": 0.41952410340309143,
+            "log_counts_pearson": 0.1943378448486328,
+            "counts_spearman": 0.17782744765281677
+        },
+        "1": {
+            "profile_pearson": 0.4480821192264557,
+            "profile_jsd": 0.45148783922195435,
+            "log_counts_pearson": 0.16126583516597748,
+            "counts_spearman": 0.15315744280815125
+        },
+        "2": {
+            "profile_pearson": 0.4736190438270569,
+            "profile_jsd": 0.4223707318305969,
+            "log_counts_pearson": 0.12688006460666656,
+            "counts_spearman": 0.13073371350765228
+        },
+        "3": {
+            "profile_pearson": 0.45843786001205444,
+            "profile_jsd": 0.4363260269165039,
+            "log_counts_pearson": 0.10806653648614883,
+            "counts_spearman": 0.09821420907974243
+        },
+        "4": {
+            "profile_pearson": 0.4577997028827667,
+            "profile_jsd": 0.4385182559490204,
+            "log_counts_pearson": 0.13510440289974213,
+            "counts_spearman": 0.13615909218788147
+        },
+        "5": {
+            "profile_pearson": 0.462921142578125,
+            "profile_jsd": 0.43847933411598206,
+            "log_counts_pearson": 0.19770945608615875,
+            "counts_spearman": 0.17042110860347748
+        },
+        "6": {
+            "profile_pearson": 0.45771318674087524,
+            "profile_jsd": 0.4451431334018707,
+            "log_counts_pearson": 0.12750715017318726,
+            "counts_spearman": 0.1203019991517067
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4636577367782593,
+        "profile_jsd": 0.4348975419998169,
+        "log_counts_pearson": 0.15250104665756226,
+        "counts_spearman": 0.14492060244083405
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR812JCT",
+    "biosample": "heart left ventricle",
+    "model_dir": "/srv/scratch/ayhe/procap-atlas/models/bpnet/ENCSR812JCT",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.407526433467865,
+            "profile_jsd": 0.4240626096725464,
+            "log_counts_pearson": 0.7293930053710938,
+            "counts_spearman": 0.7385836839675903
+        },
+        "1": {
+            "profile_pearson": 0.3962748050689697,
+            "profile_jsd": 0.43465009331703186,
+            "log_counts_pearson": 0.7054953575134277,
+            "counts_spearman": 0.7288563251495361
+        },
+        "2": {
+            "profile_pearson": 0.4166235625743866,
+            "profile_jsd": 0.4230424463748932,
+            "log_counts_pearson": 0.7435109615325928,
+            "counts_spearman": 0.7580245137214661
+        },
+        "3": {
+            "profile_pearson": 0.4017713665962219,
+            "profile_jsd": 0.4283334016799927,
+            "log_counts_pearson": 0.7391627430915833,
+            "counts_spearman": 0.751666784286499
+        },
+        "4": {
+            "profile_pearson": 0.4085189998149872,
+            "profile_jsd": 0.41972652077674866,
+            "log_counts_pearson": 0.7472400665283203,
+            "counts_spearman": 0.7567351460456848
+        },
+        "5": {
+            "profile_pearson": 0.41312283277511597,
+            "profile_jsd": 0.41379261016845703,
+            "log_counts_pearson": 0.7332761883735657,
+            "counts_spearman": 0.7487355470657349
+        },
+        "6": {
+            "profile_pearson": 0.4262499511241913,
+            "profile_jsd": 0.40006691217422485,
+            "log_counts_pearson": 0.7142267227172852,
+            "counts_spearman": 0.7350292801856995
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.4100792706012726,
+        "profile_jsd": 0.41975951194763184,
+        "log_counts_pearson": 0.7265335321426392,
+        "counts_spearman": 0.7443088293075562
+    }
+}

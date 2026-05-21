@@ -1,0 +1,55 @@
+{
+    "experiment": "ENCSR756CCD",
+    "biosample": "thyroid gland",
+    "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR756CCD",
+    "per_fold": {
+        "0": {
+            "profile_pearson": 0.541785478591919,
+            "profile_jsd": 0.3047323226928711,
+            "log_counts_pearson": 0.7315180897712708,
+            "counts_spearman": 0.7519557476043701
+        },
+        "1": {
+            "profile_pearson": 0.5324315428733826,
+            "profile_jsd": 0.31112438440322876,
+            "log_counts_pearson": 0.7386184334754944,
+            "counts_spearman": 0.7597537040710449
+        },
+        "2": {
+            "profile_pearson": 0.5420882105827332,
+            "profile_jsd": 0.31090855598449707,
+            "log_counts_pearson": 0.7503044009208679,
+            "counts_spearman": 0.7695544958114624
+        },
+        "3": {
+            "profile_pearson": 0.5291810631752014,
+            "profile_jsd": 0.31260520219802856,
+            "log_counts_pearson": 0.7241578698158264,
+            "counts_spearman": 0.7520862221717834
+        },
+        "4": {
+            "profile_pearson": 0.5210130214691162,
+            "profile_jsd": 0.31268197298049927,
+            "log_counts_pearson": 0.7222341895103455,
+            "counts_spearman": 0.7420002818107605
+        },
+        "5": {
+            "profile_pearson": 0.5390976071357727,
+            "profile_jsd": 0.3074764609336853,
+            "log_counts_pearson": 0.7387982606887817,
+            "counts_spearman": 0.7584922909736633
+        },
+        "6": {
+            "profile_pearson": 0.5620455741882324,
+            "profile_jsd": 0.3129168450832367,
+            "log_counts_pearson": 0.6921229362487793,
+            "counts_spearman": 0.7014549970626831
+        }
+    },
+    "genome_wide": {
+        "profile_pearson": 0.5378382802009583,
+        "profile_jsd": 0.3102295398712158,
+        "log_counts_pearson": 0.7236810326576233,
+        "counts_spearman": 0.7462600469589233
+    }
+}
