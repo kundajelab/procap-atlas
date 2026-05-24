@@ -32,8 +32,8 @@ DEFAULT_BASE_URL = "https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas"
 
 HUB_TXT_TEMPLATE = """\
 hub procap_atlas
-shortLabel ENCODE PRO-cap Atlas
-longLabel ENCODE PRO-cap Atlas (GRCh38)
+shortLabel PRO-cap Atlas
+longLabel ENCODE PRO-cap atlas: GRCh38 TSS signal, peaks, and BPNet contribution tracks
 genomesFile genomes.txt
 email {email}
 descriptionUrl {base_url}/
@@ -61,15 +61,48 @@ def make_short_label(biosample, exp_id, suffix=""):
     return label[:17]
 
 
-def make_long_label(exp, exp_id):
-    """Make a longLabel <= 100 chars."""
+def clean_label_text(value):
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
+def truncate_label(label, max_len=100):
+    """Truncate UCSC longLabel text while preserving a readable ending."""
+    label = clean_label_text(label)
+    if len(label) <= max_len:
+        return label
+    return label[: max_len - 3].rstrip() + "..."
+
+
+def experiment_context(exp, exp_id):
+    """Return compact experiment context for UCSC longLabel fields."""
     parts = [
         exp.get("biosample_summary", exp.get("biosample", "")),
         exp.get("library_construction", ""),
         f"[{exp_id}]",
     ]
-    label = " | ".join(p for p in parts if p)
-    return label[:100]
+    return " | ".join(clean_label_text(p) for p in parts if clean_label_text(p))
+
+
+def make_long_label(exp, exp_id, description):
+    """Make a descriptive UCSC longLabel <= 100 chars."""
+    context = experiment_context(exp, exp_id)
+    description = clean_label_text(description)
+    if not context:
+        return truncate_label(description)
+    if not description:
+        return truncate_label(context)
+
+    separator = " - "
+    available = 100 - len(separator) - len(description)
+    if available < 20:
+        return truncate_label(f"{context}{separator}{description}")
+    return f"{truncate_label(context, available)}{separator}{description}"
+
+
+def make_supertrack_long_label(biosample):
+    return truncate_label(
+        f"{biosample} ENCODE PRO-cap collection: observed signal, TSS peaks, and BPNet scores"
+    )
 
 
 def clean_base_url(url):
@@ -128,7 +161,7 @@ def write_trackdb(
             f"track {st_name}",
             "superTrack on",
             f"shortLabel {biosample[:17]}",
-            f"longLabel {biosample} PRO-cap Experiments",
+            f"longLabel {make_supertrack_long_label(biosample)}",
             "",
         ]
 
@@ -143,7 +176,9 @@ def write_trackdb(
 
             signal_name = f"{exp_id}_signal"
             short_signal = make_short_label(biosample, exp_id)
-            long_signal = make_long_label(exp, exp_id)
+            signal_label = make_long_label(
+                exp, exp_id, "observed strand-specific PRO-cap signal"
+            )
             visibility = "hide" if is_uncapped(exp) else "full"
 
             # Composite signal track
@@ -153,7 +188,7 @@ def write_trackdb(
                 f"superTrack {st_name}",
                 "type bigWig",
                 f"shortLabel {short_signal}",
-                f"longLabel {long_signal}",
+                f"longLabel {signal_label}",
                 f"visibility {visibility}",
                 "windowingFunction maximum",
                 "maxHeightPixels 128:64:11",
@@ -162,12 +197,15 @@ def write_trackdb(
 
             # Plus-strand subtrack (positive values, range 0 to 40)
             if pl_path:
+                pl_label = make_long_label(
+                    exp, exp_id, "plus-strand observed PRO-cap signal"
+                )
                 lines += [
                     f"    track {exp_id}_pl",
                     f"    parent {signal_name}",
                     f"    bigDataUrl {bigwig_url(base_url, track_base_url, pl_path, exp_id, 'pl')}",
                     f"    shortLabel {(short_signal + ' (+)')[:17]}",
-                    f"    longLabel {long_signal} (+)",
+                    f"    longLabel {pl_label}",
                     "    type bigWig 0 40",
                     "    autoScale on",
                     "    color 197,0,11",
@@ -179,12 +217,17 @@ def write_trackdb(
 
             # Minus-strand subtrack (values stored negative; range -40 to 0, no negateValues)
             if mn_path:
+                mn_label = make_long_label(
+                    exp,
+                    exp_id,
+                    "minus-strand observed PRO-cap signal, negative values",
+                )
                 lines += [
                     f"    track {exp_id}_mn",
                     f"    parent {signal_name}",
                     f"    bigDataUrl {bigwig_url(base_url, track_base_url, mn_path, exp_id, 'mn')}",
                     f"    shortLabel {(short_signal + ' (-)')[:17]}",
-                    f"    longLabel {long_signal} (-)",
+                    f"    longLabel {mn_label}",
                     "    type bigWig -40 0",
                     "    autoScale on",
                     "    color 0,132,209",
@@ -196,22 +239,30 @@ def write_trackdb(
 
             # Peaks track
             if peaks_path:
+                peak_label = make_long_label(
+                    exp, exp_id, "merged bidirectional/unidirectional TSS peaks"
+                )
                 lines += [
                     f"track {exp_id}_peaks",
                     f"superTrack {st_name}",
                     "type bigBed 3 +",
                     f"bigDataUrl {bigbed_url(base_url, track_base_url, bb_filename)}",
                     f"shortLabel {make_short_label(biosample, exp_id, ' pk')}",
-                    f"longLabel {long_signal} Peaks",
+                    f"longLabel {peak_label}",
                     f"visibility {'hide' if is_uncapped(exp) else 'dense'}",
                     "",
                 ]
 
-            # BPNet attribution dynseq tracks. Keep these as standalone
+            # BPNet contribution-score dynseq tracks. Keep these as standalone
             # bigWig tracks because UCSC's dynseq logo display is track-level.
             if attribution_heads:
                 for priority, head in enumerate(attribution_heads, start=1):
                     head_label = "Profile" if head == "profile" else "Count"
+                    attr_label = make_long_label(
+                        exp,
+                        exp_id,
+                        f"BPNet {head_label.lower()} contribution scores",
+                    )
                     if is_uncapped(exp):
                         default_visibility = "hide"
                     else:
@@ -221,7 +272,7 @@ def write_trackdb(
                         f"superTrack {st_name}",
                         f"bigDataUrl {attribution_bigwig_url(base_url, track_base_url, exp_id, head)}",
                         f"shortLabel {(short_signal + ' ' + head[:4])[:17]}",
-                        f"longLabel {long_signal} BPNet {head_label} Attributions",
+                        f"longLabel {attr_label}",
                         "type bigWig",
                         "logo on",
                         "autoScale on",

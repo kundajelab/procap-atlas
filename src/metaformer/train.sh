@@ -3,14 +3,20 @@
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --gpus=8
+#SBATCH --gpus=4
 #SBATCH -C GPU_MEM:80GB|GPU_MEM:141GB
 #SBATCH --partition=gpu,akundaje,owners
 #SBATCH --time=48:00:00
-#SBATCH --output=../../logs/promoterai/train.out
-#SBATCH --error=../../logs/promoterai/train.err
+#SBATCH --output=logs/promoterai/train_%A.out
+#SBATCH --error=logs/promoterai/train_%A.err
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "${REPO_ROOT}"
+mkdir -p logs/promoterai models/metaformer/all_tracks
 
 ml openblas/0.3.28
 ml xsimd/8.1.0
@@ -26,14 +32,42 @@ ml ucsc-utils
 mamba activate torch
 nvidia-smi -L
 
-mkdir -p ../../models/metaformer/checkpoints/all_tracks/
-torchrun --nproc_per_node=8 -m promoterai_torch.train \
-    --checkpoint_folder ../../models/metaformer/all_tracks/ \
-    --hdf5_human_folder ../../data/promoterai \
+NGPUS="${SLURM_GPUS_ON_NODE:-${SLURM_GPUS_PER_NODE:-4}}"
+NGPUS="${NGPUS##*:}"
+if [[ "${NGPUS}" == *,* ]]; then
+    IFS=',' read -ra GPU_IDS <<< "${NGPUS}"
+    NGPUS="${#GPU_IDS[@]}"
+fi
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-2}"
+export MKL_NUM_THREADS="${MKL_NUM_THREADS:-2}"
+export HDF5_USE_FILE_LOCKING="${HDF5_USE_FILE_LOCKING:-FALSE}"
+BATCH_SIZE="${BATCH_SIZE:-$((4 * NGPUS))}"
+NUM_WORKERS="${NUM_WORKERS:-4}"
+PREFETCH_FACTOR="${PREFETCH_FACTOR:-2}"
+PROFILE_BATCHES="${PROFILE_BATCHES:-0}"
+PROFILE_WARMUP_BATCHES="${PROFILE_WARMUP_BATCHES:-10}"
+AMP_DTYPE="${AMP_DTYPE:-none}"
+EXTRA_TRAIN_ARGS=()
+if [[ "${NO_SYNC_BATCHNORM:-0}" == "1" ]]; then
+    EXTRA_TRAIN_ARGS+=(--no_sync_batchnorm)
+fi
+if [[ "${COMPILE_MODEL:-0}" == "1" ]]; then
+    EXTRA_TRAIN_ARGS+=(--compile)
+fi
+
+torchrun --nproc_per_node="${NGPUS}" -m promoterai_torch.train \
+    --checkpoint_folder models/metaformer/all_tracks/ \
+    --hdf5_human_folder data/promoterai \
     --input_length 20480 --output_length 4096 \
-    --num_blocks 24 --model_dim 1024 --batch_size 32 \
+    --num_blocks 24 --model_dim 1024 --batch_size "${BATCH_SIZE}" \
+    --num_workers "${NUM_WORKERS}" \
+    --prefetch_factor "${PREFETCH_FACTOR}" \
+    --profile_batches "${PROFILE_BATCHES}" \
+    --profile_warmup_batches "${PROFILE_WARMUP_BATCHES}" \
+    --amp_dtype "${AMP_DTYPE}" \
     --wandb_project metaformer-procap \
     --wandb_entity adamyhe-stanford-university \
     --wandb_run_name run1 \
     --log_every_batches 100 \
-    --auto_resume
+    --auto_resume \
+    "${EXTRA_TRAIN_ARGS[@]}"
