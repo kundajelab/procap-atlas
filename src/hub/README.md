@@ -8,11 +8,22 @@ To load: in UCSC Genome Browser, go to **My Data -> Track Hubs -> My Hubs** and 
 
 ## Track organization
 
-Experiments are grouped into supertracks by biosample (cell type or tissue). Each experiment has:
+Experiments are grouped into supertracks by biosample (cell type or tissue).
+Each supertrack contains the observed PRO-cap signal, peak calls, and optional
+BPNet contribution score tracks for every experiment from that biosample.
 
-- **Signal** (`{exp_id}_signal`) - multiWig container showing plus-strand (red) and minus-strand (blue) PRO-cap signal. Plus-strand values are positive; minus-strand values are stored negative in the BigWig and appear below the axis automatically.
-- **Peaks** (`{exp_id}_peaks`) - merged bidirectional and unidirectional TSS peak calls in bigBed format.
-- **Attributions** (`{exp_id}_attr_profile`, `{exp_id}_attr_count`) - BPNet profile/count attribution BigWigs displayed as standalone UCSC dynseq tracks using `logo on`.
+- **Signal** (`{exp_id}_signal`) - multiWig container for observed
+  strand-specific PRO-cap signal. The plus strand is red and positive; the minus
+  strand is blue and stored as negative values so it appears below the axis.
+- **Peaks** (`{exp_id}_peaks`) - merged bidirectional and unidirectional TSS peak
+  calls in bigBed format.
+- **Contribution scores** (`{exp_id}_attr_profile`, `{exp_id}_attr_count`) -
+  BPNet profile/count contribution scores displayed as standalone UCSC dynseq
+  logo tracks with `logo on`.
+
+By default, uncapped-library experiments are hidden. For capped experiments,
+observed signal and BPNet profile contribution scores are shown, count
+contribution scores are hidden, and peaks use dense visibility.
 
 ## Generating the hub files
 

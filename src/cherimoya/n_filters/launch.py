@@ -43,7 +43,7 @@ def all_checkpoints_exist(exp_id: str, n_folds: int) -> bool:
     for n_filters in N_FILTERS:
         model_dir = MODEL_ROOT / f"{exp_id}_nf{n_filters}"
         for fold in range(n_folds):
-            model_path = model_dir / f"{exp_id}.fold{fold}.torch"
+            model_path = model_dir / f"{exp_id}.fold{fold}.final.torch"
             if not model_path.exists():
                 return False
     return True
@@ -180,7 +180,7 @@ def main():
                 OUTPUT_DIR="$MODEL_ROOT/${{EXP_ID}}_nf${{N_FILTERS_VALUE}}"
 
                 for FOLD in $(seq 0 $((N_FOLDS - 1))); do
-                    MODEL_PATH="$OUTPUT_DIR/${{EXP_ID}}.fold${{FOLD}}.torch"
+                    MODEL_PATH="$OUTPUT_DIR/${{EXP_ID}}.fold${{FOLD}}.final.torch"
 
                     if [[ -f "$MODEL_PATH" ]]; then
                         echo "Skipping existing model: $MODEL_PATH"
