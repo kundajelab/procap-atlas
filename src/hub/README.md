@@ -8,9 +8,7 @@ To load: in UCSC Genome Browser, go to **My Data -> Track Hubs -> My Hubs** and 
 
 ## Track organization
 
-Experiments are grouped into supertracks by biosample (cell type or tissue).
-Each supertrack contains the observed PRO-cap signal, peak calls, and optional
-BPNet contribution score tracks for every experiment from that biosample.
+Experiments are grouped into supertracks by biosample (cell type or tissue). Each supertrack contains the observed PRO-cap signal, peak calls, and optional BPNet contribution score tracks for every experiment from that biosample.
 
 - **Signal** (`{exp_id}_signal`) - multiWig container for observed
   strand-specific PRO-cap signal. The plus strand is red and positive; the minus
@@ -21,9 +19,7 @@ BPNet contribution score tracks for every experiment from that biosample.
   BPNet profile/count contribution scores displayed as standalone UCSC dynseq
   logo tracks with `logo on`.
 
-By default, uncapped-library experiments are hidden. For capped experiments,
-observed signal and BPNet profile contribution scores are shown, count
-contribution scores are hidden, and peaks use dense visibility.
+By default, uncapped-library experiments are hidden. For capped experiments, observed signal and BPNet profile contribution scores are shown, count contribution scores are hidden, and peaks use dense visibility.
 
 ## Generating the hub files
 
@@ -120,7 +116,4 @@ data/processed/peaks/
 +-- {exp}_{biosample}_peaks.bb         # Converted bigBed (default output location)
 ```
 
-Observed signal BigWigs are served from `data/processed/bigwigs/` by default.
-Peak bigBeds are served from `data/processed/peaks/` by default.
-Attribution BigWigs are served from `attributions/bpnet/bigwigs/` by default.
-When `--track-base-url` is set, observed BigWigs, peak bigBeds, and attribution BigWigs are referenced from the external track asset base URL.
+Observed signal BigWigs are served from `data/processed/bigwigs/` by default. Peak bigBeds are served from `data/processed/peaks/` by default. Attribution BigWigs are served from `attributions/bpnet/bigwigs/` by default. When `--track-base-url` is set, observed BigWigs, peak bigBeds, and attribution BigWigs are referenced from the external track asset base URL.
