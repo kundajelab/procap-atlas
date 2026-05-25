@@ -192,6 +192,7 @@ def write_trackdb(
                 f"visibility {visibility}",
                 "windowingFunction maximum",
                 "maxHeightPixels 128:64:11",
+                "priority 1",
                 "",
             ]
 
@@ -250,6 +251,7 @@ def write_trackdb(
                     f"shortLabel {make_short_label(biosample, exp_id, ' pk')}",
                     f"longLabel {peak_label}",
                     f"visibility {'hide' if is_uncapped(exp) else 'dense'}",
+                    "priority 2",
                     "",
                 ]
 
@@ -266,7 +268,7 @@ def write_trackdb(
                     if is_uncapped(exp):
                         default_visibility = "hide"
                     else:
-                        default_visibility = "full" if head == "profile" else "hide"
+                        default_visibility = "full"
                     lines += [
                         f"track {exp_id}_attr_{head}",
                         f"superTrack {st_name}",
@@ -280,7 +282,7 @@ def write_trackdb(
                         "mouseOverFunction noAverage",
                         "maxHeightPixels 128:64:16",
                         f"visibility {default_visibility}",
-                        f"priority {10 + priority}",
+                        f"priority {2 + priority}",
                         "",
                     ]
 

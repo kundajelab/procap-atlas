@@ -122,7 +122,7 @@ See the repository README and `src/bpnet/README.md` for the additional details.
 
 ## Citation
 
-If you use these models, please cite the PRO-cap atlas model repository and the underlying software dependencies used for training and interpretation, including `bpnet-lite` and related BPNet attribution tooling.
+If you use these models, please cite the PRO-cap atlas model repository and the underlying software dependencies used for training and interpretation, including `bpnet-lite`, `tangermeme`, and `tfmodisco`.
 
 ## Contact
 
