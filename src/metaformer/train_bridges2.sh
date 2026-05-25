@@ -14,7 +14,7 @@
 #SBATCH --output=metaformer_train_%j.out
 #SBATCH --error=metaformer_train_%j.err
 
-set -e
+set -euo pipefail
 
 conda activate bpnet
 
