@@ -7,10 +7,11 @@ Usage:
 """
 
 import argparse
+import os
 import re
-import sys
+import shutil
+import tempfile
 import urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import yaml
@@ -100,15 +101,28 @@ def collect_uploads(experiments, includes, heads):
     return uploads, missing
 
 
-def upload_one(api, repo_id, revision, local, dest):
-    api.upload_file(
+def link_or_copy(src: Path, dest: Path):
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.symlink(src, dest)
+    except OSError:
+        shutil.copy2(src, dest)
+
+
+def stage_upload_tree(uploads, staging_root: Path):
+    for local, dest in uploads:
+        staged = staging_root / dest
+        link_or_copy(local, staged)
+
+
+def upload_large_folder(api, repo_id, revision, folder_path, num_workers):
+    api.upload_large_folder(
         repo_id=repo_id,
         repo_type="dataset",
-        path_or_fileobj=str(local),
-        path_in_repo=dest,
+        folder_path=str(folder_path),
         revision=revision,
+        num_workers=num_workers,
     )
-    return dest
 
 
 def main():
@@ -130,7 +144,13 @@ def main():
         default=None,
         help="attribution head(s) to upload; repeatable (default: profile count)",
     )
-    parser.add_argument("--max-workers", type=int, default=4)
+    parser.add_argument(
+        "-j",
+        "--n-workers",
+        type=int,
+        default=10,
+        help="number of upload_large_folder workers (default: 10)",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--validate-url",
@@ -155,10 +175,11 @@ def main():
             print(f"  {dest} <- {local}")
 
     if args.dry_run:
+        print("UPLOAD LARGE FOLDER repo root:")
         for local, dest in uploads[:50]:
-            print(f"UPLOAD {local} -> {dest}")
+            print(f"  {local} -> {dest}")
         if len(uploads) > 50:
-            print(f"... {len(uploads) - 50} more")
+            print(f"  ... {len(uploads) - 50} more")
     else:
         try:
             from huggingface_hub import HfApi
@@ -167,20 +188,19 @@ def main():
 
         api = HfApi()
         api.create_repo(repo_id=args.repo_id, repo_type="dataset", exist_ok=True)
-        completed = 0
-        with ThreadPoolExecutor(max_workers=args.max_workers) as pool:
-            futures = [
-                pool.submit(upload_one, api, args.repo_id, args.revision, local, dest)
-                for local, dest in uploads
-            ]
-            for future in as_completed(futures):
-                completed += 1
-                try:
-                    dest = future.result()
-                    print(f"[{completed}/{len(uploads)}] uploaded {dest}")
-                except Exception as e:
-                    print(f"ERROR: upload failed: {e}", file=sys.stderr)
-                    raise
+        if not uploads:
+            print("No files to upload")
+        else:
+            with tempfile.TemporaryDirectory(prefix="procap_atlas_hf_upload_") as tmp:
+                staging_root = Path(tmp)
+                stage_upload_tree(uploads, staging_root)
+                print(
+                    f"Uploading large folder with {len(uploads)} files "
+                    f"using {args.n_workers} workers"
+                )
+                upload_large_folder(
+                    api, args.repo_id, args.revision, staging_root, args.n_workers
+                )
 
     if args.validate_url:
         if not uploads:

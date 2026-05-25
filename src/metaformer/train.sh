@@ -9,14 +9,10 @@
 #SBATCH -C GPU_MEM:80GB|GPU_MEM:141GB
 #SBATCH --partition=gpu,akundaje,owners
 #SBATCH --time=48:00:00
-#SBATCH --output=logs/promoterai/train_%A.out
-#SBATCH --error=logs/promoterai/train_%A.err
+#SBATCH --output=metaformer_train_%j.out
+#SBATCH --error=metaformer_train_%j.err
 
-set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "${REPO_ROOT}"
-mkdir -p logs/promoterai models/metaformer/all_tracks
+set -e
 
 ml openblas/0.3.28
 ml xsimd/8.1.0

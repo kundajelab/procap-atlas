@@ -11,15 +11,14 @@
 #SBATCH --mail-type=all
 #SBATCH --mail-user=ayhe@stanford.edu
 #SBATCH -A bio240062p
-#SBATCH --output=/jet/home/adamyhe/storage_/adamyhe/procap-atlas/logs/metaformer/train_%A.out
-#SBATCH --error=/jet/home/adamyhe/storage_/adamyhe/procap-atlas/logs/metaformer/train_%A.err
+#SBATCH --output=metaformer_train_%j.out
+#SBATCH --error=metaformer_train_%j.err
 
 set -euo pipefail
 
 conda activate bpnet
 
 cd /jet/home/adamyhe/storage_/adamyhe/procap-atlas
-mkdir -p logs/metaformer models/metaformer/all_tracks/
 
 NGPUS="${SLURM_GPUS_ON_NODE:-${SLURM_GPUS_PER_NODE:-4}}"
 NGPUS="${NGPUS##*:}"

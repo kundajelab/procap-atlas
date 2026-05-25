@@ -19,7 +19,7 @@ Experiments are grouped into supertracks by biosample (cell type or tissue). Eac
   BPNet profile/count contribution scores displayed as standalone UCSC dynseq
   logo tracks with `logo on`.
 
-By default, uncapped-library experiments are hidden. For capped experiments, observed signal and BPNet profile contribution scores are shown, count contribution scores are hidden, and peaks use dense visibility.
+By default, uncapped-library experiments are hidden. For capped experiments, observed signal plus both BPNet profile and count contribution score tracks are shown, peaks use dense visibility, and contribution score tracks appear below the observed signal and peaks.
 
 ## Generating the hub files
 
@@ -53,6 +53,9 @@ python src/bpnet/benchmark/launch_bigwig_conversion.py --dry-run
 python src/bpnet/benchmark/launch_bigwig_conversion.py
 python src/hub/upload_tracks_hf.py --dry-run
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks
+python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks -j 16
+sbatch src/hub/upload_tracks_hf.slurm
+N_WORKERS=16 INCLUDE="observed peaks" sbatch src/hub/upload_tracks_hf.slurm
 python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
 ```
 
@@ -62,6 +65,14 @@ HF dataset layout:
 - `peaks/bed/{exp_id}_{biosample}.bed.gz`
 - `peaks/bigbed/{exp_id}_{biosample}_peaks.bb`
 - `attributions/bpnet/{exp_id}_{head}.bigWig`
+
+Uploads are staged into a temporary repo-shaped directory and sent with
+Hugging Face `upload_large_folder`, which is resumable and designed for large
+folder uploads.
+
+The SLURM wrapper uses Sherlock defaults and accepts environment-variable
+overrides: `REPO_ID`, `REVISION`, `CONFIG`, `N_WORKERS`, `INCLUDE`, `HEADS`,
+`VALIDATE_URL=1`, and `DRY_RUN=1`.
 
 ## Converting peaks to bigBed
 
