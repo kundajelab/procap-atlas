@@ -41,4 +41,4 @@ python src/cherimoya/n_filters/launch_benchmark.py --dry-run
 python src/cherimoya/n_filters/consolidate_metrics.py
 ```
 
-Historical note: the first Cherimoya models were trained while `cherimoya` was in early development, using commit `69f16dc7ff48ad094aafd4b93433972181c65d50`. Check out that commit only if you need to reproduce that initial model set.
+Historical note: the first Cherimoya models were trained while `cherimoya` was in early development, using commit `69f16dc7ff48ad094aafd4b93433972181c65d50`. Check out that commit only if you need to reproduce that initial model set. A second set of models were trained using `c0cbabe26cabfb5012f4fc5328af832e32f9ed04`.
