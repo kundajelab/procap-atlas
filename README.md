@@ -13,9 +13,9 @@ hub generation code used for the atlas.
 - **BPNet** is the primary deployed model family. Training, benchmarking,
   attribution, MoDISco, motif clustering, Hugging Face upload, and track hub
   support are documented in [`src/bpnet/`](src/bpnet/README.md).
-- **Cherimoya** model training and benchmarking are complete, but the models are
-  not ready for deployment yet. See [`src/cherimoya/`](src/cherimoya/README.md)
-  for current training and evaluation workflows.
+- **Cherimoya** is a novel architecture developed by Jacob Schreiber.
+- Cherimoya PRO-cap models are still in development (currently waiting on stable-ish
+  API and DeepLIFT/SHAP support).
 - **MetaFormer / PromoterAI** support is still in development. The scripts in
   [`src/metaformer/`](src/metaformer/README.md) are experimental helpers and
   cluster templates.
@@ -91,15 +91,15 @@ not a general requirement for every cluster.
 - [`src/bpnet/`](src/bpnet/README.md): BPNet training, benchmarking,
   attributions, MoDISco, motif clustering, uploads, and model track conversion.
 - [`src/cherimoya/`](src/cherimoya/README.md): Cherimoya training,
-  benchmarking, and architecture sweeps.
+  benchmarking, and architecture sweeps (IN DEVELOPMENT).
 - [`src/hub/`](src/hub/README.md): UCSC track hub generation, bigBed
   conversion, Hugging Face track hosting, and validation.
 - [`src/analysis/`](src/analysis/README.md): atlas-level count correlations and
   model warning flags.
 - [`src/metaplot/`](src/metaplot/README.md): TSS-centered PRO-cap metaplots and
   heatmaps.
-- [`src/metaformer/`](src/metaformer/README.md): in-development PromoterAI /
-  MetaFormer helpers.
+- [`src/metaformer/`](src/metaformer/README.md): PromoterAI /
+  MetaFormer helpers (IN DEVELOPMENT).
 - [`src/procapnet/`](src/procapnet/README.md): legacy ProCapNet benchmarking.
 
 ## Repository Layout
