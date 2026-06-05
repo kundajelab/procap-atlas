@@ -18,17 +18,16 @@ from that biosample.
   strand is blue and stored as negative values so it appears below the axis.
 - **Peaks** (`{exp_id}_peaks`) - merged bidirectional and unidirectional TSS peak
   calls in bigBed format.
-- **Predicted signal** (`{exp_id}_pred_signal`) - hidden-by-default multiWig
-  container for BPNet predicted plus/minus PRO-cap signal. These tracks are
-  generated from all fold checkpoints across all filtered peaks.
+- **Predicted signal** (`{exp_id}_pred_signal`) - multiWig container for BPNet
+  predicted plus/minus PRO-cap signal. These tracks are generated from all fold
+  checkpoints across all filtered peaks.
 - **Contribution scores** (`{exp_id}_attr_profile`, `{exp_id}_attr_count`) -
   BPNet profile/count contribution scores displayed as standalone UCSC dynseq
   logo tracks with `logo on`.
 
 By default, uncapped-library experiments are hidden. For capped experiments,
 observed signal plus both BPNet profile and count contribution score tracks are
-shown, peaks use dense visibility, and predicted signal tracks are available but
-hidden until enabled.
+shown, predicted signal tracks are shown, and peaks use dense visibility.
 
 ## Generating the hub files
 

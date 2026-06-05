@@ -75,36 +75,15 @@ def truncate_label(label, max_len=100):
     return label[: max_len - 3].rstrip() + "..."
 
 
-def experiment_context(exp, exp_id):
-    """Return compact experiment context for UCSC longLabel fields."""
-    parts = [
-        exp.get("biosample_summary", exp.get("biosample", "")),
-        exp.get("library_construction", ""),
-        f"[{exp_id}]",
-    ]
-    return " | ".join(clean_label_text(p) for p in parts if clean_label_text(p))
-
-
 def make_long_label(exp, exp_id, description):
-    """Make a descriptive UCSC longLabel <= 100 chars."""
-    context = experiment_context(exp, exp_id)
+    """Make a compact UCSC longLabel <= 100 chars."""
+    biosample = clean_label_text(exp.get("biosample", "unknown"))
     description = clean_label_text(description)
-    if not context:
-        return truncate_label(description)
-    if not description:
-        return truncate_label(context)
-
-    separator = " - "
-    available = 100 - len(separator) - len(description)
-    if available < 20:
-        return truncate_label(f"{context}{separator}{description}")
-    return f"{truncate_label(context, available)}{separator}{description}"
+    return truncate_label(f"{biosample} {exp_id} {description}")
 
 
 def make_supertrack_long_label(biosample):
-    return truncate_label(
-        f"{biosample} ENCODE PRO-cap collection: observed signal, TSS peaks, and BPNet scores"
-    )
+    return truncate_label(f"{biosample} PRO-cap tracks")
 
 
 def is_uncapped(exp):
@@ -150,7 +129,7 @@ def write_trackdb(
             signal_name = f"{exp_id}_signal"
             short_signal = make_short_label(biosample, exp_id)
             signal_label = make_long_label(
-                exp, exp_id, "observed strand-specific PRO-cap signal"
+                exp, exp_id, "observed PRO-cap signal"
             )
             visibility = "hide" if is_uncapped(exp) else "full"
 
@@ -172,7 +151,7 @@ def write_trackdb(
             # Plus-strand subtrack (positive values, range 0 to 40)
             if pl_path:
                 pl_label = make_long_label(
-                    exp, exp_id, "plus-strand observed PRO-cap signal"
+                    exp, exp_id, "observed plus signal"
                 )
                 lines += [
                     f"    track {exp_id}_pl",
@@ -194,7 +173,7 @@ def write_trackdb(
                 mn_label = make_long_label(
                     exp,
                     exp_id,
-                    "minus-strand observed PRO-cap signal, negative values",
+                    "observed minus signal",
                 )
                 lines += [
                     f"    track {exp_id}_mn",
@@ -214,7 +193,7 @@ def write_trackdb(
             # Peaks track
             if peaks_path:
                 peak_label = make_long_label(
-                    exp, exp_id, "merged bidirectional/unidirectional TSS peaks"
+                    exp, exp_id, "TSS peaks"
                 )
                 lines += [
                     f"track {exp_id}_peaks",
@@ -231,7 +210,7 @@ def write_trackdb(
             if include_predictions:
                 pred_name = f"{exp_id}_pred_signal"
                 pred_label = make_long_label(
-                    exp, exp_id, "BPNet predicted strand-specific PRO-cap signal"
+                    exp, exp_id, "BPNet predicted signal"
                 )
                 lines += [
                     f"track {pred_name}",
@@ -240,7 +219,7 @@ def write_trackdb(
                     "type bigWig",
                     f"shortLabel {(short_signal + ' pred')[:17]}",
                     f"longLabel {pred_label}",
-                    "visibility hide",
+                    f"visibility {visibility}",
                     "windowingFunction maximum",
                     "maxHeightPixels 128:64:11",
                     "priority 3",
@@ -248,7 +227,7 @@ def write_trackdb(
                 ]
 
                 pred_pl_label = make_long_label(
-                    exp, exp_id, "BPNet predicted plus-strand PRO-cap signal"
+                    exp, exp_id, "BPNet predicted plus signal"
                 )
                 lines += [
                     f"    track {exp_id}_pred_pl",
@@ -268,7 +247,7 @@ def write_trackdb(
                 pred_mn_label = make_long_label(
                     exp,
                     exp_id,
-                    "BPNet predicted minus-strand PRO-cap signal, negative values",
+                    "BPNet predicted minus signal",
                 )
                 lines += [
                     f"    track {exp_id}_pred_mn",
@@ -293,7 +272,7 @@ def write_trackdb(
                     attr_label = make_long_label(
                         exp,
                         exp_id,
-                        f"BPNet {head_label.lower()} contribution scores",
+                        f"BPNet {head_label.lower()} contributions",
                     )
                     if is_uncapped(exp):
                         default_visibility = "hide"
