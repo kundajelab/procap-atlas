@@ -8,14 +8,15 @@ Reads configs/experiment_config.yaml and writes:
 
 Experiments are grouped into supertracks by biosample, sorted alphabetically.
 Each experiment gets a multiWig container for plus/minus strand BigWigs and a
-separate bigBed track for peak calls. BPNet attribution BigWigs can also be
-exposed as UCSC dynseq tracks.
+separate bigBed track for peak calls. BPNet predicted signal BigWigs and
+attribution BigWigs can also be exposed for visualization.
 
 Usage:
     python src/hub/generate_hub.py --email you@example.com
     python src/hub/generate_hub.py --email you@example.com --output-dir /path/to/hub
     python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
     python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
+    python src/hub/generate_hub.py --email you@example.com --no-predictions
     python src/hub/generate_hub.py --email you@example.com --no-attributions
 """
 
@@ -128,6 +129,12 @@ def attribution_bigwig_url(base_url, track_base_url, exp_id, head):
     return f"{base_url}/attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig"
 
 
+def prediction_bigwig_url(base_url, track_base_url, exp_id, strand):
+    if track_base_url:
+        return f"{track_base_url}/predictions/bpnet/{exp_id}_{strand}.bigWig"
+    return f"{base_url}/predictions/bpnet/bigwigs/{exp_id}_{strand}.bigWig"
+
+
 def write_hub_txt(output_dir, base_url, email):
     (output_dir / "hub.txt").write_text(HUB_TXT_TEMPLATE.format(base_url=base_url, email=email))
 
@@ -145,6 +152,7 @@ def write_trackdb(
     experiments,
     base_url,
     attribution_heads,
+    include_predictions,
     track_base_url=None,
 ):
     # Group by biosample
@@ -255,6 +263,63 @@ def write_trackdb(
                     "",
                 ]
 
+            if include_predictions:
+                pred_name = f"{exp_id}_pred_signal"
+                pred_label = make_long_label(
+                    exp, exp_id, "BPNet predicted strand-specific PRO-cap signal"
+                )
+                lines += [
+                    f"track {pred_name}",
+                    "compositeTrack on",
+                    f"superTrack {st_name}",
+                    "type bigWig",
+                    f"shortLabel {(short_signal + ' pred')[:17]}",
+                    f"longLabel {pred_label}",
+                    "visibility hide",
+                    "windowingFunction maximum",
+                    "maxHeightPixels 128:64:11",
+                    "priority 3",
+                    "",
+                ]
+
+                pred_pl_label = make_long_label(
+                    exp, exp_id, "BPNet predicted plus-strand PRO-cap signal"
+                )
+                lines += [
+                    f"    track {exp_id}_pred_pl",
+                    f"    parent {pred_name}",
+                    f"    bigDataUrl {prediction_bigwig_url(base_url, track_base_url, exp_id, 'pl')}",
+                    f"    shortLabel {(short_signal + ' p+')[:17]}",
+                    f"    longLabel {pred_pl_label}",
+                    "    type bigWig 0 40",
+                    "    autoScale on",
+                    "    color 180,60,50",
+                    "    altColor 255,0,0",
+                    "    visibility full",
+                    "    priority 1",
+                    "",
+                ]
+
+                pred_mn_label = make_long_label(
+                    exp,
+                    exp_id,
+                    "BPNet predicted minus-strand PRO-cap signal, negative values",
+                )
+                lines += [
+                    f"    track {exp_id}_pred_mn",
+                    f"    parent {pred_name}",
+                    f"    bigDataUrl {prediction_bigwig_url(base_url, track_base_url, exp_id, 'mn')}",
+                    f"    shortLabel {(short_signal + ' p-')[:17]}",
+                    f"    longLabel {pred_mn_label}",
+                    "    type bigWig -40 0",
+                    "    autoScale on",
+                    "    color 40,110,180",
+                    "    altColor 0,0,255",
+                    "    visibility full",
+                    "    priority 2",
+                    "",
+                ]
+
             # BPNet contribution-score dynseq tracks. Keep these as standalone
             # bigWig tracks because UCSC's dynseq logo display is track-level.
             if attribution_heads:
@@ -282,7 +347,7 @@ def write_trackdb(
                         "mouseOverFunction noAverage",
                         "maxHeightPixels 128:64:16",
                         f"visibility {default_visibility}",
-                        f"priority {2 + priority}",
+                        f"priority {3 + priority}",
                         "",
                     ]
 
@@ -304,7 +369,7 @@ def main():
         "--track-base-url",
         default=None,
         metavar="URL",
-        help="base URL for observed/attribution BigWigs, e.g. a Hugging Face dataset resolve URL",
+        help="base URL for observed/predicted/attribution BigWigs, e.g. a Hugging Face dataset resolve URL",
     )
     parser.add_argument("--email", required=True, metavar="EMAIL")
     parser.add_argument(
@@ -320,6 +385,11 @@ def main():
         "--no-attributions",
         action="store_true",
         help="omit BPNet attribution dynseq tracks",
+    )
+    parser.add_argument(
+        "--no-predictions",
+        action="store_true",
+        help="omit BPNet predicted signal tracks",
     )
     args = parser.parse_args()
 
@@ -341,6 +411,7 @@ def main():
         experiments,
         args.base_url,
         attribution_heads,
+        include_predictions=not args.no_predictions,
         track_base_url=track_base_url,
     )
 

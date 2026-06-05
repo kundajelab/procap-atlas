@@ -117,6 +117,11 @@ predictions/bpnet/bigwigs/{model_dir_name}_pl.bigWig
 predictions/bpnet/bigwigs/{model_dir_name}_mn.bigWig
 ```
 
+Default experiment-model outputs (`{experiment}_pl.bigWig` and
+`{experiment}_mn.bigWig`) are included by the hub upload workflow as
+`predictions/bpnet/{experiment}_{strand}.bigWig`; see
+[`src/hub/`](../hub/README.md).
+
 ## Upload
 
 ```bash
