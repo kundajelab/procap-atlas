@@ -3,4 +3,4 @@ shortLabel PRO-cap Atlas
 longLabel ENCODE PRO-cap atlas: GRCh38 TSS signal, peaks, and BPNet contribution tracks
 genomesFile genomes.txt
 email ayhe@stanford.edu
-descriptionUrl https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main/ucsc/
+descriptionUrl https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/

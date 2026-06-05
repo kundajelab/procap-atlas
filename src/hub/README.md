@@ -2,7 +2,7 @@
 
 UCSC track hub for the ENCODE PRO-cap atlas, covering 224 experiments across 126 cell types and tissues (GRCh38/hg38).
 
-Hub URL: `https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas/hub/hub.txt`
+Hub URL: `https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main/ucsc/hub.txt`
 
 To load: in UCSC Genome Browser, go to **My Data -> Track Hubs -> My Hubs** and paste the URL above.
 
@@ -37,8 +37,8 @@ Hub files are generated from `configs/experiment_config.yaml`. BigWig files are 
 ```bash
 python src/hub/generate_hub.py --email you@example.com
 python src/hub/generate_hub.py --email you@example.com --output-dir /other/dir
-python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
-python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
+python src/hub/generate_hub.py --email you@example.com --base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks
+python src/hub/generate_hub.py --email you@example.com --revision main
 python src/hub/generate_hub.py --email you@example.com --no-predictions
 python src/hub/generate_hub.py --email you@example.com --no-attributions
 ```
@@ -68,7 +68,7 @@ Predicted BigWigs are referenced at
 `predictions/bpnet/bigwigs/{exp_id}_{strand}.bigWig` locally and
 `predictions/bpnet/{exp_id}_{strand}.bigWig` in the hosted track dataset.
 
-To host track assets on Hugging Face instead of serving them from Mitra:
+To upload track assets to Hugging Face and regenerate the hub:
 
 ```bash
 python src/bpnet/predict/launch.py --dry-run
@@ -76,8 +76,13 @@ python src/bpnet/predict/launch.py
 python src/hub/upload_tracks_hf.py --dry-run
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks -j 16
-python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
+python src/hub/generate_hub.py --email you@example.com
 ```
+
+`--base-url` defaults to
+`https://huggingface.co/datasets/adamyhe/procap-atlas-tracks`. This URL is used
+as the hub `descriptionUrl`; track assets are referenced under
+`{base_url}/resolve/{revision}/...`.
 
 HF dataset layout:
 
@@ -102,7 +107,7 @@ python src/hub/convert_peaks_bigbed.py --output-dir hub/hg38/bigbed  # custom ou
 python src/hub/convert_peaks_bigbed.py --dry-run  # preview without converting
 ```
 
-Requires `bedToBigBed` from [UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/). By default, `.bb` files are written alongside the source `.bed.gz` files in `data/processed/peaks/`. Use `--output-dir` to write them elsewhere (e.g. `hub/hg38/bigbed/`); update `--base-url` in `generate_hub.py` accordingly.
+Requires `bedToBigBed` from [UCSC Kent tools](https://hgdownload.soe.ucsc.edu/admin/exe/). By default, `.bb` files are written alongside the source `.bed.gz` files in `data/processed/peaks/`. Use `--output-dir` to write them elsewhere before uploading if you want a different hosted asset layout.
 
 Skips experiments where the output `.bb` file already exists or the input `.bed.gz` is missing.
 
@@ -146,9 +151,6 @@ data/processed/peaks/
 +-- {exp}_{biosample}_peaks.bb         # Converted bigBed (default output location)
 ```
 
-Observed signal BigWigs are served from `data/processed/bigwigs/` by default.
-Peak bigBeds are served from `data/processed/peaks/` by default. Predicted
-BigWigs are served from `predictions/bpnet/bigwigs/` by default. Attribution
-BigWigs are served from `attributions/bpnet/bigwigs/` by default. When
-`--track-base-url` is set, observed BigWigs, predicted BigWigs, peak bigBeds,
-and attribution BigWigs are referenced from the external track asset base URL.
+The generated hub expects track assets in the hosted Hugging Face dataset layout
+above. For a different dataset or revision, pass `--base-url` and `--revision`
+when running `generate_hub.py`.

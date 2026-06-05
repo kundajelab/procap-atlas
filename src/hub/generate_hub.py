@@ -14,8 +14,8 @@ attribution BigWigs can also be exposed for visualization.
 Usage:
     python src/hub/generate_hub.py --email you@example.com
     python src/hub/generate_hub.py --email you@example.com --output-dir /path/to/hub
-    python src/hub/generate_hub.py --email you@example.com --base-url https://example.com/procap-atlas
-    python src/hub/generate_hub.py --email you@example.com --track-base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main
+    python src/hub/generate_hub.py --email you@example.com --base-url https://huggingface.co/datasets/adamyhe/procap-atlas-tracks
+    python src/hub/generate_hub.py --email you@example.com --revision main
     python src/hub/generate_hub.py --email you@example.com --no-predictions
     python src/hub/generate_hub.py --email you@example.com --no-attributions
 """
@@ -29,7 +29,8 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "hub"
-DEFAULT_BASE_URL = "https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas"
+DEFAULT_BASE_URL = "https://huggingface.co/datasets/adamyhe/procap-atlas-tracks"
+DEFAULT_REVISION = "main"
 
 HUB_TXT_TEMPLATE = """\
 hub procap_atlas
@@ -106,43 +107,6 @@ def make_supertrack_long_label(biosample):
     )
 
 
-def clean_base_url(url):
-    return url.rstrip("/") if url else None
-
-
-def bigwig_url(base_url, track_base_url, processed_path, exp_id, strand):
-    if track_base_url:
-        return f"{track_base_url}/observed/{exp_id}_{strand}.bigWig"
-    filename = Path(processed_path).name
-    return f"{base_url}/data/processed/bigwigs/{filename}"
-
-
-def bigbed_url(base_url, track_base_url, bb_filename):
-    if track_base_url:
-        return f"{track_base_url}/peaks/bigbed/{bb_filename}"
-    return f"{base_url}/data/processed/peaks/{bb_filename}"
-
-
-def attribution_bigwig_url(base_url, track_base_url, exp_id, head):
-    if track_base_url:
-        return f"{track_base_url}/attributions/bpnet/{exp_id}_{head}.bigWig"
-    return f"{base_url}/attributions/bpnet/bigwigs/{exp_id}_{head}.bigWig"
-
-
-def prediction_bigwig_url(base_url, track_base_url, exp_id, strand):
-    if track_base_url:
-        return f"{track_base_url}/predictions/bpnet/{exp_id}_{strand}.bigWig"
-    return f"{base_url}/predictions/bpnet/bigwigs/{exp_id}_{strand}.bigWig"
-
-
-def write_hub_txt(output_dir, base_url, email):
-    (output_dir / "hub.txt").write_text(HUB_TXT_TEMPLATE.format(base_url=base_url, email=email))
-
-
-def write_genomes_txt(output_dir):
-    (output_dir / "genomes.txt").write_text(GENOMES_TXT)
-
-
 def is_uncapped(exp):
     return "uncapped" in exp.get("library_construction", "").lower()
 
@@ -151,9 +115,9 @@ def write_trackdb(
     output_dir,
     experiments,
     base_url,
+    revision,
     attribution_heads,
     include_predictions,
-    track_base_url=None,
 ):
     # Group by biosample
     by_biosample = {}
@@ -162,6 +126,7 @@ def write_trackdb(
         by_biosample.setdefault(bs, []).append((exp_id, exp))
 
     lines = []
+    asset_base = f"{base_url}/resolve/{revision}"
 
     for biosample in sorted(by_biosample):
         st_name = make_supertrack_name(biosample)
@@ -212,7 +177,7 @@ def write_trackdb(
                 lines += [
                     f"    track {exp_id}_pl",
                     f"    parent {signal_name}",
-                    f"    bigDataUrl {bigwig_url(base_url, track_base_url, pl_path, exp_id, 'pl')}",
+                    f"    bigDataUrl {asset_base}/observed/{exp_id}_pl.bigWig",
                     f"    shortLabel {(short_signal + ' (+)')[:17]}",
                     f"    longLabel {pl_label}",
                     "    type bigWig 0 40",
@@ -234,7 +199,7 @@ def write_trackdb(
                 lines += [
                     f"    track {exp_id}_mn",
                     f"    parent {signal_name}",
-                    f"    bigDataUrl {bigwig_url(base_url, track_base_url, mn_path, exp_id, 'mn')}",
+                    f"    bigDataUrl {asset_base}/observed/{exp_id}_mn.bigWig",
                     f"    shortLabel {(short_signal + ' (-)')[:17]}",
                     f"    longLabel {mn_label}",
                     "    type bigWig -40 0",
@@ -255,7 +220,7 @@ def write_trackdb(
                     f"track {exp_id}_peaks",
                     f"superTrack {st_name}",
                     "type bigBed 3 +",
-                    f"bigDataUrl {bigbed_url(base_url, track_base_url, bb_filename)}",
+                    f"bigDataUrl {asset_base}/peaks/bigbed/{bb_filename}",
                     f"shortLabel {make_short_label(biosample, exp_id, ' pk')}",
                     f"longLabel {peak_label}",
                     f"visibility {'hide' if is_uncapped(exp) else 'dense'}",
@@ -288,7 +253,7 @@ def write_trackdb(
                 lines += [
                     f"    track {exp_id}_pred_pl",
                     f"    parent {pred_name}",
-                    f"    bigDataUrl {prediction_bigwig_url(base_url, track_base_url, exp_id, 'pl')}",
+                    f"    bigDataUrl {asset_base}/predictions/bpnet/{exp_id}_pl.bigWig",
                     f"    shortLabel {(short_signal + ' p+')[:17]}",
                     f"    longLabel {pred_pl_label}",
                     "    type bigWig 0 40",
@@ -308,7 +273,7 @@ def write_trackdb(
                 lines += [
                     f"    track {exp_id}_pred_mn",
                     f"    parent {pred_name}",
-                    f"    bigDataUrl {prediction_bigwig_url(base_url, track_base_url, exp_id, 'mn')}",
+                    f"    bigDataUrl {asset_base}/predictions/bpnet/{exp_id}_mn.bigWig",
                     f"    shortLabel {(short_signal + ' p-')[:17]}",
                     f"    longLabel {pred_mn_label}",
                     "    type bigWig -40 0",
@@ -337,7 +302,7 @@ def write_trackdb(
                     lines += [
                         f"track {exp_id}_attr_{head}",
                         f"superTrack {st_name}",
-                        f"bigDataUrl {attribution_bigwig_url(base_url, track_base_url, exp_id, head)}",
+                        f"bigDataUrl {asset_base}/attributions/bpnet/{exp_id}_{head}.bigWig",
                         f"shortLabel {(short_signal + ' ' + head[:4])[:17]}",
                         f"longLabel {attr_label}",
                         "type bigWig",
@@ -364,12 +329,17 @@ def main():
     parser.add_argument(
         "--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, metavar="DIR"
     )
-    parser.add_argument("--base-url", default=DEFAULT_BASE_URL, metavar="URL")
     parser.add_argument(
-        "--track-base-url",
-        default=None,
+        "--base-url",
+        default=DEFAULT_BASE_URL,
         metavar="URL",
-        help="base URL for observed/predicted/attribution BigWigs, e.g. a Hugging Face dataset resolve URL",
+        help="Hugging Face dataset URL used for descriptionUrl and track assets",
+    )
+    parser.add_argument(
+        "--revision",
+        default=DEFAULT_REVISION,
+        metavar="REV",
+        help="dataset revision for track asset URLs (default: main)",
     )
     parser.add_argument("--email", required=True, metavar="EMAIL")
     parser.add_argument(
@@ -396,7 +366,7 @@ def main():
     attribution_heads = [] if args.no_attributions else args.attribution_head
     if attribution_heads is None:
         attribution_heads = ["profile", "count"]
-    track_base_url = clean_base_url(args.track_base_url)
+    base_url = args.base_url.rstrip("/")
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
@@ -404,15 +374,17 @@ def main():
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    write_hub_txt(args.output_dir, args.base_url, args.email)
-    write_genomes_txt(args.output_dir)
+    (args.output_dir / "hub.txt").write_text(
+        HUB_TXT_TEMPLATE.format(base_url=base_url, email=args.email)
+    )
+    (args.output_dir / "genomes.txt").write_text(GENOMES_TXT)
     write_trackdb(
         args.output_dir,
         experiments,
-        args.base_url,
+        base_url,
+        args.revision,
         attribution_heads,
         include_predictions=not args.no_predictions,
-        track_base_url=track_base_url,
     )
 
     n = len(experiments)
