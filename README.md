@@ -31,8 +31,9 @@ uv run pytest
 ```
 
 On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
-for Sherlock compatibility. Cherimoya uses `torch.optim.Muon` and should be run
-through its separate Apptainer workflow on Sherlock.
+and `pybigtools` to 0.2.5 for Sherlock compatibility. Cherimoya uses
+`torch.optim.Muon` and should be run through its separate Apptainer workflow on
+Sherlock.
 
 Use `environment.yml` to create a conda tools environment with `uv` plus
 non-Python command-line tools from conda/bioconda:
@@ -53,8 +54,9 @@ uv sync --extra plot # visualization
 ```
 
 Non-Apptainer cluster launchers activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by
-default, so set `PROCAP_ATLAS_ENV` before submission if your environment has a
-different name:
+default to expose `uv` and command-line tools, then run repo Python entrypoints
+with `uv run --frozen`. Set `PROCAP_ATLAS_ENV` before submission if your
+environment has a different name:
 
 ```bash
 export PROCAP_ATLAS_ENV=my-env-name

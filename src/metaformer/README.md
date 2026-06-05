@@ -45,6 +45,7 @@ perturbed datasets according to `configs/model_warning_flags.tsv`.
 sbatch src/metaformer/preprocess.sh
 sbatch src/metaformer/train.sh
 sbatch src/metaformer/train_bridges2.sh
+sbatch src/metaformer/finetune_outliers.sh
 ```
 
 Expected outputs are environment-dependent, but current templates are organized
@@ -53,6 +54,15 @@ around:
 ```text
 data/promoterai/
 models/metaformer/all_tracks/
+```
+
+Fine-tuning on expression outliers expects a trained checkpoint and a GTEx-style
+variant TSV:
+
+```bash
+MODEL_CHECKPOINT=models/metaformer/all_tracks/best_model.pt \
+VAR_FILE=data/annotation/finetune_gtex.tsv \
+sbatch src/metaformer/finetune_outliers.sh
 ```
 
 ## Notes

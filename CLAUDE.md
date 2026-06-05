@@ -44,6 +44,8 @@ New Python dependencies must be added there, not to `environment.yml`.
 On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
 for Sherlock compatibility. Do not relax that pin for BPNet/preprocessing unless
 Sherlock support is explicitly being dropped.
+`pybigtools` is pinned to 0.2.5 because newer releases can require source builds
+that fail on Sherlock's older assembler/toolchain.
 
 ```bash
 uv sync --group dev
@@ -60,7 +62,8 @@ uv sync --group dev
 ```
 
 Non-Apptainer cluster launchers activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by
-default.
+default to expose `uv` and command-line tools, then run repo Python entrypoints
+with `uv run --frozen`.
 Cherimoya should be treated as a separate Apptainer/local environment on
 Sherlock because it uses `torch.optim.Muon`.
 `MotifCompendium` and `personal_bpnet` are separate optional/local research

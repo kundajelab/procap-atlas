@@ -10,7 +10,9 @@ dependencies = [
     "numpy",
     "pandas",
     "pillow",
-    "pybigtools",
+    # Newer pybigtools releases can require source builds that fail on
+    # Sherlock's older assembler/toolchain.
+    "pybigtools==0.2.5",
     "pyfaidx",
     "pyyaml",
     "scipy",
@@ -24,8 +26,8 @@ dependencies = [
 [project.optional-dependencies]
 plot = ["matplotlib", "pillow", "seaborn"]
 hub = ["huggingface-hub"]
-bpnet = ["bpnet-lite"]
-cherimoya = ["cherimoya"]
+bpnet = ["bpnet-lite", "leidenalg==0.10.2"]
+cherimoya = ["cherimoya", "leidenalg==0.10.2"]
 # MotifCompendium and personal_bpnet are external/local research dependencies
 # until resolvable install sources are confirmed.
 # Metaformer / promoterai-torch is still in development and will be added

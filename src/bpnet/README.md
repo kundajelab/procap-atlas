@@ -19,7 +19,7 @@ Hugging Face model repo.
   - processed and filtered peaks
   - GC-matched negatives
 - Python packages from the root `uv` project. On Linux/Sherlock, this pins
-  Torch to 2.6.0 for install compatibility.
+  Torch to 2.6.0 and `pybigtools` to 0.2.5 for install compatibility.
 - Optional SLURM access for launchers
 
 ## Training
@@ -53,7 +53,8 @@ python src/bpnet/fit/launch.py --fit-args "--background gc:0.1"
 The launcher contains hard-coded defaults for the Sherlock HPC environment,
 including Sherlock/Kundaje-specific partition and module assumptions. Adjust it
 before using another cluster. Generated jobs activate
-`${PROCAP_ATLAS_ENV:-procap-atlas}` by default.
+`${PROCAP_ATLAS_ENV:-procap-atlas}` by default to expose `uv` and command-line
+tools, then run Python entrypoints with `uv run --frozen`.
 
 ## Benchmarking
 

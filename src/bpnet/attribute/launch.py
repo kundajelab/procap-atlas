@@ -123,7 +123,10 @@ def main():
                 continue
 
             job_name = f"bpnet_attr_{exp_id}_{head}"
-            attr_cmd = f"python {ATTRIBUTE_SCRIPT} -e {exp_id} --head {head} -v {args.attribute_args}"
+            attr_cmd = (
+                f"uv run --project {REPO_ROOT} --frozen --extra bpnet python {ATTRIBUTE_SCRIPT} "
+                f"-e {exp_id} --head {head} -v {args.attribute_args}"
+            )
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l

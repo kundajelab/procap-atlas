@@ -29,7 +29,19 @@ SAVE_OHE_SCRIPT = REPO_ROOT / "src" / "bpnet" / "attribute" / "save_ohe.py"
 
 async def run_experiment(exp_id, semaphore, verbose):
     async with semaphore:
-        cmd = ["python", str(SAVE_OHE_SCRIPT), "-e", exp_id]
+        cmd = [
+            "uv",
+            "run",
+            "--project",
+            str(REPO_ROOT),
+            "--frozen",
+            "--extra",
+            "bpnet",
+            "python",
+            str(SAVE_OHE_SCRIPT),
+            "-e",
+            exp_id,
+        ]
         if verbose:
             cmd.append("-v")
         proc = await asyncio.create_subprocess_exec(
@@ -71,7 +83,10 @@ async def main_async(args):
 
     if args.dry_run:
         for exp_id in to_run:
-            print(f"  python {SAVE_OHE_SCRIPT} -e {exp_id}")
+            print(
+                f"  uv run --project {REPO_ROOT} --frozen --extra bpnet "
+                f"python {SAVE_OHE_SCRIPT} -e {exp_id}"
+            )
         return
 
     if not to_run:

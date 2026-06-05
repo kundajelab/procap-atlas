@@ -132,7 +132,7 @@ def main():
             job_name = f"modisco_{exp_id}_{head}"
 
             modisco_motifs_cmd = (
-                f"modisco motifs"
+                f"uv run --project {REPO_ROOT} --frozen --extra bpnet modisco motifs"
                 f" -s {ohe_path}"
                 f" -a {attr_path}"
                 f" -o {out_h5}"

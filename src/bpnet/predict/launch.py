@@ -130,6 +130,7 @@ def main() -> None:
 
         job_name = f"bpnet_predict_{exp_id}"
         prediction_cmd = (
+            f"uv run --project {shlex.quote(str(REPO_ROOT))} --frozen --extra bpnet "
             f"python {shlex.quote(str(PREDICTION_SCRIPT))}"
             f" -e {shlex.quote(exp_id)}"
             f" --model-dir {shlex.quote(str(model_dir))}"

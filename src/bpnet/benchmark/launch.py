@@ -115,6 +115,7 @@ def main():
 
         job_name = f"bpnet_bench_{exp_id}"
         benchmark_cmd = (
+            f"uv run --project {shlex.quote(str(REPO_ROOT))} --frozen --extra bpnet "
             f"python {shlex.quote(str(BENCHMARK_SCRIPT))}"
             f" -e {shlex.quote(exp_id)}"
             f" --model-dir {shlex.quote(str(model_dir))}"
