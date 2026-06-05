@@ -1,8 +1,8 @@
 # PRO-cap atlas
 
-Preprocessing, modeling, and atlas-level analysis for ENCODE PRO-cap data on the
-human genome (GRCh38/hg38). PRO-cap (Precision Run-On sequencing with cap
-selection) profiles transcription start sites and promoter-proximal initiation.
+[![Weights](https://img.shields.io/badge/%F0%9F%A4%97-Weights-yellow)](https://huggingface.co/collections/adamyhe/procap-atlas)
+
+Preprocessing, modeling, and atlas-level analysis for ENCODE PRO-cap data. PRO-cap (Precision Run-On sequencing with cap selection) profiles transcription start sites and promoter-proximal initiation.
 
 This repository contains the data preparation pipeline, trained-model workflows,
 benchmarking scripts, attribution and motif analysis utilities, and UCSC track

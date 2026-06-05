@@ -1,0 +1,3645 @@
+description: Replicate groups derived by pairing pl_bigwigs[i] with mn_bigwigs[i]
+  from configs/experiment_config.yaml, then splitting paired raw BigWigs into alternating
+  groups.
+raw_bigwig_dir: data/raw/bigwigs
+experiments:
+  ENCSR882DWM:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 4
+    pairs:
+    - &id001
+      pl_bigwig: ENCFF620GJD.bigWig
+      mn_bigwig: ENCFF745CSK.bigWig
+    - &id003
+      pl_bigwig: ENCFF650OXQ.bigWig
+      mn_bigwig: ENCFF809FNB.bigWig
+    - &id002
+      pl_bigwig: ENCFF313UWT.bigWig
+      mn_bigwig: ENCFF191LBI.bigWig
+    - &id004
+      pl_bigwig: ENCFF970BJP.bigWig
+      mn_bigwig: ENCFF754VDR.bigWig
+    groups:
+      a:
+      - *id001
+      - *id002
+      b:
+      - *id003
+      - *id004
+  ENCSR114HGS:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id005
+      pl_bigwig: ENCFF085GRM.bigWig
+      mn_bigwig: ENCFF755OQZ.bigWig
+    - &id006
+      pl_bigwig: ENCFF428RUF.bigWig
+      mn_bigwig: ENCFF529MUW.bigWig
+    groups:
+      a:
+      - *id005
+      b:
+      - *id006
+  ENCSR165QKR:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id007
+      pl_bigwig: ENCFF440UVY.bigWig
+      mn_bigwig: ENCFF103FBH.bigWig
+    - &id008
+      pl_bigwig: ENCFF078CJH.bigWig
+      mn_bigwig: ENCFF907PJM.bigWig
+    groups:
+      a:
+      - *id007
+      b:
+      - *id008
+  ENCSR197JLW:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id009
+      pl_bigwig: ENCFF678VYA.bigWig
+      mn_bigwig: ENCFF236NNV.bigWig
+    - &id010
+      pl_bigwig: ENCFF870YWE.bigWig
+      mn_bigwig: ENCFF301JHR.bigWig
+    groups:
+      a:
+      - *id009
+      b:
+      - *id010
+  ENCSR100EDZ:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id011
+      pl_bigwig: ENCFF479ISE.bigWig
+      mn_bigwig: ENCFF811NQO.bigWig
+    - &id012
+      pl_bigwig: ENCFF331NCH.bigWig
+      mn_bigwig: ENCFF482VJL.bigWig
+    groups:
+      a:
+      - *id011
+      b:
+      - *id012
+  ENCSR273ORE:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id013
+      pl_bigwig: ENCFF903ERZ.bigWig
+      mn_bigwig: ENCFF230CJC.bigWig
+    - &id014
+      pl_bigwig: ENCFF877KYO.bigWig
+      mn_bigwig: ENCFF641FTA.bigWig
+    groups:
+      a:
+      - *id013
+      b:
+      - *id014
+  ENCSR124RWD:
+    biosample: right ventricle myocardium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id015
+      pl_bigwig: ENCFF868VIN.bigWig
+      mn_bigwig: ENCFF933IAZ.bigWig
+    - &id016
+      pl_bigwig: ENCFF520SBM.bigWig
+      mn_bigwig: ENCFF222UYK.bigWig
+    groups:
+      a:
+      - *id015
+      b:
+      - *id016
+  ENCSR178XKL:
+    biosample: WTC11
+    status: ok
+    reason: ''
+    n_pairs: 4
+    pairs:
+    - &id017
+      pl_bigwig: ENCFF847SPM.bigWig
+      mn_bigwig: ENCFF545EDQ.bigWig
+    - &id019
+      pl_bigwig: ENCFF496HVY.bigWig
+      mn_bigwig: ENCFF679AYV.bigWig
+    - &id018
+      pl_bigwig: ENCFF665CWV.bigWig
+      mn_bigwig: ENCFF107OAK.bigWig
+    - &id020
+      pl_bigwig: ENCFF082DRL.bigWig
+      mn_bigwig: ENCFF813TZR.bigWig
+    groups:
+      a:
+      - *id017
+      - *id018
+      b:
+      - *id019
+      - *id020
+  ENCSR720EXP:
+    biosample: Metastatic Liver Carcinoma in the Lung
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF436KTP.bigWig
+      mn_bigwig: ENCFF560UXJ.bigWig
+    groups: {}
+  ENCSR753TEA:
+    biosample: liver
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF530CWG.bigWig
+      mn_bigwig: ENCFF898WWI.bigWig
+    groups: {}
+  ENCSR961UBB:
+    biosample: heart left ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id021
+      pl_bigwig: ENCFF655LBA.bigWig
+      mn_bigwig: ENCFF125EBR.bigWig
+    - &id022
+      pl_bigwig: ENCFF652SOY.bigWig
+      mn_bigwig: ENCFF367UXU.bigWig
+    groups:
+      a:
+      - *id021
+      b:
+      - *id022
+  ENCSR796JNK:
+    biosample: LUHMES
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id023
+      pl_bigwig: ENCFF354QUW.bigWig
+      mn_bigwig: ENCFF959MFT.bigWig
+    - &id024
+      pl_bigwig: ENCFF028JYM.bigWig
+      mn_bigwig: ENCFF047KUB.bigWig
+    groups:
+      a:
+      - *id023
+      b:
+      - *id024
+  ENCSR784YIV:
+    biosample: colonic mucosa
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id025
+      pl_bigwig: ENCFF135RXP.bigWig
+      mn_bigwig: ENCFF281JZE.bigWig
+    - &id026
+      pl_bigwig: ENCFF641BHY.bigWig
+      mn_bigwig: ENCFF917MYT.bigWig
+    groups:
+      a:
+      - *id025
+      b:
+      - *id026
+  ENCSR478DAN:
+    biosample: upper lobe of left lung
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id027
+      pl_bigwig: ENCFF440SLB.bigWig
+      mn_bigwig: ENCFF781MJM.bigWig
+    - &id028
+      pl_bigwig: ENCFF835BYO.bigWig
+      mn_bigwig: ENCFF423VFN.bigWig
+    groups:
+      a:
+      - *id027
+      b:
+      - *id028
+  ENCSR666GXV:
+    biosample: Colon Carcinoma Metastatic in the Lung
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF778MOH.bigWig
+      mn_bigwig: ENCFF353XVZ.bigWig
+    groups: {}
+  ENCSR520PUD:
+    biosample: HEK293
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id029
+      pl_bigwig: ENCFF305ZQS.bigWig
+      mn_bigwig: ENCFF757CGN.bigWig
+    - &id030
+      pl_bigwig: ENCFF762BKL.bigWig
+      mn_bigwig: ENCFF367WUV.bigWig
+    groups:
+      a:
+      - *id029
+      b:
+      - *id030
+  ENCSR417NJC:
+    biosample: spleen
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id031
+      pl_bigwig: ENCFF137UCG.bigWig
+      mn_bigwig: ENCFF158QFB.bigWig
+    - &id032
+      pl_bigwig: ENCFF902OMA.bigWig
+      mn_bigwig: ENCFF607ASO.bigWig
+    groups:
+      a:
+      - *id031
+      b:
+      - *id032
+  ENCSR215OJB:
+    biosample: GM23338
+    status: ok
+    reason: ''
+    n_pairs: 4
+    pairs:
+    - &id033
+      pl_bigwig: ENCFF132GLO.bigWig
+      mn_bigwig: ENCFF729RDA.bigWig
+    - &id035
+      pl_bigwig: ENCFF426MUR.bigWig
+      mn_bigwig: ENCFF556DSS.bigWig
+    - &id034
+      pl_bigwig: ENCFF030IJD.bigWig
+      mn_bigwig: ENCFF930IUB.bigWig
+    - &id036
+      pl_bigwig: ENCFF159MOF.bigWig
+      mn_bigwig: ENCFF106GTA.bigWig
+    groups:
+      a:
+      - *id033
+      - *id034
+      b:
+      - *id035
+      - *id036
+  ENCSR053UMZ:
+    biosample: cerebellum
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF917ZTH.bigWig
+      mn_bigwig: ENCFF311FGM.bigWig
+    groups: {}
+  ENCSR867EQV:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id037
+      pl_bigwig: ENCFF065MPR.bigWig
+      mn_bigwig: ENCFF702DZE.bigWig
+    - &id038
+      pl_bigwig: ENCFF177PKJ.bigWig
+      mn_bigwig: ENCFF464MTI.bigWig
+    groups:
+      a:
+      - *id037
+      b:
+      - *id038
+  ENCSR386RDW:
+    biosample: subcutaneous adipose tissue
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id039
+      pl_bigwig: ENCFF570TTV.bigWig
+      mn_bigwig: ENCFF376QOD.bigWig
+    - &id040
+      pl_bigwig: ENCFF196QVR.bigWig
+      mn_bigwig: ENCFF740QNR.bigWig
+    groups:
+      a:
+      - *id039
+      b:
+      - *id040
+  ENCSR694RPO:
+    biosample: right lobe of liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id041
+      pl_bigwig: ENCFF288OYX.bigWig
+      mn_bigwig: ENCFF589KYQ.bigWig
+    - &id042
+      pl_bigwig: ENCFF636HEH.bigWig
+      mn_bigwig: ENCFF319LIA.bigWig
+    groups:
+      a:
+      - *id041
+      b:
+      - *id042
+  ENCSR248SVP:
+    biosample: osteocyte
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id043
+      pl_bigwig: ENCFF419UUO.bigWig
+      mn_bigwig: ENCFF412QOP.bigWig
+    - &id044
+      pl_bigwig: ENCFF983WCN.bigWig
+      mn_bigwig: ENCFF238ROQ.bigWig
+    groups:
+      a:
+      - *id043
+      b:
+      - *id044
+  ENCSR992HBP:
+    biosample: right lobe of liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id045
+      pl_bigwig: ENCFF137JZT.bigWig
+      mn_bigwig: ENCFF496UYH.bigWig
+    - &id046
+      pl_bigwig: ENCFF525SQD.bigWig
+      mn_bigwig: ENCFF036GII.bigWig
+    groups:
+      a:
+      - *id045
+      b:
+      - *id046
+  ENCSR967RHN:
+    biosample: lower lobe of left lung
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id047
+      pl_bigwig: ENCFF185YJE.bigWig
+      mn_bigwig: ENCFF409PEB.bigWig
+    - &id048
+      pl_bigwig: ENCFF530DZY.bigWig
+      mn_bigwig: ENCFF994WDH.bigWig
+    groups:
+      a:
+      - *id047
+      b:
+      - *id048
+  ENCSR757HMG:
+    biosample: Peyer's patch
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id049
+      pl_bigwig: ENCFF209SYW.bigWig
+      mn_bigwig: ENCFF027XYV.bigWig
+    - &id050
+      pl_bigwig: ENCFF257XAJ.bigWig
+      mn_bigwig: ENCFF885FKZ.bigWig
+    groups:
+      a:
+      - *id049
+      b:
+      - *id050
+  ENCSR983JFU:
+    biosample: REH cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id051
+      pl_bigwig: ENCFF270RXC.bigWig
+      mn_bigwig: ENCFF734PBI.bigWig
+    - &id052
+      pl_bigwig: ENCFF791FYW.bigWig
+      mn_bigwig: ENCFF361BKO.bigWig
+    groups:
+      a:
+      - *id051
+      b:
+      - *id052
+  ENCSR644TYW:
+    biosample: Colon Carcinoma Metastatic in the Brain
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF509HVZ.bigWig
+      mn_bigwig: ENCFF114QCE.bigWig
+    groups: {}
+  ENCSR542IVL:
+    biosample: testis
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id053
+      pl_bigwig: ENCFF746UZX.bigWig
+      mn_bigwig: ENCFF319JXY.bigWig
+    - &id054
+      pl_bigwig: ENCFF764AZO.bigWig
+      mn_bigwig: ENCFF189ANN.bigWig
+    groups:
+      a:
+      - *id053
+      b:
+      - *id054
+  ENCSR821MIF:
+    biosample: spleen
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id055
+      pl_bigwig: ENCFF687NHN.bigWig
+      mn_bigwig: ENCFF569QSJ.bigWig
+    - &id056
+      pl_bigwig: ENCFF993EGJ.bigWig
+      mn_bigwig: ENCFF748TYK.bigWig
+    groups:
+      a:
+      - *id055
+      b:
+      - *id056
+  ENCSR970ACM:
+    biosample: adrenal gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id057
+      pl_bigwig: ENCFF871LST.bigWig
+      mn_bigwig: ENCFF163BBJ.bigWig
+    - &id058
+      pl_bigwig: ENCFF585AZR.bigWig
+      mn_bigwig: ENCFF224LQG.bigWig
+    groups:
+      a:
+      - *id057
+      b:
+      - *id058
+  ENCSR484CAZ:
+    biosample: cardiac septum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id059
+      pl_bigwig: ENCFF816YJP.bigWig
+      mn_bigwig: ENCFF104VVG.bigWig
+    - &id060
+      pl_bigwig: ENCFF806QBP.bigWig
+      mn_bigwig: ENCFF598EMW.bigWig
+    groups:
+      a:
+      - *id059
+      b:
+      - *id060
+  ENCSR074XYR:
+    biosample: Colon Carcinoma Metastatic in the Brain
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF382OAC.bigWig
+      mn_bigwig: ENCFF675TNC.bigWig
+    groups: {}
+  ENCSR636RVF:
+    biosample: skeletal muscle tissue
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id061
+      pl_bigwig: ENCFF775SQJ.bigWig
+      mn_bigwig: ENCFF563XEO.bigWig
+    - &id062
+      pl_bigwig: ENCFF325ZCL.bigWig
+      mn_bigwig: ENCFF254NUA.bigWig
+    groups:
+      a:
+      - *id061
+      b:
+      - *id062
+  ENCSR122BHP:
+    biosample: colic lymph node
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id063
+      pl_bigwig: ENCFF802EAY.bigWig
+      mn_bigwig: ENCFF191DNC.bigWig
+    - &id064
+      pl_bigwig: ENCFF553DRY.bigWig
+      mn_bigwig: ENCFF305OOT.bigWig
+    groups:
+      a:
+      - *id063
+      b:
+      - *id064
+  ENCSR282COG:
+    biosample: gallbladder
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id065
+      pl_bigwig: ENCFF271FZJ.bigWig
+      mn_bigwig: ENCFF364AKU.bigWig
+    - &id066
+      pl_bigwig: ENCFF808JYT.bigWig
+      mn_bigwig: ENCFF339KZC.bigWig
+    groups:
+      a:
+      - *id065
+      b:
+      - *id066
+  ENCSR618ZHM:
+    biosample: ileum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id067
+      pl_bigwig: ENCFF384IMY.bigWig
+      mn_bigwig: ENCFF779ZTK.bigWig
+    - &id068
+      pl_bigwig: ENCFF518CJB.bigWig
+      mn_bigwig: ENCFF044IRT.bigWig
+    groups:
+      a:
+      - *id067
+      b:
+      - *id068
+  ENCSR940QKZ:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id069
+      pl_bigwig: ENCFF970JQJ.bigWig
+      mn_bigwig: ENCFF029LEX.bigWig
+    - &id070
+      pl_bigwig: ENCFF595SVE.bigWig
+      mn_bigwig: ENCFF862XFV.bigWig
+    groups:
+      a:
+      - *id069
+      b:
+      - *id070
+  ENCSR093JST:
+    biosample: monocyte
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id071
+      pl_bigwig: ENCFF202ODO.bigWig
+      mn_bigwig: ENCFF238NLM.bigWig
+    - &id072
+      pl_bigwig: ENCFF777KQL.bigWig
+      mn_bigwig: ENCFF921WDX.bigWig
+    groups:
+      a:
+      - *id071
+      b:
+      - *id072
+  ENCSR331QXJ:
+    biosample: Colon Carcinoma Metastatic in the Lung
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF365WMY.bigWig
+      mn_bigwig: ENCFF462MKZ.bigWig
+    groups: {}
+  ENCSR575NNF:
+    biosample: right lobe of liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id073
+      pl_bigwig: ENCFF625IVE.bigWig
+      mn_bigwig: ENCFF523UUP.bigWig
+    - &id074
+      pl_bigwig: ENCFF211MKD.bigWig
+      mn_bigwig: ENCFF718JLW.bigWig
+    groups:
+      a:
+      - *id073
+      b:
+      - *id074
+  ENCSR915VCN:
+    biosample: cerebral cortex
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id075
+      pl_bigwig: ENCFF788MWR.bigWig
+      mn_bigwig: ENCFF238YIB.bigWig
+    - &id076
+      pl_bigwig: ENCFF958TDP.bigWig
+      mn_bigwig: ENCFF958MEN.bigWig
+    groups:
+      a:
+      - *id075
+      b:
+      - *id076
+  ENCSR766KPR:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id077
+      pl_bigwig: ENCFF554UYR.bigWig
+      mn_bigwig: ENCFF858WVO.bigWig
+    - &id078
+      pl_bigwig: ENCFF197ABL.bigWig
+      mn_bigwig: ENCFF153UJC.bigWig
+    groups:
+      a:
+      - *id077
+      b:
+      - *id078
+  ENCSR399LAD:
+    biosample: uterus
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id079
+      pl_bigwig: ENCFF169KOV.bigWig
+      mn_bigwig: ENCFF567EMR.bigWig
+    - &id080
+      pl_bigwig: ENCFF745MSK.bigWig
+      mn_bigwig: ENCFF553VSU.bigWig
+    groups:
+      a:
+      - *id079
+      b:
+      - *id080
+  ENCSR756CCD:
+    biosample: thyroid gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id081
+      pl_bigwig: ENCFF847YJP.bigWig
+      mn_bigwig: ENCFF631VBY.bigWig
+    - &id082
+      pl_bigwig: ENCFF133IYB.bigWig
+      mn_bigwig: ENCFF980XQW.bigWig
+    groups:
+      a:
+      - *id081
+      b:
+      - *id082
+  ENCSR023NXW:
+    biosample: right common carotid artery plus branches
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id083
+      pl_bigwig: ENCFF905JJI.bigWig
+      mn_bigwig: ENCFF673DSF.bigWig
+    - &id084
+      pl_bigwig: ENCFF198PRH.bigWig
+      mn_bigwig: ENCFF833CZC.bigWig
+    groups:
+      a:
+      - *id083
+      b:
+      - *id084
+  ENCSR266TET:
+    biosample: bronchial lymph node
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id085
+      pl_bigwig: ENCFF978XNZ.bigWig
+      mn_bigwig: ENCFF963WQQ.bigWig
+    - &id086
+      pl_bigwig: ENCFF019DXQ.bigWig
+      mn_bigwig: ENCFF119CQF.bigWig
+    groups:
+      a:
+      - *id085
+      b:
+      - *id086
+  ENCSR045XAW:
+    biosample: urinary bladder
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id087
+      pl_bigwig: ENCFF193AMF.bigWig
+      mn_bigwig: ENCFF859XQD.bigWig
+    - &id088
+      pl_bigwig: ENCFF221NSR.bigWig
+      mn_bigwig: ENCFF326MZI.bigWig
+    groups:
+      a:
+      - *id087
+      b:
+      - *id088
+  ENCSR934ZMQ:
+    biosample: Metastatic Breast Carcinoma in the Ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id089
+      pl_bigwig: ENCFF229PNB.bigWig
+      mn_bigwig: ENCFF918IJP.bigWig
+    - &id090
+      pl_bigwig: ENCFF760OPC.bigWig
+      mn_bigwig: ENCFF362VID.bigWig
+    groups:
+      a:
+      - *id089
+      b:
+      - *id090
+  ENCSR118KGX:
+    biosample: T-cell
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF246KDC.bigWig
+      mn_bigwig: ENCFF298UGL.bigWig
+    groups: {}
+  ENCSR296MTV:
+    biosample: left common carotid artery plus branches
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id091
+      pl_bigwig: ENCFF047ATS.bigWig
+      mn_bigwig: ENCFF301ATR.bigWig
+    - &id092
+      pl_bigwig: ENCFF118UEF.bigWig
+      mn_bigwig: ENCFF763TUC.bigWig
+    groups:
+      a:
+      - *id091
+      b:
+      - *id092
+  ENCSR212GWU:
+    biosample: breast
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id093
+      pl_bigwig: ENCFF334NMW.bigWig
+      mn_bigwig: ENCFF792ZQD.bigWig
+    - &id094
+      pl_bigwig: ENCFF151EUI.bigWig
+      mn_bigwig: ENCFF163LJV.bigWig
+    groups:
+      a:
+      - *id093
+      b:
+      - *id094
+  ENCSR408RHY:
+    biosample: adrenal gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id095
+      pl_bigwig: ENCFF766FVB.bigWig
+      mn_bigwig: ENCFF119HBC.bigWig
+    - &id096
+      pl_bigwig: ENCFF106SJR.bigWig
+      mn_bigwig: ENCFF723AUV.bigWig
+    groups:
+      a:
+      - *id095
+      b:
+      - *id096
+  ENCSR594WJV:
+    biosample: cytotoxic T cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id097
+      pl_bigwig: ENCFF800JUY.bigWig
+      mn_bigwig: ENCFF167IBF.bigWig
+    - &id098
+      pl_bigwig: ENCFF295FNK.bigWig
+      mn_bigwig: ENCFF214DBJ.bigWig
+    groups:
+      a:
+      - *id097
+      b:
+      - *id098
+  ENCSR797AOQ:
+    biosample: spleen
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id099
+      pl_bigwig: ENCFF488UTK.bigWig
+      mn_bigwig: ENCFF914OVT.bigWig
+    - &id100
+      pl_bigwig: ENCFF420SWY.bigWig
+      mn_bigwig: ENCFF865ANZ.bigWig
+    groups:
+      a:
+      - *id099
+      b:
+      - *id100
+  ENCSR675RBN:
+    biosample: cerebral cortex
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id101
+      pl_bigwig: ENCFF601NFZ.bigWig
+      mn_bigwig: ENCFF031GQY.bigWig
+    - &id102
+      pl_bigwig: ENCFF003TZY.bigWig
+      mn_bigwig: ENCFF361MGW.bigWig
+    groups:
+      a:
+      - *id101
+      b:
+      - *id102
+  ENCSR812JCT:
+    biosample: heart left ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id103
+      pl_bigwig: ENCFF982VAA.bigWig
+      mn_bigwig: ENCFF054BGT.bigWig
+    - &id104
+      pl_bigwig: ENCFF445YTY.bigWig
+      mn_bigwig: ENCFF353SVC.bigWig
+    groups:
+      a:
+      - *id103
+      b:
+      - *id104
+  ENCSR740DLY:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id105
+      pl_bigwig: ENCFF255LKE.bigWig
+      mn_bigwig: ENCFF262NUC.bigWig
+    - &id106
+      pl_bigwig: ENCFF029KOW.bigWig
+      mn_bigwig: ENCFF998DWH.bigWig
+    groups:
+      a:
+      - *id105
+      b:
+      - *id106
+  ENCSR964OON:
+    biosample: sternocleidomastoid
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id107
+      pl_bigwig: ENCFF727TWX.bigWig
+      mn_bigwig: ENCFF025EGE.bigWig
+    - &id108
+      pl_bigwig: ENCFF466DGA.bigWig
+      mn_bigwig: ENCFF603TDX.bigWig
+    groups:
+      a:
+      - *id107
+      b:
+      - *id108
+  ENCSR883PPD:
+    biosample: right cardiac atrium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id109
+      pl_bigwig: ENCFF558AKT.bigWig
+      mn_bigwig: ENCFF068IWI.bigWig
+    - &id110
+      pl_bigwig: ENCFF454BBU.bigWig
+      mn_bigwig: ENCFF393QMT.bigWig
+    groups:
+      a:
+      - *id109
+      b:
+      - *id110
+  ENCSR784FKF:
+    biosample: vermiform appendix
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id111
+      pl_bigwig: ENCFF874GPR.bigWig
+      mn_bigwig: ENCFF516NXU.bigWig
+    - &id112
+      pl_bigwig: ENCFF046QUU.bigWig
+      mn_bigwig: ENCFF444GIW.bigWig
+    groups:
+      a:
+      - *id111
+      b:
+      - *id112
+  ENCSR273JQN:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id113
+      pl_bigwig: ENCFF702ZUJ.bigWig
+      mn_bigwig: ENCFF323ZMX.bigWig
+    - &id114
+      pl_bigwig: ENCFF375JEC.bigWig
+      mn_bigwig: ENCFF578FCY.bigWig
+    groups:
+      a:
+      - *id113
+      b:
+      - *id114
+  ENCSR074XOP:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id115
+      pl_bigwig: ENCFF067ZFN.bigWig
+      mn_bigwig: ENCFF892ADK.bigWig
+    - &id116
+      pl_bigwig: ENCFF194FJR.bigWig
+      mn_bigwig: ENCFF851IEE.bigWig
+    groups:
+      a:
+      - *id115
+      b:
+      - *id116
+  ENCSR635SXX:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id117
+      pl_bigwig: ENCFF710UKX.bigWig
+      mn_bigwig: ENCFF513IVI.bigWig
+    - &id118
+      pl_bigwig: ENCFF693CBG.bigWig
+      mn_bigwig: ENCFF517PLA.bigWig
+    groups:
+      a:
+      - *id117
+      b:
+      - *id118
+  ENCSR990FJB:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id119
+      pl_bigwig: ENCFF692QPR.bigWig
+      mn_bigwig: ENCFF050BQZ.bigWig
+    - &id120
+      pl_bigwig: ENCFF260QCB.bigWig
+      mn_bigwig: ENCFF887JVU.bigWig
+    groups:
+      a:
+      - *id119
+      b:
+      - *id120
+  ENCSR261OWE:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id121
+      pl_bigwig: ENCFF516CIY.bigWig
+      mn_bigwig: ENCFF687NPB.bigWig
+    - &id122
+      pl_bigwig: ENCFF719EOH.bigWig
+      mn_bigwig: ENCFF312IWO.bigWig
+    groups:
+      a:
+      - *id121
+      b:
+      - *id122
+  ENCSR932TRR:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id123
+      pl_bigwig: ENCFF963NDK.bigWig
+      mn_bigwig: ENCFF670EXD.bigWig
+    - &id124
+      pl_bigwig: ENCFF138ZSL.bigWig
+      mn_bigwig: ENCFF337QIN.bigWig
+    groups:
+      a:
+      - *id123
+      b:
+      - *id124
+  ENCSR604EBH:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 4
+    pairs:
+    - &id125
+      pl_bigwig: ENCFF929BQB.bigWig
+      mn_bigwig: ENCFF806IHJ.bigWig
+    - &id127
+      pl_bigwig: ENCFF303RQD.bigWig
+      mn_bigwig: ENCFF461WON.bigWig
+    - &id126
+      pl_bigwig: ENCFF183SSA.bigWig
+      mn_bigwig: ENCFF538JPG.bigWig
+    - &id128
+      pl_bigwig: ENCFF526DGX.bigWig
+      mn_bigwig: ENCFF900CHQ.bigWig
+    groups:
+      a:
+      - *id125
+      - *id126
+      b:
+      - *id127
+      - *id128
+  ENCSR124AWE:
+    biosample: SUDHL5
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id129
+      pl_bigwig: ENCFF378UKN.bigWig
+      mn_bigwig: ENCFF981PND.bigWig
+    - &id130
+      pl_bigwig: ENCFF264SFZ.bigWig
+      mn_bigwig: ENCFF797USK.bigWig
+    groups:
+      a:
+      - *id129
+      b:
+      - *id130
+  ENCSR548GOG:
+    biosample: stomach
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id131
+      pl_bigwig: ENCFF217VGJ.bigWig
+      mn_bigwig: ENCFF219LDS.bigWig
+    - &id132
+      pl_bigwig: ENCFF037TGI.bigWig
+      mn_bigwig: ENCFF851NUQ.bigWig
+    groups:
+      a:
+      - *id131
+      b:
+      - *id132
+  ENCSR973QQI:
+    biosample: ReNcell CX
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id133
+      pl_bigwig: ENCFF392OKR.bigWig
+      mn_bigwig: ENCFF773MMG.bigWig
+    - &id134
+      pl_bigwig: ENCFF396ZBP.bigWig
+      mn_bigwig: ENCFF944VIF.bigWig
+    groups:
+      a:
+      - *id133
+      b:
+      - *id134
+  ENCSR473KVF:
+    biosample: HEK293T
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id135
+      pl_bigwig: ENCFF592ZIW.bigWig
+      mn_bigwig: ENCFF748BAF.bigWig
+    - &id136
+      pl_bigwig: ENCFF122LLU.bigWig
+      mn_bigwig: ENCFF236QNQ.bigWig
+    groups:
+      a:
+      - *id135
+      b:
+      - *id136
+  ENCSR382HFH:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id137
+      pl_bigwig: ENCFF942ZED.bigWig
+      mn_bigwig: ENCFF653GEU.bigWig
+    - &id138
+      pl_bigwig: ENCFF899CIQ.bigWig
+      mn_bigwig: ENCFF969NXK.bigWig
+    groups:
+      a:
+      - *id137
+      b:
+      - *id138
+  ENCSR624CVP:
+    biosample: peritoneum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id139
+      pl_bigwig: ENCFF309LIZ.bigWig
+      mn_bigwig: ENCFF721NEX.bigWig
+    - &id140
+      pl_bigwig: ENCFF786NRN.bigWig
+      mn_bigwig: ENCFF760FVH.bigWig
+    groups:
+      a:
+      - *id139
+      b:
+      - *id140
+  ENCSR575EOB:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id141
+      pl_bigwig: ENCFF121MGB.bigWig
+      mn_bigwig: ENCFF783ELT.bigWig
+    - &id142
+      pl_bigwig: ENCFF152ZRN.bigWig
+      mn_bigwig: ENCFF398ZGQ.bigWig
+    groups:
+      a:
+      - *id141
+      b:
+      - *id142
+  ENCSR701MOE:
+    biosample: T-cell
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF224WRP.bigWig
+      mn_bigwig: ENCFF248NZO.bigWig
+    groups: {}
+  ENCSR657PSE:
+    biosample: aorta
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id143
+      pl_bigwig: ENCFF181BIF.bigWig
+      mn_bigwig: ENCFF045RVO.bigWig
+    - &id144
+      pl_bigwig: ENCFF781AVI.bigWig
+      mn_bigwig: ENCFF236DMO.bigWig
+    groups:
+      a:
+      - *id143
+      b:
+      - *id144
+  ENCSR472ETC:
+    biosample: fallopian tube
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id145
+      pl_bigwig: ENCFF100LON.bigWig
+      mn_bigwig: ENCFF791SXO.bigWig
+    - &id146
+      pl_bigwig: ENCFF897POV.bigWig
+      mn_bigwig: ENCFF759JAR.bigWig
+    groups:
+      a:
+      - *id145
+      b:
+      - *id146
+  ENCSR077MAX:
+    biosample: tibial nerve
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id147
+      pl_bigwig: ENCFF983ETN.bigWig
+      mn_bigwig: ENCFF622ABN.bigWig
+    - &id148
+      pl_bigwig: ENCFF534YXP.bigWig
+      mn_bigwig: ENCFF923UFT.bigWig
+    groups:
+      a:
+      - *id147
+      b:
+      - *id148
+  ENCSR426RMA:
+    biosample: heart left ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id149
+      pl_bigwig: ENCFF057YUL.bigWig
+      mn_bigwig: ENCFF369UUR.bigWig
+    - &id150
+      pl_bigwig: ENCFF842VJY.bigWig
+      mn_bigwig: ENCFF731YCW.bigWig
+    groups:
+      a:
+      - *id149
+      b:
+      - *id150
+  ENCSR489FZB:
+    biosample: T-cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id151
+      pl_bigwig: ENCFF678TOK.bigWig
+      mn_bigwig: ENCFF759MHE.bigWig
+    - &id152
+      pl_bigwig: ENCFF474OLX.bigWig
+      mn_bigwig: ENCFF718SOM.bigWig
+    groups:
+      a:
+      - *id151
+      b:
+      - *id152
+  ENCSR683FOJ:
+    biosample: mesenteric fat pad
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id153
+      pl_bigwig: ENCFF049CPX.bigWig
+      mn_bigwig: ENCFF402EFB.bigWig
+    - &id154
+      pl_bigwig: ENCFF672FFB.bigWig
+      mn_bigwig: ENCFF635IKU.bigWig
+    groups:
+      a:
+      - *id153
+      b:
+      - *id154
+  ENCSR683YVU:
+    biosample: helper T cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id155
+      pl_bigwig: ENCFF198LRK.bigWig
+      mn_bigwig: ENCFF334LNW.bigWig
+    - &id156
+      pl_bigwig: ENCFF345VXE.bigWig
+      mn_bigwig: ENCFF149SDN.bigWig
+    groups:
+      a:
+      - *id155
+      b:
+      - *id156
+  ENCSR574ZMF:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id157
+      pl_bigwig: ENCFF496NGC.bigWig
+      mn_bigwig: ENCFF416IGU.bigWig
+    - &id158
+      pl_bigwig: ENCFF939MIJ.bigWig
+      mn_bigwig: ENCFF833UDI.bigWig
+    groups:
+      a:
+      - *id157
+      b:
+      - *id158
+  ENCSR245UIS:
+    biosample: Karpas-422
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id159
+      pl_bigwig: ENCFF790UTG.bigWig
+      mn_bigwig: ENCFF126ZBC.bigWig
+    - &id160
+      pl_bigwig: ENCFF154LAF.bigWig
+      mn_bigwig: ENCFF382EUX.bigWig
+    groups:
+      a:
+      - *id159
+      b:
+      - *id160
+  ENCSR836XBB:
+    biosample: rectum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id161
+      pl_bigwig: ENCFF662ZMW.bigWig
+      mn_bigwig: ENCFF937HSR.bigWig
+    - &id162
+      pl_bigwig: ENCFF077BMQ.bigWig
+      mn_bigwig: ENCFF878ZES.bigWig
+    groups:
+      a:
+      - *id161
+      b:
+      - *id162
+  ENCSR526QVD:
+    biosample: ureter
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id163
+      pl_bigwig: ENCFF923IQF.bigWig
+      mn_bigwig: ENCFF015HOZ.bigWig
+    - &id164
+      pl_bigwig: ENCFF996NXR.bigWig
+      mn_bigwig: ENCFF744ZAH.bigWig
+    groups:
+      a:
+      - *id163
+      b:
+      - *id164
+  ENCSR876AEQ:
+    biosample: Metastatic Liver Carcinoma in the Adrenal Gland
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF165NZD.bigWig
+      mn_bigwig: ENCFF498JCP.bigWig
+    groups: {}
+  ENCSR229XTQ:
+    biosample: skeletal muscle tissue
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id165
+      pl_bigwig: ENCFF090LFK.bigWig
+      mn_bigwig: ENCFF191TIR.bigWig
+    - &id166
+      pl_bigwig: ENCFF980EBT.bigWig
+      mn_bigwig: ENCFF258BKO.bigWig
+    groups:
+      a:
+      - *id165
+      b:
+      - *id166
+  ENCSR659YNL:
+    biosample: left lung
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id167
+      pl_bigwig: ENCFF675AQH.bigWig
+      mn_bigwig: ENCFF690WCT.bigWig
+    - &id168
+      pl_bigwig: ENCFF672HAC.bigWig
+      mn_bigwig: ENCFF133HUW.bigWig
+    groups:
+      a:
+      - *id167
+      b:
+      - *id168
+  ENCSR282IJP:
+    biosample: neutrophil
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id169
+      pl_bigwig: ENCFF752CNO.bigWig
+      mn_bigwig: ENCFF267WPQ.bigWig
+    - &id170
+      pl_bigwig: ENCFF202HXX.bigWig
+      mn_bigwig: ENCFF662RXL.bigWig
+    groups:
+      a:
+      - *id169
+      b:
+      - *id170
+  ENCSR888DKJ:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id171
+      pl_bigwig: ENCFF723MKO.bigWig
+      mn_bigwig: ENCFF769IGI.bigWig
+    - &id172
+      pl_bigwig: ENCFF775CRX.bigWig
+      mn_bigwig: ENCFF067NMD.bigWig
+    groups:
+      a:
+      - *id171
+      b:
+      - *id172
+  ENCSR754LBG:
+    biosample: duodenum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id173
+      pl_bigwig: ENCFF410HCA.bigWig
+      mn_bigwig: ENCFF330APO.bigWig
+    - &id174
+      pl_bigwig: ENCFF860LNL.bigWig
+      mn_bigwig: ENCFF242XXV.bigWig
+    groups:
+      a:
+      - *id173
+      b:
+      - *id174
+  ENCSR250REI:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id175
+      pl_bigwig: ENCFF886XFP.bigWig
+      mn_bigwig: ENCFF232QGY.bigWig
+    - &id176
+      pl_bigwig: ENCFF786MWN.bigWig
+      mn_bigwig: ENCFF621BGR.bigWig
+    groups:
+      a:
+      - *id175
+      b:
+      - *id176
+  ENCSR180NBV:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id177
+      pl_bigwig: ENCFF987XPA.bigWig
+      mn_bigwig: ENCFF745ZQQ.bigWig
+    - &id178
+      pl_bigwig: ENCFF861BFJ.bigWig
+      mn_bigwig: ENCFF970IFE.bigWig
+    groups:
+      a:
+      - *id177
+      b:
+      - *id178
+  ENCSR739MOQ:
+    biosample: body of pancreas
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id179
+      pl_bigwig: ENCFF678CKL.bigWig
+      mn_bigwig: ENCFF114QKA.bigWig
+    - &id180
+      pl_bigwig: ENCFF254EBK.bigWig
+      mn_bigwig: ENCFF068BOD.bigWig
+    groups:
+      a:
+      - *id179
+      b:
+      - *id180
+  ENCSR117JKC:
+    biosample: trachea
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id181
+      pl_bigwig: ENCFF205FFQ.bigWig
+      mn_bigwig: ENCFF867VHZ.bigWig
+    - &id182
+      pl_bigwig: ENCFF132UQF.bigWig
+      mn_bigwig: ENCFF235ZNX.bigWig
+    groups:
+      a:
+      - *id181
+      b:
+      - *id182
+  ENCSR008TSD:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id183
+      pl_bigwig: ENCFF259HSJ.bigWig
+      mn_bigwig: ENCFF936QNE.bigWig
+    - &id184
+      pl_bigwig: ENCFF874YTX.bigWig
+      mn_bigwig: ENCFF855VJO.bigWig
+    groups:
+      a:
+      - *id183
+      b:
+      - *id184
+  ENCSR723JIC:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id185
+      pl_bigwig: ENCFF574JPC.bigWig
+      mn_bigwig: ENCFF291LMW.bigWig
+    - &id186
+      pl_bigwig: ENCFF708LNZ.bigWig
+      mn_bigwig: ENCFF283MOB.bigWig
+    groups:
+      a:
+      - *id185
+      b:
+      - *id186
+  ENCSR980TGS:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id187
+      pl_bigwig: ENCFF377DCZ.bigWig
+      mn_bigwig: ENCFF996HWK.bigWig
+    - &id188
+      pl_bigwig: ENCFF059AZM.bigWig
+      mn_bigwig: ENCFF468DVE.bigWig
+    groups:
+      a:
+      - *id187
+      b:
+      - *id188
+  ENCSR083AMN:
+    biosample: B cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id189
+      pl_bigwig: ENCFF746KYF.bigWig
+      mn_bigwig: ENCFF408NIK.bigWig
+    - &id190
+      pl_bigwig: ENCFF812MRP.bigWig
+      mn_bigwig: ENCFF074SSA.bigWig
+    groups:
+      a:
+      - *id189
+      b:
+      - *id190
+  ENCSR756TPG:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 4
+    pairs:
+    - &id191
+      pl_bigwig: ENCFF823JCH.bigWig
+      mn_bigwig: ENCFF253KQJ.bigWig
+    - &id193
+      pl_bigwig: ENCFF633USA.bigWig
+      mn_bigwig: ENCFF658HRY.bigWig
+    - &id192
+      pl_bigwig: ENCFF384ZQJ.bigWig
+      mn_bigwig: ENCFF848KKP.bigWig
+    - &id194
+      pl_bigwig: ENCFF366DPV.bigWig
+      mn_bigwig: ENCFF182HUP.bigWig
+    groups:
+      a:
+      - *id191
+      - *id192
+      b:
+      - *id193
+      - *id194
+  ENCSR089CQL:
+    biosample: T-cell
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF761RFA.bigWig
+      mn_bigwig: ENCFF481YXT.bigWig
+    groups: {}
+  ENCSR294JPW:
+    biosample: left ventricle myocardium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id195
+      pl_bigwig: ENCFF815EOY.bigWig
+      mn_bigwig: ENCFF667XMA.bigWig
+    - &id196
+      pl_bigwig: ENCFF697YHC.bigWig
+      mn_bigwig: ENCFF522YDK.bigWig
+    groups:
+      a:
+      - *id195
+      b:
+      - *id196
+  ENCSR321WCE:
+    biosample: neural crest cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id197
+      pl_bigwig: ENCFF343BAM.bigWig
+      mn_bigwig: ENCFF635TCW.bigWig
+    - &id198
+      pl_bigwig: ENCFF450XIM.bigWig
+      mn_bigwig: ENCFF113WQI.bigWig
+    groups:
+      a:
+      - *id197
+      b:
+      - *id198
+  ENCSR357VUN:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id199
+      pl_bigwig: ENCFF435OOB.bigWig
+      mn_bigwig: ENCFF588HBC.bigWig
+    - &id200
+      pl_bigwig: ENCFF455FKB.bigWig
+      mn_bigwig: ENCFF376ZPG.bigWig
+    groups:
+      a:
+      - *id199
+      b:
+      - *id200
+  ENCSR393PGX:
+    biosample: breast epithelium
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF992WRX.bigWig
+      mn_bigwig: ENCFF440ZTM.bigWig
+    groups: {}
+  ENCSR489BCG:
+    biosample: pancreas
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF729QOS.bigWig
+      mn_bigwig: ENCFF090RRR.bigWig
+    groups: {}
+  ENCSR243MVI:
+    biosample: liver
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF314IXN.bigWig
+      mn_bigwig: ENCFF908GQE.bigWig
+    groups: {}
+  ENCSR104MSL:
+    biosample: pancreas
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id201
+      pl_bigwig: ENCFF984XGZ.bigWig
+      mn_bigwig: ENCFF352IXG.bigWig
+    - &id202
+      pl_bigwig: ENCFF952KNP.bigWig
+      mn_bigwig: ENCFF268DZY.bigWig
+    groups:
+      a:
+      - *id201
+      b:
+      - *id202
+  ENCSR928ZWP:
+    biosample: lower leg skin
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id203
+      pl_bigwig: ENCFF292WHE.bigWig
+      mn_bigwig: ENCFF115MBG.bigWig
+    - &id204
+      pl_bigwig: ENCFF652RQR.bigWig
+      mn_bigwig: ENCFF226CFV.bigWig
+    groups:
+      a:
+      - *id203
+      b:
+      - *id204
+  ENCSR331UGM:
+    biosample: liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id205
+      pl_bigwig: ENCFF981WFL.bigWig
+      mn_bigwig: ENCFF354GOW.bigWig
+    - &id206
+      pl_bigwig: ENCFF468COZ.bigWig
+      mn_bigwig: ENCFF759QBY.bigWig
+    groups:
+      a:
+      - *id205
+      b:
+      - *id206
+  ENCSR149WMX:
+    biosample: Metastatic Liver Carcinoma in the Lung
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF275RVY.bigWig
+      mn_bigwig: ENCFF073DQK.bigWig
+    groups: {}
+  ENCSR633OWM:
+    biosample: pulmonary lymph node
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id207
+      pl_bigwig: ENCFF316BDZ.bigWig
+      mn_bigwig: ENCFF771XPV.bigWig
+    - &id208
+      pl_bigwig: ENCFF107UYX.bigWig
+      mn_bigwig: ENCFF950NUQ.bigWig
+    groups:
+      a:
+      - *id207
+      b:
+      - *id208
+  ENCSR384HWB:
+    biosample: ascending aorta
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id209
+      pl_bigwig: ENCFF605FIB.bigWig
+      mn_bigwig: ENCFF715UJT.bigWig
+    - &id210
+      pl_bigwig: ENCFF443NSY.bigWig
+      mn_bigwig: ENCFF217JZT.bigWig
+    groups:
+      a:
+      - *id209
+      b:
+      - *id210
+  ENCSR347PQY:
+    biosample: upper lobe of left lung
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id211
+      pl_bigwig: ENCFF382MZM.bigWig
+      mn_bigwig: ENCFF450MXC.bigWig
+    - &id212
+      pl_bigwig: ENCFF335HZP.bigWig
+      mn_bigwig: ENCFF699XWT.bigWig
+    groups:
+      a:
+      - *id211
+      b:
+      - *id212
+  ENCSR335ZMZ:
+    biosample: OCI-LY7
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id213
+      pl_bigwig: ENCFF062OCA.bigWig
+      mn_bigwig: ENCFF122BGE.bigWig
+    - &id214
+      pl_bigwig: ENCFF244COZ.bigWig
+      mn_bigwig: ENCFF117YRS.bigWig
+    groups:
+      a:
+      - *id213
+      b:
+      - *id214
+  ENCSR657RPS:
+    biosample: uterus
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id215
+      pl_bigwig: ENCFF470SOA.bigWig
+      mn_bigwig: ENCFF292OUX.bigWig
+    - &id216
+      pl_bigwig: ENCFF137GPQ.bigWig
+      mn_bigwig: ENCFF455JXC.bigWig
+    groups:
+      a:
+      - *id215
+      b:
+      - *id216
+  ENCSR149ZRX:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id217
+      pl_bigwig: ENCFF990LRK.bigWig
+      mn_bigwig: ENCFF258ZIO.bigWig
+    - &id218
+      pl_bigwig: ENCFF177SYN.bigWig
+      mn_bigwig: ENCFF952YCN.bigWig
+    groups:
+      a:
+      - *id217
+      b:
+      - *id218
+  ENCSR834OVY:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id219
+      pl_bigwig: ENCFF928OWF.bigWig
+      mn_bigwig: ENCFF296TBC.bigWig
+    - &id220
+      pl_bigwig: ENCFF808BAY.bigWig
+      mn_bigwig: ENCFF990ETZ.bigWig
+    groups:
+      a:
+      - *id219
+      b:
+      - *id220
+  ENCSR262PWK:
+    biosample: type B pancreatic cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id221
+      pl_bigwig: ENCFF557XZG.bigWig
+      mn_bigwig: ENCFF115FJX.bigWig
+    - &id222
+      pl_bigwig: ENCFF068RQW.bigWig
+      mn_bigwig: ENCFF966LRS.bigWig
+    groups:
+      a:
+      - *id221
+      b:
+      - *id222
+  ENCSR300AAD:
+    biosample: Metastatic Liver Carcinoma in the Adrenal Gland
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF648RXB.bigWig
+      mn_bigwig: ENCFF074QXQ.bigWig
+    groups: {}
+  ENCSR900SLO:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id223
+      pl_bigwig: ENCFF647FVM.bigWig
+      mn_bigwig: ENCFF067EBR.bigWig
+    - &id224
+      pl_bigwig: ENCFF039IDP.bigWig
+      mn_bigwig: ENCFF593BHS.bigWig
+    groups:
+      a:
+      - *id223
+      b:
+      - *id224
+  ENCSR687HZX:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id225
+      pl_bigwig: ENCFF056WDZ.bigWig
+      mn_bigwig: ENCFF958CFG.bigWig
+    - &id226
+      pl_bigwig: ENCFF108GJA.bigWig
+      mn_bigwig: ENCFF495CDY.bigWig
+    groups:
+      a:
+      - *id225
+      b:
+      - *id226
+  ENCSR997YHR:
+    biosample: lung
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id227
+      pl_bigwig: ENCFF294ZUZ.bigWig
+      mn_bigwig: ENCFF607PRT.bigWig
+    - &id228
+      pl_bigwig: ENCFF843FTM.bigWig
+      mn_bigwig: ENCFF943ACS.bigWig
+    groups:
+      a:
+      - *id227
+      b:
+      - *id228
+  ENCSR744JVA:
+    biosample: pancreas
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id229
+      pl_bigwig: ENCFF489SBW.bigWig
+      mn_bigwig: ENCFF667ZIG.bigWig
+    - &id230
+      pl_bigwig: ENCFF129SLB.bigWig
+      mn_bigwig: ENCFF772FDR.bigWig
+    groups:
+      a:
+      - *id229
+      b:
+      - *id230
+  ENCSR338WJS:
+    biosample: pancreas
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id231
+      pl_bigwig: ENCFF790VDO.bigWig
+      mn_bigwig: ENCFF703BZM.bigWig
+    - &id232
+      pl_bigwig: ENCFF501UJX.bigWig
+      mn_bigwig: ENCFF006DGD.bigWig
+    groups:
+      a:
+      - *id231
+      b:
+      - *id232
+  ENCSR407CCJ:
+    biosample: cerebellum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id233
+      pl_bigwig: ENCFF476HIT.bigWig
+      mn_bigwig: ENCFF616JZH.bigWig
+    - &id234
+      pl_bigwig: ENCFF252KRC.bigWig
+      mn_bigwig: ENCFF569HVO.bigWig
+    groups:
+      a:
+      - *id233
+      b:
+      - *id234
+  ENCSR155NVW:
+    biosample: penis
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id235
+      pl_bigwig: ENCFF783KFT.bigWig
+      mn_bigwig: ENCFF212QGD.bigWig
+    - &id236
+      pl_bigwig: ENCFF615HJM.bigWig
+      mn_bigwig: ENCFF596OKQ.bigWig
+    groups:
+      a:
+      - *id235
+      b:
+      - *id236
+  ENCSR305RPP:
+    biosample: testis
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id237
+      pl_bigwig: ENCFF292MBF.bigWig
+      mn_bigwig: ENCFF867UGD.bigWig
+    - &id238
+      pl_bigwig: ENCFF257XGW.bigWig
+      mn_bigwig: ENCFF212GIQ.bigWig
+    groups:
+      a:
+      - *id237
+      b:
+      - *id238
+  ENCSR290MPW:
+    biosample: heart left ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id239
+      pl_bigwig: ENCFF535TOP.bigWig
+      mn_bigwig: ENCFF191JMD.bigWig
+    - &id240
+      pl_bigwig: ENCFF493AAG.bigWig
+      mn_bigwig: ENCFF250WGS.bigWig
+    groups:
+      a:
+      - *id239
+      b:
+      - *id240
+  ENCSR219NJB:
+    biosample: spleen
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF968QHP.bigWig
+      mn_bigwig: ENCFF558HBA.bigWig
+    groups: {}
+  ENCSR219QKX:
+    biosample: heart right ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id241
+      pl_bigwig: ENCFF952RDC.bigWig
+      mn_bigwig: ENCFF035IDQ.bigWig
+    - &id242
+      pl_bigwig: ENCFF658KBE.bigWig
+      mn_bigwig: ENCFF712XKK.bigWig
+    groups:
+      a:
+      - *id241
+      b:
+      - *id242
+  ENCSR656ZDH:
+    biosample: heart left ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id243
+      pl_bigwig: ENCFF396CRM.bigWig
+      mn_bigwig: ENCFF009HXV.bigWig
+    - &id244
+      pl_bigwig: ENCFF549EWL.bigWig
+      mn_bigwig: ENCFF531GVC.bigWig
+    groups:
+      a:
+      - *id243
+      b:
+      - *id244
+  ENCSR065NDB:
+    biosample: T-cell
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF789FBY.bigWig
+      mn_bigwig: ENCFF037SOJ.bigWig
+    groups: {}
+  ENCSR769SLJ:
+    biosample: transverse colon
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF807IQQ.bigWig
+      mn_bigwig: ENCFF482JTL.bigWig
+    groups: {}
+  ENCSR069DQH:
+    biosample: cytotoxic T cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id245
+      pl_bigwig: ENCFF433SXM.bigWig
+      mn_bigwig: ENCFF686BJG.bigWig
+    - &id246
+      pl_bigwig: ENCFF399NJN.bigWig
+      mn_bigwig: ENCFF457IUS.bigWig
+    groups:
+      a:
+      - *id245
+      b:
+      - *id246
+  ENCSR617JRP:
+    biosample: Metastatic Breast Carcinoma in the Ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id247
+      pl_bigwig: ENCFF878OGN.bigWig
+      mn_bigwig: ENCFF965ESB.bigWig
+    - &id248
+      pl_bigwig: ENCFF730VHC.bigWig
+      mn_bigwig: ENCFF040WCX.bigWig
+    groups:
+      a:
+      - *id247
+      b:
+      - *id248
+  ENCSR100PNA:
+    biosample: paraaortic lymph node
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id249
+      pl_bigwig: ENCFF486AKB.bigWig
+      mn_bigwig: ENCFF145LWD.bigWig
+    - &id250
+      pl_bigwig: ENCFF270MSL.bigWig
+      mn_bigwig: ENCFF228FWZ.bigWig
+    groups:
+      a:
+      - *id249
+      b:
+      - *id250
+  ENCSR065QHA:
+    biosample: left lobe of liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id251
+      pl_bigwig: ENCFF890URC.bigWig
+      mn_bigwig: ENCFF972TKK.bigWig
+    - &id252
+      pl_bigwig: ENCFF109XGP.bigWig
+      mn_bigwig: ENCFF306NXH.bigWig
+    groups:
+      a:
+      - *id251
+      b:
+      - *id252
+  ENCSR233GRN:
+    biosample: bronchus
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id253
+      pl_bigwig: ENCFF444QJW.bigWig
+      mn_bigwig: ENCFF203MHO.bigWig
+    - &id254
+      pl_bigwig: ENCFF120ZXQ.bigWig
+      mn_bigwig: ENCFF828FHM.bigWig
+    groups:
+      a:
+      - *id253
+      b:
+      - *id254
+  ENCSR997INZ:
+    biosample: right atrium auricular region
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id255
+      pl_bigwig: ENCFF731XGB.bigWig
+      mn_bigwig: ENCFF948DHJ.bigWig
+    - &id256
+      pl_bigwig: ENCFF851KFY.bigWig
+      mn_bigwig: ENCFF866JGJ.bigWig
+    groups:
+      a:
+      - *id255
+      b:
+      - *id256
+  ENCSR431MXP:
+    biosample: thyroid gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id257
+      pl_bigwig: ENCFF004QOI.bigWig
+      mn_bigwig: ENCFF833TZN.bigWig
+    - &id258
+      pl_bigwig: ENCFF247QWI.bigWig
+      mn_bigwig: ENCFF947EZN.bigWig
+    groups:
+      a:
+      - *id257
+      b:
+      - *id258
+  ENCSR255MUU:
+    biosample: progenitor cell of endocrine pancreas
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id259
+      pl_bigwig: ENCFF110CJJ.bigWig
+      mn_bigwig: ENCFF993AMV.bigWig
+    - &id260
+      pl_bigwig: ENCFF266MVV.bigWig
+      mn_bigwig: ENCFF410TZS.bigWig
+    groups:
+      a:
+      - *id259
+      b:
+      - *id260
+  ENCSR673CJC:
+    biosample: Metastatic Lung Carcinoma in the Adrenal Gland
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF071NAE.bigWig
+      mn_bigwig: ENCFF853CUZ.bigWig
+    groups: {}
+  ENCSR946MDO:
+    biosample: gastroesophageal sphincter
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id261
+      pl_bigwig: ENCFF615XDK.bigWig
+      mn_bigwig: ENCFF076UHT.bigWig
+    - &id262
+      pl_bigwig: ENCFF651ICI.bigWig
+      mn_bigwig: ENCFF550PED.bigWig
+    groups:
+      a:
+      - *id261
+      b:
+      - *id262
+  ENCSR841GXY:
+    biosample: monocyte
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id263
+      pl_bigwig: ENCFF942ZKL.bigWig
+      mn_bigwig: ENCFF664QSA.bigWig
+    - &id264
+      pl_bigwig: ENCFF219FVU.bigWig
+      mn_bigwig: ENCFF513TWP.bigWig
+    groups:
+      a:
+      - *id263
+      b:
+      - *id264
+  ENCSR296XBI:
+    biosample: T-cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id265
+      pl_bigwig: ENCFF215HTF.bigWig
+      mn_bigwig: ENCFF013SHE.bigWig
+    - &id266
+      pl_bigwig: ENCFF974XOG.bigWig
+      mn_bigwig: ENCFF310DAW.bigWig
+    groups:
+      a:
+      - *id265
+      b:
+      - *id266
+  ENCSR072JHG:
+    biosample: liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id267
+      pl_bigwig: ENCFF896AAV.bigWig
+      mn_bigwig: ENCFF734XLJ.bigWig
+    - &id268
+      pl_bigwig: ENCFF710FSS.bigWig
+      mn_bigwig: ENCFF351WTC.bigWig
+    groups:
+      a:
+      - *id267
+      b:
+      - *id268
+  ENCSR883HAT:
+    biosample: uterus
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id269
+      pl_bigwig: ENCFF762ISN.bigWig
+      mn_bigwig: ENCFF188WIH.bigWig
+    - &id270
+      pl_bigwig: ENCFF637HFL.bigWig
+      mn_bigwig: ENCFF362NCT.bigWig
+    groups:
+      a:
+      - *id269
+      b:
+      - *id270
+  ENCSR360MUR:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id271
+      pl_bigwig: ENCFF746WNN.bigWig
+      mn_bigwig: ENCFF727ABO.bigWig
+    - &id272
+      pl_bigwig: ENCFF172YFM.bigWig
+      mn_bigwig: ENCFF667FFP.bigWig
+    groups:
+      a:
+      - *id271
+      b:
+      - *id272
+  ENCSR871CUV:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id273
+      pl_bigwig: ENCFF936TVI.bigWig
+      mn_bigwig: ENCFF383NKD.bigWig
+    - &id274
+      pl_bigwig: ENCFF803YGU.bigWig
+      mn_bigwig: ENCFF716WJJ.bigWig
+    groups:
+      a:
+      - *id273
+      b:
+      - *id274
+  ENCSR676YGJ:
+    biosample: heart left ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id275
+      pl_bigwig: ENCFF231FBL.bigWig
+      mn_bigwig: ENCFF903XWA.bigWig
+    - &id276
+      pl_bigwig: ENCFF760NXM.bigWig
+      mn_bigwig: ENCFF932BDC.bigWig
+    groups:
+      a:
+      - *id275
+      b:
+      - *id276
+  ENCSR571OAW:
+    biosample: mesothelial cell of epicardium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id277
+      pl_bigwig: ENCFF675DRE.bigWig
+      mn_bigwig: ENCFF334HUN.bigWig
+    - &id278
+      pl_bigwig: ENCFF534EDW.bigWig
+      mn_bigwig: ENCFF516UGK.bigWig
+    groups:
+      a:
+      - *id277
+      b:
+      - *id278
+  ENCSR632XIZ:
+    biosample: skeletal muscle tissue
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id279
+      pl_bigwig: ENCFF650JQJ.bigWig
+      mn_bigwig: ENCFF923PWV.bigWig
+    - &id280
+      pl_bigwig: ENCFF869EJO.bigWig
+      mn_bigwig: ENCFF652IGY.bigWig
+    groups:
+      a:
+      - *id279
+      b:
+      - *id280
+  ENCSR179FHG:
+    biosample: sigmoid colon
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id281
+      pl_bigwig: ENCFF335GEL.bigWig
+      mn_bigwig: ENCFF618FAW.bigWig
+    - &id282
+      pl_bigwig: ENCFF900NFJ.bigWig
+      mn_bigwig: ENCFF113TXU.bigWig
+    groups:
+      a:
+      - *id281
+      b:
+      - *id282
+  ENCSR246YHR:
+    biosample: esophagus muscularis mucosa
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id283
+      pl_bigwig: ENCFF543THJ.bigWig
+      mn_bigwig: ENCFF389DJS.bigWig
+    - &id284
+      pl_bigwig: ENCFF243OLD.bigWig
+      mn_bigwig: ENCFF804RZL.bigWig
+    groups:
+      a:
+      - *id283
+      b:
+      - *id284
+  ENCSR353ZXW:
+    biosample: SP-49
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id285
+      pl_bigwig: ENCFF781NVO.bigWig
+      mn_bigwig: ENCFF688EKC.bigWig
+    - &id286
+      pl_bigwig: ENCFF109TJP.bigWig
+      mn_bigwig: ENCFF830QJK.bigWig
+    groups:
+      a:
+      - *id285
+      b:
+      - *id286
+  ENCSR845LKT:
+    biosample: right lobe of liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id287
+      pl_bigwig: ENCFF555AEH.bigWig
+      mn_bigwig: ENCFF107CAH.bigWig
+    - &id288
+      pl_bigwig: ENCFF827XRD.bigWig
+      mn_bigwig: ENCFF770MQV.bigWig
+    groups:
+      a:
+      - *id287
+      b:
+      - *id288
+  ENCSR794VAJ:
+    biosample: sciatic nerve
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id289
+      pl_bigwig: ENCFF316HDE.bigWig
+      mn_bigwig: ENCFF942QDQ.bigWig
+    - &id290
+      pl_bigwig: ENCFF072WMN.bigWig
+      mn_bigwig: ENCFF014SON.bigWig
+    groups:
+      a:
+      - *id289
+      b:
+      - *id290
+  ENCSR610POV:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id291
+      pl_bigwig: ENCFF483HHI.bigWig
+      mn_bigwig: ENCFF627MKY.bigWig
+    - &id292
+      pl_bigwig: ENCFF277IUN.bigWig
+      mn_bigwig: ENCFF830VKK.bigWig
+    groups:
+      a:
+      - *id291
+      b:
+      - *id292
+  ENCSR220OLX:
+    biosample: left colon
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id293
+      pl_bigwig: ENCFF608QEE.bigWig
+      mn_bigwig: ENCFF783HOY.bigWig
+    - &id294
+      pl_bigwig: ENCFF540ITR.bigWig
+      mn_bigwig: ENCFF330LFL.bigWig
+    groups:
+      a:
+      - *id293
+      b:
+      - *id294
+  ENCSR966RLG:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id295
+      pl_bigwig: ENCFF050HYB.bigWig
+      mn_bigwig: ENCFF854YYZ.bigWig
+    - &id296
+      pl_bigwig: ENCFF600JXG.bigWig
+      mn_bigwig: ENCFF064LEI.bigWig
+    groups:
+      a:
+      - *id295
+      b:
+      - *id296
+  ENCSR342WAR:
+    biosample: neuron
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id297
+      pl_bigwig: ENCFF105TOD.bigWig
+      mn_bigwig: ENCFF649ESY.bigWig
+    - &id298
+      pl_bigwig: ENCFF330JNY.bigWig
+      mn_bigwig: ENCFF995VYK.bigWig
+    groups:
+      a:
+      - *id297
+      b:
+      - *id298
+  ENCSR956DBV:
+    biosample: suprapubic skin
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id299
+      pl_bigwig: ENCFF705RXG.bigWig
+      mn_bigwig: ENCFF336ZEH.bigWig
+    - &id300
+      pl_bigwig: ENCFF705WSW.bigWig
+      mn_bigwig: ENCFF458MKA.bigWig
+    groups:
+      a:
+      - *id299
+      b:
+      - *id300
+  ENCSR482XCK:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id301
+      pl_bigwig: ENCFF556SMI.bigWig
+      mn_bigwig: ENCFF201XNX.bigWig
+    - &id302
+      pl_bigwig: ENCFF526KDB.bigWig
+      mn_bigwig: ENCFF996UHC.bigWig
+    groups:
+      a:
+      - *id301
+      b:
+      - *id302
+  ENCSR516KII:
+    biosample: astrocyte
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id303
+      pl_bigwig: ENCFF213DLS.bigWig
+      mn_bigwig: ENCFF327IXP.bigWig
+    - &id304
+      pl_bigwig: ENCFF593NGK.bigWig
+      mn_bigwig: ENCFF391SBS.bigWig
+    groups:
+      a:
+      - *id303
+      b:
+      - *id304
+  ENCSR280NVT:
+    biosample: vagina
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id305
+      pl_bigwig: ENCFF324LOL.bigWig
+      mn_bigwig: ENCFF026UHD.bigWig
+    - &id306
+      pl_bigwig: ENCFF113OSU.bigWig
+      mn_bigwig: ENCFF835LYZ.bigWig
+    groups:
+      a:
+      - *id305
+      b:
+      - *id306
+  ENCSR245HPE:
+    biosample: psoas muscle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id307
+      pl_bigwig: ENCFF615ZAO.bigWig
+      mn_bigwig: ENCFF313PCX.bigWig
+    - &id308
+      pl_bigwig: ENCFF737MOO.bigWig
+      mn_bigwig: ENCFF385LKB.bigWig
+    groups:
+      a:
+      - *id307
+      b:
+      - *id308
+  ENCSR889QVM:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id309
+      pl_bigwig: ENCFF225QRI.bigWig
+      mn_bigwig: ENCFF042LWJ.bigWig
+    - &id310
+      pl_bigwig: ENCFF708CZI.bigWig
+      mn_bigwig: ENCFF393JXD.bigWig
+    groups:
+      a:
+      - *id309
+      b:
+      - *id310
+  ENCSR712UDA:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id311
+      pl_bigwig: ENCFF592QTD.bigWig
+      mn_bigwig: ENCFF733TSK.bigWig
+    - &id312
+      pl_bigwig: ENCFF819SFE.bigWig
+      mn_bigwig: ENCFF131GUM.bigWig
+    groups:
+      a:
+      - *id311
+      b:
+      - *id312
+  ENCSR926PFT:
+    biosample: omental fat pad
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF505CNK.bigWig
+      mn_bigwig: ENCFF923CEH.bigWig
+    groups: {}
+  ENCSR679CMZ:
+    biosample: testis
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id313
+      pl_bigwig: ENCFF779ATO.bigWig
+      mn_bigwig: ENCFF382BDG.bigWig
+    - &id314
+      pl_bigwig: ENCFF104MEH.bigWig
+      mn_bigwig: ENCFF780VYP.bigWig
+    groups:
+      a:
+      - *id313
+      b:
+      - *id314
+  ENCSR642TRG:
+    biosample: tibial artery
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id315
+      pl_bigwig: ENCFF236LRF.bigWig
+      mn_bigwig: ENCFF909ZBT.bigWig
+    - &id316
+      pl_bigwig: ENCFF240AEM.bigWig
+      mn_bigwig: ENCFF464PRP.bigWig
+    groups:
+      a:
+      - *id315
+      b:
+      - *id316
+  ENCSR723NVI:
+    biosample: T-cell
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF499VLN.bigWig
+      mn_bigwig: ENCFF620HBP.bigWig
+    groups: {}
+  ENCSR175VMO:
+    biosample: Metastatic Pancreatic Carcinoma in the Ovary
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF384FLE.bigWig
+      mn_bigwig: ENCFF304XHF.bigWig
+    groups: {}
+  ENCSR718AQM:
+    biosample: HCT116
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id317
+      pl_bigwig: ENCFF597CJW.bigWig
+      mn_bigwig: ENCFF532HFA.bigWig
+    - &id318
+      pl_bigwig: ENCFF971GBK.bigWig
+      mn_bigwig: ENCFF203QOZ.bigWig
+    groups:
+      a:
+      - *id317
+      b:
+      - *id318
+  ENCSR516YGD:
+    biosample: adrenal gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id319
+      pl_bigwig: ENCFF926OWN.bigWig
+      mn_bigwig: ENCFF504MMC.bigWig
+    - &id320
+      pl_bigwig: ENCFF602GLU.bigWig
+      mn_bigwig: ENCFF254YEP.bigWig
+    groups:
+      a:
+      - *id319
+      b:
+      - *id320
+  ENCSR015HKC:
+    biosample: uterus
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id321
+      pl_bigwig: ENCFF195ZRE.bigWig
+      mn_bigwig: ENCFF107EPE.bigWig
+    - &id322
+      pl_bigwig: ENCFF055SYJ.bigWig
+      mn_bigwig: ENCFF664FMI.bigWig
+    groups:
+      a:
+      - *id321
+      b:
+      - *id322
+  ENCSR359PWL:
+    biosample: H9
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id323
+      pl_bigwig: ENCFF721JPD.bigWig
+      mn_bigwig: ENCFF471WQZ.bigWig
+    - &id324
+      pl_bigwig: ENCFF555OVY.bigWig
+      mn_bigwig: ENCFF856BBT.bigWig
+    groups:
+      a:
+      - *id323
+      b:
+      - *id324
+  ENCSR845TMF:
+    biosample: prostate gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id325
+      pl_bigwig: ENCFF834FXC.bigWig
+      mn_bigwig: ENCFF147FRR.bigWig
+    - &id326
+      pl_bigwig: ENCFF108BYD.bigWig
+      mn_bigwig: ENCFF745FEP.bigWig
+    groups:
+      a:
+      - *id325
+      b:
+      - *id326
+  ENCSR222JNI:
+    biosample: endothelial cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id327
+      pl_bigwig: ENCFF396FUP.bigWig
+      mn_bigwig: ENCFF460FFB.bigWig
+    - &id328
+      pl_bigwig: ENCFF271MHZ.bigWig
+      mn_bigwig: ENCFF679EAV.bigWig
+    groups:
+      a:
+      - *id327
+      b:
+      - *id328
+  ENCSR216FUJ:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id329
+      pl_bigwig: ENCFF884MQN.bigWig
+      mn_bigwig: ENCFF107NKT.bigWig
+    - &id330
+      pl_bigwig: ENCFF860VBH.bigWig
+      mn_bigwig: ENCFF315JID.bigWig
+    groups:
+      a:
+      - *id329
+      b:
+      - *id330
+  ENCSR889PCF:
+    biosample: bile duct
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id331
+      pl_bigwig: ENCFF914XVA.bigWig
+      mn_bigwig: ENCFF108NST.bigWig
+    - &id332
+      pl_bigwig: ENCFF901GLD.bigWig
+      mn_bigwig: ENCFF250RGI.bigWig
+    groups:
+      a:
+      - *id331
+      b:
+      - *id332
+  ENCSR153AON:
+    biosample: esophagus squamous epithelium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id333
+      pl_bigwig: ENCFF405ANW.bigWig
+      mn_bigwig: ENCFF125OLI.bigWig
+    - &id334
+      pl_bigwig: ENCFF238YSG.bigWig
+      mn_bigwig: ENCFF884SDH.bigWig
+    groups:
+      a:
+      - *id333
+      b:
+      - *id334
+  ENCSR436JXW:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id335
+      pl_bigwig: ENCFF799POK.bigWig
+      mn_bigwig: ENCFF972LSK.bigWig
+    - &id336
+      pl_bigwig: ENCFF152XNA.bigWig
+      mn_bigwig: ENCFF048GTY.bigWig
+    groups:
+      a:
+      - *id335
+      b:
+      - *id336
+  ENCSR660UDB:
+    biosample: kidney
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id337
+      pl_bigwig: ENCFF163OAY.bigWig
+      mn_bigwig: ENCFF159IQS.bigWig
+    - &id338
+      pl_bigwig: ENCFF455EZD.bigWig
+      mn_bigwig: ENCFF551SZI.bigWig
+    groups:
+      a:
+      - *id337
+      b:
+      - *id338
+  ENCSR235BZZ:
+    biosample: gastrocnemius medialis
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id339
+      pl_bigwig: ENCFF849UZN.bigWig
+      mn_bigwig: ENCFF391ZCG.bigWig
+    - &id340
+      pl_bigwig: ENCFF923CQZ.bigWig
+      mn_bigwig: ENCFF998LSM.bigWig
+    groups:
+      a:
+      - *id339
+      b:
+      - *id340
+  ENCSR216UNW:
+    biosample: lower lobe of left lung
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id341
+      pl_bigwig: ENCFF822ZGP.bigWig
+      mn_bigwig: ENCFF245EYN.bigWig
+    - &id342
+      pl_bigwig: ENCFF885EYN.bigWig
+      mn_bigwig: ENCFF665FIG.bigWig
+    groups:
+      a:
+      - *id341
+      b:
+      - *id342
+  ENCSR813CRU:
+    biosample: Metastatic Breast Carcinoma in the Brain
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id343
+      pl_bigwig: ENCFF166QKH.bigWig
+      mn_bigwig: ENCFF073WGY.bigWig
+    - &id344
+      pl_bigwig: ENCFF870SVA.bigWig
+      mn_bigwig: ENCFF816FSG.bigWig
+    groups:
+      a:
+      - *id343
+      b:
+      - *id344
+  ENCSR829KWG:
+    biosample: natural killer cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id345
+      pl_bigwig: ENCFF427KWJ.bigWig
+      mn_bigwig: ENCFF718BKN.bigWig
+    - &id346
+      pl_bigwig: ENCFF775DNF.bigWig
+      mn_bigwig: ENCFF843WJV.bigWig
+    groups:
+      a:
+      - *id345
+      b:
+      - *id346
+  ENCSR380VKC:
+    biosample: heart right ventricle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id347
+      pl_bigwig: ENCFF602AWB.bigWig
+      mn_bigwig: ENCFF434LVH.bigWig
+    - &id348
+      pl_bigwig: ENCFF487OHG.bigWig
+      mn_bigwig: ENCFF746GWM.bigWig
+    groups:
+      a:
+      - *id347
+      b:
+      - *id348
+  ENCSR220XSM:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id349
+      pl_bigwig: ENCFF850NZE.bigWig
+      mn_bigwig: ENCFF364CCA.bigWig
+    - &id350
+      pl_bigwig: ENCFF918QKQ.bigWig
+      mn_bigwig: ENCFF861JFD.bigWig
+    groups:
+      a:
+      - *id349
+      b:
+      - *id350
+  ENCSR733DAS:
+    biosample: HEK293T
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id351
+      pl_bigwig: ENCFF726DCR.bigWig
+      mn_bigwig: ENCFF603FIP.bigWig
+    - &id352
+      pl_bigwig: ENCFF793MKG.bigWig
+      mn_bigwig: ENCFF023FGG.bigWig
+    groups:
+      a:
+      - *id351
+      b:
+      - *id352
+  ENCSR269FMG:
+    biosample: liver
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id353
+      pl_bigwig: ENCFF557DCP.bigWig
+      mn_bigwig: ENCFF776DVD.bigWig
+    - &id354
+      pl_bigwig: ENCFF626MJY.bigWig
+      mn_bigwig: ENCFF532AWZ.bigWig
+    groups:
+      a:
+      - *id353
+      b:
+      - *id354
+  ENCSR995FAO:
+    biosample: mucosa of descending colon
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id355
+      pl_bigwig: ENCFF771SUS.bigWig
+      mn_bigwig: ENCFF803YYA.bigWig
+    - &id356
+      pl_bigwig: ENCFF399YJU.bigWig
+      mn_bigwig: ENCFF036QHA.bigWig
+    groups:
+      a:
+      - *id355
+      b:
+      - *id356
+  ENCSR443GRP:
+    biosample: endodermal cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id357
+      pl_bigwig: ENCFF920VOE.bigWig
+      mn_bigwig: ENCFF566OOL.bigWig
+    - &id358
+      pl_bigwig: ENCFF536ZSZ.bigWig
+      mn_bigwig: ENCFF852MWH.bigWig
+    groups:
+      a:
+      - *id357
+      b:
+      - *id358
+  ENCSR881RXX:
+    biosample: anterior vena cava
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id359
+      pl_bigwig: ENCFF668DAG.bigWig
+      mn_bigwig: ENCFF401LJX.bigWig
+    - &id360
+      pl_bigwig: ENCFF897OUM.bigWig
+      mn_bigwig: ENCFF829BGE.bigWig
+    groups:
+      a:
+      - *id359
+      b:
+      - *id360
+  ENCSR944DTY:
+    biosample: SEM
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id361
+      pl_bigwig: ENCFF605JOB.bigWig
+      mn_bigwig: ENCFF629JKB.bigWig
+    - &id362
+      pl_bigwig: ENCFF928RFH.bigWig
+      mn_bigwig: ENCFF842KLO.bigWig
+    groups:
+      a:
+      - *id361
+      b:
+      - *id362
+  ENCSR270EGA:
+    biosample: left cardiac atrium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id363
+      pl_bigwig: ENCFF938EKW.bigWig
+      mn_bigwig: ENCFF387TLJ.bigWig
+    - &id364
+      pl_bigwig: ENCFF578KDV.bigWig
+      mn_bigwig: ENCFF518TDL.bigWig
+    groups:
+      a:
+      - *id363
+      b:
+      - *id364
+  ENCSR368ARY:
+    biosample: pulmonary artery
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id365
+      pl_bigwig: ENCFF220END.bigWig
+      mn_bigwig: ENCFF399BVF.bigWig
+    - &id366
+      pl_bigwig: ENCFF119UZV.bigWig
+      mn_bigwig: ENCFF049UKV.bigWig
+    groups:
+      a:
+      - *id365
+      b:
+      - *id366
+  ENCSR521BLL:
+    biosample: psoas muscle
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id367
+      pl_bigwig: ENCFF009QAD.bigWig
+      mn_bigwig: ENCFF667LUJ.bigWig
+    - &id368
+      pl_bigwig: ENCFF667BQQ.bigWig
+      mn_bigwig: ENCFF231AYF.bigWig
+    groups:
+      a:
+      - *id367
+      b:
+      - *id368
+  ENCSR062QYF:
+    biosample: cerebellum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id369
+      pl_bigwig: ENCFF665UPZ.bigWig
+      mn_bigwig: ENCFF414KBK.bigWig
+    - &id370
+      pl_bigwig: ENCFF839ZEW.bigWig
+      mn_bigwig: ENCFF812VLT.bigWig
+    groups:
+      a:
+      - *id369
+      b:
+      - *id370
+  ENCSR526XOQ:
+    biosample: NALM6
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id371
+      pl_bigwig: ENCFF081SCM.bigWig
+      mn_bigwig: ENCFF027OPK.bigWig
+    - &id372
+      pl_bigwig: ENCFF244HXT.bigWig
+      mn_bigwig: ENCFF836BOI.bigWig
+    groups:
+      a:
+      - *id371
+      b:
+      - *id372
+  ENCSR386UFU:
+    biosample: peripheral blood mononuclear cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id373
+      pl_bigwig: ENCFF358DIN.bigWig
+      mn_bigwig: ENCFF985LWC.bigWig
+    - &id374
+      pl_bigwig: ENCFF652ZFR.bigWig
+      mn_bigwig: ENCFF145YXQ.bigWig
+    groups:
+      a:
+      - *id373
+      b:
+      - *id374
+  ENCSR795NHV:
+    biosample: peripheral blood mononuclear cell
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF211DCV.bigWig
+      mn_bigwig: ENCFF100KUJ.bigWig
+    groups: {}
+  ENCSR255VLW:
+    biosample: jejunum
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id375
+      pl_bigwig: ENCFF480GNS.bigWig
+      mn_bigwig: ENCFF034XBH.bigWig
+    - &id376
+      pl_bigwig: ENCFF755EHL.bigWig
+      mn_bigwig: ENCFF338IXA.bigWig
+    groups:
+      a:
+      - *id375
+      b:
+      - *id376
+  ENCSR087CGY:
+    biosample: ovary
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id377
+      pl_bigwig: ENCFF799EVP.bigWig
+      mn_bigwig: ENCFF832OZO.bigWig
+    - &id378
+      pl_bigwig: ENCFF830KEM.bigWig
+      mn_bigwig: ENCFF465LDD.bigWig
+    groups:
+      a:
+      - *id377
+      b:
+      - *id378
+  ENCSR374RDU:
+    biosample: breast
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id379
+      pl_bigwig: ENCFF279QHT.bigWig
+      mn_bigwig: ENCFF083RLT.bigWig
+    - &id380
+      pl_bigwig: ENCFF832XLO.bigWig
+      mn_bigwig: ENCFF918SNL.bigWig
+    groups:
+      a:
+      - *id379
+      b:
+      - *id380
+  ENCSR219IHS:
+    biosample: A549
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id381
+      pl_bigwig: ENCFF114JYO.bigWig
+      mn_bigwig: ENCFF547RPM.bigWig
+    - &id382
+      pl_bigwig: ENCFF026ERV.bigWig
+      mn_bigwig: ENCFF448UVK.bigWig
+    groups:
+      a:
+      - *id381
+      b:
+      - *id382
+  ENCSR683YIA:
+    biosample: Pfeiffer
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id383
+      pl_bigwig: ENCFF699HRU.bigWig
+      mn_bigwig: ENCFF669VEQ.bigWig
+    - &id384
+      pl_bigwig: ENCFF237YGT.bigWig
+      mn_bigwig: ENCFF323NOD.bigWig
+    groups:
+      a:
+      - *id383
+      b:
+      - *id384
+  ENCSR810UBG:
+    biosample: Metastatic Breast Carcinoma in the Ovary
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF193NFD.bigWig
+      mn_bigwig: ENCFF050ZHF.bigWig
+    groups: {}
+  ENCSR959JOB:
+    biosample: right ventricle myocardium
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id385
+      pl_bigwig: ENCFF755RHY.bigWig
+      mn_bigwig: ENCFF206KMH.bigWig
+    - &id386
+      pl_bigwig: ENCFF661YWR.bigWig
+      mn_bigwig: ENCFF458QYR.bigWig
+    groups:
+      a:
+      - *id385
+      b:
+      - *id386
+  ENCSR431OQI:
+    biosample: parotid gland
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id387
+      pl_bigwig: ENCFF126SCE.bigWig
+      mn_bigwig: ENCFF484JID.bigWig
+    - &id388
+      pl_bigwig: ENCFF370MUU.bigWig
+      mn_bigwig: ENCFF689GJG.bigWig
+    groups:
+      a:
+      - *id387
+      b:
+      - *id388
+  ENCSR353JON:
+    biosample: spinal cord
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF620VXH.bigWig
+      mn_bigwig: ENCFF014WDF.bigWig
+    groups: {}
+  ENCSR374OGG:
+    biosample: pancreas
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id389
+      pl_bigwig: ENCFF467VRR.bigWig
+      mn_bigwig: ENCFF294NXS.bigWig
+    - &id390
+      pl_bigwig: ENCFF171MBF.bigWig
+      mn_bigwig: ENCFF931XMV.bigWig
+    groups:
+      a:
+      - *id389
+      b:
+      - *id390
+  ENCSR528FMA:
+    biosample: helper T cell
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id391
+      pl_bigwig: ENCFF742NXX.bigWig
+      mn_bigwig: ENCFF740MDT.bigWig
+    - &id392
+      pl_bigwig: ENCFF165PWR.bigWig
+      mn_bigwig: ENCFF792MQK.bigWig
+    groups:
+      a:
+      - *id391
+      b:
+      - *id392
+  ENCSR500IHG:
+    biosample: breast
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id393
+      pl_bigwig: ENCFF053WOB.bigWig
+      mn_bigwig: ENCFF946OWM.bigWig
+    - &id394
+      pl_bigwig: ENCFF363KIE.bigWig
+      mn_bigwig: ENCFF605QOR.bigWig
+    groups:
+      a:
+      - *id393
+      b:
+      - *id394
+  ENCSR098LLB:
+    biosample: endothelial cell of umbilical vein
+    status: skipped
+    reason: requires at least 2 paired plus/minus BigWigs, found 1
+    n_pairs: 1
+    pairs:
+    - pl_bigwig: ENCFF261GXH.bigWig
+      mn_bigwig: ENCFF807QNT.bigWig
+    groups: {}
+  ENCSR046BCI:
+    biosample: A673
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id395
+      pl_bigwig: ENCFF418SHY.bigWig
+      mn_bigwig: ENCFF280DDJ.bigWig
+    - &id396
+      pl_bigwig: ENCFF771KSZ.bigWig
+      mn_bigwig: ENCFF862PQN.bigWig
+    groups:
+      a:
+      - *id395
+      b:
+      - *id396
+  ENCSR935RNW:
+    biosample: Calu3
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id397
+      pl_bigwig: ENCFF057WPU.bigWig
+      mn_bigwig: ENCFF979DPW.bigWig
+    - &id398
+      pl_bigwig: ENCFF107MGL.bigWig
+      mn_bigwig: ENCFF199SAQ.bigWig
+    groups:
+      a:
+      - *id397
+      b:
+      - *id398
+  ENCSR799DGV:
+    biosample: MCF 10A
+    status: ok
+    reason: ''
+    n_pairs: 4
+    pairs:
+    - &id399
+      pl_bigwig: ENCFF566EAN.bigWig
+      mn_bigwig: ENCFF074ZFW.bigWig
+    - &id401
+      pl_bigwig: ENCFF221GWZ.bigWig
+      mn_bigwig: ENCFF227BQW.bigWig
+    - &id400
+      pl_bigwig: ENCFF952WWA.bigWig
+      mn_bigwig: ENCFF704RON.bigWig
+    - &id402
+      pl_bigwig: ENCFF572ZPQ.bigWig
+      mn_bigwig: ENCFF114DBY.bigWig
+    groups:
+      a:
+      - *id399
+      - *id400
+      b:
+      - *id401
+      - *id402
+  ENCSR261KBX:
+    biosample: K562
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id403
+      pl_bigwig: ENCFF994CSC.bigWig
+      mn_bigwig: ENCFF253HUA.bigWig
+    - &id404
+      pl_bigwig: ENCFF580QEK.bigWig
+      mn_bigwig: ENCFF328OOU.bigWig
+    groups:
+      a:
+      - *id403
+      b:
+      - *id404
+  ENCSR100LIJ:
+    biosample: Caco-2
+    status: ok
+    reason: ''
+    n_pairs: 2
+    pairs:
+    - &id405
+      pl_bigwig: ENCFF320FTM.bigWig
+      mn_bigwig: ENCFF635VJZ.bigWig
+    - &id406
+      pl_bigwig: ENCFF790ZZN.bigWig
+      mn_bigwig: ENCFF174MJP.bigWig
+    groups:
+      a:
+      - *id405
+      b:
+      - *id406

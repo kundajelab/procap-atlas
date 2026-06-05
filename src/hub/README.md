@@ -49,8 +49,8 @@ The attribution BigWig launcher is a SLURM helper with Sherlock defaults. Use `-
 To host track assets on Hugging Face instead of serving them from Mitra:
 
 ```bash
-python src/bpnet/benchmark/launch_bigwig_conversion.py --dry-run
-python src/bpnet/benchmark/launch_bigwig_conversion.py
+python src/bpnet/predict/launch.py --dry-run
+python src/bpnet/predict/launch.py
 python src/hub/upload_tracks_hf.py --dry-run
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks -j 16
