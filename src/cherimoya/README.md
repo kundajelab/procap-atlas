@@ -15,7 +15,7 @@ evaluation workflow, not as a public deployment pipeline.
 - Completed preprocessing with `configs/experiment_config.yaml`,
   `configs/chrom_splits.yaml`, processed strand BigWigs, filtered peaks, and
   GC-matched negatives
-- Python packages from the root `uv` project
+- Python packages from the root `uv` project for analysis/benchmark helpers
 - Optional SLURM access for launchers
 - Optional Apptainer image for Sherlock launchers; see
   [`apptainer/`](apptainer/README.md)
@@ -32,6 +32,9 @@ The training script uses `torch.optim.Muon` for 2D weight matrices and AdamW for
 the remaining parameters, with warmup plus cosine learning-rate schedules.
 Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
+
+On Sherlock, use the Apptainer workflow rather than the default root `uv`
+environment, which pins Torch 2.6.0 for non-Cherimoya compatibility.
 
 Outputs:
 

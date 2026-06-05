@@ -41,6 +41,9 @@ the root README.
 
 Python dependencies are managed by the root `pyproject.toml` and `uv.lock`.
 New Python dependencies must be added there, not to `environment.yml`.
+On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
+for Sherlock compatibility. Do not relax that pin for BPNet/preprocessing unless
+Sherlock support is explicitly being dropped.
 
 ```bash
 uv sync --group dev
@@ -58,6 +61,8 @@ uv sync --group dev
 
 Non-Apptainer cluster launchers activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by
 default.
+Cherimoya should be treated as a separate Apptainer/local environment on
+Sherlock because it uses `torch.optim.Muon`.
 `MotifCompendium` and `personal_bpnet` are separate optional/local research
 environments.
 `hubCheck` is treated as an external UCSC binary because it is not available

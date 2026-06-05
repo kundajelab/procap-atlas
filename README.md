@@ -30,6 +30,10 @@ uv sync --group dev
 uv run pytest
 ```
 
+On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
+for Sherlock compatibility. Cherimoya uses `torch.optim.Muon` and should be run
+through its separate Apptainer workflow on Sherlock.
+
 Use `environment.yml` to create a conda tools environment with `uv` plus
 non-Python command-line tools from conda/bioconda:
 
@@ -44,7 +48,6 @@ uploads are optional dependencies:
 
 ```bash
 uv sync --extra bpnet # bpnet models
-uv sync --extra cherimoya # cherimoya models
 uv sync --extra hub # huggingface
 uv sync --extra plot # visualization
 ```

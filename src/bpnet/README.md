@@ -18,7 +18,8 @@ Hugging Face model repo.
   - processed strand BigWigs
   - processed and filtered peaks
   - GC-matched negatives
-- Python packages from the root `uv` project
+- Python packages from the root `uv` project. On Linux/Sherlock, this pins
+  Torch to 2.6.0 for install compatibility.
 - Optional SLURM access for launchers
 
 ## Training
