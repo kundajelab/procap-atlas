@@ -24,7 +24,7 @@ ml biology
 ml htslib
 ml ucsc-utils
 
-conda activate torch
+conda activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 export NUMBA_NUM_THREADS=12
 
 biosample=ENCSR261KBX

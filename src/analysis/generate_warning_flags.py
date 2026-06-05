@@ -11,19 +11,12 @@ Usage:
 import argparse
 import csv
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(REPO_ROOT))
-
-from src.metaformer.procap_config_to_promoterai import (  # noqa: E402
-    DEFAULT_EXCLUDE_KEYWORDS,
-    METADATA_FIELDS,
-)
 
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_READS = REPO_ROOT / "configs" / "n_reads.txt"
@@ -35,6 +28,25 @@ DEFAULT_RED_READS = 10_000_000
 DEFAULT_MANUAL_RED_EXPERIMENTS = {
     "ENCSR973QQI": "poor TSS-positioning",
 }
+DEFAULT_EXCLUDE_KEYWORDS = (
+    "perturb",
+    "treated",
+    "treatment",
+    "genetically modified",
+    "crispr",
+    "dtag",
+    "5-phenyl",
+    "indole-3-acetic acid",
+    "gene-silencing",
+    "knock",
+    "deplet",
+)
+METADATA_FIELDS = (
+    "biosample",
+    "biosample_summary",
+    "description",
+    "library_construction",
+)
 
 TSV_FIELDS = [
     "experiment",
@@ -360,7 +372,7 @@ def write_json(
             "red_read_threshold": red_threshold,
             "yellow_read_threshold": yellow_threshold,
             "perturbation_definition_source": (
-                "src/metaformer/procap_config_to_promoterai.py "
+                "src/analysis/generate_warning_flags.py "
                 "DEFAULT_EXCLUDE_KEYWORDS and METADATA_FIELDS"
             ),
             "perturbation_metadata_fields": list(METADATA_FIELDS),

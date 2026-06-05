@@ -32,12 +32,6 @@ N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 ATTRIBUTE_SCRIPT = REPO_ROOT / "src" / "bpnet" / "attribute" / "attribute_bpnet.py"
 
 
-def load_n_reads():
-    """Parse n_reads.txt and return {experiment_id: total_reads} dict."""
-    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
-    return dict(zip(df["experiment"], df["total_reads"]))
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -91,7 +85,10 @@ def main():
     n_folds = len(chrom_splits["folds"])
 
     # Load read counts for filtering
-    read_counts = load_n_reads()
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     log_dir = REPO_ROOT / "logs" / "bpnet_attr"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -154,7 +151,7 @@ def main():
                 ml htslib
                 ml ucsc-utils
 
-                mamba activate torch
+                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
                 nvidia-smi -L
                 {attr_cmd}
             """)

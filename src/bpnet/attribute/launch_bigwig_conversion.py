@@ -31,11 +31,6 @@ N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 CONVERSION_SCRIPT = REPO_ROOT / "src" / "bpnet" / "attribute" / "attribution_to_bigwig.py"
 
 
-def load_n_reads():
-    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
-    return dict(zip(df["experiment"], df["total_reads"]))
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -77,7 +72,10 @@ def main():
         config = yaml.safe_load(f)
     experiments = list(config["experiments"].keys())
 
-    read_counts = load_n_reads()
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
     out_dir = attr_dir / "bigwigs"
@@ -148,7 +146,7 @@ def main():
                 ml htslib
                 ml ucsc-utils
 
-                mamba activate torch
+                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
 
                 cd {REPO_ROOT}
                 mkdir -p {out_dir}

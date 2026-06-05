@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -29,17 +30,6 @@ METRIC_LABELS = {
     "counts_spearman": "Counts Spearman",
 }
 METRIC_RE = re.compile(r"^(?P<experiment>ENCSR[0-9A-Z]+)_nf(?P<n_filters>\d+)\.json$")
-
-
-def load_pyplot():
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as exc:
-        raise SystemExit(
-            "matplotlib is required to write n_filters sweep plots. "
-            "Install/update the procap-atlas environment from environment.yml."
-        ) from exc
-    return plt
 
 
 def parse_args():
@@ -143,8 +133,6 @@ def merge_read_counts(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_metric(df: pd.DataFrame, metric: str, path_prefix: Path):
-    plt = load_pyplot()
-
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for _, group in df.sort_values("n_filters").groupby("experiment"):
         if len(group) < 2:
@@ -182,8 +170,6 @@ def plot_metric(df: pd.DataFrame, metric: str, path_prefix: Path):
 
 
 def plot_summary(df: pd.DataFrame, metrics: list[str], path_prefix: Path):
-    plt = load_pyplot()
-
     fig, axes = plt.subplots(2, 2, figsize=(11, 8), sharex=True)
     axes = axes.flatten()
 

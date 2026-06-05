@@ -165,7 +165,7 @@ def main() -> None:
             ml htslib
             ml ucsc-utils
 
-            mamba activate torch
+            mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
             nvidia-smi -L
             cd {REPO_ROOT}
             mkdir -p {args.output_dir}

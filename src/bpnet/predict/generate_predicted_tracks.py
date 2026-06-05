@@ -21,7 +21,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pybigtools
+import torch
 import yaml
+from tangermeme.io import extract_loci
+from tangermeme.predict import predict
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -260,8 +264,6 @@ def write_prediction_bigwigs(
 
     plus_windows = make_windows(loci, plus_scores, chrom_sizes, out_window)
     plus_output.parent.mkdir(parents=True, exist_ok=True)
-    import pybigtools
-
     bw = pybigtools.open(str(plus_output), "w")
     bw.write(
         chrom_sizes,
@@ -283,10 +285,6 @@ def write_prediction_bigwigs(
 def main() -> None:
     args = parse_args()
     try:
-        import torch
-        from tangermeme.io import extract_loci
-        from tangermeme.predict import predict
-
         with open(args.config) as f:
             config = yaml.safe_load(f)
         experiments = config["experiments"]

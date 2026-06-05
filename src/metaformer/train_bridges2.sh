@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-conda activate bpnet
+conda activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 
 cd /jet/home/adamyhe/storage_/adamyhe/procap-atlas
 

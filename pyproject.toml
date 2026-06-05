@@ -1,0 +1,43 @@
+[project]
+name = "procap-atlas-local"
+version = "0.1.0"
+description = "Local Python environment for PRO-cap atlas scripts"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "huggingface-hub",
+    "joblib",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pillow",
+    "pybigtools",
+    "pyfaidx",
+    "pyfastx",
+    "pyyaml",
+    "scipy",
+    "seaborn",
+    "tangermeme",
+    "torch",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib", "pillow", "seaborn"]
+hub = ["huggingface-hub"]
+bpnet = ["bpnet-lite"]
+cherimoya = ["cherimoya"]
+# MotifCompendium and personal_bpnet are external/local research dependencies
+# until resolvable install sources are confirmed.
+# Metaformer / promoterai-torch is still in development and will be added
+# when finished.
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

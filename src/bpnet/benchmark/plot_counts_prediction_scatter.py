@@ -13,6 +13,7 @@ import argparse
 import re
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -33,17 +34,6 @@ FIG_MARGIN_RIGHT_IN = 0.08
 FIG_MARGIN_BOTTOM_IN = 0.34
 FIG_MARGIN_TOP_IN = 0.18
 COLORBAR_GAP_IN = 0.08
-
-
-def load_pyplot():
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as exc:
-        raise SystemExit(
-            "matplotlib is required to write plots. Install/update the "
-            "procap-atlas environment from environment.yml."
-        ) from exc
-    return plt
 
 
 def parse_args():
@@ -212,7 +202,6 @@ def plot_counts(
     bins: int,
     scatter: bool,
 ):
-    plt = load_pyplot()
     x = np.log1p(observed_counts)
     y = np.log1p(predicted_counts)
     valid = np.isfinite(x) & np.isfinite(y)

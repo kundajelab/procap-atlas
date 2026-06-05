@@ -16,6 +16,7 @@ import json
 import re
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -47,17 +48,6 @@ METRIC_INFO = {
         "stem": "profile_jsd",
     },
 }
-
-
-def load_pyplot():
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as exc:
-        raise SystemExit(
-            "matplotlib is required to write plots. Install/update the "
-            "procap-atlas environment from environment.yml."
-        ) from exc
-    return plt
 
 
 def parse_args():
@@ -136,31 +126,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_n_reads(path: Path) -> dict[str, float]:
-    if not path.exists():
-        return {}
-
-    reads = {}
-    with open(path) as f:
-        header = next(f).rstrip("\n").split("\t")
-        try:
-            exp_idx = header.index("experiment")
-            reads_idx = header.index("total_reads")
-        except ValueError:
-            return {}
-
-        for line in f:
-            parts = line.rstrip("\n").split("\t")
-            if len(parts) <= max(exp_idx, reads_idx):
-                continue
-            try:
-                reads[parts[exp_idx]] = float(parts[reads_idx])
-            except ValueError:
-                continue
-
-    return reads
-
-
 def iter_metric_paths(metrics_dir: Path, include_patterns: list[str] | None):
     for path in sorted(metrics_dir.glob("*.json")):
         if include_patterns is None:
@@ -178,7 +143,26 @@ def load_rows(
     min_reads: float,
     metric: str,
 ) -> list[dict]:
-    read_counts = load_n_reads(N_READS_PATH)
+    read_counts = {}
+    if N_READS_PATH.exists():
+        with open(N_READS_PATH) as f:
+            header = next(f).rstrip("\n").split("\t")
+            try:
+                exp_idx = header.index("experiment")
+                reads_idx = header.index("total_reads")
+            except ValueError:
+                exp_idx = None
+                reads_idx = None
+
+            if exp_idx is not None and reads_idx is not None:
+                for line in f:
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) <= max(exp_idx, reads_idx):
+                        continue
+                    try:
+                        read_counts[parts[exp_idx]] = float(parts[reads_idx])
+                    except ValueError:
+                        continue
     rows = []
 
     for path in iter_metric_paths(metrics_dir, include_patterns):
@@ -334,7 +318,6 @@ def plot_jitter(
     sqrt_values: bool,
     bounds_tsv: Path | None,
 ):
-    plt = load_pyplot()
     metric_info = display_metric_info(metric, sqrt_values)
     value_label = "genome-wide" if use_genome_wide else "fold-averaged"
     if use_genome_wide:

@@ -12,6 +12,7 @@ pipeline or deployment path.
 ## Prerequisites
 
 - Completed preprocessing with `configs/experiment_config.yaml`
+- Model warning flags from `python src/analysis/generate_warning_flags.py`
 - Processed plus/minus BigWigs
 - PromoterAI / MetaFormer environment outside this repository
 - Sherlock-style cluster resources for the provided SLURM shell templates
@@ -24,6 +25,7 @@ Convert the PRO-cap experiment config into a PromoterAI target TSV:
 python src/metaformer/procap_config_to_promoterai.py
 python src/metaformer/procap_config_to_promoterai.py --absolute-paths
 python src/metaformer/procap_config_to_promoterai.py --require-files
+python src/metaformer/procap_config_to_promoterai.py --warning-flags configs/model_warning_flags.tsv
 python src/metaformer/procap_config_to_promoterai.py --include-uncapped --include-perturbed
 ```
 
@@ -34,8 +36,8 @@ configs/promoterai_procap_bigwigs.tsv
 ```
 
 The TSV includes `fwd`, `rev`, `xform`, assay, target, experiment, biosample,
-and metadata fields. By default it excludes a small blacklist, uncapped
-libraries, and metadata that looks perturbed or treated.
+and metadata fields. By default it excludes manually red-flagged, uncapped, and
+perturbed datasets according to `configs/model_warning_flags.tsv`.
 
 ## Cluster Templates
 
@@ -57,7 +59,7 @@ models/metaformer/all_tracks/
 
 - Treat the SLURM scripts as Sherlock-specific templates. Review paths,
   partitions, conda/module setup, and GPU assumptions before use on any other
-  cluster.
+  cluster. They activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by default.
 - The target TSV helper is the most reusable part of this directory.
 - Public-facing atlas documentation should describe MetaFormer support as
   in-development until training, benchmarking, and deployment workflows settle.

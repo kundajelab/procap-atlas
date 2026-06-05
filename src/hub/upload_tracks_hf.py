@@ -15,6 +15,7 @@ import urllib.request
 from pathlib import Path
 
 import yaml
+from huggingface_hub import HfApi
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -181,11 +182,6 @@ def main():
         if len(uploads) > 50:
             print(f"  ... {len(uploads) - 50} more")
     else:
-        try:
-            from huggingface_hub import HfApi
-        except ImportError as e:
-            raise ImportError("huggingface_hub is required for uploads") from e
-
         api = HfApi()
         api.create_repo(repo_id=args.repo_id, repo_type="dataset", exist_ok=True)
         if not uploads:

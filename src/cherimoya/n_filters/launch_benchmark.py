@@ -34,12 +34,6 @@ NUMBA_CACHE_DIR = Path("/scratch/users/ayhe/numba_cache")
 N_FILTERS = [16, 24, 36, 48, 64, 96, 196, 256]
 
 
-def load_n_reads():
-    """Parse n_reads.txt and return {experiment_id: total_reads} dict."""
-    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
-    return dict(zip(df["experiment"], df["total_reads"]))
-
-
 def all_benchmarks_exist(exp_id: str) -> bool:
     """Return True if every n_filters benchmark JSON exists for an experiment."""
     return all(
@@ -110,7 +104,10 @@ def main():
         chrom_splits = yaml.safe_load(f)
     n_folds = len(chrom_splits["folds"])
 
-    read_counts = load_n_reads()
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     log_dir = REPO_ROOT / "logs" / "cherimoya_n_filters_benchmark"
     log_dir.mkdir(parents=True, exist_ok=True)

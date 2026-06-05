@@ -4,15 +4,11 @@ channels:
   - bioconda
 dependencies:
   - python=3.12.0
+  - uv
+  - wget
+  - parallel
   - samtools
+  - htslib
   - ucsc-bigwigmerge
   - ucsc-bedgraphtobigwig
   - ucsc-bedtobigbed
-  - ucsc-hubcheck
-  - matplotlib
-  - pip:
-    - pyyaml
-    - pybigtools
-    - huggingface_hub
-    - cherimoya
-    - bpnet-lite

@@ -18,7 +18,7 @@ Hugging Face model repo.
   - processed strand BigWigs
   - processed and filtered peaks
   - GC-matched negatives
-- Python environment from `environment.yml`
+- Python packages from the root `uv` project
 - Optional SLURM access for launchers
 
 ## Training
@@ -51,7 +51,8 @@ python src/bpnet/fit/launch.py --fit-args "--background gc:0.1"
 
 The launcher contains hard-coded defaults for the Sherlock HPC environment,
 including Sherlock/Kundaje-specific partition and module assumptions. Adjust it
-before using another cluster.
+before using another cluster. Generated jobs activate
+`${PROCAP_ATLAS_ENV:-procap-atlas}` by default.
 
 ## Benchmarking
 
@@ -200,7 +201,7 @@ logs/bpnet_modisco/
 ## Motif Clustering
 
 [MotifCompendium](https://github.com/kundajelab/MotifCompendium) uses a separate
-environment:
+environment and is not part of the root `uv` project:
 
 ```bash
 git clone https://github.com/kundajelab/MotifCompendium.git

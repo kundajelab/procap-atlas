@@ -31,12 +31,6 @@ FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
 
-def load_chrom_splits():
-    with open(CHROM_SPLITS_PATH) as f:
-        data = yaml.safe_load(f)
-    return {int(k): v for k, v in data["folds"].items()}
-
-
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -96,7 +90,9 @@ def main():
     else:
         model_dir = REPO_ROOT / "models" / "bpnet" / args.experiment
 
-    chrom_splits = load_chrom_splits()
+    with open(CHROM_SPLITS_PATH) as f:
+        data = yaml.safe_load(f)
+    chrom_splits = {int(k): v for k, v in data["folds"].items()}
     n_folds = len(chrom_splits)
 
     model_paths = [

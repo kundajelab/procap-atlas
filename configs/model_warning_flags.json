@@ -5038,7 +5038,7 @@
     "manual_red_experiments": {
       "ENCSR973QQI": "poor TSS-positioning"
     },
-    "perturbation_definition_source": "src/metaformer/procap_config_to_promoterai.py DEFAULT_EXCLUDE_KEYWORDS and METADATA_FIELDS",
+    "perturbation_definition_source": "src/analysis/generate_warning_flags.py DEFAULT_EXCLUDE_KEYWORDS and METADATA_FIELDS",
     "perturbation_keywords": [
       "5-phenyl",
       "crispr",

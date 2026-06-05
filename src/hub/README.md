@@ -111,6 +111,8 @@ hubCheck hub/hub.txt
 ```
 
 Requires `hubCheck` from UCSC Kent tools.
+`hubCheck` is not installed by the root `environment.yml` because it is not
+available from the configured conda channels.
 
 ## File layout
 
