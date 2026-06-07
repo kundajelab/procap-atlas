@@ -69,6 +69,17 @@ sbatch src/metaformer/finetune_outliers.sh
 
 `AMP_DTYPE` defaults to `none`; set it to a dtype supported by the installed
 `promoterai_torch.finetune` entrypoint, such as `bf16`, to enable AMP.
+The launcher requests four GPUs and uses `torchrun` for DDP. `BATCH_SIZE` is
+global and must be divisible by the allocated GPU count.
+
+Fine-tuning automatically resumes from
+`models/metaformer/all_tracks/best_model_finetune/latest_model.pt` when it
+exists. To resume from another training checkpoint, set `RESUME_CHECKPOINT`:
+
+```bash
+RESUME_CHECKPOINT=/path/to/latest_model.pt \
+sbatch src/metaformer/finetune_outliers.sh
+```
 
 ## Notes
 
