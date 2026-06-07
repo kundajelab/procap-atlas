@@ -35,6 +35,7 @@ cherimoya = ["cherimoya", "leidenalg==0.10.2"]
 
 [dependency-groups]
 dev = ["pytest"]
+notebook = ["ipykernel", "jupyterlab"]
 
 [tool.uv]
 required-environments = [

@@ -60,10 +60,15 @@ Fine-tuning on expression outliers expects a trained checkpoint and a GTEx-style
 variant TSV:
 
 ```bash
+bash src/download/download_promoterai_outliers.sh
 MODEL_CHECKPOINT=models/metaformer/all_tracks/best_model.pt \
 VAR_FILE=data/annotation/finetune_gtex.tsv \
+AMP_DTYPE=bf16 \
 sbatch src/metaformer/finetune_outliers.sh
 ```
+
+`AMP_DTYPE` defaults to `none`; set it to a dtype supported by the installed
+`promoterai_torch.finetune` entrypoint, such as `bf16`, to enable AMP.
 
 ## Notes
 

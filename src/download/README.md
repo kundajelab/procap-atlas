@@ -34,6 +34,9 @@ bash src/download/download_peaks.sh
 
 # GENCODE v49 annotation for TSS metaplots
 bash src/download/download_annotations.sh
+
+# GTEx expression-outlier variants for PromoterAI fine-tuning
+bash src/download/download_promoterai_outliers.sh
 ```
 
 ## Outputs
@@ -44,6 +47,8 @@ data/
 +-- hg38.fa.fai
 +-- hg38.chrom.sizes
 +-- gencode.v49.annotation.gff3.gz
++-- annotation/
+    +-- finetune_gtex.tsv
 +-- raw/
     +-- bigwigs/
     +-- peaks/

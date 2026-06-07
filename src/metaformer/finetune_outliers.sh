@@ -40,6 +40,7 @@ NUM_WORKERS="${NUM_WORKERS:-4}"
 EPOCHS="${EPOCHS:-100}"
 LEARNING_RATE="${LEARNING_RATE:-5e-4}"
 WEIGHT_DECAY="${WEIGHT_DECAY:-5e-6}"
+AMP_DTYPE="${AMP_DTYPE:-none}"
 WANDB_PROJECT="${WANDB_PROJECT:-metaformer-procap-finetune}"
 WANDB_ENTITY="${WANDB_ENTITY:-adamyhe-stanford-university}"
 WANDB_RUN_NAME="${WANDB_RUN_NAME:-outlier-finetune}"
@@ -54,6 +55,7 @@ python -m promoterai_torch.finetune \
     --epochs "${EPOCHS}" \
     --learning_rate "${LEARNING_RATE}" \
     --weight_decay "${WEIGHT_DECAY}" \
+    --amp_dtype "${AMP_DTYPE}" \
     --wandb_project "${WANDB_PROJECT}" \
     --wandb_entity "${WANDB_ENTITY}" \
     --wandb_run_name "${WANDB_RUN_NAME}"
