@@ -26,11 +26,11 @@ For the Sherlock locus diagnostics notebook, create the project kernel from the
 repository root:
 
 ```bash
-uv sync --extra bpnet --group notebook
-uv run --extra bpnet --group notebook python -m ipykernel install --user \
+uv sync --group notebook
+uv run --group notebook python -m ipykernel install --user \
   --name procap-atlas \
   --display-name "PRO-cap Atlas (uv)"
-uv run --extra bpnet --group notebook \
+uv run --group notebook \
   jupyter lab notebooks/procap_atlas_bpnet_locus_viewer.ipynb
 ```
 
