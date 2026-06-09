@@ -22,22 +22,9 @@ Hugging Face model repo.
   Torch to 2.6.0 and `pybigtools` to 0.2.5 for install compatibility.
 - Optional SLURM access for launchers
 
-For the Sherlock locus diagnostics notebook, create the project kernel from the
-repository root:
-
-```bash
-uv sync --group notebook
-uv run --group notebook python -m ipykernel install --user \
-  --name procap-atlas \
-  --display-name "PRO-cap Atlas (uv)"
-uv run --group notebook \
-  jupyter lab notebooks/procap_atlas_bpnet_locus_viewer.ipynb
-```
-
-Select `PRO-cap Atlas (uv)` if Jupyter does not select it automatically. The
-notebook downloads models, metadata, observed tracks, and the reference genome
-into `$SCRATCH/procap_atlas_locus_viewer` by default and caches expensive
-fold/seed diagnostics there.
+For the Sherlock locus diagnostics notebook, including `uv` kernel registration
+and Open OnDemand resource settings, see
+[`notebooks/README.md`](../../notebooks/README.md).
 
 ## Training
 
