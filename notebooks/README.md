@@ -19,11 +19,7 @@ mamba activate procap-atlas
 cd /path/to/procap-atlas
 
 uv sync --group notebook
-uv run --group notebook python -m ipykernel install --user \
-  --name procap-atlas \
-  --display-name "PRO-cap Atlas (uv)" \
-  --env PYTHONNOUSERSITE 1 \
-  --env PYTHONPATH ""
+uv run --group notebook python notebooks/install_uv_kernel.py
 ```
 
 Confirm that Jupyter can discover the kernel:
@@ -38,11 +34,14 @@ The user kernelspec should be installed at:
 ~/.local/share/jupyter/kernels/procap-atlas/
 ```
 
-The kernelspec points directly to this checkout's `.venv/bin/python`. Reinstall
-the kernelspec if the repository is moved or its `.venv` is recreated at a
-different path. `PYTHONNOUSERSITE=1` and an empty `PYTHONPATH` prevent the
-OnDemand Jupyter server environment from injecting user or system packages into
-the project kernel.
+The kernelspec points directly to this checkout's `.venv/bin/python` and starts
+Python with `-E`. Open OnDemand injects its JupyterLab installation through
+`PYTHONPATH`; `-E` tells the project interpreter not to add that path to
+`sys.path`. The environment variable itself remains available, so the
+JupyterLab server's connection environment is not stripped.
+
+Reinstall the kernelspec if the repository is moved or its `.venv` is recreated
+at a different path.
 
 ### Start the OnDemand session
 
@@ -113,8 +112,12 @@ The notebook stores downloads and diagnostic caches under
 
   `spec.origin` must be inside
   `/path/to/procap-atlas/.venv/lib/python3.12/site-packages/`. If it is not,
-  reinstall the hardened kernelspec above and restart the complete OnDemand
-  JupyterLab session.
+  reinstall the kernelspec with `notebooks/install_uv_kernel.py`, restart the
+  complete OnDemand session, and select **PRO-cap Atlas (uv)** again.
+
+  The `PYTHONPATH` variable may still print the Open OnDemand path. That is
+  expected. The important check is that the path does not appear in `sys.path`;
+  Python's `-E` flag prevents it from affecting imports.
 
   If NumPy is coming from the project `.venv`, update the checkout and resync:
 
@@ -131,7 +134,7 @@ The notebook stores downloads and diagnostic caches under
   after registering it.
 - If the kernel fails immediately, inspect
   `~/.local/share/jupyter/kernels/procap-atlas/kernel.json` and confirm its
-  Python path still exists.
+  `argv` begins with the checkout's `.venv/bin/python`, followed by `-E`.
 - If repository imports fail, make sure the notebook was opened from the
   `procap-atlas` checkout and the OnDemand working directory is the repository
   root.
