@@ -22,8 +22,12 @@ def kernel_spec(launcher: Path) -> dict:
     }
 
 
-def launcher_script() -> str:
+def launcher_script(repo_root: Path | None = None) -> str:
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parents[1]
+
     executable = shlex.quote(str(Path(sys.executable).absolute()))
+    working_directory = shlex.quote(str(repo_root.resolve()))
     return f"""#!/bin/bash
 set -u
 
@@ -41,6 +45,7 @@ log_file="$log_dir/kernel.log"
 
 unset PYTHONPATH
 export PYTHONNOUSERSITE=1
+cd {working_directory}
 exec {executable} -m ipykernel_launcher -f "$1" >>"$log_file" 2>&1
 """
 

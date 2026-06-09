@@ -12,10 +12,12 @@ def test_kernel_uses_installed_launcher():
 
 
 def test_launcher_isolates_python_and_logs_startup():
-    script = launcher_script()
+    repo_root = Path("/scratch/users/test/procap-atlas")
+    script = launcher_script(repo_root)
 
     assert "unset PYTHONPATH" in script
     assert "export PYTHONNOUSERSITE=1" in script
+    assert f"cd {repo_root}" in script
     assert ".venv/bin/python" in script
     assert "-m ipykernel_launcher -f \"$1\"" in script
     assert ".local/state" in script

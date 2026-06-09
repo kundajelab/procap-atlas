@@ -41,8 +41,10 @@ The user kernelspec should be installed at:
 
 The installed kernelspec uses a small launcher in the kernelspec directory. It
 removes Open OnDemand's injected `PYTHONPATH`, disables user site packages, and
-then starts this checkout's `.venv/bin/python`. Kernel startup output is written
-to:
+changes to the repository root before starting this checkout's
+`.venv/bin/python`. Starting from the repository root makes imports such as
+`src.bpnet.attribute.locus_diagnostics` available without adding the checkout
+to `PYTHONPATH`. Kernel startup output is written to:
 
 ```text
 ~/.local/state/procap-atlas/kernel.log
@@ -176,8 +178,12 @@ The notebook stores downloads and diagnostic caches under
 
   Then restart the complete OnDemand JupyterLab session.
 - If repository imports fail, make sure the notebook was opened from the
-  `procap-atlas` checkout and the OnDemand working directory is the repository
-  root.
+  `procap-atlas` checkout, then reinstall the kernelspec so its launcher records
+  the current checkout path:
+
+  ```bash
+  uv run --group notebook python notebooks/install_uv_kernel.py
+  ```
 - If `torch.cuda.is_available()` is false, confirm that the OnDemand job
   requested a GPU and is running on the `gpu` partition.
 - If the first run exceeds the requested session time, restart with a longer
