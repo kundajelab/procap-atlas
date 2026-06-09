@@ -22,6 +22,11 @@ uv sync --group notebook
 uv run --group notebook python notebooks/install_uv_kernel.py
 ```
 
+The notebook group pins `pyzmq==26.4.0`. That release provides a CPython 3.12
+manylinux2014 wheel compatible with Sherlock. Newer releases without that wheel
+may build against Sherlock's system libraries and produce a kernel extension
+that incorrectly requires `libcudart.so.12`.
+
 Confirm that Jupyter can discover the kernel:
 
 ```bash
@@ -34,10 +39,14 @@ The user kernelspec should be installed at:
 ~/.local/share/jupyter/kernels/procap-atlas/
 ```
 
-The kernelspec launches this checkout's `.venv/bin/python` through
-`/usr/bin/env -u PYTHONPATH`. Open OnDemand injects its JupyterLab installation
-through `PYTHONPATH`; removing only that variable before Python starts prevents
-the server environment from taking precedence over packages in `.venv`.
+The installed kernelspec uses a small launcher in the kernelspec directory. It
+removes Open OnDemand's injected `PYTHONPATH`, disables user site packages, and
+then starts this checkout's `.venv/bin/python`. Kernel startup output is written
+to:
+
+```text
+~/.local/state/procap-atlas/kernel.log
+```
 
 Reinstall the kernelspec if the repository is moved or its `.venv` is recreated
 at a different path.
@@ -132,8 +141,14 @@ The notebook stores downloads and diagnostic caches under
   after registering it.
 - If the kernel fails immediately, inspect
   `~/.local/share/jupyter/kernels/procap-atlas/kernel.json` and confirm its
-  `argv` begins with `/usr/bin/env`, `-u`, `PYTHONPATH`, followed by the
-  checkout's `.venv/bin/python`.
+  `argv` points to
+  `~/.local/share/jupyter/kernels/procap-atlas/launch_kernel.sh`.
+
+  Then inspect the startup log:
+
+  ```bash
+  tail -n 100 ~/.local/state/procap-atlas/kernel.log
+  ```
 
   Test the isolated environment directly from a terminal on the same compute
   node:
@@ -147,6 +162,19 @@ The notebook stores downloads and diagnostic caches under
   If this command fails, the error is in the synced `.venv` rather than the
   Jupyter connection. If it succeeds, restart the complete OnDemand session so
   Jupyter reloads the replaced kernelspec.
+
+- If the startup log reports that `zmq/backend/cython/_zmq` cannot load
+  `libcudart.so.12`, replace the locally built `pyzmq` with the pinned wheel:
+
+  ```bash
+  cd /path/to/procap-atlas
+  uv sync --group notebook --refresh-package pyzmq
+  uv run --group notebook python -c \
+    "import zmq; print(zmq.__version__, zmq.__file__)"
+  uv run --group notebook python notebooks/install_uv_kernel.py
+  ```
+
+  Then restart the complete OnDemand JupyterLab session.
 - If repository imports fail, make sure the notebook was opened from the
   `procap-atlas` checkout and the OnDemand working directory is the repository
   root.

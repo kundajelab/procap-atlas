@@ -35,7 +35,14 @@ cherimoya = ["cherimoya", "leidenalg==0.10.2"]
 
 [dependency-groups]
 dev = ["pytest"]
-notebook = ["bpnet-lite", "ipykernel", "jupyterlab"]
+notebook = [
+    "bpnet-lite",
+    "ipykernel",
+    "jupyterlab",
+    # pyzmq 27.1 has no manylinux2014 x86_64 wheel and builds against
+    # Sherlock's system libraries. 26.4 provides a compatible CPython 3.12 wheel.
+    "pyzmq==26.4.0",
+]
 
 [tool.uv]
 required-environments = [
