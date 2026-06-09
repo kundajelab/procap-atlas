@@ -34,11 +34,10 @@ The user kernelspec should be installed at:
 ~/.local/share/jupyter/kernels/procap-atlas/
 ```
 
-The kernelspec points directly to this checkout's `.venv/bin/python` and starts
-Python with `-E`. Open OnDemand injects its JupyterLab installation through
-`PYTHONPATH`; `-E` tells the project interpreter not to add that path to
-`sys.path`. The environment variable itself remains available, so the
-JupyterLab server's connection environment is not stripped.
+The kernelspec launches this checkout's `.venv/bin/python` through
+`/usr/bin/env -u PYTHONPATH`. Open OnDemand injects its JupyterLab installation
+through `PYTHONPATH`; removing only that variable before Python starts prevents
+the server environment from taking precedence over packages in `.venv`.
 
 Reinstall the kernelspec if the repository is moved or its `.venv` is recreated
 at a different path.
@@ -115,9 +114,8 @@ The notebook stores downloads and diagnostic caches under
   reinstall the kernelspec with `notebooks/install_uv_kernel.py`, restart the
   complete OnDemand session, and select **PRO-cap Atlas (uv)** again.
 
-  The `PYTHONPATH` variable may still print the Open OnDemand path. That is
-  expected. The important check is that the path does not appear in `sys.path`;
-  Python's `-E` flag prevents it from affecting imports.
+  `PYTHONPATH` should print as `None`, and the Open OnDemand path should not
+  appear in `sys.path`.
 
   If NumPy is coming from the project `.venv`, update the checkout and resync:
 
@@ -134,7 +132,21 @@ The notebook stores downloads and diagnostic caches under
   after registering it.
 - If the kernel fails immediately, inspect
   `~/.local/share/jupyter/kernels/procap-atlas/kernel.json` and confirm its
-  `argv` begins with the checkout's `.venv/bin/python`, followed by `-E`.
+  `argv` begins with `/usr/bin/env`, `-u`, `PYTHONPATH`, followed by the
+  checkout's `.venv/bin/python`.
+
+  Test the isolated environment directly from a terminal on the same compute
+  node:
+
+  ```bash
+  cd /path/to/procap-atlas
+  env -u PYTHONPATH .venv/bin/python -c \
+    "import ipykernel, numpy; print(numpy.__version__, numpy.__file__)"
+  ```
+
+  If this command fails, the error is in the synced `.venv` rather than the
+  Jupyter connection. If it succeeds, restart the complete OnDemand session so
+  Jupyter reloads the replaced kernelspec.
 - If repository imports fail, make sure the notebook was opened from the
   `procap-atlas` checkout and the OnDemand working directory is the repository
   root.

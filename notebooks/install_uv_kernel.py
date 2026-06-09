@@ -12,8 +12,10 @@ from jupyter_client.kernelspec import KernelSpecManager
 def kernel_spec() -> dict:
     return {
         "argv": [
+            "/usr/bin/env",
+            "-u",
+            "PYTHONPATH",
             str(Path(sys.executable).absolute()),
-            "-E",
             "-m",
             "ipykernel_launcher",
             "-f",
