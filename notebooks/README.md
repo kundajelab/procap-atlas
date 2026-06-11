@@ -7,6 +7,13 @@ diagnostics for DeepLIFT reference-sequence instability. It downloads the
 selected experiment's models, observed tracks, metadata, and hg38 reference
 genome rather than using precomputed predicted tracks.
 
+The diagnostic figures include joint-profile and strand-specific profile
+DeepLIFT attributions. Each strand-specific target uses one softmax over both
+strands before summing the weighted logits for the selected strand. The
+notebook also plots centered logits and count-scaled profiles for the two
+shuffled-reference selections from every seed: the strongest fold-averaged
+20 bp activity and the reference closest to that seed's median activity.
+
 The notebook is designed to run on a Sherlock GPU through Open OnDemand
 JupyterLab using the repository's `uv` environment.
 
@@ -102,6 +109,40 @@ The interpreter should be:
 
 The notebook stores downloads and diagnostic caches under
 `$SCRATCH/procap_atlas_locus_viewer` when `$SCRATCH` is available.
+
+### Experimental low-activity references
+
+`src.bpnet.attribute.locus_diagnostics.low_activity_references` can select a
+diverse reference bank from a larger dinucleotide-shuffled candidate pool. It
+ranks candidates by their worst percentile across selector folds for predicted
+counts, maximum 20 bp count-scaled signal, and profile concentration.
+
+Use held-out selector folds to avoid choosing a model's baseline with the same
+model that will be explained:
+
+```python
+from src.bpnet.attribute.locus_diagnostics import low_activity_references
+
+result = low_activity_references(
+    genomic_input=X,
+    selector_models=(
+        torch.load(path, map_location="cpu", weights_only=False).eval()
+        for fold, path in enumerate(resources["model_paths"])
+        if fold != explained_fold
+    ),
+    n_candidates=10_000,
+    n_references=20,
+    random_state=REFERENCE_SEEDS[0],
+    batch_size=BATCH_SIZE,
+    device=DEVICE,
+)
+references = result["references"]
+```
+
+The result also retains all candidate selection scores and fold-level activity
+metrics for comparison with the unfiltered reference distribution. This is an
+experimental model-aware baseline and should be reported alongside ordinary
+random dinucleotide shuffles rather than replacing them silently.
 
 ### Troubleshooting
 

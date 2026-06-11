@@ -8,6 +8,7 @@ from src.bpnet.attribute.locus_diagnostics import (
     fold_consensus,
     genomic_offsets,
     gradient_x_input,
+    low_activity_references,
     markov_parameters,
     point_ism,
     predicted_activity,
@@ -18,6 +19,7 @@ from src.bpnet.attribute.locus_diagnostics import (
     reverse_complement_peak_coordinates,
     reverse_complement_tracks,
     sample_markov_sequences,
+    StrandProfileWrapper,
     window_ism,
 )
 
@@ -33,6 +35,18 @@ class ToyBPNet(torch.nn.Module):
         logits = torch.stack((X[:, 0] + 2 * X[:, 1], X[:, 2] + 2 * X[:, 3]), dim=1)
         log_counts = X[:, 3].sum(dim=1, keepdim=True).log1p()
         return logits, log_counts
+
+
+class PositionBPNet(torch.nn.Module):
+    def forward(self, X):
+        position_weights = torch.linspace(-1, 1, X.shape[-1], device=X.device)
+        plus = 3 * X[:, 0] + X[:, 1] * position_weights
+        minus = 3 * X[:, 3] - X[:, 2] * position_weights
+        log_counts = (
+            2 * X[:, 0, : X.shape[-1] // 2].sum(dim=1, keepdim=True)
+            / X.shape[-1]
+        )
+        return torch.stack((plus, minus), dim=1), log_counts
 
 
 def one_hot(sequence):
@@ -62,6 +76,44 @@ def test_reference_banks_are_seeded_and_preserve_dinucleotides():
     expected = dinucleotide_frequencies(X)
     for reference in first:
         assert np.allclose(dinucleotide_frequencies(reference), expected)
+
+
+def test_low_activity_references_are_deterministic_and_low_ranked():
+    X = one_hot("ACGTTGCAACGTACGTTGCAACGT")
+    first = low_activity_references(
+        X,
+        [PositionBPNet(), PositionBPNet()],
+        n_candidates=40,
+        n_references=5,
+        random_state=17,
+        batch_size=16,
+        device="cpu",
+        min_hamming_fraction=0.2,
+    )
+    second = low_activity_references(
+        X,
+        [PositionBPNet(), PositionBPNet()],
+        n_candidates=40,
+        n_references=5,
+        random_state=17,
+        batch_size=16,
+        device="cpu",
+        min_hamming_fraction=0.2,
+    )
+
+    assert torch.equal(first["references"], second["references"])
+    assert np.array_equal(first["selected_indices"], second["selected_indices"])
+    assert np.all(
+        first["selection_score"][first["selected_indices"]]
+        <= np.quantile(first["selection_score"], 0.5)
+    )
+    expected = dinucleotide_frequencies(X)
+    for reference in first["references"]:
+        assert np.allclose(dinucleotide_frequencies(reference), expected)
+    bases = first["references"].argmax(dim=1).numpy()
+    for i in range(len(bases)):
+        for j in range(i):
+            assert np.mean(bases[i] != bases[j]) >= 0.2
 
 
 def test_markov_sampling_is_deterministic():
@@ -128,6 +180,25 @@ def test_profile_outputs_are_centered_and_count_scaled():
     assert np.allclose(centered.reshape(2, -1).mean(axis=1), 0, atol=1e-7)
     assert np.allclose(probabilities.reshape(2, -1).sum(axis=1), 1)
     assert np.allclose(scaled.reshape(2, -1).sum(axis=1), result["reference_counts"])
+
+
+def test_strand_profile_wrapper_uses_joint_softmax_weights():
+    X = one_hot("ACGTAC")
+    model = ToyBPNet()
+    logits = model(X)[0]
+    centered = logits.flatten(start_dim=1)
+    centered = centered - centered.mean(dim=-1, keepdim=True)
+    weighted = (centered * torch.softmax(centered, dim=-1)).reshape_as(logits)
+
+    plus = StrandProfileWrapper(model, 0)(X)
+    minus = StrandProfileWrapper(model, 1)(X)
+
+    assert torch.allclose(plus[:, 0], weighted[:, 0].sum(dim=-1))
+    assert torch.allclose(minus[:, 0], weighted[:, 1].sum(dim=-1))
+    assert torch.allclose(
+        plus + minus,
+        (centered * torch.softmax(centered, dim=-1)).sum(dim=-1, keepdim=True),
+    )
 
 
 def test_profile_summaries_and_fold_consensus():

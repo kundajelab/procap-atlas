@@ -13,7 +13,28 @@ from tangermeme.predict import predict
 from tangermeme.saturation_mutagenesis import saturation_mutagenesis
 
 ALPHABET = "ACGT"
-CACHE_SCHEMA_VERSION = 2
+CACHE_SCHEMA_VERSION = 3
+
+
+class StrandProfileWrapper(torch.nn.Module):
+    """Return one strand's profile score after joint two-strand softmax weighting."""
+
+    def __init__(self, model, strand):
+        super().__init__()
+        if strand not in (0, 1):
+            raise ValueError("strand must be 0 (plus) or 1 (minus)")
+        self.model = model
+        self.strand = strand
+
+    def forward(self, X, X_ctl=None, **kwargs):
+        if X_ctl is None:
+            logits = self.model(X, **kwargs)[0]
+        else:
+            logits = self.model(X, X_ctl, **kwargs)[0]
+        flattened = logits.flatten(start_dim=1)
+        centered = flattened - flattened.mean(dim=-1, keepdim=True)
+        weighted = (centered * torch.softmax(centered, dim=-1)).reshape_as(logits)
+        return weighted[:, self.strand].sum(dim=-1, keepdim=True)
 
 
 def as_numpy(value):
@@ -53,6 +74,116 @@ def reference_banks(X, seeds, n_references):
             X.cpu(), n=n_references, random_state=int(seed)
         )[0]
         for seed in seeds
+    }
+
+
+def low_activity_references(
+    genomic_input,
+    selector_models,
+    n_candidates,
+    n_references,
+    random_state,
+    batch_size,
+    device,
+    min_hamming_fraction=0.1,
+):
+    """Select diverse shuffles with low activity across held-out selector models.
+
+    ``selector_models`` may be a generator that loads one model at a time. For
+    attribution of fold k, it should yield only the other folds so the explained
+    model does not select its own baseline. Candidates are ranked by their worst
+    percentile across selector folds and three metrics: predicted counts,
+    maximum 20 bp count-scaled signal, and profile concentration.
+    """
+    if genomic_input.shape[0] != 1:
+        raise ValueError("genomic_input must contain exactly one sequence")
+    if not 0 <= min_hamming_fraction <= 1:
+        raise ValueError("min_hamming_fraction must be between zero and one")
+    if n_references < 1 or n_candidates < n_references:
+        raise ValueError("n_candidates must be at least n_references")
+
+    candidates = dinucleotide_shuffle(
+        genomic_input.cpu(),
+        n=n_candidates,
+        random_state=int(random_state),
+    )[0]
+    fold_counts = []
+    fold_max_20bp = []
+    fold_profile_score = []
+
+    for model in selector_models:
+        profile_logits, log_counts = predict(
+            model=model,
+            X=candidates,
+            batch_size=batch_size,
+            device=device,
+        )
+        logits = torch.as_tensor(profile_logits).reshape(n_candidates, -1)
+        centered = logits - logits.mean(dim=1, keepdim=True)
+        probabilities = torch.softmax(centered, dim=1)
+        counts = torch.exp(
+            torch.as_tensor(log_counts).reshape(n_candidates, -1)
+        ).sum(dim=1)
+        count_scaled = (probabilities * counts[:, None]).reshape(
+            torch.as_tensor(profile_logits).shape
+        )
+        maxima, _, _ = rolling_profile_maxima(
+            as_numpy(count_scaled), windows=(20,)
+        )
+        fold_counts.append(as_numpy(counts))
+        fold_max_20bp.append(maxima[20])
+        fold_profile_score.append(
+            as_numpy((centered * probabilities).sum(dim=1))
+        )
+
+    if not fold_counts:
+        raise ValueError("selector_models must contain at least one model")
+
+    metrics = np.stack(
+        [
+            np.asarray(fold_counts),
+            np.asarray(fold_max_20bp),
+            np.asarray(fold_profile_score),
+        ],
+        axis=1,
+    )
+    percentile_ranks = np.empty_like(metrics, dtype=float)
+    for fold in range(metrics.shape[0]):
+        for metric in range(metrics.shape[1]):
+            order = np.argsort(metrics[fold, metric], kind="stable")
+            percentile_ranks[fold, metric, order] = (
+                np.arange(n_candidates) + 1
+            ) / n_candidates
+    selection_score = percentile_ranks.max(axis=(0, 1))
+    ranked_indices = np.argsort(selection_score, kind="stable")
+
+    bases = candidates.argmax(dim=1).numpy()
+    selected_indices = []
+    for index in ranked_indices:
+        if all(
+            np.mean(bases[index] != bases[chosen]) >= min_hamming_fraction
+            for chosen in selected_indices
+        ):
+            selected_indices.append(int(index))
+            if len(selected_indices) == n_references:
+                break
+    if len(selected_indices) < n_references:
+        selected = set(selected_indices)
+        selected_indices.extend(
+            int(index)
+            for index in ranked_indices
+            if int(index) not in selected
+        )
+        selected_indices = selected_indices[:n_references]
+
+    selected_indices = np.asarray(selected_indices, dtype=int)
+    return {
+        "references": candidates[selected_indices],
+        "selected_indices": selected_indices,
+        "selection_score": selection_score,
+        "fold_counts": np.asarray(fold_counts),
+        "fold_max_20bp": np.asarray(fold_max_20bp),
+        "fold_profile_score": np.asarray(fold_profile_score),
     }
 
 
