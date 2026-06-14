@@ -8,12 +8,16 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from tangermeme.deep_lift_shap import dinucleotide_shuffle
+from bpnetlite.bpnet import _ProfileLogitScaling
+from tangermeme.deep_lift_shap import (
+    dinucleotide_shuffle,
+    hypothetical_attributions,
+)
 from tangermeme.predict import predict
 from tangermeme.saturation_mutagenesis import saturation_mutagenesis
 
 ALPHABET = "ACGT"
-CACHE_SCHEMA_VERSION = 3
+CACHE_SCHEMA_VERSION = 4
 
 
 class StrandProfileWrapper(torch.nn.Module):
@@ -25,6 +29,7 @@ class StrandProfileWrapper(torch.nn.Module):
             raise ValueError("strand must be 0 (plus) or 1 (minus)")
         self.model = model
         self.strand = strand
+        self.scaling = _ProfileLogitScaling()
 
     def forward(self, X, X_ctl=None, **kwargs):
         if X_ctl is None:
@@ -33,8 +38,113 @@ class StrandProfileWrapper(torch.nn.Module):
             logits = self.model(X, X_ctl, **kwargs)[0]
         flattened = logits.flatten(start_dim=1)
         centered = flattened - flattened.mean(dim=-1, keepdim=True)
-        weighted = (centered * torch.softmax(centered, dim=-1)).reshape_as(logits)
+        weighted = self.scaling(centered).reshape_as(logits)
         return weighted[:, self.strand].sum(dim=-1, keepdim=True)
+
+
+def per_reference_attributions(multipliers, genomic_input, references):
+    """Project raw DeepLIFT multipliers into observed per-reference attributions."""
+    multipliers = torch.as_tensor(multipliers)
+    references = torch.as_tensor(references)
+    if multipliers.ndim == 4 and multipliers.shape[0] == 1:
+        multipliers = multipliers[0]
+    if references.ndim == 4 and references.shape[0] == 1:
+        references = references[0]
+    if multipliers.shape != references.shape:
+        raise ValueError("multipliers and references must have matching shapes")
+
+    genomic_input = torch.as_tensor(genomic_input)
+    if genomic_input.ndim == 3 and genomic_input.shape[0] == 1:
+        genomic_input = genomic_input[0]
+    if genomic_input.shape != multipliers.shape[1:]:
+        raise ValueError("genomic_input must match one reference sequence")
+
+    repeated_input = genomic_input.unsqueeze(0).expand_as(references)
+    hypothetical = hypothetical_attributions(
+        (multipliers,),
+        (repeated_input,),
+        (references,),
+    )[0]
+    return hypothetical * repeated_input
+
+
+def reference_weight_schemes(probabilities, counts, temperature=1.0, window=20):
+    """Calculate shared reference weights from fold-level profile predictions."""
+    probabilities = as_numpy(probabilities).astype(float)
+    counts = as_numpy(counts).astype(float)
+    if probabilities.ndim == 3:
+        probabilities = probabilities[None]
+    if counts.ndim == 1:
+        counts = counts[None]
+    if (
+        probabilities.ndim != 4
+        or probabilities.shape[2] != 2
+        or counts.shape != probabilities.shape[:2]
+    ):
+        raise ValueError(
+            "probabilities must have shape (folds, references, 2, positions) "
+            "and counts must have shape (folds, references)"
+        )
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+
+    folds, references = probabilities.shape[:2]
+    maxima, _, _ = rolling_profile_maxima(
+        probabilities.reshape(folds * references, 2, probabilities.shape[-1]),
+        windows=(window,),
+    )
+    max_window_mass = maxima[window].reshape(folds, references).mean(axis=0)
+    strand_mass = probabilities.sum(axis=-1)
+    strand_imbalance = np.abs(strand_mass[..., 0] - strand_mass[..., 1]).mean(
+        axis=0
+    )
+    log_counts = np.log1p(counts).mean(axis=0)
+
+    metrics = np.stack([max_window_mass, strand_imbalance, log_counts])
+    penalties = np.zeros_like(metrics)
+    for index, values in enumerate(metrics):
+        median = np.median(values)
+        deviations = np.abs(values - median)
+        scale = 1.4826 * np.median(deviations)
+        if scale <= 1e-12:
+            scale = deviations.mean()
+        if scale > 1e-12:
+            penalties[index] = np.maximum(values - median, 0) / scale
+
+    contamination = np.stack(
+        [
+            np.zeros(references),
+            penalties[:2].sum(axis=0),
+            penalties.sum(axis=0),
+        ]
+    )
+    shifted = -contamination / temperature
+    shifted -= shifted.max(axis=1, keepdims=True)
+    weights = np.exp(shifted)
+    weights /= weights.sum(axis=1, keepdims=True)
+    return {
+        "metric_names": np.asarray(
+            ["max_20bp_probability", "strand_imbalance", "log1p_counts"]
+        ),
+        "metrics": metrics,
+        "contamination": contamination,
+        "weights": weights,
+    }
+
+
+def weighted_strand_attributions(attributions, weights):
+    """Combine per-reference strand attributions with shared reference weights."""
+    attributions = as_numpy(attributions)
+    weights = as_numpy(weights)
+    if attributions.ndim < 3 or attributions.shape[-3] != len(weights):
+        raise ValueError("reference axis must be third from last")
+    if np.any(weights < 0) or not np.isclose(weights.sum(), 1):
+        raise ValueError("weights must be nonnegative and sum to one")
+    return np.tensordot(
+        attributions,
+        weights,
+        axes=([-3], [0]),
+    )
 
 
 def as_numpy(value):

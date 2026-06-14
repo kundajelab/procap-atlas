@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from bpnetlite.attribute import deep_lift_shap
 
 from src.bpnet.attribute.locus_diagnostics import (
     CACHE_SCHEMA_VERSION,
@@ -10,16 +11,19 @@ from src.bpnet.attribute.locus_diagnostics import (
     gradient_x_input,
     low_activity_references,
     markov_parameters,
+    per_reference_attributions,
     point_ism,
     predicted_activity,
     profile_summaries,
     reference_banks,
+    reference_weight_schemes,
     rolling_profile_maxima,
     reverse_complement_matrix,
     reverse_complement_peak_coordinates,
     reverse_complement_tracks,
     sample_markov_sequences,
     StrandProfileWrapper,
+    weighted_strand_attributions,
     window_ism,
 )
 
@@ -199,6 +203,74 @@ def test_strand_profile_wrapper_uses_joint_softmax_weights():
         plus + minus,
         (centered * torch.softmax(centered, dim=-1)).sum(dim=-1, keepdim=True),
     )
+
+
+def test_reference_weights_are_uniform_for_equal_activity():
+    probabilities = np.full((2, 4, 2, 20), 1 / 40)
+    counts = np.full((2, 4), 5.0)
+    result = reference_weight_schemes(probabilities, counts)
+
+    assert np.allclose(result["weights"], 0.25)
+    assert np.all(result["weights"] >= 0)
+    assert np.allclose(result["weights"].sum(axis=1), 1)
+
+
+def test_reference_weights_penalize_profile_spikes_and_counts():
+    probabilities = np.full((2, 5, 2, 20), 1 / 40)
+    probabilities[:, 4] = 0
+    probabilities[:, 4, 0, :20] = 1 / 20
+    counts = np.ones((2, 5))
+    counts[:, 3] = 50
+
+    result = reference_weight_schemes(probabilities, counts)
+    uniform, profile_only, profile_counts = result["weights"]
+
+    assert np.allclose(uniform, 0.2)
+    assert profile_only[4] < profile_only[0]
+    assert np.isclose(profile_only[3], profile_only[0])
+    assert profile_counts[3] < profile_only[3]
+
+
+def test_weighted_strand_attributions_preserve_weighted_delta():
+    X = one_hot("ACGTAC")
+    references = torch.cat(
+        [one_hot("TGCATG"), one_hot("AAAACC"), one_hot("CCGGTT")]
+    )
+    weights = np.array([0.2, 0.3, 0.5])
+    model = ToyBPNet()
+    strand_attributions = []
+    strand_deltas = []
+
+    for strand in range(2):
+        wrapper = StrandProfileWrapper(model, strand)
+        multipliers = deep_lift_shap(
+            wrapper,
+            X,
+            references=references[None],
+            raw_outputs=True,
+            hypothetical=True,
+            device="cpu",
+        )
+        per_reference = per_reference_attributions(
+            multipliers, X, references
+        ).numpy()
+        strand_attributions.append(per_reference)
+        with torch.no_grad():
+            genomic_score = wrapper(X)[0, 0].item()
+            reference_scores = wrapper(references)[:, 0].numpy()
+        strand_deltas.append(genomic_score - reference_scores)
+
+    strand_attributions = np.asarray(strand_attributions)
+    weighted = np.asarray(
+        [
+            weighted_strand_attributions(values, weights)
+            for values in strand_attributions
+        ]
+    )
+    weighted_delta = np.asarray(strand_deltas) @ weights
+
+    assert np.allclose(weighted.sum(axis=(1, 2)), weighted_delta, atol=1e-5)
+    assert np.isclose(weighted.sum(), weighted_delta.sum(), atol=1e-5)
 
 
 def test_profile_summaries_and_fold_consensus():

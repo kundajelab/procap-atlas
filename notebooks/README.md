@@ -14,6 +14,21 @@ notebook also plots centered logits and count-scaled profiles for the two
 shuffled-reference selections from every seed: the strongest fold-averaged
 20 bp activity and the reference closest to that seed's median activity.
 
+The experimental completeness-preserving weighting workflow operates on
+`WEIGHTED_REFERENCE_SEED`. It retains per-reference plus/minus DeepLIFT values
+and compares uniform weights with two shared weighting schemes:
+
+- profile-only weights penalize high 20 bp probability mass and plus/minus
+  profile-mass imbalance;
+- profile-plus-count weights additionally penalize high predicted counts.
+
+Metrics are robustly scaled within the selected reference bank, and
+`REFERENCE_WEIGHT_TEMPERATURE` controls how strongly contaminated references
+are downweighted. Identical weights are applied to both strand targets, so the
+combined attribution remains complete relative to one weighted reference
+distribution. The notebook plots full-input completeness residuals; logo
+cropping is applied only after aggregation.
+
 The notebook is designed to run on a Sherlock GPU through Open OnDemand
 JupyterLab using the repository's `uv` environment.
 
@@ -109,6 +124,72 @@ The interpreter should be:
 
 The notebook stores downloads and diagnostic caches under
 `$SCRATCH/procap_atlas_locus_viewer` when `$SCRATCH` is available.
+
+### Run as a batch script
+
+`procap_atlas_bpnet_locus_diagnostics.py` runs the same workflow without
+JupyterLab and saves every plot to disk. Run it as a module from the repository
+root so the local `src` modules resolve without modifying `PYTHONPATH`:
+
+```bash
+uv run --frozen --group notebook python \
+  -m notebooks.procap_atlas_bpnet_locus_diagnostics \
+  --experiment ENCSR342WAR \
+  --point-region chr2:181680717 \
+  --view-region chr2:181680467-181681166 \
+  --logo-region chr2:181680467-181681167
+```
+
+By default, figures are written under
+`figures/bpnet/locus_diagnostics/<experiment>/<point>/`. Use `--output-dir`,
+`--format`, and `--dpi` to change the output. The script uses the same
+`$SCRATCH/procap_atlas_locus_viewer` downloads and keyed diagnostic caches as
+the notebook, so a completed or interrupted notebook run can be reused.
+
+For a Sherlock batch job, save and submit a script like:
+
+```bash
+#!/bin/bash -l
+#SBATCH --job-name=bpnet_locus
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --gpus=1
+#SBATCH -C "GPU_GEN:AMP|GPU_GEN:LOV|GPU_GEN:HPR"
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64G
+#SBATCH --partition=akundaje,owners
+#SBATCH --time=08:00:00
+#SBATCH --output=logs/bpnet_locus_%j.out
+#SBATCH --error=logs/bpnet_locus_%j.err
+
+ml openblas/0.3.28
+ml xsimd/8.1.0
+ml xz/5.8.1
+ml hdf5/1.14.4
+ml arrow/22.0.0
+ml load py-pyarrow/18.1.0_py312
+ml lz4/1.8.0
+ml biology
+ml htslib
+ml ucsc-utils
+
+mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
+cd /scratch/users/ayhe/procap-atlas
+mkdir -p logs
+nvidia-smi -L
+
+uv run --frozen --group notebook python \
+  -m notebooks.procap_atlas_bpnet_locus_diagnostics \
+  --experiment ENCSR342WAR \
+  --point-region chr2:181680717 \
+  --view-region chr2:181680467-181681166 \
+  --logo-region chr2:181680467-181681167
+```
+
+The major runtime controls are `--folds`, `--batch-size`,
+`--reference-seeds`, `--references`, `--weighted-reference-seed`, and the
+window-ISM options shown by `--help`. Use `--force` to ignore an existing
+diagnostic cache.
 
 ### Experimental low-activity references
 
