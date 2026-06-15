@@ -384,6 +384,30 @@ def window_ism(
     return positions, np.asarray(scores)
 
 
+def window_scores_to_positions(positions, scores, length, window):
+    """Average overlapping window scores onto their covered base positions."""
+    positions = as_numpy(positions).astype(int)
+    scores = as_numpy(scores)
+    if scores.shape[-1] != len(positions):
+        raise ValueError("scores must end with one value per window position")
+    if length < 1 or window < 1:
+        raise ValueError("length and window must be positive")
+    if np.any(positions < 0) or np.any(positions + window > length):
+        raise ValueError("all windows must fit inside the requested length")
+
+    totals = np.zeros(scores.shape[:-1] + (length,), dtype=float)
+    coverage = np.zeros(length, dtype=float)
+    for index, position in enumerate(positions):
+        totals[..., position : position + window] += scores[..., index, None]
+        coverage[position : position + window] += 1
+    return np.divide(
+        totals,
+        coverage,
+        out=np.zeros_like(totals),
+        where=coverage > 0,
+    )
+
+
 def rolling_profile_maxima(profiles, windows=(1, 5, 20)):
     """Return strongest strand-specific rolling sums and peak coordinates."""
     profiles = as_numpy(profiles)

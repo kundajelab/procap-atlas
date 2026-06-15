@@ -29,6 +29,12 @@ combined attribution remains complete relative to one weighted reference
 distribution. The notebook plots full-input completeness residuals; logo
 cropping is applied only after aggregation.
 
+The logo diagnostics include fold-averaged DeepLIFT logos for every reference
+seed, both for the profile/count heads and for the plus/minus profile targets.
+Window ISM is also rendered as a sequence logo by assigning each base the mean
+score of all overlapping perturbation windows and placing that score on the
+observed genomic nucleotide.
+
 The notebook is designed to run on a Sherlock GPU through Open OnDemand
 JupyterLab using the repository's `uv` environment.
 

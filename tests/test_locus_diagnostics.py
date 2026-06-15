@@ -25,6 +25,7 @@ from src.bpnet.attribute.locus_diagnostics import (
     StrandProfileWrapper,
     weighted_strand_attributions,
     window_ism,
+    window_scores_to_positions,
 )
 
 
@@ -152,6 +153,17 @@ def test_attribution_methods_with_toy_model():
     )
     assert positions.tolist() == [0, 2, 4]
     assert scores.shape == (3,)
+
+
+def test_window_scores_are_averaged_across_overlaps():
+    positions = np.array([1, 3])
+    scores = np.array([[2.0, 6.0], [-2.0, 2.0]])
+    projected = window_scores_to_positions(
+        positions, scores, length=7, window=3
+    )
+
+    assert np.allclose(projected[0], [0, 2, 2, 4, 6, 6, 0])
+    assert np.allclose(projected[1], [0, -2, -2, 0, 2, 2, 0])
 
 
 def test_reverse_complement_and_offsets():
