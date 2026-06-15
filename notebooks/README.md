@@ -35,6 +35,11 @@ Window ISM is also rendered as a sequence logo by assigning each base the mean
 score of all overlapping perturbation windows and placing that score on the
 observed genomic nucleotide.
 
+Ranked reference-activity curves are drawn separately for every shuffle seed.
+A companion prediction figure shows all fold-averaged references for each seed
+as faint signed plus/minus tracks, with the seed mean and genomic input
+overlaid.
+
 The notebook is designed to run on a Sherlock GPU through Open OnDemand
 JupyterLab using the repository's `uv` environment.
 

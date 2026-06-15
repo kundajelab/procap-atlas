@@ -692,6 +692,41 @@ def plot_reference_position_envelope():
     return fig, axes
 
 
+def plot_seed_reference_predictions():
+    profiles = diagnostics["reference_count_scaled"].astype(np.float32).mean(axis=0)
+    genomic = diagnostics["genomic_count_scaled"].astype(np.float32).mean(axis=0)
+    if REVERSE_COMPLEMENT:
+        profiles = profiles[:, :, [1, 0], ::-1]
+        genomic = genomic[[1, 0], ::-1]
+    x = np.arange(OUT_WINDOW)
+    fig, axes = plt.subplots(
+        len(REFERENCE_SEEDS),
+        1,
+        figsize=(20, 3 * len(REFERENCE_SEEDS)),
+        squeeze=False,
+        sharex=True,
+        sharey=True,
+    )
+    for seed_index, seed in enumerate(REFERENCE_SEEDS):
+        ax = axes[seed_index, 0]
+        for reference in profiles[seed_index]:
+            ax.plot(x, reference[0], color="#C44E52", alpha=0.12, linewidth=0.7)
+            ax.plot(x, -reference[1], color="#4C72B0", alpha=0.12, linewidth=0.7)
+        mean = profiles[seed_index].mean(axis=0)
+        ax.plot(x, mean[0], color="#C44E52", linewidth=2, label="reference mean plus")
+        ax.plot(x, -mean[1], color="#4C72B0", linewidth=2, label="reference mean minus")
+        ax.plot(x, genomic[0], color="#8C2D35", linestyle="--", label="genomic plus")
+        ax.plot(x, -genomic[1], color="#28527A", linestyle="--", label="genomic minus")
+        ax.axhline(0, color="black", linewidth=0.7)
+        ax.set_title(f"Seed {seed}")
+        ax.set_ylabel("Count-scaled signal")
+    axes[0, 0].legend(frameon=False, ncol=4, fontsize=8)
+    axes[-1, 0].set_xlabel("BPNet output position")
+    fig.suptitle("Fold-averaged shuffled-reference predictions by seed")
+    fig.tight_layout()
+    return fig, axes
+
+
 def plot_example_reference_profiles(selection="strongest"):
     frame = (
         activity_frame()
@@ -781,8 +816,17 @@ def plot_ranked_reference_metrics():
     ]
     fig, axes = plt.subplots(1, 5, figsize=(18, 3.5))
     for ax, metric, title in zip(axes, metrics, titles):
-        values = frame.sort_values(metric, ascending=False)[metric].to_numpy()
-        ax.plot(np.arange(1, len(values) + 1), values, color="#4C72B0")
+        for seed in REFERENCE_SEEDS:
+            values = (
+                frame[frame["seed"] == seed]
+                .sort_values(metric, ascending=False)[metric]
+                .to_numpy()
+            )
+            ax.plot(
+                np.arange(1, len(values) + 1),
+                values,
+                label=f"seed {seed}",
+            )
         ax.axhline(
             genomic_baselines[metric],
             color="#C44E52",
@@ -791,7 +835,7 @@ def plot_ranked_reference_metrics():
         )
         ax.set_title(title)
         ax.set_xlabel("Reference rank")
-    axes[0].legend(frameon=False)
+    axes[0].legend(frameon=False, fontsize=8)
     fig.tight_layout()
     return fig, axes
 
@@ -1247,6 +1291,7 @@ figure_jobs = [
     ),
     ("reference_peak_scatter", plot_reference_peak_scatter),
     ("reference_position_envelope", plot_reference_position_envelope),
+    ("seed_reference_predictions", plot_seed_reference_predictions),
     (
         "strongest_reference_profiles",
         lambda: plot_example_reference_profiles("strongest"),
