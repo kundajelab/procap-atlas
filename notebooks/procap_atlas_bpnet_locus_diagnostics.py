@@ -72,7 +72,7 @@ parser.add_argument("--logo-region", default="chr2:181680467-181681167")
 parser.add_argument("--reverse-complement", action="store_true")
 parser.add_argument("--folds", type=int, default=7)
 parser.add_argument("--batch-size", type=int, default=8)
-parser.add_argument("--reference-seeds", default="0,1,2,3,4")
+parser.add_argument("--reference-seeds", default="0,1,2,3,4,6,7,42,47,100")
 parser.add_argument("--references", type=int, default=20)
 parser.add_argument("--weighted-reference-seed", type=int)
 parser.add_argument("--reference-weight-temperature", type=float, default=1.0)
@@ -91,7 +91,7 @@ parser.add_argument(
     type=Path,
     help="figure directory (default: plots/bpnet/locus_diagnostics/<experiment>/<point>)",
 )
-parser.add_argument("--format", choices=("png", "pdf", "svg"), default="png")
+parser.add_argument("--format", choices=("png", "pdf", "svg"), default="pdf")
 parser.add_argument("--dpi", type=int, default=180)
 args = parser.parse_args()
 
@@ -694,10 +694,8 @@ def plot_reference_position_envelope():
 
 def plot_seed_reference_predictions():
     profiles = diagnostics["reference_count_scaled"].astype(np.float32).mean(axis=0)
-    genomic = diagnostics["genomic_count_scaled"].astype(np.float32).mean(axis=0)
     if REVERSE_COMPLEMENT:
         profiles = profiles[:, :, [1, 0], ::-1]
-        genomic = genomic[[1, 0], ::-1]
     x = np.arange(OUT_WINDOW)
     fig, axes = plt.subplots(
         len(REFERENCE_SEEDS),
@@ -715,12 +713,10 @@ def plot_seed_reference_predictions():
         mean = profiles[seed_index].mean(axis=0)
         ax.plot(x, mean[0], color="#C44E52", linewidth=2, label="reference mean plus")
         ax.plot(x, -mean[1], color="#4C72B0", linewidth=2, label="reference mean minus")
-        ax.plot(x, genomic[0], color="#8C2D35", linestyle="--", label="genomic plus")
-        ax.plot(x, -genomic[1], color="#28527A", linestyle="--", label="genomic minus")
         ax.axhline(0, color="black", linewidth=0.7)
         ax.set_title(f"Seed {seed}")
         ax.set_ylabel("Count-scaled signal")
-    axes[0, 0].legend(frameon=False, ncol=4, fontsize=8)
+    axes[0, 0].legend(frameon=False, ncol=2, fontsize=8)
     axes[-1, 0].set_xlabel("BPNet output position")
     fig.suptitle("Fold-averaged shuffled-reference predictions by seed")
     fig.tight_layout()
@@ -790,22 +786,6 @@ def plot_ranked_reference_metrics():
         .groupby(["seed", "reference"], as_index=False)
         .mean(numeric_only=True)
     )
-    genomic_profiles = diagnostics["genomic_count_scaled"].astype(np.float32)
-    genomic_maxima, _, _ = rolling_profile_maxima(genomic_profiles, windows=(1, 5, 20))
-    genomic_probabilities = diagnostics["genomic_probabilities"].astype(np.float32)
-    genomic_probabilities = genomic_probabilities.reshape(
-        len(genomic_probabilities), -1
-    )
-    genomic_entropy = -(
-        genomic_probabilities * np.log(genomic_probabilities.clip(min=1e-12))
-    ).sum(axis=1)
-    genomic_baselines = {
-        "counts": activity_frame()["genomic_counts"].mean(),
-        "max_1bp": genomic_maxima[1].mean(),
-        "max_5bp": genomic_maxima[5].mean(),
-        "max_20bp": genomic_maxima[20].mean(),
-        "profile_entropy": genomic_entropy.mean(),
-    }
     metrics = ["counts", "max_1bp", "max_5bp", "max_20bp", "profile_entropy"]
     titles = [
         "Counts",
@@ -827,12 +807,6 @@ def plot_ranked_reference_metrics():
                 values,
                 label=f"seed {seed}",
             )
-        ax.axhline(
-            genomic_baselines[metric],
-            color="#C44E52",
-            linestyle="--",
-            label="genomic input",
-        )
         ax.set_title(title)
         ax.set_xlabel("Reference rank")
     axes[0].legend(frameon=False, fontsize=8)
