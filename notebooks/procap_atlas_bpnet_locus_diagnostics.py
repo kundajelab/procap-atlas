@@ -951,23 +951,20 @@ def plot_method_logos(head="profile"):
 
 def plot_seed_deeplift_logos():
     values = diagnostics["deep_lift"].mean(axis=1)
-    fig, axes = plt.subplots(
-        2,
-        len(REFERENCE_SEEDS),
-        figsize=(4 * len(REFERENCE_SEEDS), 5),
-        squeeze=False,
-        sharex=True,
-    )
-    for row, head in enumerate(("profile", "count")):
-        for column, seed in enumerate(REFERENCE_SEEDS):
+    rows = len(REFERENCE_SEEDS) * 2
+    fig, axes = plt.subplots(rows, 1, figsize=(20, 2.2 * rows), sharex=True)
+    for head_index, head in enumerate(("profile", "count")):
+        for seed_index, seed in enumerate(REFERENCE_SEEDS):
+            ax = axes[head_index * len(REFERENCE_SEEDS) + seed_index]
             plot_logo(
                 torch.tensor(
-                    oriented_matrix(values[row, column]), dtype=torch.float32
+                    oriented_matrix(values[head_index, seed_index]),
+                    dtype=torch.float32,
                 ),
-                ax=axes[row, column],
+                ax=ax,
             )
-            axes[row, column].set_title(f"{head}, seed {seed}")
-            logo_ticks(axes[row, column], logo_start, logo_end)
+            ax.set_title(f"{head}, seed {seed}")
+            logo_ticks(ax, logo_start, logo_end)
     fig.suptitle("DeepLIFT/SHAP by reference seed, averaged across folds")
     fig.tight_layout()
     return fig, axes
@@ -993,23 +990,20 @@ def plot_seed_strand_profile_deeplift():
     values = diagnostics["strand_profile_deep_lift"].mean(axis=1)
     if REVERSE_COMPLEMENT:
         values = values[[1, 0]]
-    fig, axes = plt.subplots(
-        2,
-        len(REFERENCE_SEEDS),
-        figsize=(4 * len(REFERENCE_SEEDS), 5),
-        squeeze=False,
-        sharex=True,
-    )
-    for row, strand in enumerate(("plus", "minus")):
-        for column, seed in enumerate(REFERENCE_SEEDS):
+    rows = len(REFERENCE_SEEDS) * 2
+    fig, axes = plt.subplots(rows, 1, figsize=(20, 2.2 * rows), sharex=True)
+    for strand_index, strand in enumerate(("plus", "minus")):
+        for seed_index, seed in enumerate(REFERENCE_SEEDS):
+            ax = axes[strand_index * len(REFERENCE_SEEDS) + seed_index]
             plot_logo(
                 torch.tensor(
-                    oriented_matrix(values[row, column]), dtype=torch.float32
+                    oriented_matrix(values[strand_index, seed_index]),
+                    dtype=torch.float32,
                 ),
-                ax=axes[row, column],
+                ax=ax,
             )
-            axes[row, column].set_title(f"{strand}, seed {seed}")
-            logo_ticks(axes[row, column], logo_start, logo_end)
+            ax.set_title(f"{strand}, seed {seed}")
+            logo_ticks(ax, logo_start, logo_end)
     fig.suptitle(
         "Strand-specific profile DeepLIFT/SHAP by seed, averaged across folds"
     )
