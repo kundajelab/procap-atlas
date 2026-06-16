@@ -214,6 +214,9 @@ The selection score penalizes high predicted counts, sharp 5 bp / 20 bp
 count-scaled profile peaks, high profile concentration, strong strand
 imbalance, and low profile entropy. It does not inspect the genomic-input
 attribution, so real strand-specific motifs are not directly downweighted.
+`notebooks.deeplift` contains the local BPNet-lite/Tangermeme DeepLIFT wrapper
+used by this script; it preserves the one-hot validation for the genomic input
+but allows tensor references to be soft PFMs.
 
 ```bash
 uv run --frozen --group notebook python \
@@ -252,7 +255,7 @@ Outputs are written by default to
 - `candidate_fold_metrics.tsv`: per-fold candidate metrics for auditing.
 - `selection_summary.json`: arguments, paths, counts, and timing breakdown.
 - `selected_deeplift_attributions.npz`: profile/count DeepLIFT arrays for the
-  selected references and for an observed-frequency soft reference.
+  selected references and for a single observed-frequency soft reference.
 - `metric_distributions.<format>`: all candidates versus selected references.
 - `ranked_reference_metrics.<format>`: per-seed metric ranks with selected
   candidates marked.
@@ -263,7 +266,7 @@ Outputs are written by default to
   DeepLIFT logos for both heads.
 - `frequency_reference_profile_deeplift_logo.<format>` and
   `frequency_reference_count_deeplift_logo.<format>`: DeepLIFT logos and summed
-  attribution tracks using a soft reference whose base probabilities are the
+  attribution tracks using one soft reference whose base probabilities are the
   observed input-wide nucleotide frequencies repeated at every position.
 - `timing_summary.<format>`: runtime breakdown, including fold scoring.
 

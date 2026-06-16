@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from bpnetlite.attribute import deep_lift_shap
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
@@ -29,6 +28,7 @@ from tangermeme.io import extract_loci
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
 
+from notebooks.deeplift import deep_lift_shap
 from src.bpnet.attribute.locus_diagnostics import genomic_offsets, profile_summaries
 
 MODEL_REPO_ID = "adamyhe/procap-atlas"
@@ -352,6 +352,9 @@ def selected_deeplift_attributions(
         (2, len(model_paths), 4, width), dtype=np.float32
     )
     frequency_reference = observed_frequency_reference(X)
+    frequency_reference_bank = frequency_reference[:, None]
+    if frequency_reference_bank.shape[:2] != (X.shape[0], 1):
+        raise ValueError("Observed-frequency baseline must contain one reference per input")
     for fold, model_path in enumerate(model_paths):
         print(f"DeepLIFT fold {fold + 1}/{len(model_paths)}: {model_path.name}")
         model = torch.load(model_path, map_location="cpu", weights_only=False).eval()
@@ -377,7 +380,7 @@ def selected_deeplift_attributions(
             frequency_attr = deep_lift_shap(
                 model=wrapper,
                 X=X,
-                references=frequency_reference[None],
+                references=frequency_reference_bank,
                 batch_size=batch_size,
                 hypothetical=True,
                 warning_threshold=0.01,
@@ -655,6 +658,7 @@ def main():
             .detach()
             .cpu()
             .numpy(),
+            n_frequency_references=np.asarray(1, dtype=int),
             seeds=np.asarray(seeds, dtype=int),
             logo_offsets=np.asarray(logo_offsets, dtype=int),
             logo_region=np.asarray(f"{logo_chrom}:{logo_start + 1}-{logo_end}"),
@@ -689,6 +693,7 @@ def main():
         "candidate_seeds": seeds,
         "logo_region": f"{logo_chrom}:{logo_start + 1}-{logo_end}",
         "logo_offsets": list(logo_offsets),
+        "n_frequency_references": 1,
         "candidates_per_seed": args.candidates_per_seed,
         "selected_per_seed": args.selected_per_seed,
         "n_candidates": int(len(candidates)),
