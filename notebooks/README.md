@@ -220,6 +220,7 @@ uv run --frozen --group notebook python \
   -m src.bpnet.attribute.select_reference_pool \
   --experiment ENCSR342WAR \
   --point-region chr2:181680717 \
+  --logo-region chr2:181680467-181681167 \
   --candidate-seeds 0,1,2,3,4,6,7,42,47,100 \
   --candidates-per-seed 500 \
   --selected-per-seed 20 \
@@ -250,18 +251,23 @@ Outputs are written by default to
 - `candidate_mean_metrics.tsv`: fold-averaged metrics for all candidates.
 - `candidate_fold_metrics.tsv`: per-fold candidate metrics for auditing.
 - `selection_summary.json`: arguments, paths, counts, and timing breakdown.
+- `selected_deeplift_attributions.npz`: profile/count DeepLIFT arrays for the
+  selected references.
 - `metric_distributions.<format>`: all candidates versus selected references.
 - `ranked_reference_metrics.<format>`: per-seed metric ranks with selected
   candidates marked.
-- `selected_reference_logos.<format>`: selected-reference nucleotide-frequency
-  logos around the input center.
+- `selected_profile_deeplift_logo.<format>` and
+  `selected_count_deeplift_logo.<format>`: aggregate selected-reference
+  DeepLIFT logos.
+- `selected_seed_deeplift_logos.<format>`: seed-specific selected-reference
+  DeepLIFT logos for both heads.
 - `timing_summary.<format>`: runtime breakdown, including fold scoring.
 
 Use `selection_summary.json` to compare overhead against the ordinary fixed
 reference-bank diagnostics. Use `--plot-format png|pdf|svg`, `--logo-window`,
-or `--no-plots` to control plotting. This is an experimental model-aware
-baseline and should be reported alongside ordinary random dinucleotide shuffles
-rather than replacing them silently.
+`--logo-region`, `--no-deeplift`, or `--no-plots` to control plotting. This is
+an experimental model-aware baseline and should be reported alongside ordinary
+random dinucleotide shuffles rather than replacing them silently.
 
 ### Troubleshooting
 

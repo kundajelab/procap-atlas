@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
+from bpnetlite.attribute import deep_lift_shap
+from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
 from tangermeme.ersatz import dinucleotide_shuffle
@@ -27,7 +29,7 @@ from tangermeme.io import extract_loci
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
 
-from src.bpnet.attribute.locus_diagnostics import profile_summaries
+from src.bpnet.attribute.locus_diagnostics import genomic_offsets, profile_summaries
 
 
 MODEL_REPO_ID = "adamyhe/procap-atlas"
@@ -39,6 +41,14 @@ OUT_WINDOW = 1000
 def parse_point(region):
     chrom, position = region.replace(",", "").split(":", 1)
     return chrom, int(position) - 1
+
+
+def parse_interval(region):
+    chrom, interval = region.replace(",", "").split(":", 1)
+    start, end = [int(value) for value in interval.split("-", 1)]
+    if end < start:
+        raise ValueError("Interval end must not precede its start")
+    return chrom, start - 1, end
 
 
 def download_first(repo_id, repo_type, filenames):
@@ -244,35 +254,90 @@ def plot_timing_summary(timings, output_dir, plot_format):
     plt.close(fig)
 
 
-def plot_selected_reference_logos(
-    candidates, selected, seeds, logo_window, output_dir, plot_format
-):
-    width = candidates.shape[-1]
-    logo_window = min(int(logo_window), width)
-    start = (width - logo_window) // 2
-    end = start + logo_window
+def plot_deeplift_logos(attributions, seeds, logo_start, logo_end, output_dir, plot_format):
+    heads = [("profile", 0), ("count", 1)]
+    for head, index in heads:
+        fig, axes = plt.subplots(2, 1, figsize=(20, 5), squeeze=False, sharex=True)
+        plot_logo(torch.tensor(attributions[index].mean(axis=(0, 1))), ax=axes[0, 0])
+        axes[0, 0].set_title(f"Selected-reference {head} DeepLIFT/SHAP")
+        mean_by_seed = attributions[index].mean(axis=0)
+        seed_mean = mean_by_seed.mean(axis=0)
+        seed_sd = mean_by_seed.std(axis=0)
+        x = np.arange(seed_mean.shape[-1])
+        axes[1, 0].plot(x, seed_mean.sum(axis=0), color="#4C72B0")
+        axes[1, 0].fill_between(
+            x,
+            seed_mean.sum(axis=0) - seed_sd.sum(axis=0),
+            seed_mean.sum(axis=0) + seed_sd.sum(axis=0),
+            color="#4C72B0",
+            alpha=0.25,
+        )
+        axes[1, 0].set_title("Mean +/- SD across selected seed banks")
+        axes[1, 0].set_ylabel("Summed attribution")
+        axes[1, 0].set_xlabel(f"Input positions {logo_start}-{logo_end}")
+        fig.tight_layout()
+        fig.savefig(output_dir / f"selected_{head}_deeplift_logo.{plot_format}", dpi=180)
+        plt.close(fig)
+
     fig, axes = plt.subplots(
-        len(seeds),
+        len(seeds) * 2,
         1,
-        figsize=(20, max(2.2 * len(seeds), 3)),
+        figsize=(20, max(2.0 * len(seeds) * 2, 4)),
         squeeze=False,
         sharex=True,
     )
-    for row, seed in enumerate(seeds):
-        ax = axes[row, 0]
-        seed_indices = selected.loc[
-            selected["seed"] == seed, "candidate_index"
-        ].astype(int).tolist()
-        matrix = candidates[seed_indices, :, start:end].float().mean(dim=0).clone()
-        plot_logo(matrix, ax=ax)
-        ax.set_title(f"Seed {seed}: selected-reference nucleotide frequencies")
-        ax.set_ylabel("Frequency")
+    for head_index, head in enumerate(["profile", "count"]):
+        for seed_index, seed in enumerate(seeds):
+            ax = axes[head_index * len(seeds) + seed_index, 0]
+            plot_logo(
+                torch.tensor(attributions[head_index, :, seed_index].mean(axis=0)),
+                ax=ax,
+            )
+            ax.set_title(f"{head}, seed {seed}")
     axes[-1, 0].set_xlabel(
-        f"Input position {start}-{end} relative to {width} bp input"
+        f"Input positions {logo_start}-{logo_end}"
     )
     fig.tight_layout()
-    fig.savefig(output_dir / f"selected_reference_logos.{plot_format}", dpi=180)
+    fig.savefig(output_dir / f"selected_seed_deeplift_logos.{plot_format}", dpi=180)
     plt.close(fig)
+
+
+def selected_reference_banks(candidates, selected, seeds):
+    return {
+        seed: candidates[
+            selected.loc[selected["seed"] == seed, "candidate_index"].astype(int).tolist()
+        ]
+        for seed in seeds
+    }
+
+
+def selected_deeplift_attributions(
+    model_paths, X, reference_banks, seeds, logo_offsets, batch_size, device
+):
+    width = logo_offsets[1] - logo_offsets[0]
+    attributions = np.empty((2, len(model_paths), len(seeds), 4, width), dtype=np.float32)
+    for fold, model_path in enumerate(model_paths):
+        print(f"DeepLIFT fold {fold + 1}/{len(model_paths)}: {model_path.name}")
+        model = torch.load(model_path, map_location="cpu", weights_only=False).eval()
+        for head_index, wrapper in enumerate([ProfileWrapper(model), CountWrapper(model)]):
+            for seed_index, seed in enumerate(seeds):
+                attr = deep_lift_shap(
+                    model=wrapper,
+                    X=X,
+                    references=reference_banks[seed][None],
+                    batch_size=batch_size,
+                    hypothetical=True,
+                    warning_threshold=0.01,
+                    device=device,
+                )
+                attributions[head_index, fold, seed_index] = (
+                    (attr * X).detach().cpu().numpy()[0, :, logo_offsets[0] : logo_offsets[1]]
+                )
+        del model
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    return attributions
 
 
 def main():
@@ -285,6 +350,13 @@ def main():
     )
     parser.add_argument("--experiment", default="ENCSR342WAR")
     parser.add_argument("--point-region", default="chr2:181680717")
+    parser.add_argument(
+        "--logo-region",
+        help=(
+            "genomic interval for DeepLIFT logos; defaults to a centered "
+            "--logo-window around --point-region"
+        ),
+    )
     parser.add_argument("--candidate-seeds", default="0,1,2,3,4,6,7,42,47,100")
     parser.add_argument("--candidates-per-seed", type=int, default=500)
     parser.add_argument("--selected-per-seed", type=int, default=20)
@@ -307,6 +379,7 @@ def main():
     parser.add_argument("--plot-format", choices=("png", "pdf", "svg"), default="pdf")
     parser.add_argument("--logo-window", type=int, default=200)
     parser.add_argument("--no-plots", action="store_true")
+    parser.add_argument("--no-deeplift", action="store_true")
     args = parser.parse_args()
 
     start_total = time.perf_counter()
@@ -352,6 +425,16 @@ def main():
 
     stage = time.perf_counter()
     chrom, center = parse_point(args.point_region)
+    if args.logo_region is None:
+        half = args.logo_window // 2
+        logo_start = center - half
+        logo_end = logo_start + args.logo_window
+        logo_chrom = chrom
+    else:
+        logo_chrom, logo_start, logo_end = parse_interval(args.logo_region)
+    if logo_chrom != chrom:
+        raise ValueError("--point-region and --logo-region must use the same chromosome")
+    logo_offsets = genomic_offsets(center, logo_start, logo_end, IN_WINDOW)
     loci = pd.DataFrame({"chrom": [chrom], "start": [center], "end": [center + 1]})
     X = extract_loci(loci, sequences=str(fasta), in_window=IN_WINDOW, ignore=["N", "n"])
     if len(X) != 1:
@@ -473,10 +556,30 @@ def main():
         stage = time.perf_counter()
         plot_metric_distributions(averaged, selected, output_dir, args.plot_format)
         plot_ranked_metrics(averaged, selected, seeds, output_dir, args.plot_format)
-        plot_selected_reference_logos(
-            candidates, selected, seeds, args.logo_window, output_dir, args.plot_format
-        )
         timings["plot_seconds"] = time.perf_counter() - stage
+
+    if not args.no_deeplift and not args.no_plots:
+        stage = time.perf_counter()
+        banks = selected_reference_banks(candidates, selected, seeds)
+        selected_attributions = selected_deeplift_attributions(
+            model_paths, X, banks, seeds, logo_offsets, args.batch_size, device
+        )
+        np.savez_compressed(
+            output_dir / "selected_deeplift_attributions.npz",
+            attributions=selected_attributions,
+            seeds=np.asarray(seeds, dtype=int),
+            logo_offsets=np.asarray(logo_offsets, dtype=int),
+            logo_region=np.asarray(f"{logo_chrom}:{logo_start + 1}-{logo_end}"),
+        )
+        plot_deeplift_logos(
+            selected_attributions,
+            seeds,
+            logo_start,
+            logo_end,
+            output_dir,
+            args.plot_format,
+        )
+        timings["deeplift_seconds"] = time.perf_counter() - stage
 
     timings["total_seconds"] = time.perf_counter() - start_total
     if not args.no_plots:
@@ -489,6 +592,8 @@ def main():
         "folds": args.folds,
         "batch_size": args.batch_size,
         "candidate_seeds": seeds,
+        "logo_region": f"{logo_chrom}:{logo_start + 1}-{logo_end}",
+        "logo_offsets": list(logo_offsets),
         "candidates_per_seed": args.candidates_per_seed,
         "selected_per_seed": args.selected_per_seed,
         "n_candidates": int(len(candidates)),
