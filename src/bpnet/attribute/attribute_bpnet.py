@@ -7,6 +7,7 @@ Usage:
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head count
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
+    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --reference-mode dinucleotide
 """
 
 import argparse
@@ -17,17 +18,36 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import torch
 import yaml
-from bpnetlite.attribute import deep_lift_shap
+import torch
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from tangermeme.io import extract_loci
+
+try:
+    from src.bpnet.attribute.deeplift import deep_lift_shap
+except ModuleNotFoundError:
+    from deeplift import deep_lift_shap
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
+
+
+def load_chrom_splits():
+    """Load chromosome fold assignments from chrom_splits.yaml.
+
+    Returns a dict mapping fold number (int) to list of chromosome names.
+    """
+    with open(CHROM_SPLITS_PATH) as f:
+        data = yaml.safe_load(f)
+    return {int(k): v for k, v in data["folds"].items()}
+    
+def nucleotide_frequency_references(X):
+    """Return one soft reference per sequence using observed base frequencies."""
+    frequencies = X.float().mean(dim=-1, keepdim=True)
+    return frequencies.expand_as(X).unsqueeze(1).clone()
 
 
 def main():
@@ -54,6 +74,22 @@ def main():
         help="type of prediction to make (profile or count)",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64)
+    parser.add_argument(
+        "--reference-mode",
+        choices=("frequency", "dinucleotide"),
+        default="frequency",
+        help=(
+            "DeepLIFT reference baseline. 'frequency' uses one soft "
+            "input-wide nucleotide-frequency reference per sequence; "
+            "'dinucleotide' uses bpnet-lite/tangermeme's dinucleotide shuffles."
+        ),
+    )
+    parser.add_argument(
+        "--n-shuffles",
+        type=int,
+        default=20,
+        help="number of dinucleotide shuffles when --reference-mode dinucleotide",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -159,17 +195,28 @@ def main():
             model = ProfileWrapper(model)
         elif args.head == "count":
             model = CountWrapper(model)
+        if args.reference_mode == "frequency":
+            references = nucleotide_frequency_references(X)
+            n_shuffles = 1
+        else:
+            references = None
+            n_shuffles = args.n_shuffles
+
         # Calculate attributions
+        attribution_kwargs = {
+            "model": model,
+            "X": X,
+            "verbose": params["verbose"],
+            "device": "cuda",
+            "batch_size": params["batch_size"],
+            "warning_threshold": 0.01,
+            "hypothetical": True,
+            "n_shuffles": n_shuffles,
+        }
+        if references is not None:
+            attribution_kwargs["references"] = references
         attributions.append(
-            deep_lift_shap(
-                model=model,
-                X=X,
-                verbose=params["verbose"],
-                device="cuda",
-                batch_size=params["batch_size"],
-                warning_threshold=0.01,
-                hypothetical=True,
-            )
+            deep_lift_shap(**attribution_kwargs)
         )
         del model
         gc.collect()

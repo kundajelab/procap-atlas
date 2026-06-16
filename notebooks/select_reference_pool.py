@@ -28,7 +28,7 @@ from tangermeme.io import extract_loci
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
 
-from notebooks.deeplift import deep_lift_shap
+from src.bpnet.attribute.deeplift import deep_lift_shap
 from src.bpnet.attribute.locus_diagnostics import genomic_offsets, profile_summaries
 
 MODEL_REPO_ID = "adamyhe/procap-atlas"

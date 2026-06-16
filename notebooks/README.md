@@ -1,8 +1,21 @@
 # Notebooks
 
-At present, this directory contains a number of scripts and notebooks for
-diagnosing issues with the model attributions. In the future, we will mostly
-present example notebooks to demonstrate the functionality of these models.
+## BPNet Locus Frequency Viewer
+
+`procap_atlas_bpnet_locus_frequency_viewer.ipynb` is the lightweight viewer for
+one locus. It downloads the selected BPNet fold models, observed plus/minus
+BigWigs, metadata, and hg38, then:
+
+- generates fold-averaged predicted plus/minus signal locally;
+- plots observed and predicted strand-specific signal, with the minus strand
+  shown as negative values;
+- computes profile-head and count-head DeepLIFT/SHAP logos using the production
+  observed-nucleotide-frequency soft reference.
+
+Use this notebook when you want a direct locus visualization without the
+shuffled-reference instability diagnostics below. Configure `EXP_ID`,
+`POINT_REGION`, `VIEW_REGION`, `LOGO_REGION`, and `REVERSE_COMPLEMENT` in the
+configuration cell.
 
 ## BPNet Locus Diagnostics
 
@@ -94,19 +107,20 @@ at a different path.
 In Sherlock Open OnDemand, choose **Interactive Apps -> JupyterLab**. Recommended
 starting resources for the full seven-fold diagnostic workflow are:
 
-| Setting                         | Recommended value       |
-| ------------------------------- | ----------------------- |
-| Partition                       | `gpu`                   |
-| Nodes                           | `1`                     |
-| CPUs                            | `4`                     |
-| GPUs                            | `1`                     |
-| Memory                          | `32-64 GB`              |
-| Runtime                         | `4-8 hours`             |
+| Setting | Recommended value |
+| --- | --- |
+| Partition | `gpu` |
+| Nodes | `1` |
+| CPUs | `4` |
+| GPUs | `1` |
+| Memory | `32-64 GB` |
+| Runtime | `4-8 hours` |
 | Working directory, if available | `/path/to/procap-atlas` |
 
 Use the standard Sherlock Jupyter/Python environment in the OnDemand form. The
 form environment starts the JupyterLab server; the notebook's Python
-dependencies come from the separately registered `uv` kernelspec.
+dependencies come from the separately registered `uv` kernelspec. This should
+not take 4-8 hours, but requesting extra gives more flexibility.
 
 ### Select and verify the kernel
 
