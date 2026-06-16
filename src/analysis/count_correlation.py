@@ -35,6 +35,7 @@ import pandas as pd
 import seaborn as sns
 import torch
 import yaml
+from PIL import Image
 from tangermeme.io import extract_loci
 from tangermeme.predict import predict
 from tqdm import tqdm
@@ -46,17 +47,6 @@ FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 DEFAULT_UNION_PEAKS = REPO_ROOT / "data" / "processed" / "peaks" / "union_peaks.bed.gz"
 N_FOLDS = 7
-
-
-def load_n_reads(path: Path) -> dict[str, float]:
-    n_reads = {}
-    with open(path) as f:
-        next(f)
-        for line in f:
-            parts = line.strip().split("\t")
-            if len(parts) >= 5:
-                n_reads[parts[0]] = float(parts[4])
-    return n_reads
 
 
 def extract_observed_counts(
@@ -199,8 +189,6 @@ def plot_clustermaps(
 
     # If both panels, also save a combined figure (side-by-side images)
     if n_panels == 2:
-        from PIL import Image  # lazy import — only needed for combined panel
-
         imgs = [Image.open(p) for p in clustermap_paths]
         w = sum(im.width for im in imgs)
         h = max(im.height for im in imgs)
@@ -281,7 +269,14 @@ def main():
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
-    n_reads_map = load_n_reads(N_READS_PATH) if N_READS_PATH.exists() else {}
+    n_reads_map = {}
+    if N_READS_PATH.exists():
+        with open(N_READS_PATH) as f:
+            next(f)
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) >= 5:
+                    n_reads_map[parts[0]] = float(parts[4])
 
     union_peaks = pd.read_csv(
         args.union_peaks,

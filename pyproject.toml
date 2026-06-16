@@ -1,0 +1,54 @@
+[project]
+name = "procap-atlas-local"
+version = "0.1.0"
+description = "Local Python environment for PRO-cap atlas scripts"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "huggingface-hub",
+    "joblib",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pillow",
+    # Newer pybigtools releases can require source builds that fail on
+    # Sherlock's older assembler/toolchain.
+    "pybigtools==0.2.5",
+    "pyfaidx",
+    "pyyaml",
+    "scipy",
+    "seaborn",
+    "tangermeme",
+    "torch==2.6.0; sys_platform == 'linux'",
+    "torch; sys_platform != 'linux'",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib", "pillow", "seaborn"]
+hub = ["huggingface-hub"]
+bpnet = ["bpnet-lite", "leidenalg==0.10.2"]
+cherimoya = ["cherimoya", "leidenalg==0.10.2"]
+# MotifCompendium and personal_bpnet are external/local research dependencies
+# until resolvable install sources are confirmed.
+# Metaformer / promoterai-torch is still in development and will be added
+# when finished.
+
+[dependency-groups]
+dev = ["pytest"]
+notebook = [
+    "bpnet-lite",
+    "ipykernel",
+    "jupyterlab",
+    # pyzmq 27.1 has no manylinux2014 x86_64 wheel and builds against
+    # Sherlock's system libraries. 26.4 provides a compatible CPython 3.12 wheel.
+    "pyzmq==26.4.0",
+]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

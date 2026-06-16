@@ -14,8 +14,8 @@ training or deployment path for the atlas.
 - `configs/chrom_splits.yaml`
 - Processed strand BigWigs and peaks
 - Historical ProCapNet model files under `models/procapnet/{experiment}/`
-- `personal_bpnet` and related ProCapNet dependencies available in the Python
-  environment
+- `personal_bpnet` and related ProCapNet dependencies available in a separate
+  optional/local environment
 
 ## Commands
 

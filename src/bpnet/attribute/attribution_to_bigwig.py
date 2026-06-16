@@ -24,7 +24,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pybigtools
 import yaml
+from tangermeme.io import extract_loci
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -124,12 +126,6 @@ def load_loci(path: Path) -> pd.DataFrame:
     )
 
 
-def load_chrom_splits(path: Path) -> dict[int, list[str]]:
-    with open(path) as f:
-        data = yaml.safe_load(f)
-    return {int(k): v for k, v in data["folds"].items()}
-
-
 def resolve_default_paths(args: argparse.Namespace) -> argparse.Namespace:
     if args.experiment is None and (
         args.attr_npz is None or args.ohe_npz is None or args.peaks_bed is None
@@ -187,15 +183,9 @@ def align_loci_to_scores(
                 f"{label} not found while reconstructing retained loci mask: {path}"
             )
 
-    try:
-        from tangermeme.io import extract_loci
-    except ImportError as e:
-        raise ImportError(
-            "tangermeme is required to reconstruct the retained locus mask when "
-            "the peak BED row count differs from the attribution row count"
-        ) from e
-
-    all_chroms = list(chain.from_iterable(load_chrom_splits(chrom_splits).values()))
+    with open(chrom_splits) as f:
+        data = yaml.safe_load(f)
+    all_chroms = list(chain.from_iterable(data["folds"].values()))
     extracted = extract_loci(
         loci=loci,
         sequences=str(fasta),
@@ -408,8 +398,6 @@ def _emit_base_cluster(chrom, cluster_start, cluster_end, cluster, scores):
 
 
 def write_bigwig(output: Path, chrom_sizes: dict[str, int], intervals) -> None:
-    import pybigtools
-
     output.parent.mkdir(parents=True, exist_ok=True)
     bw = pybigtools.open(str(output), "w")
     bw.write(chrom_sizes, intervals)

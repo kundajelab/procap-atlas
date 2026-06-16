@@ -1,6 +1,18 @@
 import numpy as np
 
-from src.bpnet.benchmark.predictions_to_bigwig import prediction_to_strand_scores
+from src.bpnet.predict.generate_predicted_tracks import (
+    prediction_to_strand_scores,
+    scale_profile_logits,
+)
+
+
+def test_scale_profile_logits_rescales_softmax_by_exp_counts():
+    logits = np.array([[[0.0, 0.0], [0.0, 0.0]]])
+    log_counts = np.array([[np.log(8.0)]])
+
+    scaled = scale_profile_logits(logits, log_counts)
+
+    np.testing.assert_allclose(scaled, [[[2.0, 2.0], [2.0, 2.0]]])
 
 
 def test_prediction_to_strand_scores_channel_first_negates_minus():

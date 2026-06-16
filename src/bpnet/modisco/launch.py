@@ -31,12 +31,6 @@ CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 
 
-def load_n_reads():
-    """Parse n_reads.txt and return {experiment_id: total_reads} dict."""
-    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
-    return dict(zip(df["experiment"], df["total_reads"]))
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -96,7 +90,10 @@ def main():
     experiments = list(config["experiments"].keys())
 
     # Load read counts for filtering
-    read_counts = load_n_reads()
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
     out_dir = REPO_ROOT / "modisco" / "bpnet"
@@ -135,7 +132,7 @@ def main():
             job_name = f"modisco_{exp_id}_{head}"
 
             modisco_motifs_cmd = (
-                f"modisco motifs"
+                f"uv run --project {REPO_ROOT} --frozen --extra bpnet modisco motifs"
                 f" -s {ohe_path}"
                 f" -a {attr_path}"
                 f" -o {out_h5}"
@@ -167,7 +164,7 @@ def main():
                 ml htslib
                 ml ucsc-utils
 
-                mamba activate torch
+                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
                 export NUMBA_NUM_THREADS={args.cpus_per_task}
 
                 mkdir -p {out_dir}
