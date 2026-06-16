@@ -31,7 +31,6 @@ from tangermeme.predict import predict
 
 from src.bpnet.attribute.locus_diagnostics import genomic_offsets, profile_summaries
 
-
 MODEL_REPO_ID = "adamyhe/procap-atlas"
 REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz"
 IN_WINDOW = 2114
@@ -79,10 +78,7 @@ def resolve_model_paths(experiment, model_dir, folds):
         download_first(
             MODEL_REPO_ID,
             "model",
-            [
-                pattern.format(experiment=experiment, fold=fold)
-                for pattern in patterns
-            ],
+            [pattern.format(experiment=experiment, fold=fold) for pattern in patterns],
         )
         for fold in range(folds)
     ]
@@ -254,7 +250,9 @@ def plot_timing_summary(timings, output_dir, plot_format):
     plt.close(fig)
 
 
-def plot_deeplift_logos(attributions, seeds, logo_start, logo_end, output_dir, plot_format):
+def plot_deeplift_logos(
+    attributions, seeds, logo_start, logo_end, output_dir, plot_format
+):
     heads = [("profile", 0), ("count", 1)]
     for head, index in heads:
         fig, axes = plt.subplots(2, 1, figsize=(20, 5), squeeze=False, sharex=True)
@@ -276,7 +274,9 @@ def plot_deeplift_logos(attributions, seeds, logo_start, logo_end, output_dir, p
         axes[1, 0].set_ylabel("Summed attribution")
         axes[1, 0].set_xlabel(f"Input positions {logo_start}-{logo_end}")
         fig.tight_layout()
-        fig.savefig(output_dir / f"selected_{head}_deeplift_logo.{plot_format}", dpi=180)
+        fig.savefig(
+            output_dir / f"selected_{head}_deeplift_logo.{plot_format}", dpi=180
+        )
         plt.close(fig)
 
     fig, axes = plt.subplots(
@@ -294,18 +294,48 @@ def plot_deeplift_logos(attributions, seeds, logo_start, logo_end, output_dir, p
                 ax=ax,
             )
             ax.set_title(f"{head}, seed {seed}")
-    axes[-1, 0].set_xlabel(
-        f"Input positions {logo_start}-{logo_end}"
-    )
+    axes[-1, 0].set_xlabel(f"Input positions {logo_start}-{logo_end}")
     fig.tight_layout()
     fig.savefig(output_dir / f"selected_seed_deeplift_logos.{plot_format}", dpi=180)
     plt.close(fig)
 
 
+def plot_frequency_reference_deeplift_logos(
+    attributions, logo_start, logo_end, output_dir, plot_format
+):
+    for head, index in [("profile", 0), ("count", 1)]:
+        matrix = attributions[index].mean(axis=0)
+        fig, axes = plt.subplots(2, 1, figsize=(20, 5), squeeze=False, sharex=True)
+        plot_logo(torch.tensor(matrix), ax=axes[0, 0])
+        axes[0, 0].set_title(
+            f"Observed-frequency-reference {head} DeepLIFT/SHAP"
+        )
+        x = np.arange(matrix.shape[-1])
+        axes[1, 0].plot(x, matrix.sum(axis=0), color="#4C72B0")
+        axes[1, 0].axhline(0, color="black", linewidth=0.7)
+        axes[1, 0].set_title("Summed attribution track")
+        axes[1, 0].set_ylabel("Summed attribution")
+        axes[1, 0].set_xlabel(f"Input positions {logo_start}-{logo_end}")
+        fig.tight_layout()
+        fig.savefig(
+            output_dir / f"frequency_reference_{head}_deeplift_logo.{plot_format}",
+            dpi=180,
+        )
+        plt.close(fig)
+
+
+def observed_frequency_reference(X):
+    frequencies = X[0].float().mean(dim=-1)
+    reference = frequencies[:, None].expand_as(X[0]).clone()
+    return reference.unsqueeze(0)
+
+
 def selected_reference_banks(candidates, selected, seeds):
     return {
         seed: candidates[
-            selected.loc[selected["seed"] == seed, "candidate_index"].astype(int).tolist()
+            selected.loc[selected["seed"] == seed, "candidate_index"]
+            .astype(int)
+            .tolist()
         ]
         for seed in seeds
     }
@@ -315,11 +345,19 @@ def selected_deeplift_attributions(
     model_paths, X, reference_banks, seeds, logo_offsets, batch_size, device
 ):
     width = logo_offsets[1] - logo_offsets[0]
-    attributions = np.empty((2, len(model_paths), len(seeds), 4, width), dtype=np.float32)
+    attributions = np.empty(
+        (2, len(model_paths), len(seeds), 4, width), dtype=np.float32
+    )
+    frequency_attributions = np.empty(
+        (2, len(model_paths), 4, width), dtype=np.float32
+    )
+    frequency_reference = observed_frequency_reference(X)
     for fold, model_path in enumerate(model_paths):
         print(f"DeepLIFT fold {fold + 1}/{len(model_paths)}: {model_path.name}")
         model = torch.load(model_path, map_location="cpu", weights_only=False).eval()
-        for head_index, wrapper in enumerate([ProfileWrapper(model), CountWrapper(model)]):
+        for head_index, wrapper in enumerate(
+            [ProfileWrapper(model), CountWrapper(model)]
+        ):
             for seed_index, seed in enumerate(seeds):
                 attr = deep_lift_shap(
                     model=wrapper,
@@ -331,13 +369,31 @@ def selected_deeplift_attributions(
                     device=device,
                 )
                 attributions[head_index, fold, seed_index] = (
-                    (attr * X).detach().cpu().numpy()[0, :, logo_offsets[0] : logo_offsets[1]]
+                    (attr * X)
+                    .detach()
+                    .cpu()
+                    .numpy()[0, :, logo_offsets[0] : logo_offsets[1]]
                 )
+            frequency_attr = deep_lift_shap(
+                model=wrapper,
+                X=X,
+                references=frequency_reference[None],
+                batch_size=batch_size,
+                hypothetical=True,
+                warning_threshold=0.01,
+                device=device,
+            )
+            frequency_attributions[head_index, fold] = (
+                (frequency_attr * X)
+                .detach()
+                .cpu()
+                .numpy()[0, :, logo_offsets[0] : logo_offsets[1]]
+            )
         del model
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    return attributions
+    return attributions, frequency_attributions, frequency_reference
 
 
 def main():
@@ -394,7 +450,9 @@ def main():
     if not 0 <= args.min_hamming_fraction <= 1:
         raise ValueError("--min-hamming-fraction must be between zero and one")
 
-    device = "cuda" if args.device == "auto" and torch.cuda.is_available() else args.device
+    device = (
+        "cuda" if args.device == "auto" and torch.cuda.is_available() else args.device
+    )
     if device == "auto":
         device = "cpu"
     if device == "cuda" and not torch.cuda.is_available():
@@ -433,7 +491,9 @@ def main():
     else:
         logo_chrom, logo_start, logo_end = parse_interval(args.logo_region)
     if logo_chrom != chrom:
-        raise ValueError("--point-region and --logo-region must use the same chromosome")
+        raise ValueError(
+            "--point-region and --logo-region must use the same chromosome"
+        )
     logo_offsets = genomic_offsets(center, logo_start, logo_end, IN_WINDOW)
     loci = pd.DataFrame({"chrom": [chrom], "start": [center], "end": [center + 1]})
     X = extract_loci(loci, sequences=str(fasta), in_window=IN_WINDOW, ignore=["N", "n"])
@@ -481,10 +541,10 @@ def main():
         centered = profile_logits.reshape(len(candidates), -1)
         centered = centered - centered.mean(dim=1, keepdim=True)
         probabilities = torch.softmax(centered, dim=1).reshape(original_shape)
-        counts = torch.exp(torch.as_tensor(log_counts).reshape(len(candidates), -1)).sum(
-            dim=1
-        )
-        count_scaled = (probabilities.reshape(len(candidates), -1) * counts[:, None])
+        counts = torch.exp(
+            torch.as_tensor(log_counts).reshape(len(candidates), -1)
+        ).sum(dim=1)
+        count_scaled = probabilities.reshape(len(candidates), -1) * counts[:, None]
         count_scaled = count_scaled.reshape(original_shape)
         summaries = profile_summaries(
             probabilities.detach().cpu().numpy(),
@@ -497,13 +557,27 @@ def main():
         table["fold"] = fold
         table["counts"] = counts.detach().cpu().numpy()
         table["profile_score"] = (
-            centered * torch.softmax(centered, dim=1)
-        ).sum(dim=1).detach().cpu().numpy()
-        table["strand_imbalance"] = torch.abs(plus_mass - minus_mass).detach().cpu().numpy()
+            (centered * torch.softmax(centered, dim=1))
+            .sum(dim=1)
+            .detach()
+            .cpu()
+            .numpy()
+        )
+        table["strand_imbalance"] = (
+            torch.abs(plus_mass - minus_mass).detach().cpu().numpy()
+        )
         for key, value in summaries.items():
             table[key] = value
         fold_tables.append(table)
-        del model, profile_logits, log_counts, centered, probabilities, counts, count_scaled
+        del (
+            model,
+            profile_logits,
+            log_counts,
+            centered,
+            probabilities,
+            counts,
+            count_scaled,
+        )
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -538,9 +612,13 @@ def main():
     timings["selection_seconds"] = time.perf_counter() - stage
 
     stage = time.perf_counter()
-    fold_metrics.to_csv(output_dir / "candidate_fold_metrics.tsv", sep="\t", index=False)
+    fold_metrics.to_csv(
+        output_dir / "candidate_fold_metrics.tsv", sep="\t", index=False
+    )
     averaged.to_csv(output_dir / "candidate_mean_metrics.tsv", sep="\t", index=False)
-    selected.to_csv(output_dir / "selected_reference_metrics.tsv", sep="\t", index=False)
+    selected.to_csv(
+        output_dir / "selected_reference_metrics.tsv", sep="\t", index=False
+    )
     np.savez_compressed(
         output_dir / "selected_references.npz",
         references=selected_refs,
@@ -561,12 +639,22 @@ def main():
     if not args.no_deeplift and not args.no_plots:
         stage = time.perf_counter()
         banks = selected_reference_banks(candidates, selected, seeds)
-        selected_attributions = selected_deeplift_attributions(
+        (
+            selected_attributions,
+            frequency_attributions,
+            frequency_reference,
+        ) = selected_deeplift_attributions(
             model_paths, X, banks, seeds, logo_offsets, args.batch_size, device
         )
         np.savez_compressed(
             output_dir / "selected_deeplift_attributions.npz",
             attributions=selected_attributions,
+            frequency_reference_attributions=frequency_attributions,
+            frequency_reference=frequency_reference.detach().cpu().numpy(),
+            frequency_reference_probabilities=frequency_reference[0, :, 0]
+            .detach()
+            .cpu()
+            .numpy(),
             seeds=np.asarray(seeds, dtype=int),
             logo_offsets=np.asarray(logo_offsets, dtype=int),
             logo_region=np.asarray(f"{logo_chrom}:{logo_start + 1}-{logo_end}"),
@@ -574,6 +662,13 @@ def main():
         plot_deeplift_logos(
             selected_attributions,
             seeds,
+            logo_start,
+            logo_end,
+            output_dir,
+            args.plot_format,
+        )
+        plot_frequency_reference_deeplift_logos(
+            frequency_attributions,
             logo_start,
             logo_end,
             output_dir,

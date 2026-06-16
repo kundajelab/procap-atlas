@@ -203,8 +203,8 @@ diagnostic cache.
 
 ### Experimental low-activity references
 
-`src.bpnet.attribute.select_reference_pool` implements a two-stage reference
-pool for one locus:
+`notebooks.select_reference_pool` implements a two-stage reference pool for one
+locus:
 
 1. generate many exact dinucleotide shuffles for each requested seed
 2. score every candidate with every BPNet fold and select the lowest-activity
@@ -217,7 +217,7 @@ attribution, so real strand-specific motifs are not directly downweighted.
 
 ```bash
 uv run --frozen --group notebook python \
-  -m src.bpnet.attribute.select_reference_pool \
+  -m notebooks.select_reference_pool \
   --experiment ENCSR342WAR \
   --point-region chr2:181680717 \
   --logo-region chr2:181680467-181681167 \
@@ -233,7 +233,7 @@ On Sherlock, pass local paths to avoid downloads when they already exist:
 
 ```bash
 uv run --frozen --group notebook python \
-  -m src.bpnet.attribute.select_reference_pool \
+  -m notebooks.select_reference_pool \
   --experiment ENCSR342WAR \
   --point-region chr2:181680717 \
   --model-dir models/bpnet/ENCSR342WAR \
@@ -252,7 +252,7 @@ Outputs are written by default to
 - `candidate_fold_metrics.tsv`: per-fold candidate metrics for auditing.
 - `selection_summary.json`: arguments, paths, counts, and timing breakdown.
 - `selected_deeplift_attributions.npz`: profile/count DeepLIFT arrays for the
-  selected references.
+  selected references and for an observed-frequency soft reference.
 - `metric_distributions.<format>`: all candidates versus selected references.
 - `ranked_reference_metrics.<format>`: per-seed metric ranks with selected
   candidates marked.
@@ -261,6 +261,10 @@ Outputs are written by default to
   DeepLIFT logos.
 - `selected_seed_deeplift_logos.<format>`: seed-specific selected-reference
   DeepLIFT logos for both heads.
+- `frequency_reference_profile_deeplift_logo.<format>` and
+  `frequency_reference_count_deeplift_logo.<format>`: DeepLIFT logos and summed
+  attribution tracks using a soft reference whose base probabilities are the
+  observed input-wide nucleotide frequencies repeated at every position.
 - `timing_summary.<format>`: runtime breakdown, including fold scoring.
 
 Use `selection_summary.json` to compare overhead against the ordinary fixed
