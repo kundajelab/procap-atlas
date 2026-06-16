@@ -3,6 +3,8 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  # Python packages are managed by uv from pyproject.toml/uv.lock. Keep this
+  # conda environment limited to uv plus non-Python command-line tools.
   - python=3.12.0
   - uv
   - wget

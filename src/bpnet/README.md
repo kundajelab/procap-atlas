@@ -18,8 +18,9 @@ Hugging Face model repo.
   - processed strand BigWigs
   - processed and filtered peaks
   - GC-matched negatives
-- Python packages from the root `uv` project. On Linux/Sherlock, this pins
-  Torch to 2.6.0 and `pybigtools` to 0.2.5 for install compatibility.
+- Python packages from the root `uv` project (`pyproject.toml` / `uv.lock`).
+  On Linux/Sherlock, this pins Torch to 2.6.0 and `pybigtools` to 0.2.5 for
+  install compatibility.
 - Optional SLURM access for launchers
 
 For the Sherlock locus diagnostics notebook, including `uv` kernel registration
@@ -58,7 +59,8 @@ The launcher contains hard-coded defaults for the Sherlock HPC environment,
 including Sherlock/Kundaje-specific partition and module assumptions. Adjust it
 before using another cluster. Generated jobs activate
 `${PROCAP_ATLAS_ENV:-procap-atlas}` by default to expose `uv` and command-line
-tools, then run Python entrypoints with `uv run --frozen`.
+tools, then run Python entrypoints with `uv run --frozen`; the conda
+environment is not the Python dependency source of truth.
 
 ## Benchmarking
 
@@ -211,8 +213,9 @@ logs/bpnet_modisco/
 
 ## Motif Clustering
 
-[MotifCompendium](https://github.com/kundajelab/MotifCompendium) uses a separate
-environment and is not part of the root `uv` project:
+[MotifCompendium](https://github.com/kundajelab/MotifCompendium) uses a
+separate external research environment and is intentionally not part of the root
+`uv` project:
 
 ```bash
 git clone https://github.com/kundajelab/MotifCompendium.git

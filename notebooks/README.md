@@ -1,5 +1,9 @@
 # Notebooks
 
+At present, this directory contains a number of scripts and notebooks for
+diagnosing issues with the model attributions. In the future, we will mostly
+present example notebooks to demonstrate the functionality of these models.
+
 ## BPNet Locus Diagnostics
 
 `procap_atlas_bpnet_locus_viewer.ipynb` generates locus predictions and
@@ -90,14 +94,14 @@ at a different path.
 In Sherlock Open OnDemand, choose **Interactive Apps -> JupyterLab**. Recommended
 starting resources for the full seven-fold diagnostic workflow are:
 
-| Setting | Recommended value |
-| --- | --- |
-| Partition | `gpu` |
-| Nodes | `1` |
-| CPUs | `4` |
-| GPUs | `1` |
-| Memory | `32-64 GB` |
-| Runtime | `4-8 hours` |
+| Setting                         | Recommended value       |
+| ------------------------------- | ----------------------- |
+| Partition                       | `gpu`                   |
+| Nodes                           | `1`                     |
+| CPUs                            | `4`                     |
+| GPUs                            | `1`                     |
+| Memory                          | `32-64 GB`              |
+| Runtime                         | `4-8 hours`             |
 | Working directory, if available | `/path/to/procap-atlas` |
 
 Use the standard Sherlock Jupyter/Python environment in the OnDemand form. The

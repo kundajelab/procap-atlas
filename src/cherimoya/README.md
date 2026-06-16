@@ -15,7 +15,8 @@ evaluation workflow, not as a public deployment pipeline.
 - Completed preprocessing with `configs/experiment_config.yaml`,
   `configs/chrom_splits.yaml`, processed strand BigWigs, filtered peaks, and
   GC-matched negatives
-- Python packages from the root `uv` project for analysis/benchmark helpers
+- Python packages from the root `uv` project (`pyproject.toml` / `uv.lock`) for
+  analysis/benchmark helpers
 - Optional SLURM access for launchers
 - Optional Apptainer image for Sherlock launchers; see
   [`apptainer/`](apptainer/README.md)
@@ -34,7 +35,8 @@ Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
 
 On Sherlock, use the Apptainer workflow rather than the default root `uv`
-environment, which pins Torch 2.6.0 for non-Cherimoya compatibility.
+environment, which pins Torch 2.6.0 for non-Cherimoya compatibility. The
+Apptainer image is a deliberate exception to the root `uv` Python environment.
 
 Outputs:
 

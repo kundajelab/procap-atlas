@@ -39,7 +39,8 @@ the root README.
 
 ## Dependencies
 
-Python dependencies are managed by the root `pyproject.toml` and `uv.lock`.
+Python dependencies are managed by `uv`. The root `pyproject.toml` and
+`uv.lock` are the source of truth for Python packages.
 New Python dependencies must be added there, not to `environment.yml`.
 On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
 for Sherlock compatibility. Do not relax that pin for BPNet/preprocessing unless
@@ -52,7 +53,7 @@ uv sync --group dev
 uv run pytest
 ```
 
-`environment.yml` is a conda tools environment for `uv` and non-Python
+`environment.yml` is only a conda tools environment for `uv` and non-Python
 command-line tools:
 
 ```bash
@@ -64,6 +65,7 @@ uv sync --group dev
 Non-Apptainer cluster launchers activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by
 default to expose `uv` and command-line tools, then run repo Python entrypoints
 with `uv run --frozen`.
+Do not restore a conda-plus-pip Python dependency workflow.
 Cherimoya should be treated as a separate Apptainer/local environment on
 Sherlock because it uses `torch.optim.Muon`.
 `MotifCompendium` and `personal_bpnet` are separate optional/local research

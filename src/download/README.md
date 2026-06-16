@@ -15,8 +15,9 @@ from `data_manifests/` and write gitignored files under `data/`.
 - `samtools`
 - Network access to ENCODE/UCSC-hosted files
 
-The command-line tools above are available from the conda tools environment in
-the root `environment.yml`.
+The command-line tools above are available from the optional conda tools
+environment in the root `environment.yml`. Python packages are managed
+separately by `uv` from the root `pyproject.toml` and `uv.lock`.
 
 Run commands from the repository root when possible.
 

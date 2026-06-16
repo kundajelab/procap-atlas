@@ -23,7 +23,8 @@ hub generation code used for the atlas.
 
 ## Dependencies
 
-Python dependencies are managed by the root `pyproject.toml` and `uv.lock`:
+Python dependencies are managed by `uv`. Treat the root `pyproject.toml` and
+`uv.lock` as the source of truth for Python packages:
 
 ```bash
 uv sync --group dev
@@ -35,14 +36,18 @@ and `pybigtools` to 0.2.5 for Sherlock compatibility. Cherimoya uses
 `torch.optim.Muon` and should be run through its separate Apptainer workflow on
 Sherlock.
 
-Use `environment.yml` to create a conda tools environment with `uv` plus
-non-Python command-line tools from conda/bioconda:
+Use `environment.yml` only to create an optional conda tools environment with
+`uv` plus non-Python command-line tools from conda/bioconda:
 
 ```bash
 mamba env create -f environment.yml
 mamba activate procap-atlas
 uv sync --group dev
 ```
+
+Do not add Python package requirements to `environment.yml` or restore a
+conda-plus-pip dependency workflow. New Python dependencies belong in
+`pyproject.toml` and must be reflected in `uv.lock`.
 
 Additional python dependencies for specific model architectures / HuggingFace
 uploads are optional dependencies:
