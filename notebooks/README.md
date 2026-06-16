@@ -203,37 +203,65 @@ diagnostic cache.
 
 ### Experimental low-activity references
 
-`src.bpnet.attribute.locus_diagnostics.low_activity_references` can select a
-diverse reference bank from a larger dinucleotide-shuffled candidate pool. It
-ranks candidates by their worst percentile across selector folds for predicted
-counts, maximum 20 bp count-scaled signal, and profile concentration.
+`src.bpnet.attribute.select_reference_pool` implements a two-stage reference
+pool for one locus:
 
-Use held-out selector folds to avoid choosing a model's baseline with the same
-model that will be explained:
+1. generate many exact dinucleotide shuffles for each requested seed
+2. score every candidate with every BPNet fold and select the lowest-activity
+   references per seed
 
-```python
-from src.bpnet.attribute.locus_diagnostics import low_activity_references
+The selection score penalizes high predicted counts, sharp 5 bp / 20 bp
+count-scaled profile peaks, high profile concentration, strong strand
+imbalance, and low profile entropy. It does not inspect the genomic-input
+attribution, so real strand-specific motifs are not directly downweighted.
 
-result = low_activity_references(
-    genomic_input=X,
-    selector_models=(
-        torch.load(path, map_location="cpu", weights_only=False).eval()
-        for fold, path in enumerate(resources["model_paths"])
-        if fold != explained_fold
-    ),
-    n_candidates=10_000,
-    n_references=20,
-    random_state=REFERENCE_SEEDS[0],
-    batch_size=BATCH_SIZE,
-    device=DEVICE,
-)
-references = result["references"]
+```bash
+uv run --frozen --group notebook python \
+  -m src.bpnet.attribute.select_reference_pool \
+  --experiment ENCSR342WAR \
+  --point-region chr2:181680717 \
+  --candidate-seeds 0,1,2,3,4,6,7,42,47,100 \
+  --candidates-per-seed 500 \
+  --selected-per-seed 20 \
+  --batch-size 64 \
+  --device cuda \
+  --plot-format pdf
 ```
 
-The result also retains all candidate selection scores and fold-level activity
-metrics for comparison with the unfiltered reference distribution. This is an
-experimental model-aware baseline and should be reported alongside ordinary
-random dinucleotide shuffles rather than replacing them silently.
+On Sherlock, pass local paths to avoid downloads when they already exist:
+
+```bash
+uv run --frozen --group notebook python \
+  -m src.bpnet.attribute.select_reference_pool \
+  --experiment ENCSR342WAR \
+  --point-region chr2:181680717 \
+  --model-dir models/bpnet/ENCSR342WAR \
+  --fasta /path/to/hg38.fa \
+  --candidates-per-seed 500 \
+  --selected-per-seed 20 \
+  --device cuda
+```
+
+Outputs are written by default to
+`plots/bpnet/reference_pool/<experiment>/<point>/`:
+
+- `selected_references.npz`: selected one-hot references and candidate indices.
+- `selected_reference_metrics.tsv`: selected candidate activity summaries.
+- `candidate_mean_metrics.tsv`: fold-averaged metrics for all candidates.
+- `candidate_fold_metrics.tsv`: per-fold candidate metrics for auditing.
+- `selection_summary.json`: arguments, paths, counts, and timing breakdown.
+- `metric_distributions.<format>`: all candidates versus selected references.
+- `ranked_reference_metrics.<format>`: per-seed metric ranks with selected
+  candidates marked.
+- `selected_reference_logos.<format>`: selected-reference nucleotide-frequency
+  logos around the input center.
+- `timing_summary.<format>`: runtime breakdown, including fold scoring.
+
+Use `selection_summary.json` to compare overhead against the ordinary fixed
+reference-bank diagnostics. Use `--plot-format png|pdf|svg`, `--logo-window`,
+or `--no-plots` to control plotting. This is an experimental model-aware
+baseline and should be reported alongside ordinary random dinucleotide shuffles
+rather than replacing them silently.
 
 ### Troubleshooting
 
