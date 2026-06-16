@@ -1,4 +1,4 @@
-"""Select low-activity dinucleotide-shuffled references for a BPNet locus."""
+"""Select low-activity shuffled references for a BPNet locus."""
 
 import argparse
 import gc
@@ -23,7 +23,7 @@ import torch
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
-from tangermeme.ersatz import dinucleotide_shuffle
+from tangermeme.ersatz import dinucleotide_shuffle, shuffle
 from tangermeme.io import extract_loci
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
@@ -148,6 +148,14 @@ def select_diverse_indices(seed_frame, selected_per_seed, min_hamming_fraction, 
         seen = set(selected)
         selected.extend(int(index) for index in ranked if int(index) not in seen)
     return selected[:selected_per_seed]
+
+
+def shuffled_candidates(X, n, random_state, mode):
+    if mode == "dinucleotide":
+        return dinucleotide_shuffle(X.cpu(), n=n, random_state=random_state)[0]
+    if mode == "mononucleotide":
+        return shuffle(X.cpu(), n=n, random_state=random_state)[0]
+    raise ValueError("mode must be 'dinucleotide' or 'mononucleotide'")
 
 
 def plot_metric_distributions(averaged, selected, output_dir, plot_format):
@@ -402,7 +410,7 @@ def selected_deeplift_attributions(
 def main():
     parser = argparse.ArgumentParser(
         description=(
-            "Generate a large dinucleotide-shuffled candidate pool for one BPNet "
+            "Generate a large shuffled candidate pool for one BPNet "
             "locus, score predicted reference activity, and select low-activity "
             "references with timing reports."
         )
@@ -417,6 +425,12 @@ def main():
         ),
     )
     parser.add_argument("--candidate-seeds", default="0,1,2,3,4,6,7,42,47,100")
+    parser.add_argument(
+        "--candidate-mode",
+        choices=("dinucleotide", "mononucleotide"),
+        default="dinucleotide",
+        help="shuffle type used to generate candidate references",
+    )
     parser.add_argument("--candidates-per-seed", type=int, default=500)
     parser.add_argument("--selected-per-seed", type=int, default=20)
     parser.add_argument("--folds", type=int, default=7)
@@ -432,7 +446,7 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="default: plots/bpnet/reference_pool/<experiment>/<point>",
+        help="default: plots/bpnet/reference_pool/<experiment>/<point>/<candidate-mode>",
     )
     parser.add_argument("--min-hamming-fraction", type=float, default=0.1)
     parser.add_argument("--plot-format", choices=("png", "pdf", "svg"), default="pdf")
@@ -467,6 +481,7 @@ def main():
         else Path("plots/bpnet/reference_pool")
         / args.experiment
         / args.point_region.replace(":", "_").replace(",", "")
+        / args.candidate_mode
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     work_dir = args.work_dir.expanduser()
@@ -478,6 +493,7 @@ def main():
         f"Candidates: {len(seeds)} seeds x {args.candidates_per_seed} "
         f"= {len(seeds) * args.candidates_per_seed}"
     )
+    print(f"Candidate mode: {args.candidate_mode}")
 
     stage = time.perf_counter()
     fasta = resolve_fasta(args.fasta, work_dir)
@@ -509,9 +525,9 @@ def main():
     candidate_blocks = []
     candidate_rows = []
     for seed in seeds:
-        block = dinucleotide_shuffle(
-            X.cpu(), n=args.candidates_per_seed, random_state=seed
-        )[0]
+        block = shuffled_candidates(
+            X, args.candidates_per_seed, seed, args.candidate_mode
+        )
         offset = sum(len(previous) for previous in candidate_blocks)
         candidate_blocks.append(block)
         candidate_rows.extend(
@@ -519,6 +535,7 @@ def main():
                 "candidate_index": offset + reference,
                 "seed": seed,
                 "seed_rank": reference,
+                "candidate_mode": args.candidate_mode,
             }
             for reference in range(args.candidates_per_seed)
         )
@@ -590,7 +607,10 @@ def main():
     fold_metrics = pd.concat(fold_tables, ignore_index=True)
     averaged = (
         fold_metrics.drop(columns=["fold"])
-        .groupby(["candidate_index", "seed", "seed_rank"], as_index=False)
+        .groupby(
+            ["candidate_index", "seed", "seed_rank", "candidate_mode"],
+            as_index=False,
+        )
         .mean(numeric_only=True)
     )
     averaged["selection_score"] = score_candidates(averaged)
@@ -628,6 +648,7 @@ def main():
         selected_indices=selected_indices,
         seeds=np.asarray(seeds, dtype=int),
         selected_per_seed=np.asarray(args.selected_per_seed, dtype=int),
+        candidate_mode=np.asarray(args.candidate_mode),
         point_region=np.asarray(args.point_region),
         experiment=np.asarray(args.experiment),
     )
@@ -691,6 +712,7 @@ def main():
         "folds": args.folds,
         "batch_size": args.batch_size,
         "candidate_seeds": seeds,
+        "candidate_mode": args.candidate_mode,
         "logo_region": f"{logo_chrom}:{logo_start + 1}-{logo_end}",
         "logo_offsets": list(logo_offsets),
         "n_frequency_references": 1,

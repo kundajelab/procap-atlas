@@ -206,7 +206,7 @@ diagnostic cache.
 `notebooks.select_reference_pool` implements a two-stage reference pool for one
 locus:
 
-1. generate many exact dinucleotide shuffles for each requested seed
+1. generate many exact shuffled references for each requested seed
 2. score every candidate with every BPNet fold and select the lowest-activity
    references per seed
 
@@ -224,6 +224,7 @@ uv run --frozen --group notebook python \
   --experiment ENCSR342WAR \
   --point-region chr2:181680717 \
   --logo-region chr2:181680467-181681167 \
+  --candidate-mode dinucleotide \
   --candidate-seeds 0,1,2,3,4,6,7,42,47,100 \
   --candidates-per-seed 500 \
   --selected-per-seed 20 \
@@ -241,13 +242,14 @@ uv run --frozen --group notebook python \
   --point-region chr2:181680717 \
   --model-dir models/bpnet/ENCSR342WAR \
   --fasta /path/to/hg38.fa \
+  --candidate-mode mononucleotide \
   --candidates-per-seed 500 \
   --selected-per-seed 20 \
   --device cuda
 ```
 
 Outputs are written by default to
-`plots/bpnet/reference_pool/<experiment>/<point>/`:
+`plots/bpnet/reference_pool/<experiment>/<point>/<candidate-mode>/`:
 
 - `selected_references.npz`: selected one-hot references and candidate indices.
 - `selected_reference_metrics.tsv`: selected candidate activity summaries.
@@ -274,7 +276,9 @@ Use `selection_summary.json` to compare overhead against the ordinary fixed
 reference-bank diagnostics. Use `--plot-format png|pdf|svg`, `--logo-window`,
 `--logo-region`, `--no-deeplift`, or `--no-plots` to control plotting. This is
 an experimental model-aware baseline and should be reported alongside ordinary
-random dinucleotide shuffles rather than replacing them silently.
+random shuffles rather than replacing them silently. The default mode is
+dinucleotide shuffling; use `--candidate-mode mononucleotide` to preserve only
+input-wide A/C/G/T counts.
 
 ### Troubleshooting
 
