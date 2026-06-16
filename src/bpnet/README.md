@@ -92,6 +92,7 @@ python src/bpnet/attribute/run_ohe.py -j 8 --min-reads 10000000
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_gc0.1
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --reference-mode dinucleotide
 
 python src/bpnet/attribute/launch.py --dry-run
 python src/bpnet/attribute/launch.py --head profile --head count
@@ -103,6 +104,11 @@ Outputs:
 attributions/bpnet/{model_dir_name}_{head}.npz
 attributions/bpnet/{experiment}_ohe.npz
 ```
+
+`attribute_bpnet.py` defaults to the DeepLIFT genomic nucleotide-frequency null:
+one soft reference per input sequence with the sequence's observed A/C/G/T
+frequencies repeated at every position. Use `--reference-mode dinucleotide` and
+`--n-shuffles` to reproduce the previous dinucleotide-shuffle baseline.
 
 Convert observed-nucleotide attribution scores to BigWig:
 
