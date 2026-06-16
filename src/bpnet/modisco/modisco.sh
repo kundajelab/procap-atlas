@@ -24,8 +24,9 @@ ml biology
 ml htslib
 ml ucsc-utils
 
-conda activate torch
+conda activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 export NUMBA_NUM_THREADS=12
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 
 biosample=ENCSR261KBX
 background=ccre
@@ -36,13 +37,13 @@ head="${heads[$SLURM_ARRAY_TASK_ID]}"
 if [ -f "${biosample}_${background}_${head}.modisco.h5" ]; then
     echo "File $FILE exists. Skipping modisco motifs."
 else    
-    time modisco motifs \
+    time uv run --project "$REPO_ROOT" --frozen --extra bpnet modisco motifs \
         -s ${biosample}_ohe.npz \
         -a ${biosample}_${background}_${head}.npz \
         -o ${biosample}_${background}_${head}.modisco.h5 \
         -n 1000000 -l 50 -w 1000 -v
 fi
-time modisco report \
+time uv run --project "$REPO_ROOT" --frozen --extra bpnet modisco report \
     -i ${biosample}_${background}_${head}.modisco.h5 \
     -o ${biosample}_${background}_${head}.modisco \
     -m ../../data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt

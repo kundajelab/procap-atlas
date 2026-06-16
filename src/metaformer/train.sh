@@ -25,7 +25,7 @@ ml biology
 ml htslib
 ml ucsc-utils
 
-mamba activate torch
+mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 nvidia-smi -L
 
 NGPUS="${SLURM_GPUS_ON_NODE:-${SLURM_GPUS_PER_NODE:-4}}"

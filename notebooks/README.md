@@ -119,7 +119,8 @@ starting resources for the full seven-fold diagnostic workflow are:
 
 Use the standard Sherlock Jupyter/Python environment in the OnDemand form. The
 form environment starts the JupyterLab server; the notebook's Python
-dependencies come from the separately registered `uv` kernelspec.
+dependencies come from the separately registered `uv` kernelspec. This should
+not take 4-8 hours, but requesting extra gives more flexibility.
 
 ### Select and verify the kernel
 

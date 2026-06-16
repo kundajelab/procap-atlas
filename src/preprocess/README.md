@@ -10,7 +10,7 @@ after all files in `src/download/` have completed.
 
 ## Prerequisites
 
-- Python environment from `environment.yml`
+- Python packages from the root `uv` project (`pyproject.toml` / `uv.lock`)
 - Downloaded genome, BigWigs, and peak files under `data/`
 - `bgzip`
 - UCSC Kent tools for BigWig merging: `bigWigMerge`, `bedGraphToBigWig`

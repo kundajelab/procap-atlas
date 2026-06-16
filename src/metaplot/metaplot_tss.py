@@ -256,18 +256,6 @@ def plot_heatmap(
     plt.close(fig)
 
 
-def load_n_reads(path: Path) -> dict[str, float]:
-    """Load total read counts from n_reads.txt."""
-    n_reads = {}
-    with open(path) as f:
-        next(f)  # skip header
-        for line in f:
-            parts = line.strip().split("\t")
-            if len(parts) >= 5:
-                n_reads[parts[0]] = float(parts[4])
-    return n_reads
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Metaplot PRO-cap signal around gene TSSs"
@@ -339,7 +327,14 @@ def main():
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
-    n_reads_map = load_n_reads(N_READS_PATH) if N_READS_PATH.exists() else {}
+    n_reads_map = {}
+    if N_READS_PATH.exists():
+        with open(N_READS_PATH) as f:
+            next(f)
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) >= 5:
+                    n_reads_map[parts[0]] = float(parts[4])
 
     print(
         f"Parsing {args.feature} TSSs from {args.annotation.name}...", file=sys.stderr

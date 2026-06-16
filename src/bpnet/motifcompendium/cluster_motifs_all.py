@@ -1,17 +1,15 @@
 import argparse
 import html
 import inspect
-import shutil
-import subprocess
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import MotifCompendium
 import MotifCompendium.utils.analysis as utils_analysis
 import MotifCompendium.utils.motif as utils_motif
+import MotifCompendium.utils.plotting as utils_plotting
 import pandas as pd
 import yaml
-from matplotlib.backends.backend_pdf import PdfPages
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -80,7 +78,7 @@ def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on, weight_
     mc.cluster(**cluster_kwargs)
 
 
-def write_cluster_metadata(mc, head):
+def write_cluster_metadata(mc, head, logo_paths=None):
     agg = (
         mc.metadata.groupby("cluster_final")
         .agg(
@@ -108,6 +106,9 @@ def write_cluster_metadata(mc, head):
             .reset_index()
         )
         agg = agg.merge(jaspar_agg, on="cluster_final", how="left")
+
+    if logo_paths is not None:
+        agg = agg.merge(logo_paths, on="cluster_final", how="left")
 
     metadata_path = MC_DIR / f"motifcompendium_{head}_cluster_metadata.tsv"
     agg.to_csv(metadata_path, sep="\t", index=False)
@@ -144,6 +145,58 @@ def ensure_forward_reverse_logos(mc, logo_trimming=True):
         )
 
 
+def export_cluster_logo_svgs(mc, head, batch_size=100, logo_trimming=True):
+    logo_dir = MC_DIR / f"motifcompendium_{head}_cluster_logos"
+    fwd_dir = logo_dir / "fwd"
+    rev_dir = logo_dir / "rev"
+    fwd_dir.mkdir(parents=True, exist_ok=True)
+    rev_dir.mkdir(parents=True, exist_ok=True)
+
+    motifs = mc.get_standard_motif_stack()
+    rev_motifs = utils_motif.reverse_complement(motifs)
+    source_clusters = mc.metadata["source_cluster"].tolist()
+
+    records = []
+    fwd_paths = []
+    rev_paths = []
+    for rank, cluster_id in enumerate(source_clusters, start=1):
+        stem = f"rank_{rank:04d}_cluster_{int(cluster_id):04d}"
+        fwd_path = fwd_dir / f"{stem}_fwd.svg"
+        rev_path = rev_dir / f"{stem}_rev.svg"
+        fwd_paths.append(fwd_path)
+        rev_paths.append(rev_path)
+        records.append(
+            {
+                "cluster_final": cluster_id,
+                "logo_fwd_svg": str(fwd_path.relative_to(MC_DIR)),
+                "logo_rev_svg": str(rev_path.relative_to(MC_DIR)),
+            }
+        )
+
+    for start in range(0, len(motifs), batch_size):
+        stop = min(start + batch_size, len(motifs))
+        utils_plotting.plot_motifs(
+            motifs[start:stop],
+            trim=logo_trimming,
+            save_locs=[str(path) for path in fwd_paths[start:stop]],
+        )
+        utils_plotting.plot_motifs(
+            rev_motifs[start:stop],
+            trim=logo_trimming,
+            save_locs=[str(path) for path in rev_paths[start:stop]],
+        )
+        plt.close("all")
+
+    logo_paths = pd.DataFrame.from_records(records)
+    logo_paths.to_csv(
+        MC_DIR / f"motifcompendium_{head}_cluster_logo_paths.tsv",
+        sep="\t",
+        index=False,
+    )
+    print(f"{head}: cluster SVG logos saved to {logo_dir}")
+    return logo_paths
+
+
 def cluster_summary_html(cluster_metadata):
     display_cols = [
         "cluster_final",
@@ -153,6 +206,8 @@ def cluster_summary_html(cluster_metadata):
         "n_experiments",
         "jaspar_name",
         "jaspar_score",
+        "logo_fwd_svg",
+        "logo_rev_svg",
     ]
     display_cols = [c for c in display_cols if c in cluster_metadata.columns]
 
@@ -165,7 +220,13 @@ def cluster_summary_html(cluster_metadata):
                 value = f"{value:.3f}"
             elif pd.isna(value):
                 value = ""
-            cells.append(f"<td>{html.escape(str(value))}</td>")
+            if col.startswith("logo_") and value:
+                escaped_value = html.escape(str(value))
+                cells.append(
+                    f'<td><a href="{escaped_value}">{escaped_value}</a></td>'
+                )
+            else:
+                cells.append(f"<td>{html.escape(str(value))}</td>")
         rows.append("<tr>" + "".join(cells) + "</tr>")
 
     header = "".join(f"<th>{html.escape(col)}</th>" for col in display_cols)
@@ -213,99 +274,16 @@ def write_cluster_summary_html(cluster_metadata, report_path, title):
     report_path.write_text(report_html)
 
 
-def write_cluster_metadata_pdf(pdf_path, title, cluster_metadata):
-    display_cols = [
-        "cluster_final",
-        "posneg",
-        "n_motifs",
-        "total_seqlets",
-        "n_experiments",
-        "jaspar_name",
-        "jaspar_score",
-    ]
-    display_cols = [c for c in display_cols if c in cluster_metadata.columns]
-    table = cluster_metadata[display_cols].copy()
-    if "jaspar_score" in table.columns:
-        table["jaspar_score"] = table["jaspar_score"].map(
-            lambda x: "" if pd.isna(x) else f"{x:.3f}"
-        )
-
-    rows_per_page = 35
-    with PdfPages(pdf_path) as pdf:
-        for start in range(0, len(table), rows_per_page):
-            page = table.iloc[start : start + rows_per_page]
-            fig_height = max(4, 0.25 * (len(page) + 5))
-            fig, ax = plt.subplots(figsize=(11, fig_height))
-            ax.axis("off")
-            ax.set_title(title, loc="left", fontsize=14, pad=12)
-            ax.text(
-                0,
-                0.96,
-                "All motifs retained. total_seqlets is summed across motifs in each final cluster.",
-                transform=ax.transAxes,
-                fontsize=9,
-                va="top",
-            )
-            tbl = ax.table(
-                cellText=page.astype(str).values,
-                colLabels=display_cols,
-                cellLoc="left",
-                colLoc="left",
-                loc="center",
-            )
-            tbl.auto_set_font_size(False)
-            tbl.set_fontsize(7)
-            tbl.scale(1, 1.2)
-            pdf.savefig(fig, bbox_inches="tight")
-            plt.close(fig)
-
-    print(f"  PDF cluster report saved to {pdf_path}")
-
-
-def write_cluster_report_pdf(report_path, pdf_path, title, cluster_metadata):
-    try:
-        from playwright.sync_api import sync_playwright
-
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page()
-            page.goto(report_path.resolve().as_uri(), wait_until="networkidle")
-            page.pdf(path=str(pdf_path), format="Letter", print_background=True)
-            browser.close()
-        print(f"  PDF cluster report saved to {pdf_path}")
-        return
-    except Exception as exc:
-        print(f"  Playwright HTML-to-PDF render failed ({exc})")
-
-    for browser_name in (
-        "chromium",
-        "chromium-browser",
-        "google-chrome",
-        "google-chrome-stable",
-    ):
-        browser_path = shutil.which(browser_name)
-        if browser_path is None:
-            continue
-        cmd = [
-            browser_path,
-            "--headless",
-            "--disable-gpu",
-            "--no-sandbox",
-            f"--print-to-pdf={pdf_path}",
-            report_path.resolve().as_uri(),
-        ]
-        try:
-            subprocess.run(cmd, check=True)
-            print(f"  PDF cluster report saved to {pdf_path}")
-            return
-        except subprocess.CalledProcessError as exc:
-            print(f"  {browser_name} HTML-to-PDF render failed ({exc})")
-
-    print("  No HTML-to-PDF renderer worked; writing metadata PDF instead")
-    write_cluster_metadata_pdf(pdf_path, title, cluster_metadata)
-
-
-def process_head(head, h5_paths, within_threshold, across_threshold):
+def process_head(
+    head,
+    h5_paths,
+    within_threshold,
+    across_threshold,
+    logo_report_top_n,
+    per_cluster_html,
+    export_svg_logos,
+    svg_logo_batch_size,
+):
     if not h5_paths:
         print(f"{head}: no modisco h5 files found, skipping")
         return
@@ -355,7 +333,20 @@ def process_head(head, h5_paths, within_threshold, across_threshold):
         str(MC_DIR / f"motifcompendium_{head}_cluster_averages.meme"),
     )
 
-    cluster_metadata = write_cluster_metadata(mc, head)
+    logo_paths = None
+    if export_svg_logos:
+        logo_paths = export_cluster_logo_svgs(
+            mc_avg,
+            head,
+            batch_size=svg_logo_batch_size,
+        )
+
+    cluster_metadata = write_cluster_metadata(mc, head, logo_paths=logo_paths)
+
+    if logo_report_top_n > 0:
+        mc_avg_report = mc_avg[:logo_report_top_n]
+    else:
+        mc_avg_report = mc_avg
 
     report_path = MC_DIR / f"motifcompendium_{head}_cluster_report.html"
     report_columns = [
@@ -368,22 +359,25 @@ def process_head(head, h5_paths, within_threshold, across_threshold):
         "JASPAR_name0",
         "JASPAR_score0",
     ]
-    report_columns = [c for c in report_columns if c in mc_avg.columns()]
-    mc_avg.summary_table_html(str(report_path), columns=report_columns)
+    report_columns = [c for c in report_columns if c in mc_avg_report.columns()]
+    mc_avg_report.summary_table_html(str(report_path), columns=report_columns)
     summary_path = MC_DIR / f"motifcompendium_{head}_cluster_summary.html"
     write_cluster_summary_html(
         cluster_metadata,
         summary_path,
         f"MotifCompendium {head} cluster summary, all motifs retained",
     )
-    # write_cluster_report_pdf(
-    #    report_path,
-    #    MC_DIR / f"motifcompendium_{head}_cluster_report.pdf",
-    #    f"MotifCompendium {head} cluster report, all motifs retained",
-    #    cluster_metadata,
-    # )
     print(f"{head}: cluster report saved to {report_path}")
+    if logo_report_top_n > 0:
+        print(
+            f"{head}: logo report limited to top {logo_report_top_n} clusters "
+            "by total_seqlets"
+        )
     print(f"{head}: cluster summary saved to {summary_path}")
+
+    if not per_cluster_html:
+        print(f"{head}: per-cluster HTML reports skipped")
+        return
 
     cluster_html_dir = MC_DIR / f"motifcompendium_{head}_clusters"
     cluster_html_dir.mkdir(exist_ok=True)
@@ -457,7 +451,37 @@ def main():
         default=1152,
         help="MotifCompendium max_chunk compute option (default: 1152)",
     )
+    parser.add_argument(
+        "--logo-report-top-n",
+        type=int,
+        default=500,
+        help=(
+            "Number of highest-seqlet clusters to include in the logo-heavy HTML "
+            "report. Set to 0 to include all clusters (default: 500)."
+        ),
+    )
+    parser.add_argument(
+        "--per-cluster-html",
+        action="store_true",
+        help=(
+            "Also write per-cluster motif collection HTML files. These embed many "
+            "logos and can be very large, so they are disabled by default."
+        ),
+    )
+    parser.add_argument(
+        "--skip-svg-logos",
+        action="store_true",
+        help="Do not export per-cluster forward/reverse SVG logo files.",
+    )
+    parser.add_argument(
+        "--svg-logo-batch-size",
+        type=int,
+        default=100,
+        help="Number of cluster logos to render per SVG export batch (default: 100).",
+    )
     args = parser.parse_args()
+    if args.svg_logo_batch_size < 1:
+        parser.error("--svg-logo-batch-size must be at least 1")
 
     MC_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -474,7 +498,16 @@ def main():
 
     for head in heads:
         h5_paths = collect_modisco_paths(experiments, head)
-        process_head(head, h5_paths, args.within_threshold, args.across_threshold)
+        process_head(
+            head,
+            h5_paths,
+            args.within_threshold,
+            args.across_threshold,
+            args.logo_report_top_n,
+            args.per_cluster_html,
+            not args.skip_svg_logos,
+            args.svg_logo_batch_size,
+        )
 
 
 if __name__ == "__main__":

@@ -52,12 +52,6 @@ CCRES = REPO_ROOT / "data" / "GRCh38-cCREs.bed.gz"
 VALID_BACKGROUNDS = {"ccre", "gc"}
 
 
-def load_chrom_splits():
-    with open(CHROM_SPLITS_PATH) as f:
-        data = yaml.safe_load(f)
-    return {int(k): v for k, v in data["folds"].items()}
-
-
 def parse_background(value: str) -> tuple[str, float]:
     """Parse a 'NAME:RATIO' background argument."""
     try:
@@ -190,7 +184,9 @@ def main():
     }
 
     # Chromosome splits: fold i = test, fold (i+1)%n = validation, rest = train
-    chrom_splits = load_chrom_splits()
+    with open(CHROM_SPLITS_PATH) as f:
+        data = yaml.safe_load(f)
+    chrom_splits = {int(k): v for k, v in data["folds"].items()}
     n_folds = len(chrom_splits)
     test_fold = args.fold
     valid_fold = (args.fold + 1) % n_folds

@@ -35,17 +35,6 @@ CANONICAL_CHROMS = [f"chr{i}" for i in list(range(1, 23)) + ["X", "Y"]]
 CHROM_ORDER = {c: i for i, c in enumerate(CANONICAL_CHROMS)}
 
 
-def load_n_reads(path: Path) -> dict[str, float]:
-    n_reads = {}
-    with open(path) as f:
-        next(f)
-        for line in f:
-            parts = line.strip().split("\t")
-            if len(parts) >= 5:
-                n_reads[parts[0]] = float(parts[4])
-    return n_reads
-
-
 def read_peaks(bed_gz_path: Path, slop: int) -> list[tuple[int, int, int]]:
     """Read (chrom_index, start, end) tuples from a gzipped BED file.
 
@@ -128,7 +117,14 @@ def main():
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
-    n_reads_map = load_n_reads(N_READS_PATH) if N_READS_PATH.exists() else {}
+    n_reads_map = {}
+    if N_READS_PATH.exists():
+        with open(N_READS_PATH) as f:
+            next(f)
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) >= 5:
+                    n_reads_map[parts[0]] = float(parts[4])
 
     all_intervals: list[tuple[int, int, int]] = []
     n_included = 0

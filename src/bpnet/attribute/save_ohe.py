@@ -22,16 +22,6 @@ FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
 
-def load_chrom_splits():
-    """Load chromosome fold assignments from chrom_splits.yaml.
-
-    Returns a dict mapping fold number (int) to list of chromosome names.
-    """
-    with open(CHROM_SPLITS_PATH) as f:
-        data = yaml.safe_load(f)
-    return {int(k): v for k, v in data["folds"].items()}
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -57,7 +47,9 @@ def main():
     processed = exp.get("processed", {})
 
     # Chromosome splits: fold i = test, fold (i+1)%n = validation, rest = train
-    chrom_splits = load_chrom_splits()
+    with open(CHROM_SPLITS_PATH) as f:
+        data = yaml.safe_load(f)
+    chrom_splits = {int(k): v for k, v in data["folds"].items()}
 
     # Resolve paths from config
     peaks_path = str(REPO_ROOT / processed["filtered_peaks"])

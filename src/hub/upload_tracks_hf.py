@@ -3,7 +3,7 @@
 
 Usage:
     python src/hub/upload_tracks_hf.py --dry-run
-    python src/hub/upload_tracks_hf.py --include observed --include attributions --include peaks
+    python src/hub/upload_tracks_hf.py --include observed --include predictions --include attributions --include peaks
 """
 
 import argparse
@@ -15,12 +15,13 @@ import urllib.request
 from pathlib import Path
 
 import yaml
+from huggingface_hub import HfApi
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_REPO_ID = "adamyhe/procap-atlas-tracks"
 DEFAULT_REVISION = "main"
-INCLUDES = ("observed", "attributions", "peaks")
+INCLUDES = ("observed", "predictions", "attributions", "peaks")
 
 
 def sanitize_name(s):
@@ -59,6 +60,21 @@ def collect_uploads(experiments, includes, heads):
             for strand, key in [("pl", "pl_bigwig"), ("mn", "mn_bigwig")]:
                 local = REPO_ROOT / processed.get(key, "")
                 dest = f"observed/{exp_id}_{strand}.bigWig"
+                if local.exists():
+                    uploads.append((local, dest))
+                else:
+                    missing.append((local, dest))
+
+        if "predictions" in includes:
+            for strand in ("pl", "mn"):
+                local = (
+                    REPO_ROOT
+                    / "predictions"
+                    / "bpnet"
+                    / "bigwigs"
+                    / f"{exp_id}_{strand}.bigWig"
+                )
+                dest = f"predictions/bpnet/{exp_id}_{strand}.bigWig"
                 if local.exists():
                     uploads.append((local, dest))
                 else:
@@ -181,11 +197,6 @@ def main():
         if len(uploads) > 50:
             print(f"  ... {len(uploads) - 50} more")
     else:
-        try:
-            from huggingface_hub import HfApi
-        except ImportError as e:
-            raise ImportError("huggingface_hub is required for uploads") from e
-
         api = HfApi()
         api.create_repo(repo_id=args.repo_id, repo_type="dataset", exist_ok=True)
         if not uploads:

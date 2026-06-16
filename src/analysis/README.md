@@ -61,5 +61,6 @@ configs/model_warning_flags.json
   `configs/n_reads.txt`.
 - Predicted count analyses require complete fold models for the selected model
   family and experiment.
-- Warning flag perturbation detection shares metadata fields and default
-  exclusion keywords with the MetaFormer target TSV helper.
+- Warning flag perturbation detection owns the metadata fields and default
+  exclusion keywords used to produce `configs/model_warning_flags.tsv`; the
+  MetaFormer target TSV helper consumes that table.

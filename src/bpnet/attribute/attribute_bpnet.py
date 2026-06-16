@@ -106,7 +106,9 @@ def main():
     processed = exp.get("processed", {})
 
     # Chromosome splits: fold i = test, fold (i+1)%n = validation, rest = train
-    chrom_splits = load_chrom_splits()
+    with open(CHROM_SPLITS_PATH) as f:
+        data = yaml.safe_load(f)
+    chrom_splits = {int(k): v for k, v in data["folds"].items()}
     n_folds = len(chrom_splits)
 
     # Resolve paths from config

@@ -6,7 +6,8 @@ PromoterAI preprocessing expects a TSV with at least these columns:
     fwd  rev  xform
 
 This script uses the processed plus/minus strand BigWig paths in
-configs/experiment_config.yaml and adds PRO-cap metadata columns for traceability.
+configs/experiment_config.yaml and uses configs/model_warning_flags.tsv for
+default QC exclusions.
 
 Usage:
     python src/metaformer/procap_config_to_promoterai.py
@@ -24,28 +25,9 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "experiment_config.yaml"
+DEFAULT_WARNING_FLAGS = REPO_ROOT / "configs" / "model_warning_flags.tsv"
 DEFAULT_OUTPUT = REPO_ROOT / "configs" / "promoterai_procap_bigwigs.tsv"
 DEFAULT_XFORM = "lambda x: np.arcsinh(np.abs(np.nan_to_num(x)))"
-DEFAULT_BLACKLISTED_EXPERIMENTS = ("ENCSR973QQI",)
-DEFAULT_EXCLUDE_KEYWORDS = (
-    "perturb",
-    "treated",
-    "treatment",
-    "genetically modified",
-    "crispr",
-    "dtag",
-    "5-phenyl",
-    "indole-3-acetic acid",
-    "gene-silencing",
-    "knock",
-    "deplet",
-)
-METADATA_FIELDS = (
-    "biosample",
-    "biosample_summary",
-    "description",
-    "library_construction",
-)
 OUTPUT_FIELDS = (
     "fwd",
     "rev",
@@ -76,42 +58,30 @@ def parse_args() -> argparse.Namespace:
         help=f"output TSV path (default: {DEFAULT_OUTPUT})",
     )
     parser.add_argument(
+        "--warning-flags",
+        type=Path,
+        default=DEFAULT_WARNING_FLAGS,
+        help=f"input model warning flag TSV (default: {DEFAULT_WARNING_FLAGS})",
+    )
+    parser.add_argument(
         "--xform",
         default=DEFAULT_XFORM,
         help=f"PromoterAI target transform expression (default: {DEFAULT_XFORM!r})",
     )
     parser.add_argument(
-        "--exclude-keyword",
-        action="append",
-        default=[],
-        help=(
-            "additional case-insensitive metadata keyword for excluding perturbed "
-            "datasets; may be repeated"
-        ),
-    )
-    parser.add_argument(
-        "--blacklist-experiment",
-        action="append",
-        default=[],
-        help=(
-            "additional experiment accession to exclude from the output; "
-            "may be repeated"
-        ),
-    )
-    parser.add_argument(
         "--include-uncapped",
         action="store_true",
-        help="include datasets whose metadata contains 'uncapped'",
+        help="include datasets marked uncapped in the warning flag table",
     )
     parser.add_argument(
         "--include-perturbed",
         action="store_true",
-        help="include datasets matching perturbation exclusion keywords",
+        help="include datasets marked as perturbations in the warning flag table",
     )
     parser.add_argument(
         "--include-blacklisted",
         action="store_true",
-        help="include datasets from the default and custom experiment blacklist",
+        help="include manually red-flagged datasets from the warning flag table",
     )
     parser.add_argument(
         "--absolute-paths",
@@ -135,8 +105,35 @@ def load_experiments(config_path: Path) -> dict:
     return experiments
 
 
-def metadata_text(exp: dict) -> str:
-    return " ".join(str(exp.get(field, "")) for field in METADATA_FIELDS).lower()
+def load_warning_flags(warning_flags_path: Path) -> dict[str, dict]:
+    with open(warning_flags_path, newline="") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        required = {"experiment", "is_perturbation", "is_uncapped", "flags"}
+        missing = required - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(
+                f"{warning_flags_path} is missing required columns: "
+                f"{', '.join(sorted(missing))}"
+            )
+
+        warning_flags = {}
+        for row in reader:
+            exp_id = row["experiment"]
+            if exp_id in warning_flags:
+                raise ValueError(
+                    f"{warning_flags_path} contains duplicate experiment: {exp_id}"
+                )
+            warning_flags[exp_id] = {
+                "is_perturbation": row["is_perturbation"].strip().lower() == "true",
+                "is_uncapped": row["is_uncapped"].strip().lower() == "true",
+                "flags": {
+                    flag
+                    for flag in row.get("flags", "").split(";")
+                    if flag
+                },
+            }
+
+    return warning_flags
 
 
 def normalize_target(exp_id: str, biosample: str) -> str:
@@ -152,9 +149,8 @@ def output_path_for_bigwig(path: str, absolute: bool) -> str:
 
 def build_rows(
     experiments: dict,
+    warning_flags: dict[str, dict],
     xform: str,
-    exclude_keywords: list[str],
-    blacklisted_experiments: set[str],
     include_uncapped: bool,
     include_perturbed: bool,
     include_blacklisted: bool,
@@ -171,16 +167,21 @@ def build_rows(
         "written": 0,
     }
 
-    keywords = [kw.lower() for kw in exclude_keywords if kw]
-
     for exp_id, exp in experiments.items():
-        if exp_id in blacklisted_experiments and not include_blacklisted:
+        warning = warning_flags.get(exp_id)
+        if warning is None:
+            raise ValueError(
+                f"{exp_id} is missing from the warning flag table; "
+                "regenerate configs/model_warning_flags.tsv"
+            )
+
+        is_blacklisted = "red_manual" in warning["flags"]
+        is_uncapped = warning["is_uncapped"]
+        is_perturbed = warning["is_perturbation"]
+
+        if is_blacklisted and not include_blacklisted:
             stats["excluded_blacklisted"] += 1
             continue
-
-        text = metadata_text(exp)
-        is_uncapped = "uncapped" in text
-        is_perturbed = any(keyword in text for keyword in keywords)
 
         if is_uncapped and not include_uncapped:
             stats["excluded_uncapped"] += 1
@@ -231,17 +232,14 @@ def write_tsv(rows: list[dict], output_path: Path) -> None:
 
 def main() -> int:
     args = parse_args()
-    exclude_keywords = list(DEFAULT_EXCLUDE_KEYWORDS) + args.exclude_keyword
-    blacklisted_experiments = set(DEFAULT_BLACKLISTED_EXPERIMENTS)
-    blacklisted_experiments.update(args.blacklist_experiment)
 
     try:
         experiments = load_experiments(args.config)
+        warning_flags = load_warning_flags(args.warning_flags)
         rows, stats = build_rows(
             experiments=experiments,
+            warning_flags=warning_flags,
             xform=args.xform,
-            exclude_keywords=exclude_keywords,
-            blacklisted_experiments=blacklisted_experiments,
             include_uncapped=args.include_uncapped,
             include_perturbed=args.include_perturbed,
             include_blacklisted=args.include_blacklisted,
@@ -254,6 +252,7 @@ def main() -> int:
         return 1
 
     print(f"Wrote PromoterAI BigWig TSV: {args.output}")
+    print(f"Warning flags: {args.warning_flags}")
     print(f"Total experiments: {stats['total']}")
     print(f"Excluded blacklisted: {stats['excluded_blacklisted']}")
     print(f"Excluded uncapped: {stats['excluded_uncapped']}")

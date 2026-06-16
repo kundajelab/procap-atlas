@@ -30,11 +30,6 @@ JASPAR_PATH = (
 )
 
 
-def load_n_reads():
-    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
-    return dict(zip(df["experiment"], df["total_reads"]))
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -70,7 +65,10 @@ def main():
         config = yaml.safe_load(f)
     experiments = list(config["experiments"].keys())
 
-    read_counts = load_n_reads()
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     out_dir = REPO_ROOT / "modisco" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_modisco"
@@ -101,7 +99,7 @@ def main():
             job_name = f"modisco_report_{exp_id}_{head}"
 
             modisco_report_cmd = (
-                f"modisco report"
+                f"uv run --project {REPO_ROOT} --frozen --extra bpnet modisco report"
                 f" -i {out_h5}"
                 f" -o {exp_id}_{head}.modisco"
                 f" -m {JASPAR_PATH}"
@@ -136,7 +134,7 @@ def main():
                 ml htslib
                 ml ucsc-utils
                 
-                mamba activate torch
+                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
 
                 cd {out_dir}
                 time {modisco_report_cmd}

@@ -30,11 +30,6 @@ N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 BENCHMARK_SCRIPT = REPO_ROOT / "src" / "bpnet" / "benchmark" / "benchmark_bpnet.py"
 
 
-def load_n_reads():
-    df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
-    return dict(zip(df["experiment"], df["total_reads"]))
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
@@ -85,7 +80,10 @@ def main():
         chrom_splits = yaml.safe_load(f)
     n_folds = len(chrom_splits["folds"])
 
-    read_counts = load_n_reads()
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     log_dir = REPO_ROOT / "logs" / "bpnet_benchmark"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -117,6 +115,7 @@ def main():
 
         job_name = f"bpnet_bench_{exp_id}"
         benchmark_cmd = (
+            f"uv run --project {shlex.quote(str(REPO_ROOT))} --frozen --extra bpnet "
             f"python {shlex.quote(str(BENCHMARK_SCRIPT))}"
             f" -e {shlex.quote(exp_id)}"
             f" --model-dir {shlex.quote(str(model_dir))}"
@@ -153,7 +152,7 @@ def main():
             ml htslib
             ml ucsc-utils
 
-            mamba activate torch
+            mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
             nvidia-smi -L
             cd {REPO_ROOT}
             time {benchmark_cmd}

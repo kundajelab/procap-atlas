@@ -23,7 +23,7 @@ ml biology
 ml htslib
 ml ucsc-utils
 
-mamba activate torch
+mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 
 mkdir -p data/promoterai
 chrom=${SLURM_ARRAY_TASK_ID}

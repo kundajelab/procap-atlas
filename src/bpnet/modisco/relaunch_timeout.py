@@ -158,7 +158,7 @@ def main():
             ml htslib
             ml ucsc-utils
 
-            mamba activate torch
+            mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
             export NUMBA_NUM_THREADS={args.cpus_per_task}
 
             mkdir -p {out_dir}
