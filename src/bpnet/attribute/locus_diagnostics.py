@@ -8,9 +8,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch import nn
-from tangermeme.deep_lift_shap import hypothetical_attributions
-from tangermeme.ersatz import dinucleotide_shuffle
+from bpnetlite.bpnet import _ProfileLogitScaling
+from tangermeme.deep_lift_shap import (
+    dinucleotide_shuffle,
+    hypothetical_attributions,
+)
 from tangermeme.predict import predict
 from tangermeme.saturation_mutagenesis import saturation_mutagenesis
 
@@ -18,22 +20,131 @@ ALPHABET = "ACGT"
 CACHE_SCHEMA_VERSION = 4
 
 
-class StrandProfileWrapper(nn.Module):
-    """Score one profile strand after a joint two-strand softmax."""
+class StrandProfileWrapper(torch.nn.Module):
+    """Return one strand's profile score after joint two-strand softmax weighting."""
 
     def __init__(self, model, strand):
         super().__init__()
+        if strand not in (0, 1):
+            raise ValueError("strand must be 0 (plus) or 1 (minus)")
         self.model = model
         self.strand = strand
+        self.scaling = _ProfileLogitScaling()
 
-    def forward(self, X):
-        profile_logits, _ = self.model(X)
-        flat = profile_logits.reshape(profile_logits.shape[0], -1)
-        centered = flat - flat.mean(dim=1, keepdim=True)
-        probabilities = torch.softmax(centered, dim=1).reshape_as(profile_logits)
-        centered = centered.reshape_as(profile_logits)
-        score = (probabilities[:, self.strand] * centered[:, self.strand]).sum(dim=1)
-        return score[:, None]
+    def forward(self, X, X_ctl=None, **kwargs):
+        if X_ctl is None:
+            logits = self.model(X, **kwargs)[0]
+        else:
+            logits = self.model(X, X_ctl, **kwargs)[0]
+        flattened = logits.flatten(start_dim=1)
+        centered = flattened - flattened.mean(dim=-1, keepdim=True)
+        weighted = self.scaling(centered).reshape_as(logits)
+        return weighted[:, self.strand].sum(dim=-1, keepdim=True)
+
+
+def per_reference_attributions(multipliers, genomic_input, references):
+    """Project raw DeepLIFT multipliers into observed per-reference attributions."""
+    multipliers = torch.as_tensor(multipliers)
+    references = torch.as_tensor(references)
+    if multipliers.ndim == 4 and multipliers.shape[0] == 1:
+        multipliers = multipliers[0]
+    if references.ndim == 4 and references.shape[0] == 1:
+        references = references[0]
+    if multipliers.shape != references.shape:
+        raise ValueError("multipliers and references must have matching shapes")
+
+    genomic_input = torch.as_tensor(genomic_input)
+    if genomic_input.ndim == 3 and genomic_input.shape[0] == 1:
+        genomic_input = genomic_input[0]
+    if genomic_input.shape != multipliers.shape[1:]:
+        raise ValueError("genomic_input must match one reference sequence")
+
+    repeated_input = genomic_input.unsqueeze(0).expand_as(references)
+    hypothetical = hypothetical_attributions(
+        (multipliers,),
+        (repeated_input,),
+        (references,),
+    )[0]
+    return hypothetical * repeated_input
+
+
+def reference_weight_schemes(probabilities, counts, temperature=1.0, window=20):
+    """Calculate shared reference weights from fold-level profile predictions."""
+    probabilities = as_numpy(probabilities).astype(float)
+    counts = as_numpy(counts).astype(float)
+    if probabilities.ndim == 3:
+        probabilities = probabilities[None]
+    if counts.ndim == 1:
+        counts = counts[None]
+    if (
+        probabilities.ndim != 4
+        or probabilities.shape[2] != 2
+        or counts.shape != probabilities.shape[:2]
+    ):
+        raise ValueError(
+            "probabilities must have shape (folds, references, 2, positions) "
+            "and counts must have shape (folds, references)"
+        )
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+
+    folds, references = probabilities.shape[:2]
+    maxima, _, _ = rolling_profile_maxima(
+        probabilities.reshape(folds * references, 2, probabilities.shape[-1]),
+        windows=(window,),
+    )
+    max_window_mass = maxima[window].reshape(folds, references).mean(axis=0)
+    strand_mass = probabilities.sum(axis=-1)
+    strand_imbalance = np.abs(strand_mass[..., 0] - strand_mass[..., 1]).mean(
+        axis=0
+    )
+    log_counts = np.log1p(counts).mean(axis=0)
+
+    metrics = np.stack([max_window_mass, strand_imbalance, log_counts])
+    penalties = np.zeros_like(metrics)
+    for index, values in enumerate(metrics):
+        median = np.median(values)
+        deviations = np.abs(values - median)
+        scale = 1.4826 * np.median(deviations)
+        if scale <= 1e-12:
+            scale = deviations.mean()
+        if scale > 1e-12:
+            penalties[index] = np.maximum(values - median, 0) / scale
+
+    contamination = np.stack(
+        [
+            np.zeros(references),
+            penalties[:2].sum(axis=0),
+            penalties.sum(axis=0),
+        ]
+    )
+    shifted = -contamination / temperature
+    shifted -= shifted.max(axis=1, keepdims=True)
+    weights = np.exp(shifted)
+    weights /= weights.sum(axis=1, keepdims=True)
+    return {
+        "metric_names": np.asarray(
+            ["max_20bp_probability", "strand_imbalance", "log1p_counts"]
+        ),
+        "metrics": metrics,
+        "contamination": contamination,
+        "weights": weights,
+    }
+
+
+def weighted_strand_attributions(attributions, weights):
+    """Combine per-reference strand attributions with shared reference weights."""
+    attributions = as_numpy(attributions)
+    weights = as_numpy(weights)
+    if attributions.ndim < 3 or attributions.shape[-3] != len(weights):
+        raise ValueError("reference axis must be third from last")
+    if np.any(weights < 0) or not np.isclose(weights.sum(), 1):
+        raise ValueError("weights must be nonnegative and sum to one")
+    return np.tensordot(
+        attributions,
+        weights,
+        axes=([-3], [0]),
+    )
 
 
 def as_numpy(value):
@@ -43,95 +154,201 @@ def as_numpy(value):
 
 
 def channel_first(sequence):
-    array = as_numpy(sequence)
-    if array.ndim == 3:
-        array = array[0]
-    if array.shape[0] == 4:
-        return array
-    if array.shape[-1] == 4:
-        return array.T
-    raise ValueError("Expected a 4-channel one-hot sequence")
+    sequence = as_numpy(sequence)
+    if sequence.ndim == 3:
+        sequence = sequence[0]
+    if sequence.shape[0] == 4:
+        return sequence
+    if sequence.shape[-1] == 4:
+        return sequence.T
+    raise ValueError(f"Expected a four-channel sequence, got {sequence.shape}")
 
 
-def dinucleotide_frequencies(X):
-    bases = channel_first(X).argmax(axis=0)
-    counts = np.zeros((4, 4), dtype=np.float64)
-    for left, right in zip(bases[:-1], bases[1:]):
-        counts[left, right] += 1
+def dinucleotide_frequencies(sequence):
+    """Return normalized genomic dinucleotide frequencies in ACGT order."""
+    sequence = channel_first(sequence)
+    bases = sequence.argmax(axis=0)
+    valid = sequence.sum(axis=0) > 0
+    counts = np.zeros((4, 4), dtype=float)
+    for left, right, keep in zip(bases[:-1], bases[1:], valid[:-1] & valid[1:]):
+        if keep:
+            counts[left, right] += 1
     total = counts.sum()
     return counts / total if total else counts
 
 
 def reference_banks(X, seeds, n_references):
+    """Generate reproducible DeepLIFT dinucleotide-shuffled reference banks."""
     return {
-        seed: dinucleotide_shuffle(X.cpu(), n=n_references, random_state=seed)[0].float()
+        int(seed): dinucleotide_shuffle(
+            X.cpu(), n=n_references, random_state=int(seed)
+        )[0]
         for seed in seeds
     }
 
 
-def markov_parameters(X, pseudocount=1e-6):
-    frequencies = dinucleotide_frequencies(X)
-    transition = frequencies + pseudocount
-    transition /= transition.sum(axis=1, keepdims=True)
-    initial = channel_first(X).mean(axis=1) + pseudocount
-    initial /= initial.sum()
+def low_activity_references(
+    genomic_input,
+    selector_models,
+    n_candidates,
+    n_references,
+    random_state,
+    batch_size,
+    device,
+    min_hamming_fraction=0.1,
+):
+    """Select diverse shuffles with low activity across held-out selector models.
+
+    ``selector_models`` may be a generator that loads one model at a time. For
+    attribution of fold k, it should yield only the other folds so the explained
+    model does not select its own baseline. Candidates are ranked by their worst
+    percentile across selector folds and three metrics: predicted counts,
+    maximum 20 bp count-scaled signal, and profile concentration.
+    """
+    if genomic_input.shape[0] != 1:
+        raise ValueError("genomic_input must contain exactly one sequence")
+    if not 0 <= min_hamming_fraction <= 1:
+        raise ValueError("min_hamming_fraction must be between zero and one")
+    if n_references < 1 or n_candidates < n_references:
+        raise ValueError("n_candidates must be at least n_references")
+
+    candidates = dinucleotide_shuffle(
+        genomic_input.cpu(),
+        n=n_candidates,
+        random_state=int(random_state),
+    )[0]
+    fold_counts = []
+    fold_max_20bp = []
+    fold_profile_score = []
+
+    for model in selector_models:
+        profile_logits, log_counts = predict(
+            model=model,
+            X=candidates,
+            batch_size=batch_size,
+            device=device,
+        )
+        logits = torch.as_tensor(profile_logits).reshape(n_candidates, -1)
+        centered = logits - logits.mean(dim=1, keepdim=True)
+        probabilities = torch.softmax(centered, dim=1)
+        counts = torch.exp(
+            torch.as_tensor(log_counts).reshape(n_candidates, -1)
+        ).sum(dim=1)
+        count_scaled = (probabilities * counts[:, None]).reshape(
+            torch.as_tensor(profile_logits).shape
+        )
+        maxima, _, _ = rolling_profile_maxima(
+            as_numpy(count_scaled), windows=(20,)
+        )
+        fold_counts.append(as_numpy(counts))
+        fold_max_20bp.append(maxima[20])
+        fold_profile_score.append(
+            as_numpy((centered * probabilities).sum(dim=1))
+        )
+
+    if not fold_counts:
+        raise ValueError("selector_models must contain at least one model")
+
+    metrics = np.stack(
+        [
+            np.asarray(fold_counts),
+            np.asarray(fold_max_20bp),
+            np.asarray(fold_profile_score),
+        ],
+        axis=1,
+    )
+    percentile_ranks = np.empty_like(metrics, dtype=float)
+    for fold in range(metrics.shape[0]):
+        for metric in range(metrics.shape[1]):
+            order = np.argsort(metrics[fold, metric], kind="stable")
+            percentile_ranks[fold, metric, order] = (
+                np.arange(n_candidates) + 1
+            ) / n_candidates
+    selection_score = percentile_ranks.max(axis=(0, 1))
+    ranked_indices = np.argsort(selection_score, kind="stable")
+
+    bases = candidates.argmax(dim=1).numpy()
+    selected_indices = []
+    for index in ranked_indices:
+        if all(
+            np.mean(bases[index] != bases[chosen]) >= min_hamming_fraction
+            for chosen in selected_indices
+        ):
+            selected_indices.append(int(index))
+            if len(selected_indices) == n_references:
+                break
+    if len(selected_indices) < n_references:
+        selected = set(selected_indices)
+        selected_indices.extend(
+            int(index)
+            for index in ranked_indices
+            if int(index) not in selected
+        )
+        selected_indices = selected_indices[:n_references]
+
+    selected_indices = np.asarray(selected_indices, dtype=int)
+    return {
+        "references": candidates[selected_indices],
+        "selected_indices": selected_indices,
+        "selection_score": selection_score,
+        "fold_counts": np.asarray(fold_counts),
+        "fold_max_20bp": np.asarray(fold_max_20bp),
+        "fold_profile_score": np.asarray(fold_profile_score),
+    }
+
+
+def markov_parameters(sequence):
+    """Estimate initial and first-order transition probabilities."""
+    sequence = channel_first(sequence)
+    mono = sequence.sum(axis=1).astype(float)
+    initial = mono / mono.sum()
+    dinuc = dinucleotide_frequencies(sequence)
+    transition = dinuc.copy()
+    for i in range(4):
+        row_sum = transition[i].sum()
+        transition[i] = transition[i] / row_sum if row_sum else initial
     return initial, transition
 
 
-def sample_markov_sequences(X, n, random_state=None):
+def sample_markov_sequences(sequence, length, n, random_state):
+    """Sample one-hot sequences from the input's first-order Markov model."""
+    initial, transition = markov_parameters(sequence)
     rng = np.random.default_rng(random_state)
-    initial, transition = markov_parameters(X)
-    length = channel_first(X).shape[1]
-    samples = np.zeros((n, 4, length), dtype=np.float32)
-    for i in range(n):
-        base = rng.choice(4, p=initial)
-        samples[i, base, 0] = 1
-        for position in range(1, length):
-            base = rng.choice(4, p=transition[base])
-            samples[i, base, position] = 1
-    return torch.tensor(samples)
+    bases = np.empty((n, length), dtype=np.int64)
+    bases[:, 0] = rng.choice(4, size=n, p=initial)
+    for position in range(1, length):
+        for i in range(n):
+            bases[i, position] = rng.choice(4, p=transition[bases[i, position - 1]])
+    sampled = np.zeros((n, 4, length), dtype=np.int8)
+    rows = np.arange(n)[:, None]
+    positions = np.arange(length)[None, :]
+    sampled[rows, bases, positions] = 1
+    return torch.from_numpy(sampled)
 
 
-def gradient_x_input(model, X, device="cpu"):
-    original_device = next(model.parameters()).device
-    was_training = model.training
-    try:
-        model.to(device).eval()
-        Xi = X.to(device).float().requires_grad_(True)
-        score = model(Xi)
-        if isinstance(score, tuple):
-            score = score[0]
-        if score.ndim > 1:
-            score = score.reshape(score.shape[0], -1).sum(dim=1)
-        gradient = torch.autograd.grad(score.sum(), Xi)[0]
-        return (gradient * Xi).detach().cpu()
-    finally:
-        if was_training:
-            model.train()
-        model.to(original_device)
+def gradient_x_input(model, X, device):
+    """Calculate observed gradient-times-input attribution."""
+    model = model.to(device)
+    model.eval()
+    x = X.detach().clone().to(device).requires_grad_(True)
+    model.zero_grad(set_to_none=True)
+    output = model(x)
+    output.sum().backward()
+    attribution = x.grad * x
+    return attribution.detach().cpu()
 
 
-def point_ism(model, X, start, end, batch_size=32, device="cpu"):
-    scores = saturation_mutagenesis(
-        model,
-        X,
+def point_ism(model, X, start, end, batch_size, device):
+    """Calculate observed single-nucleotide ISM over a sequence interval."""
+    return saturation_mutagenesis(
+        model=model,
+        X=X,
         start=start,
         end=end,
         batch_size=batch_size,
+        hypothetical=False,
         device=device,
-    )
-    scores = torch.as_tensor(scores).detach().cpu()
-    if scores.ndim == 3:
-        return scores
-    return scores.reshape(X.shape[0], X.shape[1], end - start)
-
-
-def _model_scores(model, X, batch_size, device):
-    values = predict(model=model, X=X, batch_size=batch_size, device=device)
-    if isinstance(values, tuple):
-        values = values[0]
-    values = torch.as_tensor(values)
-    return values.reshape(values.shape[0], -1).sum(dim=1).detach().cpu().numpy()
+    ).cpu()
 
 
 def window_ism(
@@ -139,240 +356,207 @@ def window_ism(
     X,
     start,
     end,
-    width,
+    window,
     stride,
     n_replacements,
     random_state,
-    batch_size=32,
-    device="cpu",
+    batch_size,
+    device,
 ):
-    if width < 1 or stride < 1 or n_replacements < 1:
-        raise ValueError("width, stride, and n_replacements must be positive")
-    positions = np.arange(start, end - width + 1, stride, dtype=int)
-    original = _model_scores(model, X, batch_size, device)[0]
-    replacements = sample_markov_sequences(
-        X, len(positions) * n_replacements, random_state=random_state
-    )
-    mutants = X.cpu().repeat(len(positions) * n_replacements, 1, 1).float()
-    cursor = 0
-    for position in positions:
-        for _ in range(n_replacements):
-            mutants[cursor, :, position : position + width] = replacements[
-                cursor, :, position : position + width
-            ]
-            cursor += 1
-    mutant_scores = _model_scores(model, mutants, batch_size, device)
-    mutant_scores = mutant_scores.reshape(len(positions), n_replacements).mean(axis=1)
-    return positions, original - mutant_scores
+    """Measure original-minus-perturbed activity for sliding Markov windows."""
+    if window < 1 or stride < 1:
+        raise ValueError("window and stride must be positive")
+    positions = np.arange(start, end - window + 1, stride, dtype=int)
+    original = as_numpy(
+        predict(model, X, batch_size=1, device=device)
+    ).reshape(X.shape[0], -1)
+    scores = []
+    for i, position in enumerate(positions):
+        replacements = sample_markov_sequences(
+            X, window, n_replacements, random_state + i
+        )
+        perturbed = X.repeat(n_replacements, 1, 1)
+        perturbed[:, :, position : position + window] = replacements
+        activity = as_numpy(
+            predict(model, perturbed, batch_size=batch_size, device=device)
+        ).reshape(n_replacements, -1)
+        scores.append((original[0] - activity.mean(axis=0)).mean())
+    return positions, np.asarray(scores)
 
 
-def window_scores_to_positions(positions, scores, length, width):
-    positions = np.asarray(positions, dtype=int)
-    scores = np.asarray(scores, dtype=np.float32)
-    output = np.zeros((*scores.shape[:-1], length), dtype=np.float32)
-    counts = np.zeros(length, dtype=np.float32)
+def window_scores_to_positions(positions, scores, length, window):
+    """Average overlapping window scores onto their covered base positions."""
+    positions = as_numpy(positions).astype(int)
+    scores = as_numpy(scores)
+    if scores.shape[-1] != len(positions):
+        raise ValueError("scores must end with one value per window position")
+    if length < 1 or window < 1:
+        raise ValueError("length and window must be positive")
+    if np.any(positions < 0) or np.any(positions + window > length):
+        raise ValueError("all windows must fit inside the requested length")
+
+    totals = np.zeros(scores.shape[:-1] + (length,), dtype=float)
+    coverage = np.zeros(length, dtype=float)
     for index, position in enumerate(positions):
-        output[..., position : position + width] += scores[..., index][..., None]
-        counts[position : position + width] += 1
-    covered = counts > 0
-    output[..., covered] /= counts[covered]
-    return output
+        totals[..., position : position + window] += scores[..., index, None]
+        coverage[position : position + window] += 1
+    return np.divide(
+        totals,
+        coverage,
+        out=np.zeros_like(totals),
+        where=coverage > 0,
+    )
 
 
 def rolling_profile_maxima(profiles, windows=(1, 5, 20)):
-    profiles = np.asarray(profiles, dtype=np.float32)
-    flat = profiles.reshape(profiles.shape[0], -1)
+    """Return strongest strand-specific rolling sums and peak coordinates."""
+    profiles = as_numpy(profiles)
+    if profiles.ndim != 3 or profiles.shape[1] != 2:
+        raise ValueError("profiles must have shape (sequences, 2, positions)")
     maxima = {}
-    positions = {}
-    strands = {}
-    for width in windows:
-        if width == 1:
-            rolled = profiles
-        else:
-            cumsum = np.cumsum(profiles, axis=-1)
-            cumsum = np.pad(cumsum, ((0, 0), (0, 0), (1, 0)))
-            rolled = cumsum[:, :, width:] - cumsum[:, :, :-width]
-        rolled_flat = rolled.reshape(rolled.shape[0], -1)
-        argmax = rolled_flat.argmax(axis=1)
-        maxima[width] = rolled_flat[np.arange(rolled_flat.shape[0]), argmax]
-        positions[width] = argmax % rolled.shape[-1]
-        strands[width] = argmax // rolled.shape[-1]
-    return maxima, positions, strands
+    peak_positions = {}
+    peak_strands = {}
+    cumulative = np.pad(
+        np.cumsum(profiles, axis=-1), ((0, 0), (0, 0), (1, 0))
+    )
+    for window in windows:
+        if window < 1 or window > profiles.shape[-1]:
+            raise ValueError("window must fit inside the profile")
+        sums = cumulative[..., window:] - cumulative[..., :-window]
+        flattened = sums.reshape(len(profiles), -1)
+        indices = flattened.argmax(axis=1)
+        maxima[window] = flattened[np.arange(len(profiles)), indices]
+        peak_strands[window] = indices // sums.shape[-1]
+        peak_positions[window] = indices % sums.shape[-1]
+    return maxima, peak_positions, peak_strands
 
 
-def profile_summaries(probabilities, count_scaled, windows=(1, 5, 20)):
-    probabilities = np.asarray(probabilities, dtype=np.float32)
-    count_scaled = np.asarray(count_scaled, dtype=np.float32)
-    maxima, positions, strands = rolling_profile_maxima(count_scaled, windows)
-    flat_prob = probabilities.reshape(probabilities.shape[0], -1)
-    entropy = -(flat_prob * np.log2(np.clip(flat_prob, 1e-12, None))).sum(axis=1)
-    result = {
+def profile_summaries(probabilities, count_scaled_profiles, windows=(1, 5, 20)):
+    """Summarize profile concentration and strongest local count-scale signal."""
+    probabilities = as_numpy(probabilities)
+    count_scaled_profiles = as_numpy(count_scaled_profiles)
+    maxima, positions, strands = rolling_profile_maxima(
+        count_scaled_profiles, windows=windows
+    )
+    flat = probabilities.reshape(len(probabilities), -1)
+    entropy = -(flat * np.log(flat.clip(min=1e-12))).sum(axis=1)
+    summaries = {
         "profile_entropy": entropy,
-        "effective_width": np.exp2(entropy),
+        "effective_width": np.exp(entropy),
     }
-    for width in windows:
-        result[f"max_{width}bp"] = maxima[width]
-        result[f"peak_{width}bp_position"] = positions[width]
-        result[f"peak_{width}bp_strand"] = strands[width]
-    return result
+    for window in windows:
+        summaries[f"max_{window}bp"] = maxima[window]
+        summaries[f"peak_{window}bp_position"] = positions[window]
+        summaries[f"peak_{window}bp_strand"] = strands[window]
+    return summaries
 
 
-def fold_consensus(positions, strands, activities):
-    positions = np.asarray(positions, dtype=np.float32)
-    strands = np.asarray(strands, dtype=np.float32)
-    activities = np.asarray(activities, dtype=np.float32)
-    rounded_strands = np.rint(strands).astype(int)
-    agreement = np.maximum((rounded_strands == 0).mean(axis=0), (rounded_strands == 1).mean(axis=0))
+def fold_consensus(peak_positions, peak_strands, peak_activity):
+    """Summarize agreement across the leading fold axis."""
+    peak_positions = as_numpy(peak_positions)
+    peak_strands = as_numpy(peak_strands)
+    peak_activity = as_numpy(peak_activity)
+    if not (
+        peak_positions.shape == peak_strands.shape == peak_activity.shape
+        and peak_positions.ndim >= 1
+    ):
+        raise ValueError("fold consensus inputs must have matching shapes")
+    strand_fraction = np.maximum(
+        (peak_strands == 0).mean(axis=0), (peak_strands == 1).mean(axis=0)
+    )
+    mean_activity = peak_activity.mean(axis=0)
     return {
-        "peak_position_mean": positions.mean(axis=0),
-        "peak_position_sd": positions.std(axis=0),
-        "peak_strand_agreement": agreement,
-        "peak_activity_mean": activities.mean(axis=0),
-        "peak_activity_sd": activities.std(axis=0),
+        "peak_position_sd": peak_positions.std(axis=0),
+        "peak_strand_agreement": strand_fraction,
+        "peak_activity_mean": mean_activity,
+        "peak_activity_cv": peak_activity.std(axis=0)
+        / np.maximum(mean_activity, 1e-12),
     }
 
 
-def _profile_outputs(model, X, batch_size, device):
-    logits, log_counts = predict(model=model, X=X, batch_size=batch_size, device=device)
-    logits = as_numpy(logits).astype(np.float32)
-    counts = np.exp(as_numpy(log_counts).reshape(logits.shape[0], -1)).sum(axis=1)
-    flat = logits.reshape(logits.shape[0], -1)
-    centered = flat - flat.mean(axis=1, keepdims=True)
-    probabilities = np.exp(centered - centered.max(axis=1, keepdims=True))
-    probabilities /= probabilities.sum(axis=1, keepdims=True)
+def predicted_activity(model, genomic_input, references, batch_size, device):
+    """Predict complete profiles and summaries for genomic and reference inputs."""
+    sequences = torch.cat([genomic_input.cpu(), references.cpu()])
+    profile_logits, log_counts = predict(
+        model=model,
+        X=sequences,
+        batch_size=batch_size,
+        device=device,
+    )
+    profile_logits = torch.as_tensor(profile_logits)
+    original_shape = profile_logits.shape
+    flattened = profile_logits.reshape(len(sequences), -1)
+    centered = flattened - flattened.mean(dim=-1, keepdim=True)
+    log_probabilities = torch.log_softmax(centered, dim=-1)
+    probabilities = log_probabilities.exp()
+    counts = torch.exp(torch.as_tensor(log_counts).reshape(len(sequences), -1)).sum(
+        dim=-1
+    )
     count_scaled = probabilities * counts[:, None]
-    profile_score = (centered * probabilities).sum(axis=1)
-    return (
-        centered.reshape(logits.shape),
-        probabilities.reshape(logits.shape),
-        count_scaled.reshape(logits.shape),
-        counts.astype(np.float32),
-        profile_score.astype(np.float32),
+    genomic_profile = probabilities[:1]
+    midpoint = 0.5 * (probabilities[1:] + genomic_profile)
+    jsd = 0.5 * (
+        (
+            probabilities[1:]
+            * (log_probabilities[1:] - torch.log(midpoint.clamp_min(1e-12)))
+        ).sum(dim=-1)
+        + (
+            genomic_profile
+            * (log_probabilities[:1] - torch.log(midpoint.clamp_min(1e-12)))
+        ).sum(dim=-1)
     )
-
-
-def _jsd(reference_probabilities, genomic_probability):
-    p = reference_probabilities.reshape(reference_probabilities.shape[0], -1)
-    q = genomic_probability.reshape(1, -1)
-    midpoint = 0.5 * (p + q)
-    p = np.clip(p, 1e-12, None)
-    q = np.clip(q, 1e-12, None)
-    midpoint = np.clip(midpoint, 1e-12, None)
-    return 0.5 * (p * np.log2(p / midpoint)).sum(axis=1) + 0.5 * (
-        q * np.log2(q / midpoint)
-    ).sum(axis=1)
-
-
-def predicted_activity(model, X, references, batch_size=32, device="cpu"):
-    combined = torch.cat([X.cpu().float(), references.cpu().float()])
-    centered, probabilities, count_scaled, counts, profile_score = _profile_outputs(
-        model, combined, batch_size, device
+    profile_score = (centered * torch.softmax(centered, dim=-1)).sum(dim=-1)
+    centered = centered.reshape(original_shape)
+    probabilities = probabilities.reshape(original_shape)
+    count_scaled = count_scaled.reshape(original_shape)
+    summaries = profile_summaries(
+        as_numpy(probabilities), as_numpy(count_scaled), windows=(1, 5, 20)
     )
-    genomic_centered = centered[:1]
-    genomic_probabilities = probabilities[:1]
-    genomic_count_scaled = count_scaled[:1]
-    reference_probabilities = probabilities[1:]
-    reference_count_scaled = count_scaled[1:]
     return {
-        "genomic_centered_logits": genomic_centered,
-        "genomic_probabilities": genomic_probabilities,
-        "genomic_count_scaled": genomic_count_scaled,
-        "genomic_counts": counts[0],
-        "genomic_profile_score": profile_score[0],
-        "reference_centered_logits": centered[1:],
-        "reference_probabilities": reference_probabilities,
-        "reference_count_scaled": reference_count_scaled,
-        "reference_counts": counts[1:],
-        "reference_profile_score": profile_score[1:],
-        "reference_profile_jsd": _jsd(reference_probabilities, genomic_probabilities[0]),
-        "reference_summaries": profile_summaries(
-            reference_probabilities, reference_count_scaled, windows=(1, 5, 20)
-        ),
+        "genomic_centered_logits": as_numpy(centered[:1]),
+        "genomic_probabilities": as_numpy(probabilities[:1]),
+        "genomic_count_scaled": as_numpy(count_scaled[:1]),
+        "genomic_profile_score": float(profile_score[0]),
+        "genomic_counts": float(counts[0]),
+        "reference_centered_logits": as_numpy(centered[1:]),
+        "reference_probabilities": as_numpy(probabilities[1:]),
+        "reference_count_scaled": as_numpy(count_scaled[1:]),
+        "reference_profile_score": as_numpy(profile_score[1:]),
+        "reference_counts": as_numpy(counts[1:]),
+        "reference_profile_jsd": as_numpy(jsd),
+        "reference_summaries": {
+            key: value[1:] for key, value in summaries.items()
+        },
+        "genomic_summaries": {
+            key: value[:1] for key, value in summaries.items()
+        },
     }
-
-
-def _robust_high_penalty(values):
-    values = np.asarray(values, dtype=np.float32)
-    median = np.median(values)
-    mad = np.median(np.abs(values - median))
-    scale = 1.4826 * mad if mad > 0 else values.std()
-    if not np.isfinite(scale) or scale == 0:
-        scale = 1.0
-    return np.maximum((values - median) / scale, 0)
-
-
-def reference_weight_schemes(probabilities, counts, temperature=1.0):
-    probabilities = np.asarray(probabilities, dtype=np.float32).mean(axis=0)
-    counts = np.asarray(counts, dtype=np.float32).mean(axis=0)
-    maxima, _, _ = rolling_profile_maxima(probabilities, windows=(20,))
-    plus_mass = probabilities[:, 0].sum(axis=1)
-    minus_mass = probabilities[:, 1].sum(axis=1)
-    metrics = np.vstack([maxima[20], np.abs(plus_mass - minus_mass), np.log1p(counts)])
-    contamination = np.vstack(
-        [
-            np.zeros(probabilities.shape[0], dtype=np.float32),
-            _robust_high_penalty(metrics[0]) + _robust_high_penalty(metrics[1]),
-            _robust_high_penalty(metrics[0])
-            + _robust_high_penalty(metrics[1])
-            + _robust_high_penalty(metrics[2]),
-        ]
-    )
-    weights = np.exp(-contamination / temperature)
-    weights /= weights.sum(axis=1, keepdims=True)
-    return {"metrics": metrics, "contamination": contamination, "weights": weights}
-
-
-def per_reference_attributions(multipliers, X, references):
-    multipliers = torch.as_tensor(multipliers).detach().cpu()
-    if multipliers.ndim == 4:
-        multipliers = multipliers[0]
-    references = references.detach().cpu().float()
-    expanded = X.detach().cpu().float().expand_as(references)
-    projected = hypothetical_attributions((multipliers,), (expanded,), (references,))[0]
-    return projected * expanded
-
-
-def weighted_strand_attributions(per_reference, weights):
-    per_reference = np.asarray(per_reference, dtype=np.float32)
-    weights = np.asarray(weights, dtype=np.float32)
-    if per_reference.shape[0] != weights.shape[0]:
-        raise ValueError("weights must match the number of references")
-    return np.tensordot(weights, per_reference, axes=(0, 0))
-
-
-def low_activity_references(metrics, n_references):
-    frame = np.asarray(metrics)
-    order = np.argsort(frame)
-    return order[:n_references]
 
 
 def reverse_complement_matrix(matrix):
-    matrix = np.asarray(matrix)
-    return matrix[[3, 2, 1, 0], ::-1]
+    return as_numpy(matrix)[..., [3, 2, 1, 0], ::-1]
 
 
 def reverse_complement_tracks(plus, minus):
-    return -np.asarray(minus)[::-1], -np.asarray(plus)[::-1]
+    return np.abs(as_numpy(minus)[::-1]), -np.abs(as_numpy(plus)[::-1])
 
 
-def reverse_complement_peak_coordinates(positions, strands, width, window):
-    positions = np.asarray(positions)
-    strands = np.asarray(strands)
-    return width - window - positions, 1 - strands
+def reverse_complement_peak_coordinates(positions, strands, length, window):
+    positions = as_numpy(positions)
+    strands = as_numpy(strands)
+    return length - window - positions, 1 - strands
 
 
-def genomic_offsets(center, start, end, in_window):
-    input_start = center - in_window // 2
-    left = start - input_start
-    right = end - input_start
-    if left < 0 or right > in_window or right <= left:
-        raise ValueError(
-            f"Requested interval {start + 1}-{end} is outside the {in_window} bp input"
-        )
-    return int(left), int(right)
+def genomic_offsets(center, interval_start, interval_end, input_length):
+    input_start = center - input_length // 2
+    start = interval_start - input_start
+    end = interval_end - input_start
+    if start < 0 or end > input_length or end <= start:
+        raise ValueError("Requested interval is outside the model input window")
+    return start, end
 
 
-def diagnostic_cache_path(cache_dir, experiment, parameters):
+def diagnostic_cache_path(cache_dir, name, parameters):
     payload = json.dumps(parameters, sort_keys=True, default=str).encode()
     digest = hashlib.sha256(payload).hexdigest()[:16]
-    return Path(cache_dir) / f"{experiment}.schema{CACHE_SCHEMA_VERSION}.{digest}.npz"
+    return Path(cache_dir) / f"{name}.{digest}.npz"
