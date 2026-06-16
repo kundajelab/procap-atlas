@@ -35,7 +35,6 @@ FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 
 
-<<<<<<< Updated upstream
 def load_chrom_splits():
     """Load chromosome fold assignments from chrom_splits.yaml.
 
@@ -44,12 +43,11 @@ def load_chrom_splits():
     with open(CHROM_SPLITS_PATH) as f:
         data = yaml.safe_load(f)
     return {int(k): v for k, v in data["folds"].items()}
-=======
+    
 def nucleotide_frequency_references(X):
     """Return one soft reference per sequence using observed base frequencies."""
     frequencies = X.float().mean(dim=-1, keepdim=True)
     return frequencies.expand_as(X).unsqueeze(1).clone()
->>>>>>> Stashed changes
 
 
 def main():
