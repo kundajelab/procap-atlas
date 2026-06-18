@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "procap-atlas-local"
 version = "0.1.0"
@@ -48,6 +52,12 @@ notebook = [
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
+
+[tool.setuptools]
+# This project uses pyproject.toml as a local environment definition. The
+# workflow scripts are run from the repository checkout, not installed as
+# importable top-level packages such as bpnet, cherimoya, or preprocess.
+packages = []
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
