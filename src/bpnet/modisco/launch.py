@@ -18,6 +18,7 @@ Usage:
 """
 
 import argparse
+import re
 import subprocess
 import sys
 import textwrap
@@ -29,6 +30,45 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
+N_PEAKS_PATH = REPO_ROOT / "configs" / "n_peaks.txt"
+
+EXPERIMENT_RE = re.compile(r"^(ENCSR\w+)_")
+DEFAULT_RELAUNCH_PARTITION = "akundaje"
+DEFAULT_RELAUNCH_TIME = "6-23:00:00"
+
+
+def load_peak_counts(path: Path) -> dict[str, int]:
+    """Load experiment peak counts from configs/n_peaks.txt."""
+    peak_counts = {}
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            peak_path, count_text = line.rsplit(":", maxsplit=1)
+            match = EXPERIMENT_RE.match(Path(peak_path).name)
+            if match is None:
+                continue
+            peak_counts[match.group(1)] = int(count_text.strip())
+    return peak_counts
+
+
+def largest_peak_experiments(
+    experiments: list[str], peak_counts: dict[str, int], n_experiments: int
+) -> set[str]:
+    """Return the experiment IDs with the largest peak sets."""
+    if n_experiments <= 0:
+        return set()
+    ranked = sorted(
+        (
+            (exp_id, peak_counts[exp_id])
+            for exp_id in experiments
+            if exp_id in peak_counts
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    return {exp_id for exp_id, _ in ranked[:n_experiments]}
 
 
 def main():
@@ -75,6 +115,33 @@ def main():
     parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="2-00:00:00")
     parser.add_argument(
+        "--large-peak-top-n",
+        type=int,
+        default=30,
+        help=(
+            "number of largest peak-set experiments to launch with relaunch-style "
+            "SLURM defaults (default: 30; use 0 to disable)"
+        ),
+    )
+    parser.add_argument(
+        "--large-peak-partition",
+        type=str,
+        default=DEFAULT_RELAUNCH_PARTITION,
+        help=(
+            "partition for large peak-set jobs "
+            f"(default: {DEFAULT_RELAUNCH_PARTITION})"
+        ),
+    )
+    parser.add_argument(
+        "--large-peak-time",
+        type=str,
+        default=DEFAULT_RELAUNCH_TIME,
+        help=(
+            "time limit for large peak-set jobs "
+            f"(default: {DEFAULT_RELAUNCH_TIME})"
+        ),
+    )
+    parser.add_argument(
         "--min-reads",
         type=int,
         default=0,
@@ -94,6 +161,10 @@ def main():
         N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
     )
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
+    peak_counts = load_peak_counts(N_PEAKS_PATH)
+    large_peak_experiments = largest_peak_experiments(
+        experiments, peak_counts, args.large_peak_top_n
+    )
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
     out_dir = REPO_ROOT / "modisco" / "bpnet"
@@ -129,6 +200,11 @@ def main():
                 skipped_done += 1
                 continue
 
+            is_large_peak_job = exp_id in large_peak_experiments
+            partition = (
+                args.large_peak_partition if is_large_peak_job else args.partition
+            )
+            time = args.large_peak_time if is_large_peak_job else args.time
             job_name = f"modisco_{exp_id}_{head}"
 
             modisco_motifs_cmd = (
@@ -147,8 +223,8 @@ def main():
                 #SBATCH --nodes=1
                 #SBATCH --cpus-per-task={args.cpus_per_task}
                 #SBATCH --mem={args.mem}
-                #SBATCH --partition={args.partition}
-                #SBATCH --time={args.time}
+                #SBATCH --partition={partition}
+                #SBATCH --time={time}
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
                 #SBATCH -C NO_GPU
@@ -173,7 +249,13 @@ def main():
             """)
 
             if args.dry_run:
-                print(f"--- {job_name} ---")
+                peak_note = ""
+                if is_large_peak_job:
+                    peak_note = (
+                        f" (large peak set: {peak_counts.get(exp_id, 0):,} peaks, "
+                        f"partition: {partition}, time: {time})"
+                    )
+                print(f"--- {job_name}{peak_note} ---")
                 print(sbatch_script)
                 submitted += 1
                 continue
@@ -195,7 +277,9 @@ def main():
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
         f"with <{args.min_reads:,} reads, skipped {skipped_no_attr} missing attributions, "
-        f"skipped {skipped_done} already done ({total} total)"
+        f"skipped {skipped_done} already done ({total} total). "
+        f"Large peak-set split: top {len(large_peak_experiments)} experiments use "
+        f"{args.large_peak_partition} for {args.large_peak_time}."
     )
 
 

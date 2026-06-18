@@ -192,6 +192,13 @@ python src/bpnet/modisco/launch.py --min-reads 20000000
 python src/bpnet/modisco/launch.py -n 500000 -l 30 -w 500
 ```
 
+By default, `launch.py` submits the 30 experiments with the largest processed
+peak sets using the timeout-relaunch SLURM defaults (`--partition akundaje` and
+`--time 6-23:00:00`). Remaining jobs use the standard launch defaults
+(`--partition normal,akundaje,owners` and `--time 2-00:00:00`). Override the
+large-job split with `--large-peak-top-n`, `--large-peak-partition`, or
+`--large-peak-time`; use `--large-peak-top-n 0` to disable it.
+
 Generate motif reports after `.h5` files are complete:
 
 ```bash
