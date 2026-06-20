@@ -9,3 +9,15 @@ Apptainer is not a general requirement for Cherimoya. On another cluster, prefer
 ```bash
 apptainer build cherimoya.sif cherimoya.def
 ```
+
+`cherimoya.def` installs `cherimoya==0.1.0` from PyPI.
+
+An experimental GitHub-sourced definition is also available:
+
+```bash
+apptainer build cherimoya-github.sif cherimoya-github.def
+```
+
+`cherimoya-github.def` installs Cherimoya from
+`https://github.com/jmschrei/cherimoya.git` at tag `v0.1.0`, the latest GitHub
+tag available on 2026-06-19.

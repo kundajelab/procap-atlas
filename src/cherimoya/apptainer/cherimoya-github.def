@@ -12,8 +12,9 @@ From: nvcr.io/nvidia/pytorch:25.10-py3
 
     python -m pip install --upgrade pip setuptools wheel
 
-    # Cherimoya + likely genomics/CLI dependencies
-    python -m pip install pynvml cherimoya==0.1.0
+    # Latest Cherimoya GitHub tag available on 2026-06-19.
+    python -m pip install pynvml \
+        "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@v0.1.0"
 
     # Optional but useful for source/debugging
     python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam macs3
