@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:25.10-py3
+From: nvcr.io/nvidia/pytorch:26.05-py3
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -12,9 +12,15 @@ From: nvcr.io/nvidia/pytorch:25.10-py3
 
     python -m pip install --upgrade pip setuptools wheel
 
-    # Latest Cherimoya GitHub version available on 2026-06-21:
-    # version 0.1.1 from main, pinned to the release commit.
+    # Install non-PyTorch Cherimoya dependencies while preserving the
+    # NVIDIA-tested torch/torchvision pair already present in the base image.
     python -m pip install pynvml \
+        numpy scipy pandas h5py tqdm seaborn modisco tangermeme macs3 \
+        bam2bw bpnet-lite joblib
+
+    # Latest Cherimoya GitHub version available on 2026-06-21:
+    # version 0.1.1 from main, pinned to the release commit. 
+    python -m pip install \
         "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@b7948c1ee6f648b05e50f52c098fcc5e4f0fede9"
 
     # Optional but useful for source/debugging
