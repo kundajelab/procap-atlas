@@ -19,5 +19,7 @@ apptainer build cherimoya-github.sif cherimoya-github.def
 ```
 
 `cherimoya-github.def` installs Cherimoya from
-`https://github.com/jmschrei/cherimoya.git` at tag `v0.1.0`, the latest GitHub
-tag available on 2026-06-19.
+`https://github.com/jmschrei/cherimoya.git` at commit
+`b7948c1ee6f648b05e50f52c098fcc5e4f0fede9`, where the package version is
+`0.1.1`. This is the latest GitHub version available on 2026-06-21; PyPI still
+only publishes `0.1.0`.

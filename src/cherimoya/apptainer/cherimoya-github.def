@@ -12,9 +12,10 @@ From: nvcr.io/nvidia/pytorch:25.10-py3
 
     python -m pip install --upgrade pip setuptools wheel
 
-    # Latest Cherimoya GitHub tag available on 2026-06-19.
+    # Latest Cherimoya GitHub version available on 2026-06-21:
+    # version 0.1.1 from main, pinned to the release commit.
     python -m pip install pynvml \
-        "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@v0.1.0"
+        "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@b7948c1ee6f648b05e50f52c098fcc5e4f0fede9"
 
     # Optional but useful for source/debugging
     python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam macs3
