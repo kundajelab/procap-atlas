@@ -1,16 +1,18 @@
 # Notebooks
 
-## BPNet Locus Frequency Viewer
+## BPNet Locus Viewer
 
-`procap_atlas_bpnet_locus_frequency_viewer.ipynb` is the lightweight viewer for
-one locus. It downloads the selected BPNet fold models, observed plus/minus
-BigWigs, metadata, and hg38, then:
+`procap_atlas_bpnet_locus_viewer.ipynb` is the lightweight frequency-reference
+viewer for one locus. It downloads the selected BPNet fold models, observed
+plus/minus BigWigs, metadata, and hg38, then:
 
 - generates fold-averaged predicted plus/minus signal locally;
-- plots observed and predicted strand-specific signal, with the minus strand
-  shown as negative values;
+- stacks observed and predicted strand-specific signal in separate panels, with
+  the minus strand shown as negative values, so scale differences are easier to
+  inspect;
 - computes profile-head and count-head DeepLIFT/SHAP logos using the production
-  observed-nucleotide-frequency soft reference.
+  observed-nucleotide-frequency soft reference and places the logos in the same
+  summary figure as the tracks.
 
 Use this notebook when you want a direct locus visualization without the
 shuffled-reference instability diagnostics below. Configure `EXP_ID`,
@@ -19,10 +21,11 @@ configuration cell.
 
 ## BPNet Locus Diagnostics
 
-`procap_atlas_bpnet_locus_viewer.ipynb` generates locus predictions and
+`procap_atlas_bpnet_locus_diagnostics.py` generates locus predictions and
 diagnostics for DeepLIFT reference-sequence instability. It downloads the
 selected experiment's models, observed tracks, metadata, and hg38 reference
-genome rather than using precomputed predicted tracks.
+genome rather than using precomputed predicted tracks. Use this batch script
+when you need the full shuffled-reference diagnostic panel set.
 
 The diagnostic figures include joint-profile and strand-specific profile
 DeepLIFT attributions. Each strand-specific target uses one softmax over both
@@ -232,9 +235,9 @@ The selection score penalizes high predicted counts, sharp 5 bp / 20 bp
 count-scaled profile peaks, high profile concentration, strong strand
 imbalance, and low profile entropy. It does not inspect the genomic-input
 attribution, so real strand-specific motifs are not directly downweighted.
-`notebooks.deeplift` contains the local BPNet-lite/Tangermeme DeepLIFT wrapper
-used by this script; it preserves the one-hot validation for the genomic input
-but allows tensor references to be soft PFMs.
+The low-activity reference workflow uses `src.bpnet.attribute.deeplift`, which
+preserves one-hot validation for the genomic input but allows tensor references
+to be soft PFMs.
 
 ```bash
 uv run --frozen --group notebook python \

@@ -18,7 +18,7 @@ api.upload_large_folder(
 
 upload_folder(folder_path="configs/", repo_id=HF_REPO_ID, repo_type="model")
 upload_file(
-    path_or_fileobj=REPO_ROOT / "config.json",
+    path_or_fileobj=REPO_ROOT / "hf" / "config.json",
     path_in_repo="config.json",
     repo_id=HF_REPO_ID,
     repo_type="model",
