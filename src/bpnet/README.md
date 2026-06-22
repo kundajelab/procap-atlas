@@ -6,7 +6,7 @@ converted to browser tracks, and analyzed for motifs.
 
 ## Status
 
-BPNet is the deployable model family for the atlas. The root `config.json`,
+BPNet is the deployable model family for the atlas. `hf/config.json`,
 `configs/`, and trained BPNet artifacts are uploaded by `model_upload.py` to the
 Hugging Face model repo.
 
@@ -134,7 +134,7 @@ Default experiment-model outputs (`{experiment}_pl.bigWig` and
 python src/bpnet/model_upload.py
 ```
 
-Uploads BPNet model artifacts, `configs/`, and the root `config.json` to
+Uploads BPNet model artifacts, `configs/`, and `hf/config.json` to
 `adamyhe/procap-atlas`.
 
 ## Attributions
@@ -162,8 +162,16 @@ attributions/bpnet/{experiment}_ohe.npz
 
 `attribute_bpnet.py` defaults to the DeepLIFT genomic nucleotide-frequency null:
 one soft reference per input sequence with the sequence's observed A/C/G/T
-frequencies repeated at every position. Use `--reference-mode dinucleotide` and
-`--n-shuffles` to reproduce the previous dinucleotide-shuffle baseline.
+frequencies repeated at every position. This follows the soft-reference idea in
+DeepLIFT (Shrikumar et al., 2017, ICML, "Learning Important Features Through
+Propagating Activation Differences").
+
+Use `--reference-mode dinucleotide` and `--n-shuffles` to reproduce the previous
+dinucleotide-shuffle baseline. In locus diagnostics, dinucleotide shuffles
+sometimes produced active reference sequences with cryptic promoter-like
+signals; for some loci these shuffled references were as active as, or more
+active than, the genomic input, making the baseline reference-sensitive rather
+than neutral.
 
 Convert observed-nucleotide attribution scores to BigWig:
 

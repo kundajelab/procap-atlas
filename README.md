@@ -112,7 +112,7 @@ Primary workflow docs:
 ```text
 data_manifests/   Curated ENCODE URL manifests and metadata
 configs/          Generated experiment config, fold splits, read counts, flags
-config.json       Hugging Face BPNet model metadata
+hf/               Hugging Face markdowns and BPNet model metadata
 src/download/     Download scripts
 src/preprocess/   Processing pipeline for model inputs
 src/bpnet/        Primary BPNet model workflow
