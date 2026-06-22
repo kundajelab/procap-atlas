@@ -12,12 +12,14 @@ plus/minus BigWigs, metadata, and hg38, then:
   inspect;
 - computes profile-head and count-head DeepLIFT/SHAP logos using the production
   observed-nucleotide-frequency soft reference and places the logos in the same
-  summary figure as the tracks.
+  summary figure as the tracks. All panels share the same genomic x tick
+  positions.
 
 Use this notebook when you want a direct locus visualization without the
-shuffled-reference instability diagnostics below. Configure `EXP_ID`,
-`POINT_REGION`, `VIEW_REGION`, `LOGO_REGION`, and `REVERSE_COMPLEMENT` in the
-configuration cell.
+shuffled-reference instability diagnostics below. Configure `EXP_ID`, `REGION`,
+and `REVERSE_COMPLEMENT` in the configuration cell. The single `REGION` is used
+for model-input centering, the observed/predicted track window, and the
+DeepLIFT logo crop.
 
 Open the notebook through the Colab badge in the first cell for the default
 workflow. The setup cell detects Colab, clones this repository into

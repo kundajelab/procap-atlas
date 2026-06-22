@@ -57,6 +57,19 @@ def parse_interval(region: str) -> tuple[str, int, int]:
     return chrom, start - 1, end
 
 
+def interval_center(start: int, end: int) -> int:
+    """Return the 0-based center coordinate for a half-open interval."""
+    return (start + end) // 2
+
+
+def region_center(region: str) -> tuple[str, int]:
+    """Return the model-center coordinate implied by a point or interval string."""
+    if "-" in region.split(":", 1)[1]:
+        chrom, start, end = parse_interval(region)
+        return chrom, interval_center(start, end)
+    return parse_point(region)
+
+
 def download_first(repo_id: str, repo_type: str, filenames: list[str]) -> Path:
     """Download the first matching Hugging Face path from a fallback list."""
     last_error = None
@@ -147,6 +160,22 @@ def locus_input(resources: dict, point_region: str) -> tuple[str, int, torch.Ten
     return chrom, center, X.float()
 
 
+def region_input(resources: dict, region: str) -> tuple[str, int, int, int, torch.Tensor]:
+    """Extract model input centered on a region of interest."""
+    chrom, start, end = parse_interval(region)
+    center = interval_center(start, end)
+    loci = pd.DataFrame({"chrom": [chrom], "start": [center], "end": [center + 1]})
+    X = extract_loci(
+        loci,
+        sequences=str(resources["fasta"]),
+        in_window=IN_WINDOW,
+        ignore=["N", "n"],
+    )
+    if len(X) != 1:
+        raise ValueError("The requested region could not be extracted")
+    return chrom, start, end, center, X.float()
+
+
 def nucleotide_frequency_references(X: torch.Tensor) -> torch.Tensor:
     """Create one soft reference from the input-wide A/C/G/T frequencies."""
     frequencies = X.float().mean(dim=-1, keepdim=True)
@@ -163,6 +192,13 @@ def logo_offsets_for_locus(
         raise ValueError("POINT_REGION and LOGO_REGION must use the same chromosome")
     offsets = genomic_offsets(center, logo_start, logo_end, IN_WINDOW)
     return logo_chrom, logo_start, logo_end, offsets
+
+
+def logo_offsets_for_region(region: str) -> tuple[str, int, int, tuple[int, int]]:
+    """Map a region of interest onto the input window centered on that region."""
+    chrom, start, end = parse_interval(region)
+    offsets = genomic_offsets(interval_center(start, end), start, end, IN_WINDOW)
+    return chrom, start, end, offsets
 
 
 def scaled_prediction(model: torch.nn.Module, X: torch.Tensor, device: str) -> np.ndarray:
@@ -204,15 +240,15 @@ def bigwig_values(path: Path, chrom: str, start: int, end: int) -> np.ndarray:
 def track_arrays(
     prediction: np.ndarray,
     resources: dict,
-    point_region: str,
+    center_region: str,
     view_region: str,
     reverse_complement: bool = False,
 ) -> dict[str, np.ndarray]:
     """Return observed and predicted plus/minus tracks for the view interval."""
-    chrom, center = parse_point(point_region)
+    chrom, center = region_center(center_region)
     view_chrom, start, end = parse_interval(view_region)
     if view_chrom != chrom:
-        raise ValueError("POINT_REGION and VIEW_REGION must use the same chromosome")
+        raise ValueError("Center region and view region must use the same chromosome")
     output_start = center - OUT_WINDOW // 2
     output_end = output_start + OUT_WINDOW
     if start < output_start or end > output_end:
@@ -263,6 +299,20 @@ def format_track_axis(ax, x: np.ndarray, title: str) -> None:
     ax.legend(frameon=False, ncol=2)
 
 
+def shared_ticks(x_limits: tuple[float, float], n_ticks: int = 5) -> np.ndarray:
+    """Return common integer genomic tick positions for stacked panels."""
+    return np.linspace(x_limits[0], x_limits[1], n_ticks, dtype=int)
+
+
+def apply_shared_ticks(ax, ticks: np.ndarray, show_labels: bool = False) -> None:
+    """Apply the same x tick locations to one panel."""
+    ax.set_xticks(ticks)
+    if show_labels:
+        ax.set_xticklabels([f"{value:,}" for value in ticks])
+    else:
+        ax.tick_params(axis="x", labelbottom=False)
+
+
 def plot_tracks(
     prediction: np.ndarray,
     resources: dict,
@@ -276,6 +326,7 @@ def plot_tracks(
         prediction, resources, point_region, view_region, reverse_complement
     )
     x = tracks["x"]
+    ticks = shared_ticks((float(x[0]), float(x[-1])))
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.2), sharex=True)
     axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
     axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
@@ -295,16 +346,11 @@ def plot_tracks(
         label="predicted minus",
     )
     format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}")
+    apply_shared_ticks(axes[0], ticks)
+    apply_shared_ticks(axes[1], ticks, show_labels=True)
     axes[1].set_xlabel("Genomic position")
     fig.tight_layout()
     return fig, axes
-
-
-def genomic_ticks(ax, x_limits: tuple[float, float]) -> None:
-    """Label an axis that already uses 1-based genomic coordinates."""
-    positions = np.linspace(x_limits[0], x_limits[1], 5, dtype=int)
-    ax.set_xticks(positions)
-    ax.set_xticklabels([f"{value:,}" for value in positions])
 
 
 def shift_logo_to_genomic_axis(
@@ -331,6 +377,8 @@ def plot_logo_panel(
     logo_end: int,
     reverse_complement: bool = False,
     x_limits: tuple[float, float] | None = None,
+    ticks: np.ndarray | None = None,
+    show_tick_labels: bool = False,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
     plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax)
@@ -340,7 +388,8 @@ def plot_logo_panel(
     else:
         shift_logo_to_genomic_axis(ax, logo_start, logo_end, reverse_complement)
         ax.set_xlim(*x_limits)
-        genomic_ticks(ax, x_limits)
+        if ticks is not None:
+            apply_shared_ticks(ax, ticks, show_labels=show_tick_labels)
 
 
 def plot_locus_summary(
@@ -361,6 +410,7 @@ def plot_locus_summary(
     )
     x = tracks["x"]
     x_limits = (float(x[0]), float(x[-1]))
+    ticks = shared_ticks(x_limits)
     fig, axes = plt.subplots(
         4,
         1,
@@ -370,6 +420,7 @@ def plot_locus_summary(
     axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
     axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
     format_track_axis(axes[0], x, f"{exp_id} observed {view_region}")
+    apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
         x,
         tracks["predicted_plus"],
@@ -385,6 +436,7 @@ def plot_locus_summary(
         label="predicted minus",
     )
     format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}")
+    apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
         plot_logo_panel(
@@ -395,6 +447,8 @@ def plot_locus_summary(
             logo_end,
             reverse_complement,
             x_limits,
+            ticks,
+            show_tick_labels=ax is axes[-1],
         )
     axes[-1].set_xlabel("Genomic position")
     fig.tight_layout()

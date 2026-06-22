@@ -1,6 +1,7 @@
 # PRO-cap Atlas
 
 [![Weights](https://img.shields.io/badge/%F0%9F%A4%97-Weights-yellow)](https://huggingface.co/collections/adamyhe/procap-atlas)
+[![Open locus viewer in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kundajelab/procap-atlas/blob/main/notebooks/procap_atlas_bpnet_locus_viewer.ipynb)
 
 Preprocessing, modeling, and atlas-level analysis for ENCODE PRO-cap data.
 PRO-cap (Precision Run-On sequencing with cap selection) profiles
