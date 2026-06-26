@@ -27,6 +27,8 @@ import yaml
 from tangermeme.io import extract_loci
 from tangermeme.predict import predict
 
+from src.modeling.profile import count_scaled_profile
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
@@ -85,18 +87,7 @@ def parse_args() -> argparse.Namespace:
 def scale_profile_logits(profile_logits, log_counts) -> np.ndarray:
     """Convert profile logits and log-count predictions to count-scale profiles."""
     logits = np.asarray(profile_logits, dtype=np.float64)
-    counts = np.asarray(log_counts, dtype=np.float64).reshape(logits.shape[0], -1)
-    if counts.shape[1] != 1:
-        raise ValueError(
-            "log_counts must contain one count prediction per locus; "
-            f"got shape {np.asarray(log_counts).shape}"
-        )
-
-    flat = logits.reshape(logits.shape[0], -1)
-    shifted = flat - np.max(flat, axis=1, keepdims=True)
-    probs = np.exp(shifted)
-    probs /= probs.sum(axis=1, keepdims=True)
-    scaled = probs * np.exp(counts)
+    scaled = count_scaled_profile(logits, log_counts)
     return scaled.reshape(logits.shape).astype(np.float32, copy=False)
 
 

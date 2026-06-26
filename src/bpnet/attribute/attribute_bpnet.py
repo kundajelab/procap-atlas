@@ -6,6 +6,7 @@ peaks genome-wide, averages across folds, and saves to attributions/bpnet/.
 Usage:
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head count
+    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head orientation
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --reference-mode dinucleotide
 """
@@ -22,6 +23,8 @@ import yaml
 import torch
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from tangermeme.io import extract_loci
+
+from src.modeling.wrappers import OrientationIndexWrapper
 
 try:
     from src.bpnet.attribute.deeplift import deep_lift_shap
@@ -70,8 +73,8 @@ def main():
         "--head",
         type=str,
         default="profile",
-        choices=["profile", "count"],
-        help="type of prediction to make (profile or count)",
+        choices=["profile", "count", "orientation"],
+        help="type of prediction to attribute (profile, count, or orientation)",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64)
     parser.add_argument(
@@ -195,6 +198,8 @@ def main():
             model = ProfileWrapper(model)
         elif args.head == "count":
             model = CountWrapper(model)
+        elif args.head == "orientation":
+            model = OrientationIndexWrapper(model)
         if args.reference_mode == "frequency":
             references = nucleotide_frequency_references(X)
             n_shuffles = 1

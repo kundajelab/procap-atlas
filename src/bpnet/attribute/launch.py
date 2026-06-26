@@ -11,6 +11,7 @@ Usage:
     python src/bpnet/attribute/launch.py                    # submit all experiments, profile head
     python src/bpnet/attribute/launch.py --dry-run           # print sbatch scripts without submitting
     python src/bpnet/attribute/launch.py --head count        # count head only
+    python src/bpnet/attribute/launch.py --head orientation  # orientation index only
     python src/bpnet/attribute/launch.py --head profile --head count  # both heads
     python src/bpnet/attribute/launch.py --time 24:00:00 --mem 64G --partition gpu
     python src/bpnet/attribute/launch.py --min-reads 20000000  # only well-covered experiments
@@ -43,7 +44,7 @@ def main():
         "--head",
         type=str,
         action="append",
-        choices=["profile", "count"],
+        choices=["profile", "count", "orientation"],
         default=None,
         metavar="HEAD",
         help="attribution head(s) to run; repeatable (default: profile)",
