@@ -324,13 +324,12 @@ def transform_track_arrays(
     }
 
 
-def frame_panel(ax, linewidth: float = 0.8) -> None:
-    """Draw a black frame around one panel."""
-    for spine in ax.spines.values():
-        spine.set_visible(True)
-        spine.set_color("black")
-        spine.set_linewidth(linewidth)
-    ax.grid(False)
+def emphasize_left_y_axis(ax, linewidth: float = 0.8) -> None:
+    """Draw the left y-axis in black while preserving the active plot style."""
+    ax.spines["left"].set_visible(True)
+    ax.spines["left"].set_color("black")
+    ax.spines["left"].set_linewidth(linewidth)
+    ax.tick_params(axis="y", color="black", labelcolor="black")
 
 
 def format_track_axis(
@@ -338,18 +337,16 @@ def format_track_axis(
     x: np.ndarray,
     title: str,
     track_transform: str | None = None,
-    show_text: bool = True,
 ) -> None:
     """Apply shared formatting to one plus/minus signal track axis."""
     ax.set_xlim(x[0], x[-1])
-    if show_text:
-        ax.set_title(title)
-        ylabel = "PRO-cap signal"
-        if track_transform not in {None, "none", "linear"}:
-            ylabel = f"{track_transform} {ylabel}"
-        ax.set_ylabel(ylabel)
-        ax.legend(frameon=False, ncol=2)
-    frame_panel(ax)
+    ax.set_title(title)
+    ylabel = "PRO-cap signal"
+    if track_transform not in {None, "none", "linear"}:
+        ylabel = f"{track_transform} {ylabel}"
+    ax.set_ylabel(ylabel)
+    ax.legend(frameon=False, ncol=2)
+    emphasize_left_y_axis(ax)
 
 
 def shared_ticks(x_limits: tuple[float, float], n_ticks: int = 5) -> np.ndarray:
@@ -364,20 +361,6 @@ def apply_shared_ticks(ax, ticks: np.ndarray, show_labels: bool = False) -> None
         ax.set_xticklabels([f"{value:,}" for value in ticks])
     else:
         ax.tick_params(axis="x", labelbottom=False)
-
-
-def hide_panel_text(ax) -> None:
-    """Remove visible text from a compact panel."""
-    ax.set_title("")
-    ax.set_xlabel("")
-    ax.set_ylabel("")
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.xaxis.get_offset_text().set_visible(False)
-    ax.yaxis.get_offset_text().set_visible(False)
-    legend = ax.get_legend()
-    if legend is not None:
-        legend.remove()
 
 
 def plot_tracks(
@@ -448,12 +431,10 @@ def plot_logo_panel(
     x_limits: tuple[float, float] | None = None,
     ticks: np.ndarray | None = None,
     show_tick_labels: bool = False,
-    show_text: bool = True,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
     plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax)
-    if show_text:
-        ax.set_title(title)
+    ax.set_title(title)
     if x_limits is None:
         logo_ticks(ax, logo_start, logo_end, reverse_complement)
     else:
@@ -461,7 +442,7 @@ def plot_logo_panel(
         ax.set_xlim(*x_limits)
         if ticks is not None:
             apply_shared_ticks(ax, ticks, show_labels=show_tick_labels)
-    frame_panel(ax)
+    emphasize_left_y_axis(ax)
 
 
 def plot_locus_summary(
@@ -476,7 +457,6 @@ def plot_locus_summary(
     logo_end: int,
     reverse_complement: bool = False,
     track_transform: str | None = None,
-    show_text: bool = False,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
     tracks = track_arrays(
@@ -499,7 +479,6 @@ def plot_locus_summary(
         x,
         f"{exp_id} observed {view_region}",
         track_transform,
-        show_text=show_text,
     )
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
@@ -521,7 +500,6 @@ def plot_locus_summary(
         x,
         f"{exp_id} predicted {view_region}",
         track_transform,
-        show_text=show_text,
     )
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
@@ -535,16 +513,10 @@ def plot_locus_summary(
             reverse_complement,
             x_limits,
             ticks,
-            show_tick_labels=show_text and ax is axes[-1],
-            show_text=show_text,
+            show_tick_labels=ax is axes[-1],
         )
-    if show_text:
-        axes[-1].set_xlabel("Genomic position")
-        fig.tight_layout()
-    else:
-        for ax in axes:
-            hide_panel_text(ax)
-        fig.subplots_adjust(left=0, right=1, bottom=0, top=1, hspace=0.08)
+    axes[-1].set_xlabel("Genomic position")
+    fig.tight_layout()
     fig.set_size_inches(*SUMMARY_FIGURE_SIZE_IN, forward=True)
     return fig, axes
 
@@ -626,7 +598,6 @@ def plot_deeplift_logos(
             logo_end,
             reverse_complement,
         )
-        frame_panel(ax)
     fig.suptitle(f"{exp_id} {logo_region}")
     fig.tight_layout()
     return fig, axes
