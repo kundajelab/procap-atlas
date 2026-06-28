@@ -371,7 +371,10 @@ def hide_panel_text(ax) -> None:
     ax.set_title("")
     ax.set_xlabel("")
     ax.set_ylabel("")
-    ax.tick_params(labelbottom=False, labelleft=False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.xaxis.get_offset_text().set_visible(False)
+    ax.yaxis.get_offset_text().set_visible(False)
     legend = ax.get_legend()
     if legend is not None:
         legend.remove()
@@ -537,10 +540,12 @@ def plot_locus_summary(
         )
     if show_text:
         axes[-1].set_xlabel("Genomic position")
+        fig.tight_layout()
     else:
         for ax in axes:
             hide_panel_text(ax)
-    fig.tight_layout()
+        fig.subplots_adjust(left=0, right=1, bottom=0, top=1, hspace=0.08)
+    fig.set_size_inches(*SUMMARY_FIGURE_SIZE_IN, forward=True)
     return fig, axes
 
 
@@ -655,7 +660,11 @@ def save_locus_viewer_outputs(
         logo_end,
         reverse_complement,
         track_transform,
-    )[0].savefig(output_dir / "locus_viewer_summary.pdf")
+    )[0].savefig(
+        output_dir / "locus_viewer_summary.pdf",
+        bbox_inches=None,
+        pad_inches=0,
+    )
     np.savez_compressed(
         output_dir / "locus_viewer_arrays.npz",
         prediction=prediction,
