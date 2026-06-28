@@ -17,9 +17,11 @@ plus/minus BigWigs, metadata, and hg38, then:
 
 Use this notebook when you want a direct locus visualization without the
 shuffled-reference instability diagnostics below. Configure `EXP_ID`, `REGION`,
-and `REVERSE_COMPLEMENT` in the configuration cell. The single `REGION` is used
-for model-input centering, the observed/predicted track window, and the
-DeepLIFT logo crop.
+`REVERSE_COMPLEMENT`, and `TRACK_VALUE_TRANSFORM` in the configuration cell. The
+single `REGION` is used for model-input centering, the observed/predicted track
+window, and the DeepLIFT logo crop. `TRACK_VALUE_TRANSFORM` controls
+display-only sign-preserving squashing of observed and predicted tracks with
+`None`, `"sqrt"`, or `"log1p"`.
 
 Open the notebook through the Colab badge in the first cell for the default
 workflow. The setup cell detects Colab, clones this repository into

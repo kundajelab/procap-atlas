@@ -40,6 +40,9 @@ METADATA_REPO_ID = "adamyhe/procap-atlas-metadata"
 REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz"
 IN_WINDOW = 2114
 OUT_WINDOW = 1000
+POINTS_PER_INCH = 72
+SUMMARY_FIGURE_SIZE_PT = (540.9, 82.7)
+SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
 
 
 def parse_point(region: str) -> tuple[str, int]:
@@ -290,13 +293,61 @@ def track_arrays(
     }
 
 
-def format_track_axis(ax, x: np.ndarray, title: str) -> None:
+def signed_value_transform(values: np.ndarray, transform: str | None) -> np.ndarray:
+    """Apply an optional sign-preserving display transform to signal tracks."""
+    if isinstance(transform, str):
+        transform = transform.lower()
+    if transform is None or transform in {"none", "linear"}:
+        return values
+    absolute = np.abs(values)
+    if transform == "sqrt":
+        transformed = np.sqrt(absolute)
+    elif transform in {"log", "log1p"}:
+        transformed = np.log1p(absolute)
+    else:
+        raise ValueError("track_transform must be one of None, 'sqrt', or 'log1p'")
+    return np.sign(values) * transformed
+
+
+def transform_track_arrays(
+    tracks: dict[str, np.ndarray],
+    track_transform: str | None = None,
+) -> dict[str, np.ndarray]:
+    """Return tracks with an optional display transform applied to signal arrays."""
+    return {
+        key: (
+            signed_value_transform(value, track_transform)
+            if key != "x"
+            else value
+        )
+        for key, value in tracks.items()
+    }
+
+
+def frame_panel(ax, linewidth: float = 0.8) -> None:
+    """Draw a black frame around one panel."""
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_color("black")
+        spine.set_linewidth(linewidth)
+    ax.grid(False)
+
+
+def format_track_axis(
+    ax,
+    x: np.ndarray,
+    title: str,
+    track_transform: str | None = None,
+) -> None:
     """Apply shared formatting to one plus/minus signal track axis."""
-    ax.axhline(0, color="black", linewidth=0.7)
     ax.set_xlim(x[0], x[-1])
     ax.set_title(title)
-    ax.set_ylabel("PRO-cap signal")
+    ylabel = "PRO-cap signal"
+    if track_transform not in {None, "none", "linear"}:
+        ylabel = f"{track_transform} {ylabel}"
+    ax.set_ylabel(ylabel)
     ax.legend(frameon=False, ncol=2)
+    frame_panel(ax)
 
 
 def shared_ticks(x_limits: tuple[float, float], n_ticks: int = 5) -> np.ndarray:
@@ -320,17 +371,19 @@ def plot_tracks(
     point_region: str,
     view_region: str,
     reverse_complement: bool = False,
+    track_transform: str | None = None,
 ):
     """Plot observed and predicted PRO-cap signal on separate y scales."""
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement
     )
+    tracks = transform_track_arrays(tracks, track_transform)
     x = tracks["x"]
     ticks = shared_ticks((float(x[0]), float(x[-1])))
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.2), sharex=True)
     axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
     axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}")
+    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_transform)
     axes[1].plot(
         x,
         tracks["predicted_plus"],
@@ -345,7 +398,7 @@ def plot_tracks(
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}")
+    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_transform)
     apply_shared_ticks(axes[0], ticks)
     apply_shared_ticks(axes[1], ticks, show_labels=True)
     axes[1].set_xlabel("Genomic position")
@@ -390,6 +443,7 @@ def plot_logo_panel(
         ax.set_xlim(*x_limits)
         if ticks is not None:
             apply_shared_ticks(ax, ticks, show_labels=show_tick_labels)
+    frame_panel(ax)
 
 
 def plot_locus_summary(
@@ -403,23 +457,25 @@ def plot_locus_summary(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
+    track_transform: str | None = None,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement
     )
+    tracks = transform_track_arrays(tracks, track_transform)
     x = tracks["x"]
     x_limits = (float(x[0]), float(x[-1]))
     ticks = shared_ticks(x_limits)
     fig, axes = plt.subplots(
         4,
         1,
-        figsize=(14, 9.5),
+        figsize=SUMMARY_FIGURE_SIZE_IN,
         gridspec_kw={"height_ratios": [1.1, 1.1, 1.0, 1.0]},
     )
     axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
     axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}")
+    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_transform)
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
         x,
@@ -435,7 +491,7 @@ def plot_locus_summary(
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}")
+    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_transform)
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
@@ -532,6 +588,7 @@ def plot_deeplift_logos(
             logo_end,
             reverse_complement,
         )
+        frame_panel(ax)
     fig.suptitle(f"{exp_id} {logo_region}")
     fig.tight_layout()
     return fig, axes
@@ -549,6 +606,7 @@ def save_locus_viewer_outputs(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
+    track_transform: str | None = None,
 ) -> None:
     """Save the current viewer figures and arrays for offline inspection."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -563,7 +621,8 @@ def save_locus_viewer_outputs(
         logo_start,
         logo_end,
         reverse_complement,
-    )[0].savefig(output_dir / "locus_viewer_summary.pdf", bbox_inches="tight")
+        track_transform,
+    )[0].savefig(output_dir / "locus_viewer_summary.pdf")
     np.savez_compressed(
         output_dir / "locus_viewer_arrays.npz",
         prediction=prediction,
