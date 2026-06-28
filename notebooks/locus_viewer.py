@@ -41,7 +41,7 @@ REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysi
 IN_WINDOW = 2114
 OUT_WINDOW = 1000
 POINTS_PER_INCH = 72
-SUMMARY_FIGURE_SIZE_PT = (540.9, 82.7)
+SUMMARY_FIGURE_SIZE_PT = (600, 90)
 SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
 
 
@@ -338,15 +338,17 @@ def format_track_axis(
     x: np.ndarray,
     title: str,
     track_transform: str | None = None,
+    show_text: bool = True,
 ) -> None:
     """Apply shared formatting to one plus/minus signal track axis."""
     ax.set_xlim(x[0], x[-1])
-    ax.set_title(title)
-    ylabel = "PRO-cap signal"
-    if track_transform not in {None, "none", "linear"}:
-        ylabel = f"{track_transform} {ylabel}"
-    ax.set_ylabel(ylabel)
-    ax.legend(frameon=False, ncol=2)
+    if show_text:
+        ax.set_title(title)
+        ylabel = "PRO-cap signal"
+        if track_transform not in {None, "none", "linear"}:
+            ylabel = f"{track_transform} {ylabel}"
+        ax.set_ylabel(ylabel)
+        ax.legend(frameon=False, ncol=2)
     frame_panel(ax)
 
 
@@ -362,6 +364,17 @@ def apply_shared_ticks(ax, ticks: np.ndarray, show_labels: bool = False) -> None
         ax.set_xticklabels([f"{value:,}" for value in ticks])
     else:
         ax.tick_params(axis="x", labelbottom=False)
+
+
+def hide_panel_text(ax) -> None:
+    """Remove visible text from a compact panel."""
+    ax.set_title("")
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.tick_params(labelbottom=False, labelleft=False)
+    legend = ax.get_legend()
+    if legend is not None:
+        legend.remove()
 
 
 def plot_tracks(
@@ -432,10 +445,12 @@ def plot_logo_panel(
     x_limits: tuple[float, float] | None = None,
     ticks: np.ndarray | None = None,
     show_tick_labels: bool = False,
+    show_text: bool = True,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
     plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax)
-    ax.set_title(title)
+    if show_text:
+        ax.set_title(title)
     if x_limits is None:
         logo_ticks(ax, logo_start, logo_end, reverse_complement)
     else:
@@ -458,6 +473,7 @@ def plot_locus_summary(
     logo_end: int,
     reverse_complement: bool = False,
     track_transform: str | None = None,
+    show_text: bool = False,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
     tracks = track_arrays(
@@ -475,7 +491,13 @@ def plot_locus_summary(
     )
     axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
     axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_transform)
+    format_track_axis(
+        axes[0],
+        x,
+        f"{exp_id} observed {view_region}",
+        track_transform,
+        show_text=show_text,
+    )
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
         x,
@@ -491,7 +513,13 @@ def plot_locus_summary(
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_transform)
+    format_track_axis(
+        axes[1],
+        x,
+        f"{exp_id} predicted {view_region}",
+        track_transform,
+        show_text=show_text,
+    )
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
@@ -504,9 +532,14 @@ def plot_locus_summary(
             reverse_complement,
             x_limits,
             ticks,
-            show_tick_labels=ax is axes[-1],
+            show_tick_labels=show_text and ax is axes[-1],
+            show_text=show_text,
         )
-    axes[-1].set_xlabel("Genomic position")
+    if show_text:
+        axes[-1].set_xlabel("Genomic position")
+    else:
+        for ax in axes:
+            hide_panel_text(ax)
     fig.tight_layout()
     return fig, axes
 
