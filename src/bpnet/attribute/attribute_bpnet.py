@@ -24,6 +24,10 @@ import torch
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from tangermeme.io import extract_loci
 
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from src.modeling.wrappers import OrientationIndexWrapper
 
 try:
@@ -31,7 +35,6 @@ try:
 except ModuleNotFoundError:
     from deeplift import deep_lift_shap
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")

@@ -22,6 +22,11 @@ from tangermeme.io import extract_loci
 from tangermeme.predict import predict
 
 from cherimoya import Cherimoya
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from src.modeling.profile import (
     count_scaled_profile,
     orientation_index,
@@ -29,7 +34,6 @@ from src.modeling.profile import (
     profile_probabilities,
 )
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
