@@ -43,6 +43,8 @@ OUT_WINDOW = 1000
 POINTS_PER_INCH = 72
 SUMMARY_FIGURE_SIZE_PT = (570, 120)
 SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
+SUMMARY_LABEL_SIZE = 6
+SUMMARY_TICK_SIZE = 5
 
 
 def parse_point(region: str) -> tuple[str, int]:
@@ -367,6 +369,19 @@ def apply_shared_ticks(ax, ticks: np.ndarray, show_labels: bool = False) -> None
         ax.tick_params(axis="x", labelbottom=False)
 
 
+def apply_compact_summary_axis_style(ax, show_x_labels: bool = False) -> None:
+    """Keep summary figure labels legible at journal-column dimensions."""
+    ax.set_title("")
+    ax.set_ylabel("")
+    ax.tick_params(axis="both", which="major", labelsize=SUMMARY_TICK_SIZE, pad=1)
+    ax.tick_params(axis="x", labelbottom=show_x_labels)
+    ax.xaxis.get_offset_text().set_visible(False)
+    ax.yaxis.get_offset_text().set_fontsize(SUMMARY_TICK_SIZE)
+    legend = ax.get_legend()
+    if legend is not None:
+        legend.remove()
+
+
 def plot_tracks(
     prediction: np.ndarray,
     resources: dict,
@@ -526,7 +541,10 @@ def plot_locus_summary(
             show_tick_labels=ax is axes[-1],
             show_title=False,
         )
-    axes[-1].set_xlabel("Genomic position")
+    for ax in axes[:-1]:
+        apply_compact_summary_axis_style(ax)
+    apply_compact_summary_axis_style(axes[-1], show_x_labels=True)
+    axes[-1].set_xlabel("Genomic position", fontsize=SUMMARY_LABEL_SIZE, labelpad=2)
     fig.tight_layout()
     fig.set_size_inches(*SUMMARY_FIGURE_SIZE_IN, forward=True)
     return fig, axes
