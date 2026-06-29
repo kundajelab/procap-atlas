@@ -46,6 +46,8 @@ SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGU
 SUMMARY_LABEL_SIZE = 6
 SUMMARY_TICK_SIZE = 5
 TRACK_SIGNAL_COLOR = "#4C72B0"
+TRACK_PREDICTION_COLOR = "#9ECAE1"
+TRACK_PREDICTION_ALPHA = 0.65
 TRACK_SIGNAL_LINEWIDTH = 0.7
 SUMMARY_SUBPLOT_ADJUST = {
     "left": 0.055,
@@ -416,20 +418,22 @@ def plot_tracks(
         label="observed minus",
     )
     format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_value_clip)
-    axes[1].plot(
+    axes[1].fill_between(
         x,
+        0,
         tracks["predicted_plus"],
-        color=TRACK_SIGNAL_COLOR,
-        linewidth=TRACK_SIGNAL_LINEWIDTH,
-        linestyle="--",
+        color=TRACK_PREDICTION_COLOR,
+        alpha=TRACK_PREDICTION_ALPHA,
+        linewidth=0,
         label="predicted plus",
     )
-    axes[1].plot(
+    axes[1].fill_between(
         x,
+        0,
         tracks["predicted_minus"],
-        color=TRACK_SIGNAL_COLOR,
-        linewidth=TRACK_SIGNAL_LINEWIDTH,
-        linestyle="--",
+        color=TRACK_PREDICTION_COLOR,
+        alpha=TRACK_PREDICTION_ALPHA,
+        linewidth=0,
         label="predicted minus",
     )
     format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_value_clip)
@@ -532,20 +536,22 @@ def plot_locus_summary(
         show_legend=False,
     )
     apply_shared_ticks(axes[0], ticks)
-    axes[1].plot(
+    axes[1].fill_between(
         x,
+        0,
         tracks["predicted_plus"],
-        color=TRACK_SIGNAL_COLOR,
-        linewidth=TRACK_SIGNAL_LINEWIDTH,
-        linestyle="--",
+        color=TRACK_PREDICTION_COLOR,
+        alpha=TRACK_PREDICTION_ALPHA,
+        linewidth=0,
         label="predicted plus",
     )
-    axes[1].plot(
+    axes[1].fill_between(
         x,
+        0,
         tracks["predicted_minus"],
-        color=TRACK_SIGNAL_COLOR,
-        linewidth=TRACK_SIGNAL_LINEWIDTH,
-        linestyle="--",
+        color=TRACK_PREDICTION_COLOR,
+        alpha=TRACK_PREDICTION_ALPHA,
+        linewidth=0,
         label="predicted minus",
     )
     format_track_axis(
