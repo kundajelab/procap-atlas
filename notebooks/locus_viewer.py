@@ -41,7 +41,7 @@ REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysi
 IN_WINDOW = 2114
 OUT_WINDOW = 1000
 POINTS_PER_INCH = 72
-SUMMARY_FIGURE_SIZE_PT = (600, 90)
+SUMMARY_FIGURE_SIZE_PT = (570, 120)
 SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
 
 
@@ -337,15 +337,19 @@ def format_track_axis(
     x: np.ndarray,
     title: str,
     track_transform: str | None = None,
+    show_title: bool = True,
+    show_legend: bool = True,
 ) -> None:
     """Apply shared formatting to one plus/minus signal track axis."""
     ax.set_xlim(x[0], x[-1])
-    ax.set_title(title)
+    if show_title:
+        ax.set_title(title)
     ylabel = "PRO-cap signal"
     if track_transform not in {None, "none", "linear"}:
         ylabel = f"{track_transform} {ylabel}"
     ax.set_ylabel(ylabel)
-    ax.legend(frameon=False, ncol=2)
+    if show_legend:
+        ax.legend(frameon=False, ncol=2)
     emphasize_left_y_axis(ax)
 
 
@@ -431,10 +435,12 @@ def plot_logo_panel(
     x_limits: tuple[float, float] | None = None,
     ticks: np.ndarray | None = None,
     show_tick_labels: bool = False,
+    show_title: bool = True,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
     plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax)
-    ax.set_title(title)
+    if show_title:
+        ax.set_title(title)
     if x_limits is None:
         logo_ticks(ax, logo_start, logo_end, reverse_complement)
     else:
@@ -479,6 +485,8 @@ def plot_locus_summary(
         x,
         f"{exp_id} observed {view_region}",
         track_transform,
+        show_title=False,
+        show_legend=False,
     )
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
@@ -500,6 +508,8 @@ def plot_locus_summary(
         x,
         f"{exp_id} predicted {view_region}",
         track_transform,
+        show_title=False,
+        show_legend=False,
     )
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
@@ -514,6 +524,7 @@ def plot_locus_summary(
             x_limits,
             ticks,
             show_tick_labels=ax is axes[-1],
+            show_title=False,
         )
     axes[-1].set_xlabel("Genomic position")
     fig.tight_layout()
