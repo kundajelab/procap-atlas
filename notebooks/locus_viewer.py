@@ -22,9 +22,11 @@ import yaml
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
-from tangermeme.io import extract_loci
+from tangermeme.annotate import annotate_seqlets
+from tangermeme.io import extract_loci, read_meme
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
+from tangermeme.seqlet import recursive_seqlets
 
 from src.bpnet.attribute.deeplift import deep_lift_shap
 from src.bpnet.attribute.locus_diagnostics import (
@@ -40,6 +42,21 @@ METADATA_REPO_ID = "adamyhe/procap-atlas-metadata"
 REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz"
 IN_WINDOW = 2114
 OUT_WINDOW = 1000
+POINTS_PER_INCH = 72
+SUMMARY_FIGURE_SIZE_PT = (570, 120)
+SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
+SUMMARY_LABEL_SIZE = 6
+SUMMARY_TICK_SIZE = 5
+TRACK_SIGNAL_COLOR = "#4C72B0"
+TRACK_SIGNAL_LINEWIDTH = 0.7
+DEFAULT_MOTIF_PATH = Path("data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt")
+SUMMARY_SUBPLOT_ADJUST = {
+    "left": 0.055,
+    "right": 0.995,
+    "bottom": 0.18,
+    "top": 0.98,
+    "hspace": 0.06,
+}
 
 
 def parse_point(region: str) -> tuple[str, int]:
@@ -290,13 +307,57 @@ def track_arrays(
     }
 
 
-def format_track_axis(ax, x: np.ndarray, title: str) -> None:
+def clip_track_values(values: np.ndarray, clip: float | None) -> np.ndarray:
+    """Clip signal tracks to a symmetric display range without changing raw arrays."""
+    if clip is None:
+        return values
+    if clip <= 0:
+        raise ValueError("track_value_clip must be positive or None")
+    return np.clip(values, -clip, clip)
+
+
+def clip_track_arrays(
+    tracks: dict[str, np.ndarray],
+    track_value_clip: float | None = None,
+) -> dict[str, np.ndarray]:
+    """Return tracks with optional display clipping applied to signal arrays."""
+    return {
+        key: (
+            clip_track_values(value, track_value_clip)
+            if key != "x"
+            else value
+        )
+        for key, value in tracks.items()
+    }
+
+
+def emphasize_left_y_axis(ax, linewidth: float = 0.8) -> None:
+    """Draw the left y-axis in black while preserving the active plot style."""
+    ax.spines["left"].set_visible(True)
+    ax.spines["left"].set_color("black")
+    ax.spines["left"].set_linewidth(linewidth)
+    ax.tick_params(axis="y", color="black", labelcolor="black")
+
+
+def format_track_axis(
+    ax,
+    x: np.ndarray,
+    title: str,
+    track_value_clip: float | None = None,
+    show_title: bool = True,
+    show_legend: bool = True,
+) -> None:
     """Apply shared formatting to one plus/minus signal track axis."""
-    ax.axhline(0, color="black", linewidth=0.7)
     ax.set_xlim(x[0], x[-1])
-    ax.set_title(title)
-    ax.set_ylabel("PRO-cap signal")
-    ax.legend(frameon=False, ncol=2)
+    if show_title:
+        ax.set_title(title)
+    ylabel = "PRO-cap signal"
+    if track_value_clip is not None:
+        ylabel = f"{ylabel} (clipped at {track_value_clip:g})"
+    ax.set_ylabel(ylabel)
+    if show_legend:
+        ax.legend(frameon=False, ncol=2)
+    emphasize_left_y_axis(ax)
 
 
 def shared_ticks(x_limits: tuple[float, float], n_ticks: int = 5) -> np.ndarray:
@@ -313,6 +374,116 @@ def apply_shared_ticks(ax, ticks: np.ndarray, show_labels: bool = False) -> None
         ax.tick_params(axis="x", labelbottom=False)
 
 
+def apply_compact_summary_axis_style(ax, show_x_labels: bool = False) -> None:
+    """Keep summary figure labels legible at journal-column dimensions."""
+    ax.set_title("")
+    ax.set_ylabel("")
+    ax.tick_params(axis="both", which="major", labelsize=SUMMARY_TICK_SIZE, pad=1)
+    ax.tick_params(axis="x", labelbottom=show_x_labels)
+    ax.xaxis.get_offset_text().set_visible(False)
+    ax.yaxis.get_offset_text().set_fontsize(SUMMARY_TICK_SIZE)
+    legend = ax.get_legend()
+    if legend is not None:
+        legend.remove()
+
+
+def motif_names_from_meme(motif_path: Path) -> list[str]:
+    """Return MEME motif names in the order used by tangermeme annotation."""
+    return list(read_meme(str(motif_path)).keys())
+
+
+def _to_numpy_array(value) -> np.ndarray:
+    """Convert torch/tangermeme outputs to numpy arrays."""
+    if hasattr(value, "detach"):
+        return value.detach().cpu().numpy()
+    return np.asarray(value)
+
+
+def _seqlet_sequence_tensor(
+    X: torch.Tensor,
+    logo_offsets: tuple[int, int],
+    reverse_complement: bool,
+) -> torch.Tensor:
+    """Return one cropped OHE tensor aligned to displayed logo coordinates."""
+    sequence = as_numpy(X.float())[0, :, logo_offsets[0] : logo_offsets[1]]
+    if reverse_complement:
+        sequence = reverse_complement_matrix(sequence)
+    return torch.tensor(sequence[None], dtype=torch.float32)
+
+
+def call_and_annotate_seqlets(
+    attributions: dict[str, np.ndarray],
+    X: torch.Tensor,
+    logo_offsets: tuple[int, int],
+    motif_path: Path | str | None = DEFAULT_MOTIF_PATH,
+    reverse_complement: bool = False,
+    threshold: float = 0.01,
+    additional_flanks: int = 2,
+    min_seqlet_len: int = 4,
+    max_seqlet_len: int = 25,
+    n_nearest: int = 1,
+    use_abs: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """Call seqlets and optionally annotate them with MEME motifs.
+
+    Seqlets are called on per-position projected attributions for the cropped
+    logo window. Motif annotation is skipped when ``motif_path`` is ``None`` or
+    absent.
+    """
+    motif_path = Path(motif_path) if motif_path is not None else None
+    motif_names = (
+        motif_names_from_meme(motif_path)
+        if motif_path and motif_path.exists()
+        else []
+    )
+    sequence = _seqlet_sequence_tensor(X, logo_offsets, reverse_complement)
+    annotations: dict[str, pd.DataFrame] = {}
+    for head, matrix in attributions.items():
+        display_matrix = oriented_logo_matrix(matrix, reverse_complement)
+        projected = display_matrix.sum(axis=0)
+        caller_values = np.abs(projected) if use_abs else projected
+        seqlets = recursive_seqlets(
+            torch.tensor(caller_values[None], dtype=torch.float32),
+            threshold=threshold,
+            additional_flanks=additional_flanks,
+            min_seqlet_len=min_seqlet_len,
+            max_seqlet_len=max_seqlet_len,
+        ).copy()
+        if seqlets.empty:
+            annotations[head] = seqlets
+            continue
+        seqlets["start"] = seqlets["start"].clip(lower=0, upper=len(projected))
+        seqlets["end"] = seqlets["end"].clip(lower=0, upper=len(projected))
+        seqlets["head"] = head
+        seqlets["signed_attribution"] = [
+            projected[int(start) : int(end)].sum()
+            for start, end in zip(seqlets["start"], seqlets["end"])
+        ]
+        seqlets["strand"] = "."
+        seqlets["score"] = seqlets["attribution"]
+        seqlets["motif_idx"] = -1
+        seqlets["motif_name"] = "seqlet"
+        seqlets["motif_pvalue"] = np.nan
+        if motif_names:
+            motif_idxs, pvals = annotate_seqlets(
+                sequence,
+                seqlets,
+                str(motif_path),
+                n_nearest=n_nearest,
+            )
+            motif_idxs = _to_numpy_array(motif_idxs)
+            pvals = _to_numpy_array(pvals)
+            primary_idxs = motif_idxs[:, 0]
+            seqlets["motif_idx"] = primary_idxs
+            seqlets["motif_name"] = [
+                motif_names[int(idx)] if int(idx) >= 0 else "unannotated"
+                for idx in primary_idxs
+            ]
+            seqlets["motif_pvalue"] = pvals[:, 0]
+        annotations[head] = seqlets
+    return annotations
+
+
 def plot_tracks(
     prediction: np.ndarray,
     resources: dict,
@@ -320,32 +491,48 @@ def plot_tracks(
     point_region: str,
     view_region: str,
     reverse_complement: bool = False,
+    track_value_clip: float | None = None,
 ):
     """Plot observed and predicted PRO-cap signal on separate y scales."""
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement
     )
+    tracks = clip_track_arrays(tracks, track_value_clip)
     x = tracks["x"]
     ticks = shared_ticks((float(x[0]), float(x[-1])))
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.2), sharex=True)
-    axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
-    axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}")
+    axes[0].plot(
+        x,
+        tracks["observed_plus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed plus",
+    )
+    axes[0].plot(
+        x,
+        tracks["observed_minus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed minus",
+    )
+    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_value_clip)
     axes[1].plot(
         x,
         tracks["predicted_plus"],
-        color="#C44E52",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted plus",
     )
     axes[1].plot(
         x,
         tracks["predicted_minus"],
-        color="#4C72B0",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}")
+    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_value_clip)
     apply_shared_ticks(axes[0], ticks)
     apply_shared_ticks(axes[1], ticks, show_labels=True)
     axes[1].set_xlabel("Genomic position")
@@ -360,13 +547,27 @@ def shift_logo_to_genomic_axis(
     reverse_complement: bool = False,
 ) -> None:
     """Move logo glyphs from logo-local x positions to genomic coordinates."""
+    def shift_x(values):
+        if reverse_complement:
+            return logo_end - values
+        return logo_start + 1 + values
+
     for collection in ax.collections:
         for path in collection.get_paths():
             vertices = path.vertices
-            if reverse_complement:
-                vertices[:, 0] = logo_end - vertices[:, 0]
+            vertices[:, 0] = shift_x(vertices[:, 0])
+    for patch in ax.patches:
+        if hasattr(patch, "get_x") and hasattr(patch, "set_x"):
+            x = patch.get_x()
+            if reverse_complement and hasattr(patch, "get_width"):
+                patch.set_x(float(logo_end - x - patch.get_width()))
             else:
-                vertices[:, 0] = logo_start + 1 + vertices[:, 0]
+                patch.set_x(float(shift_x(x)))
+    for line in ax.lines:
+        line.set_xdata(shift_x(np.asarray(line.get_xdata())))
+    for text in ax.texts:
+        x, y = text.get_position()
+        text.set_position((float(shift_x(x)), y))
 
 
 def plot_logo_panel(
@@ -379,10 +580,19 @@ def plot_logo_panel(
     x_limits: tuple[float, float] | None = None,
     ticks: np.ndarray | None = None,
     show_tick_labels: bool = False,
+    show_title: bool = True,
+    seqlet_annotations: pd.DataFrame | None = None,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
-    plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax)
-    ax.set_title(title)
+    plot_kwargs = {}
+    if seqlet_annotations is not None and not seqlet_annotations.empty:
+        plot_kwargs = {
+            "annotations": seqlet_annotations,
+            "score_key": "attribution",
+        }
+    plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax, **plot_kwargs)
+    if show_title:
+        ax.set_title(title)
     if x_limits is None:
         logo_ticks(ax, logo_start, logo_end, reverse_complement)
     else:
@@ -390,6 +600,7 @@ def plot_logo_panel(
         ax.set_xlim(*x_limits)
         if ticks is not None:
             apply_shared_ticks(ax, ticks, show_labels=show_tick_labels)
+    emphasize_left_y_axis(ax)
 
 
 def plot_locus_summary(
@@ -403,42 +614,76 @@ def plot_locus_summary(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
+    track_value_clip: float | None = None,
+    seqlet_annotations: dict[str, pd.DataFrame] | None = None,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement
     )
+    tracks = clip_track_arrays(tracks, track_value_clip)
     x = tracks["x"]
     x_limits = (float(x[0]), float(x[-1]))
     ticks = shared_ticks(x_limits)
     fig, axes = plt.subplots(
         4,
         1,
-        figsize=(14, 9.5),
+        figsize=SUMMARY_FIGURE_SIZE_IN,
         gridspec_kw={"height_ratios": [1.1, 1.1, 1.0, 1.0]},
     )
-    axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
-    axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}")
+    axes[0].plot(
+        x,
+        tracks["observed_plus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed plus",
+    )
+    axes[0].plot(
+        x,
+        tracks["observed_minus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed minus",
+    )
+    format_track_axis(
+        axes[0],
+        x,
+        f"{exp_id} observed {view_region}",
+        track_value_clip,
+        show_title=False,
+        show_legend=False,
+    )
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
         x,
         tracks["predicted_plus"],
-        color="#C44E52",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted plus",
     )
     axes[1].plot(
         x,
         tracks["predicted_minus"],
-        color="#4C72B0",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}")
+    format_track_axis(
+        axes[1],
+        x,
+        f"{exp_id} predicted {view_region}",
+        track_value_clip,
+        show_title=False,
+        show_legend=False,
+    )
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
+        annotations = None
+        if seqlet_annotations is not None:
+            annotations = seqlet_annotations.get(head)
         plot_logo_panel(
             ax,
             matrix,
@@ -449,9 +694,15 @@ def plot_locus_summary(
             x_limits,
             ticks,
             show_tick_labels=ax is axes[-1],
+            show_title=False,
+            seqlet_annotations=annotations,
         )
-    axes[-1].set_xlabel("Genomic position")
-    fig.tight_layout()
+    for ax in axes[:-1]:
+        apply_compact_summary_axis_style(ax)
+    apply_compact_summary_axis_style(axes[-1], show_x_labels=True)
+    axes[-1].set_xlabel("Genomic position", fontsize=SUMMARY_LABEL_SIZE, labelpad=2)
+    fig.subplots_adjust(**SUMMARY_SUBPLOT_ADJUST)
+    fig.set_size_inches(*SUMMARY_FIGURE_SIZE_IN, forward=True)
     return fig, axes
 
 
@@ -519,11 +770,15 @@ def plot_deeplift_logos(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
+    seqlet_annotations: dict[str, pd.DataFrame] | None = None,
 ):
     """Plot profile/count DeepLIFT logos for the selected logo interval."""
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.5), sharex=True)
     for ax, head in zip(axes, ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
+        annotations = None
+        if seqlet_annotations is not None:
+            annotations = seqlet_annotations.get(head)
         plot_logo_panel(
             ax,
             matrix,
@@ -531,6 +786,7 @@ def plot_deeplift_logos(
             logo_start,
             logo_end,
             reverse_complement,
+            seqlet_annotations=annotations,
         )
     fig.suptitle(f"{exp_id} {logo_region}")
     fig.tight_layout()
@@ -549,6 +805,8 @@ def save_locus_viewer_outputs(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
+    track_value_clip: float | None = None,
+    seqlet_annotations: dict[str, pd.DataFrame] | None = None,
 ) -> None:
     """Save the current viewer figures and arrays for offline inspection."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -563,7 +821,16 @@ def save_locus_viewer_outputs(
         logo_start,
         logo_end,
         reverse_complement,
-    )[0].savefig(output_dir / "locus_viewer_summary.pdf", bbox_inches="tight")
+        track_value_clip,
+        seqlet_annotations,
+    )[0].savefig(
+        output_dir / "locus_viewer_summary.pdf",
+        bbox_inches=None,
+        pad_inches=0,
+    )
+    if seqlet_annotations:
+        seqlets = pd.concat(seqlet_annotations.values(), ignore_index=True)
+        seqlets.to_csv(output_dir / "locus_viewer_seqlets.tsv", sep="\t", index=False)
     np.savez_compressed(
         output_dir / "locus_viewer_arrays.npz",
         prediction=prediction,

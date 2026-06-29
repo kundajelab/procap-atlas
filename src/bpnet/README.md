@@ -146,11 +146,12 @@ python src/bpnet/attribute/run_ohe.py -j 8 --min-reads 10000000
 
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head orientation
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_gc0.1
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --reference-mode dinucleotide
 
 python src/bpnet/attribute/launch.py --dry-run
-python src/bpnet/attribute/launch.py --head profile --head count
+python src/bpnet/attribute/launch.py --head profile --head count --head orientation
 ```
 
 Outputs:
@@ -172,6 +173,12 @@ sometimes produced active reference sequences with cryptic promoter-like
 signals; for some loci these shuffled references were as active as, or more
 active than, the genomic input, making the baseline reference-sensitive rather
 than neutral.
+
+Use `--head orientation` to attribute the profile orientation index,
+`max(sum(plus), sum(minus)) / (sum(plus) + sum(minus))`. The wrapper computes
+the index from joint profile probabilities using a DeepLIFT-compatible ReLU
+form of the binary maximum. Count scaling is not applied because the single
+predicted total-count factor cancels from the ratio.
 
 Convert observed-nucleotide attribution scores to BigWig:
 

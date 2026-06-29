@@ -25,6 +25,16 @@ from tangermeme.io import extract_loci
 from tangermeme.predict import predict
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.modeling.profile import (
+    count_scaled_profile,
+    orientation_index,
+    profile_log_probabilities,
+    profile_probabilities,
+)
+
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
@@ -166,16 +176,14 @@ def main():
     # Calculate performance metrics
     profile_corr = [
         pearson_corr(
-            torch.nn.functional.softmax(pred[0].reshape(pred[0].shape[0], -1), dim=-1),
+            profile_probabilities(pred[0]).reshape(pred[0].shape[0], -1),
             signal.reshape(pred[0].shape[0], -1),
         ).numpy()
         for pred, signal in zip(preds, signals)
     ]
     profile_jsd = [
         jensen_shannon_distance(
-            torch.nn.functional.log_softmax(
-                pred[0].reshape(pred[0].shape[0], -1), dim=-1
-            ),
+            profile_log_probabilities(pred[0]).reshape(pred[0].shape[0], -1),
             signal.reshape(pred[0].shape[0], -1),
         ).numpy()
         for pred, signal in zip(preds, signals)
@@ -188,6 +196,13 @@ def main():
         spearman_corr(pred[1].squeeze(), signal.sum(dim=(-1, -2))).item()
         for pred, signal in zip(preds, signals)
     ]
+    orientation_index_pearson = [
+        pearson_corr(
+            orientation_index(pred[0], is_logit=True).squeeze(),
+            orientation_index(signal).squeeze(),
+        ).item()
+        for pred, signal in zip(preds, signals)
+    ]
     log_counts_pearson_all = pearson_corr(
         torch.cat([pred[1].squeeze() for pred in preds]),
         torch.cat([torch.log1p(signal.sum(dim=(-1, -2))) for signal in signals]),
@@ -195,6 +210,12 @@ def main():
     counts_spearman_all = spearman_corr(
         torch.cat([pred[1].squeeze() for pred in preds]),
         torch.cat([signal.sum(dim=(-1, -2)) for signal in signals]),
+    ).item()
+    orientation_index_pearson_all = pearson_corr(
+        torch.cat(
+            [orientation_index(pred[0], is_logit=True).squeeze() for pred in preds]
+        ),
+        torch.cat([orientation_index(signal).squeeze() for signal in signals]),
     ).item()
 
     print("\nPer-fold results:\n----------------")
@@ -208,6 +229,7 @@ def main():
     )
     print(f"Log counts Pearson correlation: {log_counts_pearson}")
     print(f"Counts Spearman correlation: {counts_spearman}")
+    print(f"Orientation index Pearson correlation: {orientation_index_pearson}")
 
     print("\nGenome-wide results:\n----------------")
     print(f"Profile Pearson correlation: {np.nanmedian(np.concatenate(profile_corr))}")
@@ -216,6 +238,7 @@ def main():
     )
     print(f"Log counts Pearson correlation: {log_counts_pearson_all}")
     print(f"Counts Spearman correlation: {counts_spearman_all}")
+    print(f"Orientation index Pearson correlation: {orientation_index_pearson_all}")
 
     # Save metrics to JSON
     metrics = {
@@ -228,6 +251,7 @@ def main():
                 "profile_jsd": np.nanmedian(profile_jsd[fold]).item(),
                 "log_counts_pearson": log_counts_pearson[fold],
                 "counts_spearman": counts_spearman[fold],
+                "orientation_index_pearson": orientation_index_pearson[fold],
             }
             for fold in range(n_folds)
         },
@@ -236,6 +260,7 @@ def main():
             "profile_jsd": np.nanmedian(np.concatenate(profile_jsd)).item(),
             "log_counts_pearson": log_counts_pearson_all,
             "counts_spearman": counts_spearman_all,
+            "orientation_index_pearson": orientation_index_pearson_all,
         },
     }
     metrics_dir = REPO_ROOT / "performance_metrics" / "bpnet"
@@ -250,14 +275,7 @@ def main():
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{args.experiment}.npz"
         scaled_preds = {
-            f"predict_fold{i}": (
-                torch.nn.functional.softmax(
-                    pred[0].reshape(pred[0].shape[0], -1), dim=-1
-                )
-                * torch.exp(pred[1])
-            )
-            .reshape(*pred[0].shape)
-            .numpy()
+            f"predict_fold{i}": count_scaled_profile(pred[0], pred[1]).numpy()
             for i, pred in enumerate(preds)
         }
         expts = {f"expt_fold{i}": signal.numpy() for i, signal in enumerate(signals)}

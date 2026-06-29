@@ -6,6 +6,7 @@ peaks genome-wide, averages across folds, and saves to attributions/bpnet/.
 Usage:
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head count
+    python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --head orientation
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-dir models/bpnet/ENCSR261KBX_dnase
     python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --reference-mode dinucleotide
 """
@@ -23,12 +24,17 @@ import torch
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from tangermeme.io import extract_loci
 
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.modeling.wrappers import OrientationIndexWrapper
+
 try:
     from src.bpnet.attribute.deeplift import deep_lift_shap
 except ModuleNotFoundError:
     from deeplift import deep_lift_shap
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
@@ -70,8 +76,8 @@ def main():
         "--head",
         type=str,
         default="profile",
-        choices=["profile", "count"],
-        help="type of prediction to make (profile or count)",
+        choices=["profile", "count", "orientation"],
+        help="type of prediction to attribute (profile, count, or orientation)",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64)
     parser.add_argument(
@@ -195,6 +201,8 @@ def main():
             model = ProfileWrapper(model)
         elif args.head == "count":
             model = CountWrapper(model)
+        elif args.head == "orientation":
+            model = OrientationIndexWrapper(model)
         if args.reference_mode == "frequency":
             references = nucleotide_frequency_references(X)
             n_shuffles = 1
