@@ -14,14 +14,18 @@ plus/minus BigWigs, metadata, and hg38, then:
   observed-nucleotide-frequency soft reference and places the logos in the same
   summary figure as the tracks. All panels share the same genomic x tick
   positions.
+- optionally calls seqlets in the displayed logo window and annotates them
+  against a MEME motif database with tangermeme and memelite.
 
 Use this notebook when you want a direct locus visualization without the
 shuffled-reference instability diagnostics below. Configure `EXP_ID`, `REGION`,
-`REVERSE_COMPLEMENT`, and `TRACK_VALUE_CLIP` in the configuration cell. The
-single `REGION` is used for model-input centering, the observed/predicted track
-window, and the DeepLIFT logo crop. `TRACK_VALUE_CLIP` controls display-only
-symmetric clipping of observed and predicted tracks, for example `200` for
-`[-200, 200]` or `None` for the full range.
+`REVERSE_COMPLEMENT`, `TRACK_VALUE_CLIP`, and `SHOW_SEQLETS` in the configuration
+cell. The single `REGION` is used for model-input centering, the
+observed/predicted track window, and the DeepLIFT logo crop. `TRACK_VALUE_CLIP`
+controls display-only symmetric clipping of observed and predicted tracks, for
+example `200` for `[-200, 200]` or `None` for the full range. `SHOW_SEQLETS`
+overlays called seqlets on the logo panels and annotates them when
+`SEQLET_MOTIF_PATH` points to an available MEME motif file.
 
 Open the notebook through the Colab badge in the first cell for the default
 workflow. The setup cell detects Colab, clones this repository into

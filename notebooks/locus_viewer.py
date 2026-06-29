@@ -22,9 +22,11 @@ import yaml
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
-from tangermeme.io import extract_loci
+from tangermeme.annotate import annotate_seqlets
+from tangermeme.io import extract_loci, read_meme
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
+from tangermeme.seqlet import recursive_seqlets
 
 from src.bpnet.attribute.deeplift import deep_lift_shap
 from src.bpnet.attribute.locus_diagnostics import (
@@ -47,6 +49,7 @@ SUMMARY_LABEL_SIZE = 6
 SUMMARY_TICK_SIZE = 5
 TRACK_SIGNAL_COLOR = "#4C72B0"
 TRACK_SIGNAL_LINEWIDTH = 0.7
+DEFAULT_MOTIF_PATH = Path("data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt")
 SUMMARY_SUBPLOT_ADJUST = {
     "left": 0.055,
     "right": 0.995,
@@ -384,6 +387,103 @@ def apply_compact_summary_axis_style(ax, show_x_labels: bool = False) -> None:
         legend.remove()
 
 
+def motif_names_from_meme(motif_path: Path) -> list[str]:
+    """Return MEME motif names in the order used by tangermeme annotation."""
+    return list(read_meme(str(motif_path)).keys())
+
+
+def _to_numpy_array(value) -> np.ndarray:
+    """Convert torch/tangermeme outputs to numpy arrays."""
+    if hasattr(value, "detach"):
+        return value.detach().cpu().numpy()
+    return np.asarray(value)
+
+
+def _seqlet_sequence_tensor(
+    X: torch.Tensor,
+    logo_offsets: tuple[int, int],
+    reverse_complement: bool,
+) -> torch.Tensor:
+    """Return one cropped OHE tensor aligned to displayed logo coordinates."""
+    sequence = as_numpy(X.float())[0, :, logo_offsets[0] : logo_offsets[1]]
+    if reverse_complement:
+        sequence = reverse_complement_matrix(sequence)
+    return torch.tensor(sequence[None], dtype=torch.float32)
+
+
+def call_and_annotate_seqlets(
+    attributions: dict[str, np.ndarray],
+    X: torch.Tensor,
+    logo_offsets: tuple[int, int],
+    motif_path: Path | str | None = DEFAULT_MOTIF_PATH,
+    reverse_complement: bool = False,
+    threshold: float = 0.01,
+    additional_flanks: int = 2,
+    min_seqlet_len: int = 4,
+    max_seqlet_len: int = 25,
+    n_nearest: int = 1,
+    use_abs: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """Call seqlets and optionally annotate them with MEME motifs.
+
+    Seqlets are called on per-position projected attributions for the cropped
+    logo window. Motif annotation is skipped when ``motif_path`` is ``None`` or
+    absent.
+    """
+    motif_path = Path(motif_path) if motif_path is not None else None
+    motif_names = (
+        motif_names_from_meme(motif_path)
+        if motif_path and motif_path.exists()
+        else []
+    )
+    sequence = _seqlet_sequence_tensor(X, logo_offsets, reverse_complement)
+    annotations: dict[str, pd.DataFrame] = {}
+    for head, matrix in attributions.items():
+        display_matrix = oriented_logo_matrix(matrix, reverse_complement)
+        projected = display_matrix.sum(axis=0)
+        caller_values = np.abs(projected) if use_abs else projected
+        seqlets = recursive_seqlets(
+            torch.tensor(caller_values[None], dtype=torch.float32),
+            threshold=threshold,
+            additional_flanks=additional_flanks,
+            min_seqlet_len=min_seqlet_len,
+            max_seqlet_len=max_seqlet_len,
+        ).copy()
+        if seqlets.empty:
+            annotations[head] = seqlets
+            continue
+        seqlets["start"] = seqlets["start"].clip(lower=0, upper=len(projected))
+        seqlets["end"] = seqlets["end"].clip(lower=0, upper=len(projected))
+        seqlets["head"] = head
+        seqlets["signed_attribution"] = [
+            projected[int(start) : int(end)].sum()
+            for start, end in zip(seqlets["start"], seqlets["end"])
+        ]
+        seqlets["strand"] = "."
+        seqlets["score"] = seqlets["attribution"]
+        seqlets["motif_idx"] = -1
+        seqlets["motif_name"] = "seqlet"
+        seqlets["motif_pvalue"] = np.nan
+        if motif_names:
+            motif_idxs, pvals = annotate_seqlets(
+                sequence,
+                seqlets,
+                str(motif_path),
+                n_nearest=n_nearest,
+            )
+            motif_idxs = _to_numpy_array(motif_idxs)
+            pvals = _to_numpy_array(pvals)
+            primary_idxs = motif_idxs[:, 0]
+            seqlets["motif_idx"] = primary_idxs
+            seqlets["motif_name"] = [
+                motif_names[int(idx)] if int(idx) >= 0 else "unannotated"
+                for idx in primary_idxs
+            ]
+            seqlets["motif_pvalue"] = pvals[:, 0]
+        annotations[head] = seqlets
+    return annotations
+
+
 def plot_tracks(
     prediction: np.ndarray,
     resources: dict,
@@ -447,13 +547,27 @@ def shift_logo_to_genomic_axis(
     reverse_complement: bool = False,
 ) -> None:
     """Move logo glyphs from logo-local x positions to genomic coordinates."""
+    def shift_x(values):
+        if reverse_complement:
+            return logo_end - values
+        return logo_start + 1 + values
+
     for collection in ax.collections:
         for path in collection.get_paths():
             vertices = path.vertices
-            if reverse_complement:
-                vertices[:, 0] = logo_end - vertices[:, 0]
+            vertices[:, 0] = shift_x(vertices[:, 0])
+    for patch in ax.patches:
+        if hasattr(patch, "get_x") and hasattr(patch, "set_x"):
+            x = patch.get_x()
+            if reverse_complement and hasattr(patch, "get_width"):
+                patch.set_x(float(logo_end - x - patch.get_width()))
             else:
-                vertices[:, 0] = logo_start + 1 + vertices[:, 0]
+                patch.set_x(float(shift_x(x)))
+    for line in ax.lines:
+        line.set_xdata(shift_x(np.asarray(line.get_xdata())))
+    for text in ax.texts:
+        x, y = text.get_position()
+        text.set_position((float(shift_x(x)), y))
 
 
 def plot_logo_panel(
@@ -467,9 +581,16 @@ def plot_logo_panel(
     ticks: np.ndarray | None = None,
     show_tick_labels: bool = False,
     show_title: bool = True,
+    seqlet_annotations: pd.DataFrame | None = None,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
-    plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax)
+    plot_kwargs = {}
+    if seqlet_annotations is not None and not seqlet_annotations.empty:
+        plot_kwargs = {
+            "annotations": seqlet_annotations,
+            "score_key": "attribution",
+        }
+    plot_logo(torch.tensor(matrix, dtype=torch.float32), ax=ax, **plot_kwargs)
     if show_title:
         ax.set_title(title)
     if x_limits is None:
@@ -494,6 +615,7 @@ def plot_locus_summary(
     logo_end: int,
     reverse_complement: bool = False,
     track_value_clip: float | None = None,
+    seqlet_annotations: dict[str, pd.DataFrame] | None = None,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
     tracks = track_arrays(
@@ -559,6 +681,9 @@ def plot_locus_summary(
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
+        annotations = None
+        if seqlet_annotations is not None:
+            annotations = seqlet_annotations.get(head)
         plot_logo_panel(
             ax,
             matrix,
@@ -570,6 +695,7 @@ def plot_locus_summary(
             ticks,
             show_tick_labels=ax is axes[-1],
             show_title=False,
+            seqlet_annotations=annotations,
         )
     for ax in axes[:-1]:
         apply_compact_summary_axis_style(ax)
@@ -644,11 +770,15 @@ def plot_deeplift_logos(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
+    seqlet_annotations: dict[str, pd.DataFrame] | None = None,
 ):
     """Plot profile/count DeepLIFT logos for the selected logo interval."""
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.5), sharex=True)
     for ax, head in zip(axes, ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
+        annotations = None
+        if seqlet_annotations is not None:
+            annotations = seqlet_annotations.get(head)
         plot_logo_panel(
             ax,
             matrix,
@@ -656,6 +786,7 @@ def plot_deeplift_logos(
             logo_start,
             logo_end,
             reverse_complement,
+            seqlet_annotations=annotations,
         )
     fig.suptitle(f"{exp_id} {logo_region}")
     fig.tight_layout()
@@ -675,6 +806,7 @@ def save_locus_viewer_outputs(
     logo_end: int,
     reverse_complement: bool = False,
     track_value_clip: float | None = None,
+    seqlet_annotations: dict[str, pd.DataFrame] | None = None,
 ) -> None:
     """Save the current viewer figures and arrays for offline inspection."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -690,11 +822,15 @@ def save_locus_viewer_outputs(
         logo_end,
         reverse_complement,
         track_value_clip,
+        seqlet_annotations,
     )[0].savefig(
         output_dir / "locus_viewer_summary.pdf",
         bbox_inches=None,
         pad_inches=0,
     )
+    if seqlet_annotations:
+        seqlets = pd.concat(seqlet_annotations.values(), ignore_index=True)
+        seqlets.to_csv(output_dir / "locus_viewer_seqlets.tsv", sep="\t", index=False)
     np.savez_compressed(
         output_dir / "locus_viewer_arrays.npz",
         prediction=prediction,
