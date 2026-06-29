@@ -45,6 +45,15 @@ SUMMARY_FIGURE_SIZE_PT = (570, 120)
 SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
 SUMMARY_LABEL_SIZE = 6
 SUMMARY_TICK_SIZE = 5
+TRACK_SIGNAL_COLOR = "#4C72B0"
+TRACK_SIGNAL_LINEWIDTH = 0.7
+SUMMARY_SUBPLOT_ADJUST = {
+    "left": 0.055,
+    "right": 0.995,
+    "bottom": 0.18,
+    "top": 0.98,
+    "hspace": 0.06,
+}
 
 
 def parse_point(region: str) -> tuple[str, int]:
@@ -295,30 +304,23 @@ def track_arrays(
     }
 
 
-def signed_value_transform(values: np.ndarray, transform: str | None) -> np.ndarray:
-    """Apply an optional sign-preserving display transform to signal tracks."""
-    if isinstance(transform, str):
-        transform = transform.lower()
-    if transform is None or transform in {"none", "linear"}:
+def clip_track_values(values: np.ndarray, clip: float | None) -> np.ndarray:
+    """Clip signal tracks to a symmetric display range without changing raw arrays."""
+    if clip is None:
         return values
-    absolute = np.abs(values)
-    if transform == "sqrt":
-        transformed = np.sqrt(absolute)
-    elif transform in {"log", "log1p"}:
-        transformed = np.log1p(absolute)
-    else:
-        raise ValueError("track_transform must be one of None, 'sqrt', or 'log1p'")
-    return np.sign(values) * transformed
+    if clip <= 0:
+        raise ValueError("track_value_clip must be positive or None")
+    return np.clip(values, -clip, clip)
 
 
-def transform_track_arrays(
+def clip_track_arrays(
     tracks: dict[str, np.ndarray],
-    track_transform: str | None = None,
+    track_value_clip: float | None = None,
 ) -> dict[str, np.ndarray]:
-    """Return tracks with an optional display transform applied to signal arrays."""
+    """Return tracks with optional display clipping applied to signal arrays."""
     return {
         key: (
-            signed_value_transform(value, track_transform)
+            clip_track_values(value, track_value_clip)
             if key != "x"
             else value
         )
@@ -338,7 +340,7 @@ def format_track_axis(
     ax,
     x: np.ndarray,
     title: str,
-    track_transform: str | None = None,
+    track_value_clip: float | None = None,
     show_title: bool = True,
     show_legend: bool = True,
 ) -> None:
@@ -347,8 +349,8 @@ def format_track_axis(
     if show_title:
         ax.set_title(title)
     ylabel = "PRO-cap signal"
-    if track_transform not in {None, "none", "linear"}:
-        ylabel = f"{track_transform} {ylabel}"
+    if track_value_clip is not None:
+        ylabel = f"{ylabel} (clipped at {track_value_clip:g})"
     ax.set_ylabel(ylabel)
     if show_legend:
         ax.legend(frameon=False, ncol=2)
@@ -389,34 +391,48 @@ def plot_tracks(
     point_region: str,
     view_region: str,
     reverse_complement: bool = False,
-    track_transform: str | None = None,
+    track_value_clip: float | None = None,
 ):
     """Plot observed and predicted PRO-cap signal on separate y scales."""
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement
     )
-    tracks = transform_track_arrays(tracks, track_transform)
+    tracks = clip_track_arrays(tracks, track_value_clip)
     x = tracks["x"]
     ticks = shared_ticks((float(x[0]), float(x[-1])))
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.2), sharex=True)
-    axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
-    axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_transform)
+    axes[0].plot(
+        x,
+        tracks["observed_plus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed plus",
+    )
+    axes[0].plot(
+        x,
+        tracks["observed_minus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed minus",
+    )
+    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_value_clip)
     axes[1].plot(
         x,
         tracks["predicted_plus"],
-        color="#C44E52",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted plus",
     )
     axes[1].plot(
         x,
         tracks["predicted_minus"],
-        color="#4C72B0",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_transform)
+    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_value_clip)
     apply_shared_ticks(axes[0], ticks)
     apply_shared_ticks(axes[1], ticks, show_labels=True)
     axes[1].set_xlabel("Genomic position")
@@ -477,13 +493,13 @@ def plot_locus_summary(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
-    track_transform: str | None = None,
+    track_value_clip: float | None = None,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement
     )
-    tracks = transform_track_arrays(tracks, track_transform)
+    tracks = clip_track_arrays(tracks, track_value_clip)
     x = tracks["x"]
     x_limits = (float(x[0]), float(x[-1]))
     ticks = shared_ticks(x_limits)
@@ -493,13 +509,25 @@ def plot_locus_summary(
         figsize=SUMMARY_FIGURE_SIZE_IN,
         gridspec_kw={"height_ratios": [1.1, 1.1, 1.0, 1.0]},
     )
-    axes[0].plot(x, tracks["observed_plus"], color="#C44E52", label="observed plus")
-    axes[0].plot(x, tracks["observed_minus"], color="#4C72B0", label="observed minus")
+    axes[0].plot(
+        x,
+        tracks["observed_plus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed plus",
+    )
+    axes[0].plot(
+        x,
+        tracks["observed_minus"],
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
+        label="observed minus",
+    )
     format_track_axis(
         axes[0],
         x,
         f"{exp_id} observed {view_region}",
-        track_transform,
+        track_value_clip,
         show_title=False,
         show_legend=False,
     )
@@ -507,14 +535,16 @@ def plot_locus_summary(
     axes[1].plot(
         x,
         tracks["predicted_plus"],
-        color="#C44E52",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted plus",
     )
     axes[1].plot(
         x,
         tracks["predicted_minus"],
-        color="#4C72B0",
+        color=TRACK_SIGNAL_COLOR,
+        linewidth=TRACK_SIGNAL_LINEWIDTH,
         linestyle="--",
         label="predicted minus",
     )
@@ -522,7 +552,7 @@ def plot_locus_summary(
         axes[1],
         x,
         f"{exp_id} predicted {view_region}",
-        track_transform,
+        track_value_clip,
         show_title=False,
         show_legend=False,
     )
@@ -545,7 +575,7 @@ def plot_locus_summary(
         apply_compact_summary_axis_style(ax)
     apply_compact_summary_axis_style(axes[-1], show_x_labels=True)
     axes[-1].set_xlabel("Genomic position", fontsize=SUMMARY_LABEL_SIZE, labelpad=2)
-    fig.tight_layout()
+    fig.subplots_adjust(**SUMMARY_SUBPLOT_ADJUST)
     fig.set_size_inches(*SUMMARY_FIGURE_SIZE_IN, forward=True)
     return fig, axes
 
@@ -644,7 +674,7 @@ def save_locus_viewer_outputs(
     logo_start: int,
     logo_end: int,
     reverse_complement: bool = False,
-    track_transform: str | None = None,
+    track_value_clip: float | None = None,
 ) -> None:
     """Save the current viewer figures and arrays for offline inspection."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -659,7 +689,7 @@ def save_locus_viewer_outputs(
         logo_start,
         logo_end,
         reverse_complement,
-        track_transform,
+        track_value_clip,
     )[0].savefig(
         output_dir / "locus_viewer_summary.pdf",
         bbox_inches=None,
