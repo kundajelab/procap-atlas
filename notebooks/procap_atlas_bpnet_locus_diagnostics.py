@@ -5,8 +5,14 @@ import gc
 import gzip
 import os
 import shutil
+import sys
 import urllib.request
 from pathlib import Path
+
+for parent in Path(__file__).resolve().parents:
+    if (parent / "src").is_dir() and str(parent) not in sys.path:
+        sys.path.insert(0, str(parent))
+        break
 
 cache_root = Path(os.environ.get("SCRATCH", "/tmp")) / ".cache"
 os.environ.setdefault("XDG_CACHE_HOME", str(cache_root))
@@ -21,7 +27,6 @@ import pybigtools
 import seaborn as sns
 import torch
 import yaml
-from bpnetlite.attribute import deep_lift_shap
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
@@ -29,6 +34,7 @@ from tangermeme.io import extract_loci
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
 
+from src.bpnet.attribute.deeplift import deep_lift_shap
 from src.bpnet.attribute.locus_diagnostics import (
     CACHE_SCHEMA_VERSION,
     StrandProfileWrapper,
