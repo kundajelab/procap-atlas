@@ -22,6 +22,9 @@ import pandas as pd
 import yaml
 import torch
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
+from bpnetlite.bpnet import _ProfileLogitScaling
+from bpnetlite.chrombpnet import _Exp, _Log
+from tangermeme.deep_lift_shap import _nonlinear, deep_lift_shap
 from tangermeme.io import extract_loci
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -30,15 +33,15 @@ if str(REPO_ROOT) not in sys.path:
 
 from src.modeling.wrappers import OrientationIndexWrapper
 
-try:
-    from src.bpnet.attribute.deeplift import deep_lift_shap
-except ModuleNotFoundError:
-    from deeplift import deep_lift_shap
-
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
+DEEPLIFT_NONLINEAR_OPS = {
+    _ProfileLogitScaling: _nonlinear,
+    _Log: _nonlinear,
+    _Exp: _nonlinear,
+}
 
 
 def load_chrom_splits():
@@ -49,11 +52,17 @@ def load_chrom_splits():
     with open(CHROM_SPLITS_PATH) as f:
         data = yaml.safe_load(f)
     return {int(k): v for k, v in data["folds"].items()}
-    
-def nucleotide_frequency_references(X):
-    """Return one soft reference per sequence using observed base frequencies."""
+
+
+def nucleotide_frequency_references(X, n=1, random_state=None):
+    """Return soft PFM references from each sequence's observed base frequencies."""
+    if n < 1:
+        raise ValueError("n must be at least 1")
+
     frequencies = X.float().mean(dim=-1, keepdim=True)
-    return frequencies.expand_as(X).unsqueeze(1).clone()
+    return frequencies.expand(-1, -1, X.shape[-1]).unsqueeze(1).expand(
+        -1, n, -1, -1
+    ).clone()
 
 
 def main():
@@ -204,8 +213,8 @@ def main():
         elif args.head == "orientation":
             model = OrientationIndexWrapper(model)
         if args.reference_mode == "frequency":
-            references = nucleotide_frequency_references(X)
             n_shuffles = 1
+            references = nucleotide_frequency_references
         else:
             references = None
             n_shuffles = args.n_shuffles
@@ -220,6 +229,7 @@ def main():
             "warning_threshold": 0.01,
             "hypothetical": True,
             "n_shuffles": n_shuffles,
+            "additional_nonlinear_ops": DEEPLIFT_NONLINEAR_OPS,
         }
         if references is not None:
             attribution_kwargs["references"] = references
