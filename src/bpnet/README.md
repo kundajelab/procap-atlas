@@ -162,10 +162,11 @@ attributions/bpnet/{experiment}_ohe.npz
 ```
 
 `attribute_bpnet.py` defaults to the DeepLIFT genomic nucleotide-frequency null:
-one soft reference per input sequence with the sequence's observed A/C/G/T
-frequencies repeated at every position. This follows the soft-reference idea in
-DeepLIFT (Shrikumar et al., 2017, ICML, "Learning Important Features Through
-Propagating Activation Differences").
+one soft PFM reference per input sequence with the sequence's observed A/C/G/T
+frequencies repeated at every position. This uses tangermeme's callable
+reference interface, so references are generated on the fly for each input batch
+without passing a soft tensor through tangermeme's tensor-reference one-hot
+validator.
 
 Use `--reference-mode dinucleotide` and `--n-shuffles` to reproduce the previous
 dinucleotide-shuffle baseline. In locus diagnostics, dinucleotide shuffles

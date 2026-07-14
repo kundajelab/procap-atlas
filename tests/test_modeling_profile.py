@@ -1,7 +1,8 @@
 import numpy as np
 import torch
+from tangermeme.deep_lift_shap import deep_lift_shap
 
-from src.bpnet.attribute.deeplift import deep_lift_shap
+from src.bpnet.attribute.attribute_bpnet import nucleotide_frequency_references
 from src.modeling.profile import (
     count_scaled_profile,
     orientation_index,
@@ -122,3 +123,16 @@ def test_orientation_index_wrapper_runs_deeplift_shap_on_cpu():
 
     assert attributions.shape == X.shape
     assert torch.isfinite(attributions).all()
+
+
+def test_nucleotide_frequency_references_are_soft_pfms():
+    X = torch.cat([one_hot("AAAACC"), one_hot("GGTTTT")])
+
+    first = nucleotide_frequency_references(X, n=3, random_state=7)
+    second = nucleotide_frequency_references(X, n=3, random_state=7)
+
+    assert first.shape == (2, 3, 4, 6)
+    assert torch.equal(first, second)
+    assert torch.all(first.sum(dim=2) == 1)
+    np.testing.assert_allclose(first[0, 0, :, 0].numpy(), [4 / 6, 2 / 6, 0, 0])
+    np.testing.assert_allclose(first[1, 0, :, 0].numpy(), [0, 0, 2 / 6, 4 / 6])

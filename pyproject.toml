@@ -8,7 +8,9 @@ version = "0.1.0"
 description = "Local Python environment for PRO-cap atlas scripts"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "bpnet-lite",
     "joblib",
+    "jupyter-client",
     "matplotlib",
     "numpy",
     "pandas",
@@ -20,7 +22,7 @@ dependencies = [
     "pyyaml",
     "scipy",
     "seaborn",
-    "tangermeme",
+    "tangermeme>=1.4.0",
     "torch==2.6.0; sys_platform == 'linux'",
     "torch; sys_platform != 'linux'",
     "tqdm",
