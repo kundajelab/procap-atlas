@@ -29,3 +29,30 @@ the non-PyTorch dependencies. This preserves the NVIDIA-tested `torch` and
 letting pip resolve Cherimoya's `torch>=2.9.0` requirement can replace
 NVIDIA's `torch 2.12.0a0` build with PyPI Torch and leave companion packages
 incompatible.
+
+## Troubleshooting
+
+`nvcr.io/nvidia/pytorch:26.05-py3` is a large image (CUDA libraries
+included), so the final `mksquashfs` packing step needs meaningful memory and
+scratch space:
+
+- `FATAL: ... mksquashfs command failed: exit status 139` is a segfault, not a
+  build-script error; on a memory-constrained host (e.g. a 16G dev node) it
+  usually means `mksquashfs`'s default multi-threaded xz compression ran out
+  of RAM. Cap its memory/processor use before building:
+
+  ```bash
+  export APPTAINER_MKSQUASHFS_MEM=2G
+  export APPTAINER_MKSQUASHFS_PROCS=1
+  apptainer build cherimoya.sif cherimoya.def
+  ```
+
+- If the build instead runs out of disk space while staging the rootfs
+  (default `/tmp`, often small on login nodes), point the temp/cache dirs at
+  scratch space:
+
+  ```bash
+  export APPTAINER_TMPDIR=/scratch/users/$USER/apptainer_tmp
+  export APPTAINER_CACHEDIR=/scratch/users/$USER/apptainer_cache
+  mkdir -p "$APPTAINER_TMPDIR" "$APPTAINER_CACHEDIR"
+  ```

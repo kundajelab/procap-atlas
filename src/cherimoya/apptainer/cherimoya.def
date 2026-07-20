@@ -16,10 +16,15 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
 
     # Install non-PyTorch Cherimoya dependencies while preserving the
     # NVIDIA-tested torch/torchvision pair already present in the base image.
-    # macs3 is omitted: nothing in this repo calls it.
     python -m pip install pynvml \
         numpy scipy pandas h5py tqdm seaborn modisco tangermeme \
-        bam2bw bpnet-lite joblib
+        bam2bw joblib
+
+    # bpnet-lite declares an unconditional macs3 dependency that nothing in
+    # this repo calls; --no-deps skips it (bpnetlite.performance, the only
+    # submodule Cherimoya's scripts import, only needs torch and its own
+    # .losses module, both already present).
+    python -m pip install --no-deps bpnet-lite
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
     # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch.
