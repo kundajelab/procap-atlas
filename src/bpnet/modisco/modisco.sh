@@ -37,13 +37,13 @@ head="${heads[$SLURM_ARRAY_TASK_ID]}"
 if [ -f "${biosample}_${background}_${head}.modisco.h5" ]; then
     echo "File $FILE exists. Skipping modisco motifs."
 else    
-    time uv run --project "$REPO_ROOT" --frozen --extra bpnet modisco motifs \
+    time uv run --project "$REPO_ROOT" --extra sherlock --frozen modisco motifs \
         -s ${biosample}_ohe.npz \
         -a ${biosample}_${background}_${head}.npz \
         -o ${biosample}_${background}_${head}.modisco.h5 \
         -n 1000000 -l 50 -w 1000 -v
 fi
-time uv run --project "$REPO_ROOT" --frozen --extra bpnet modisco report \
+time uv run --project "$REPO_ROOT" --extra sherlock --frozen modisco report \
     -i ${biosample}_${background}_${head}.modisco.h5 \
     -o ${biosample}_${background}_${head}.modisco \
     -m ../../data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt

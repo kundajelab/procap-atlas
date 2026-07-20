@@ -99,7 +99,7 @@ def main():
             job_name = f"modisco_report_{exp_id}_{head}"
 
             modisco_report_cmd = (
-                f"uv run --project {REPO_ROOT} --frozen --extra bpnet modisco report"
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen modisco report"
                 f" -i {out_h5}"
                 f" -o {exp_id}_{head}.modisco"
                 f" -m {JASPAR_PATH}"

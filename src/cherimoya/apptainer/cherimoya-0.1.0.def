@@ -18,11 +18,9 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
         numpy scipy pandas h5py tqdm seaborn modisco tangermeme macs3 \
         bam2bw bpnet-lite joblib
 
-    # Latest Cherimoya GitHub version available on 2026-06-21:
-    # version 0.1.1 from main, pinned to the release commit. --no-deps avoids
-    # replacing nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch.
-    python -m pip install --no-deps \
-        "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@b7948c1ee6f648b05e50f52c098fcc5e4f0fede9"
+    # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
+    # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch.
+    python -m pip install --no-deps cherimoya==0.1.0
 
     # Optional but useful for source/debugging
     python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam macs3

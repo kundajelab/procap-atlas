@@ -13,19 +13,15 @@ Apptainer is not a general requirement for Cherimoya. On another cluster, prefer
 apptainer build cherimoya.sif cherimoya.def
 ```
 
-`cherimoya.def` installs `cherimoya==0.1.0` from PyPI.
+`cherimoya.def` installs `cherimoya==0.2.0` from PyPI.
 
-An experimental GitHub-sourced definition is also available:
+`cherimoya-0.1.0.def` is kept as an archived definition for the previous
+`cherimoya==0.1.0` release, in case a model needs to be reproduced with that
+version:
 
 ```bash
-apptainer build cherimoya-github.sif cherimoya-github.def
+apptainer build cherimoya-0.1.0.sif cherimoya-0.1.0.def
 ```
-
-`cherimoya-github.def` installs Cherimoya from
-`https://github.com/jmschrei/cherimoya.git` at commit
-`b7948c1ee6f648b05e50f52c098fcc5e4f0fede9`, where the package version is
-`0.1.1`. This is the latest GitHub version available on 2026-06-21; PyPI still
-only publishes `0.1.0`.
 
 The Apptainer definitions install Cherimoya with `--no-deps` after installing
 the non-PyTorch dependencies. This preserves the NVIDIA-tested `torch` and

@@ -15,11 +15,15 @@ evaluation workflow, not as a public deployment pipeline.
 - Completed preprocessing with `configs/experiment_config.yaml`,
   `configs/chrom_splits.yaml`, processed strand BigWigs, filtered peaks, and
   GC-matched negatives
-- Python packages from the root `uv` project (`pyproject.toml` / `uv.lock`) for
-  analysis/benchmark helpers
+- A Cherimoya Python environment. Cherimoya's real `torch>=2.9.0`/
+  `triton>=3.5.1` requirements have no wheels compatible with Sherlock's
+  pip/uv (capped at `torch==2.6.0`), so the root `uv` project keeps them in
+  separate, mutually exclusive extras (see the root `pyproject.toml`
+  `tool.uv.conflicts`). Use one of:
+  - The Apptainer image on Sherlock; see [`apptainer/`](apptainer/README.md)
+  - `uv sync --extra cherimoya` for a native (non-Apptainer) install on other
+    (non-Sherlock, modern-glibc) Linux hardware
 - Optional SLURM access for launchers
-- Optional Apptainer image for Sherlock launchers; see
-  [`apptainer/`](apptainer/README.md)
 
 ## Training
 
@@ -34,9 +38,13 @@ the remaining parameters, with warmup plus cosine learning-rate schedules.
 Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
 
-On Sherlock, use the Apptainer workflow rather than the default root `uv`
-environment, which pins Torch 2.6.0 for non-Cherimoya compatibility. The
-Apptainer image is a deliberate exception to the root `uv` Python environment.
+On Sherlock, use the Apptainer workflow; the default root `uv` environment
+(no extras, or `--extra sherlock`) pins `torch==2.6.0` for BPNet/preprocessing
+and does not include Cherimoya. On other Linux hardware, use
+`uv sync --extra cherimoya` instead, which resolves Cherimoya's real
+`torch>=2.9.0`/`triton>=3.5.1` requirements directly. The `sherlock` and
+`cherimoya` extras are declared mutually exclusive and cannot be installed
+together.
 
 Outputs:
 

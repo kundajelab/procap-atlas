@@ -102,7 +102,7 @@ def main():
 
             job_name = f"bpnet_{exp_id}_f{fold}"
             fit_cmd = (
-                f"uv run --project {REPO_ROOT} --frozen --extra bpnet python "
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python "
                 f"{FIT_SCRIPT} -e {exp_id} --fold {fold} -v"
             )
             if args.fit_args:

@@ -8,9 +8,10 @@ version = "0.1.0"
 description = "Local Python environment for PRO-cap atlas scripts"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "bpnet-lite",
+    "bpnet-lite>=1.0.0",
     "joblib",
     "jupyter-client",
+    "leidenalg==0.10.2",
     "matplotlib",
     "numpy",
     "pandas",
@@ -23,15 +24,23 @@ dependencies = [
     "scipy",
     "seaborn",
     "tangermeme>=1.4.0",
-    "torch==2.6.0; sys_platform == 'linux'",
-    "torch; sys_platform != 'linux'",
     "tqdm",
 ]
 
 [project.optional-dependencies]
 hub = ["huggingface-hub"]
-bpnet = ["bpnet-lite", "leidenalg==0.10.2"]
-cherimoya = ["cherimoya", "leidenalg==0.10.2"]
+# torch is not a base dependency: Sherlock's pip/uv can only resolve wheels up
+# to torch==2.6.0, while Cherimoya needs its real torch>=2.9.0/triton>=3.5.1.
+# These can't be satisfied by one resolution, so each lives in its own extra
+# below, declared mutually exclusive via tool.uv.conflicts.
+sherlock = [
+    "torch==2.6.0; sys_platform == 'linux'",
+    "torch; sys_platform != 'linux'",
+]
+# Apptainer on Sherlock bypasses this lock entirely; use this extra for a
+# native (non-Apptainer) Cherimoya install on other, modern-glibc Linux
+# hardware. See src/cherimoya/apptainer/ for the Sherlock path.
+cherimoya = ["cherimoya==0.2.0; sys_platform == 'linux'"]
 # MotifCompendium and personal_bpnet are external/local research dependencies
 # until resolvable install sources are confirmed.
 # Metaformer / promoterai-torch is still in development and will be added
@@ -40,7 +49,6 @@ cherimoya = ["cherimoya", "leidenalg==0.10.2"]
 [dependency-groups]
 dev = ["pytest"]
 notebook = [
-    "bpnet-lite",
     "ipykernel",
     "jupyterlab",
     # pyzmq 27.1 has no manylinux2014 x86_64 wheel and builds against
@@ -51,6 +59,52 @@ notebook = [
 [tool.uv]
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+# sherlock's torch==2.6.0 pin and cherimoya's real torch>=2.9.0 requirement
+# are never installed together, so let uv resolve them independently instead
+# of forcing one universal torch version across both.
+conflicts = [
+    [
+        { extra = "sherlock" },
+        { extra = "cherimoya" },
+    ],
+]
+
+# bpnet-lite and cherimoya both declare an unconditional macs3 dependency, but
+# nothing in this repo calls macs3; dropping it avoids the extra install time.
+[[tool.uv.dependency-metadata]]
+name = "bpnet-lite"
+version = "1.0.0"
+requires-dist = [
+    "numpy>=1.14.2",
+    "scipy>=1.0.0",
+    "pandas>=1.3.3",
+    "torch>=1.9.0",
+    "h5py>=3.7.0",
+    "tqdm>=4.64.1",
+    "seaborn>=0.11.2",
+    "modisco-lite>=2.0.0",
+    "tangermeme>=0.2.3",
+    "bam2bw",
+]
+
+[[tool.uv.dependency-metadata]]
+name = "cherimoya"
+version = "0.2.0"
+requires-dist = [
+    "numpy>=1.14.2",
+    "scipy>=1.0.0",
+    "pandas>=1.3.3",
+    "torch>=2.9.0",
+    "h5py>=3.7.0",
+    "tqdm>=4.64.1",
+    "seaborn>=0.11.2",
+    "modisco>=2.0.0",
+    "tangermeme>=0.2.3",
+    "bam2bw>=0.4.1",
+    "bpnet-lite>=1.0.0",
+    "triton>=3.5.1",
+    "joblib>=1.0.0",
 ]
 
 [tool.setuptools]

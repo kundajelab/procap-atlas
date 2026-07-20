@@ -84,7 +84,7 @@ async def main_async(args):
     if args.dry_run:
         for exp_id in to_run:
             print(
-                f"  uv run --project {REPO_ROOT} --frozen --extra bpnet "
+                f"  uv run --project {REPO_ROOT} --extra sherlock --frozen "
                 f"python {SAVE_OHE_SCRIPT} -e {exp_id}"
             )
         return

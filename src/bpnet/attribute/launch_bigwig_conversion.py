@@ -111,7 +111,7 @@ def main():
 
             job_name = f"attr_bigwig_{exp_id}_{head}"
             conversion_cmd = (
-                f"uv run --project {shlex.quote(str(REPO_ROOT))} --frozen "
+                f"uv run --project {shlex.quote(str(REPO_ROOT))} --extra sherlock --frozen "
                 f"python {shlex.quote(str(CONVERSION_SCRIPT))}"
                 f" -e {shlex.quote(exp_id)}"
                 f" --head {shlex.quote(head)}"
