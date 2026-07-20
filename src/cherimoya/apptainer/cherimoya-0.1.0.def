@@ -10,12 +10,15 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
         libcurl4-openssl-dev libssl-dev libbz2-dev liblzma-dev zlib1g-dev
     rm -rf /var/lib/apt/lists/*
 
-    python -m pip install --upgrade pip setuptools wheel
+    # Leave setuptools alone: nvcr.io/nvidia/pytorch pins its torch build to
+    # setuptools<82, and upgrading it here breaks that constraint.
+    python -m pip install --upgrade pip wheel
 
     # Install non-PyTorch Cherimoya dependencies while preserving the
     # NVIDIA-tested torch/torchvision pair already present in the base image.
+    # macs3 is omitted: nothing in this repo calls it.
     python -m pip install pynvml \
-        numpy scipy pandas h5py tqdm seaborn modisco tangermeme macs3 \
+        numpy scipy pandas h5py tqdm seaborn modisco tangermeme \
         bam2bw bpnet-lite joblib
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
@@ -23,7 +26,7 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
     python -m pip install --no-deps cherimoya==0.1.0
 
     # Optional but useful for source/debugging
-    python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam macs3
+    python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam
 
 %environment
     export PYTHONNOUSERSITE=1
