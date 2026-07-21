@@ -49,10 +49,20 @@ scratch space:
 
 - If the build instead runs out of disk space while staging the rootfs
   (default `/tmp`, often small on login nodes), point the temp/cache dirs at
-  scratch space:
+  scratch space. The path **must be absolute** and must already exist —
+  a relative path (e.g. `./apptainer_tmp`) fails with
+  `FATAL: Unable to create build: failed to find mount point for
+  ./apptainer_tmp: no parent mount point found`, since Apptainer's fakeroot
+  build needs to resolve which real filesystem mount the tmpdir is on:
 
   ```bash
-  export APPTAINER_TMPDIR=/scratch/users/$USER/apptainer_tmp
-  export APPTAINER_CACHEDIR=/scratch/users/$USER/apptainer_cache
+  export APPTAINER_TMPDIR="$(pwd)/apptainer_tmp"   # or an absolute scratch path
+  export APPTAINER_CACHEDIR="$(pwd)/apptainer_cache"
   mkdir -p "$APPTAINER_TMPDIR" "$APPTAINER_CACHEDIR"
+  apptainer build cherimoya.sif cherimoya.def
   ```
+
+  The `INFO: User not listed in /etc/subuid, trying root-mapped namespace`
+  line that can appear alongside this is a benign fallback notice (no
+  subuid/subgid mapping granted on that host), not the cause of a failed
+  build.
