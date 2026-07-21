@@ -40,12 +40,18 @@ matrices, and clustermap PNGs.
 ## Warning Flags
 
 Generates read-depth, perturbation, uncapped-library, and manual warning flags
-for experiments.
+for experiments. Perturbation is split into two mutually exclusive flags:
+`perturbation_treated` (metadata matches an active-treatment keyword, e.g.
+dTAG/auxin induction) and `perturbation_untreated` (metadata matches a
+genetic-perturbation keyword, e.g. CRISPR/degron insertion, but no
+active-treatment keyword — typically the untreated control for a degron cell
+line).
 
 ```bash
 python src/analysis/generate_warning_flags.py
 python src/analysis/generate_warning_flags.py --yellow-read-threshold 20000000 --red-read-threshold 10000000
 python src/analysis/generate_warning_flags.py --manual-red-experiment ENCSR000ABC:"failed QC"
+python src/analysis/generate_warning_flags.py --perturb-keyword "sirna" --treatment-keyword "auxin"
 ```
 
 Outputs:
@@ -62,5 +68,7 @@ configs/model_warning_flags.json
 - Predicted count analyses require complete fold models for the selected model
   family and experiment.
 - Warning flag perturbation detection owns the metadata fields and default
-  exclusion keywords used to produce `configs/model_warning_flags.tsv`; the
-  MetaFormer target TSV helper consumes that table.
+  perturbation/treatment keywords used to produce
+  `configs/model_warning_flags.tsv`; the MetaFormer target TSV helper consumes
+  that table's `is_perturbation` column, which is true if either the treated
+  or untreated flag is true.

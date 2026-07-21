@@ -7,6 +7,8 @@
         "red_uncapped"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": true,
       "mn_reads": 13712815,
       "overall_flag": "red",
@@ -30,6 +32,8 @@
         }
       ],
       "total_reads": 27919281,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {
         "description": [
           "uncapped"
@@ -46,6 +50,8 @@
         "red_uncapped"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": true,
       "mn_reads": 13555473,
       "overall_flag": "red",
@@ -69,6 +75,8 @@
         }
       ],
       "total_reads": 27605484,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {
         "description": [
           "uncapped"
@@ -82,9 +90,11 @@
       "biosample": "HCT116",
       "experiment": "ENCSR165QKR",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 23011302,
       "overall_flag": "green",
@@ -109,38 +119,36 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 46281192,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR197JLW",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12177545,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 12336819,
       "read_flag": "green",
@@ -149,45 +157,51 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 24514364,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR100EDZ",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16451256,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 16717966,
       "read_flag": "green",
@@ -196,45 +210,51 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 33169222,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR273ORE",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12624400,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 12736337,
       "read_flag": "green",
@@ -243,18 +263,28 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 25360737,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
@@ -264,6 +294,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14891106,
       "overall_flag": "green",
@@ -273,6 +305,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29845076,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -282,6 +316,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12865387,
       "overall_flag": "green",
@@ -291,6 +327,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 25899195,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -300,6 +338,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6450310,
       "overall_flag": "yellow",
@@ -317,6 +357,8 @@
         }
       ],
       "total_reads": 12964207,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -326,6 +368,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10492244,
       "overall_flag": "green",
@@ -335,6 +379,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 21013486,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -344,6 +390,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15366492,
       "overall_flag": "green",
@@ -353,6 +401,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30750701,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -362,6 +412,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10538882,
       "overall_flag": "green",
@@ -371,6 +423,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 21138106,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -380,6 +434,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17274225,
       "overall_flag": "green",
@@ -389,6 +445,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 34846571,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -398,6 +456,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6970276,
       "overall_flag": "yellow",
@@ -415,6 +475,8 @@
         }
       ],
       "total_reads": 14075807,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -424,6 +486,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9520623,
       "overall_flag": "yellow",
@@ -441,6 +505,8 @@
         }
       ],
       "total_reads": 19047250,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -450,6 +516,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 27077407,
       "overall_flag": "green",
@@ -459,6 +527,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 54350075,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -468,6 +538,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15280531,
       "overall_flag": "green",
@@ -477,6 +549,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30680869,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -486,6 +560,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 32029565,
       "overall_flag": "green",
@@ -495,6 +571,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 64505693,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -504,6 +582,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4872158,
       "overall_flag": "red",
@@ -521,33 +601,31 @@
         }
       ],
       "total_reads": 9498058,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR867EQV",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 22463344,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 22762321,
       "read_flag": "green",
@@ -556,18 +634,28 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 45225665,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
@@ -577,6 +665,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15024944,
       "overall_flag": "green",
@@ -586,6 +676,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30099715,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -595,6 +687,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15889142,
       "overall_flag": "green",
@@ -604,6 +698,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31763810,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -613,6 +709,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10805026,
       "overall_flag": "green",
@@ -622,6 +720,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 21814292,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -631,6 +731,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16234832,
       "overall_flag": "green",
@@ -640,6 +742,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 32524721,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -649,6 +753,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 20018027,
       "overall_flag": "green",
@@ -658,6 +764,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 40450417,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -667,6 +775,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 20244072,
       "overall_flag": "green",
@@ -676,6 +786,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 40783050,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -685,6 +797,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 23734614,
       "overall_flag": "green",
@@ -694,6 +808,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 47563388,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -703,6 +819,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4418375,
       "overall_flag": "red",
@@ -720,6 +838,8 @@
         }
       ],
       "total_reads": 8884275,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -729,6 +849,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15814513,
       "overall_flag": "green",
@@ -738,6 +860,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31719145,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -747,6 +871,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10483569,
       "overall_flag": "green",
@@ -756,6 +882,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20999179,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -765,6 +893,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12697201,
       "overall_flag": "green",
@@ -774,6 +904,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 25789079,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -783,6 +915,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14553235,
       "overall_flag": "green",
@@ -792,6 +926,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29330657,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -801,6 +937,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6884825,
       "overall_flag": "yellow",
@@ -818,6 +956,8 @@
         }
       ],
       "total_reads": 13814019,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -827,6 +967,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15074554,
       "overall_flag": "green",
@@ -836,6 +978,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29994334,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -845,6 +989,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15194316,
       "overall_flag": "green",
@@ -854,6 +1000,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30452346,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -863,6 +1011,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14875961,
       "overall_flag": "green",
@@ -872,6 +1022,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30001955,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -881,6 +1033,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 11992767,
       "overall_flag": "green",
@@ -890,6 +1044,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 24214571,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -899,6 +1055,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 27955404,
       "overall_flag": "green",
@@ -908,6 +1066,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 55698910,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -917,6 +1077,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14167944,
       "overall_flag": "green",
@@ -926,6 +1088,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28647463,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -935,6 +1099,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6309578,
       "overall_flag": "yellow",
@@ -952,6 +1118,8 @@
         }
       ],
       "total_reads": 12669641,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -961,6 +1129,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15515577,
       "overall_flag": "green",
@@ -970,6 +1140,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31210842,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -979,6 +1151,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15931140,
       "overall_flag": "green",
@@ -988,6 +1162,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31802125,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -997,6 +1173,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 19567371,
       "overall_flag": "green",
@@ -1006,6 +1184,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 39031060,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1015,6 +1195,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 23934526,
       "overall_flag": "green",
@@ -1024,6 +1206,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 47772123,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1033,6 +1217,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 19861679,
       "overall_flag": "green",
@@ -1042,6 +1228,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 40063640,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1051,6 +1239,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 24081336,
       "overall_flag": "green",
@@ -1060,6 +1250,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 48044116,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1069,6 +1261,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 22905373,
       "overall_flag": "green",
@@ -1078,6 +1272,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 45956195,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1087,6 +1283,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13330415,
       "overall_flag": "green",
@@ -1096,6 +1294,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 26854082,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1105,6 +1305,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13810993,
       "overall_flag": "green",
@@ -1114,6 +1316,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 27713782,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1123,6 +1327,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 8576792,
       "overall_flag": "yellow",
@@ -1140,6 +1346,8 @@
         }
       ],
       "total_reads": 17249962,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1149,6 +1357,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3778037,
       "overall_flag": "red",
@@ -1166,6 +1376,8 @@
         }
       ],
       "total_reads": 7711346,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1175,6 +1387,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7983628,
       "overall_flag": "yellow",
@@ -1192,6 +1406,8 @@
         }
       ],
       "total_reads": 15988746,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1201,6 +1417,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15778082,
       "overall_flag": "green",
@@ -1210,6 +1428,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31768869,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1219,6 +1439,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9636694,
       "overall_flag": "yellow",
@@ -1236,6 +1458,8 @@
         }
       ],
       "total_reads": 19301256,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1245,6 +1469,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16276976,
       "overall_flag": "green",
@@ -1254,6 +1480,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 32667827,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1263,6 +1491,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 103617,
       "overall_flag": "red",
@@ -1280,6 +1510,8 @@
         }
       ],
       "total_reads": 207642,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1289,6 +1521,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14384436,
       "overall_flag": "green",
@@ -1298,6 +1532,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28878299,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1307,6 +1543,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14485244,
       "overall_flag": "green",
@@ -1316,6 +1554,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29057503,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1325,6 +1565,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13571390,
       "overall_flag": "green",
@@ -1334,6 +1576,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 27288268,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1343,6 +1587,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13051698,
       "overall_flag": "green",
@@ -1352,6 +1598,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 26200582,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1361,6 +1609,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15701305,
       "overall_flag": "green",
@@ -1370,15 +1620,19 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31617356,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR273JQN",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 27047478,
       "overall_flag": "green",
@@ -1403,20 +1657,24 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 54478633,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR074XOP",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 24520430,
       "overall_flag": "green",
@@ -1441,20 +1699,24 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 49288179,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR635SXX",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 19447898,
       "overall_flag": "green",
@@ -1479,20 +1741,24 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 39109436,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR990FJB",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 17074540,
       "overall_flag": "green",
@@ -1517,38 +1783,36 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 34336772,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR261OWE",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17188183,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 17421587,
       "read_flag": "green",
@@ -1557,27 +1821,39 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 34609770,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR932TRR",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 16316522,
       "overall_flag": "green",
@@ -1602,11 +1878,13 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 32851146,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1616,6 +1894,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7066991,
       "overall_flag": "yellow",
@@ -1633,6 +1913,8 @@
         }
       ],
       "total_reads": 14200503,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1642,6 +1924,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9121455,
       "overall_flag": "yellow",
@@ -1659,6 +1943,8 @@
         }
       ],
       "total_reads": 18291501,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1668,6 +1954,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13953078,
       "overall_flag": "green",
@@ -1677,6 +1965,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28186881,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1687,6 +1977,8 @@
         "red_manual"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 8681793,
       "overall_flag": "red",
@@ -1709,15 +2001,19 @@
         }
       ],
       "total_reads": 17475039,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HEK293T",
       "experiment": "ENCSR473KVF",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 30793702,
       "overall_flag": "green",
@@ -1742,11 +2038,13 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 61388371,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1756,6 +2054,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10353550,
       "overall_flag": "green",
@@ -1765,6 +2065,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20936078,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1774,6 +2076,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 1123200,
       "overall_flag": "red",
@@ -1791,6 +2095,8 @@
         }
       ],
       "total_reads": 2280051,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1800,6 +2106,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9624274,
       "overall_flag": "yellow",
@@ -1817,6 +2125,8 @@
         }
       ],
       "total_reads": 19490771,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1826,6 +2136,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9164848,
       "overall_flag": "yellow",
@@ -1843,6 +2155,8 @@
         }
       ],
       "total_reads": 18470624,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1852,6 +2166,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4392855,
       "overall_flag": "red",
@@ -1869,6 +2185,8 @@
         }
       ],
       "total_reads": 8908600,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1878,6 +2196,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 21883008,
       "overall_flag": "green",
@@ -1887,6 +2207,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 43768839,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1896,6 +2218,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10104472,
       "overall_flag": "green",
@@ -1905,6 +2229,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20161361,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1914,6 +2240,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9459220,
       "overall_flag": "yellow",
@@ -1931,6 +2259,8 @@
         }
       ],
       "total_reads": 19012650,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1940,6 +2270,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 27321962,
       "overall_flag": "green",
@@ -1949,6 +2281,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 54754455,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1958,6 +2292,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 1848181,
       "overall_flag": "red",
@@ -1975,6 +2311,8 @@
         }
       ],
       "total_reads": 3728891,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -1984,6 +2322,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16768949,
       "overall_flag": "green",
@@ -1993,6 +2333,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 33540412,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2002,6 +2344,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 27295213,
       "overall_flag": "green",
@@ -2011,6 +2355,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 54370914,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2020,6 +2366,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4690543,
       "overall_flag": "red",
@@ -2037,6 +2385,8 @@
         }
       ],
       "total_reads": 9548225,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2046,6 +2396,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 41486806,
       "overall_flag": "green",
@@ -2055,6 +2407,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 83724920,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2064,6 +2418,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10284852,
       "overall_flag": "green",
@@ -2073,6 +2429,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20675719,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2082,6 +2440,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7772784,
       "overall_flag": "yellow",
@@ -2099,6 +2459,8 @@
         }
       ],
       "total_reads": 15418929,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2108,6 +2470,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3754710,
       "overall_flag": "red",
@@ -2125,6 +2489,8 @@
         }
       ],
       "total_reads": 7613105,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2134,6 +2500,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17175232,
       "overall_flag": "green",
@@ -2143,6 +2511,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 34691465,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2152,6 +2522,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 2579807,
       "overall_flag": "red",
@@ -2169,6 +2541,8 @@
         }
       ],
       "total_reads": 5211219,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2178,6 +2552,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4357006,
       "overall_flag": "red",
@@ -2195,6 +2571,8 @@
         }
       ],
       "total_reads": 8746136,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2204,6 +2582,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10479499,
       "overall_flag": "green",
@@ -2213,6 +2593,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 21207155,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2222,6 +2604,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15397511,
       "overall_flag": "green",
@@ -2231,6 +2615,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30920781,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2240,6 +2626,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 5114922,
       "overall_flag": "yellow",
@@ -2257,6 +2645,8 @@
         }
       ],
       "total_reads": 10302609,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2266,6 +2656,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14634265,
       "overall_flag": "green",
@@ -2275,6 +2667,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29431496,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2284,6 +2678,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13339788,
       "overall_flag": "green",
@@ -2293,6 +2689,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 26892197,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2302,6 +2700,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16776867,
       "overall_flag": "green",
@@ -2311,6 +2711,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 33947354,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2320,6 +2722,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15387396,
       "overall_flag": "green",
@@ -2329,6 +2733,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30984362,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2338,6 +2744,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16451044,
       "overall_flag": "green",
@@ -2347,6 +2755,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 33071486,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2356,6 +2766,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 24569438,
       "overall_flag": "green",
@@ -2365,6 +2777,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 49250210,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2375,6 +2789,8 @@
         "red_uncapped"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": true,
       "mn_reads": 6274739,
       "overall_flag": "red",
@@ -2405,6 +2821,8 @@
         }
       ],
       "total_reads": 12746105,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {
         "description": [
           "uncapped"
@@ -2421,6 +2839,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12442342,
       "overall_flag": "green",
@@ -2430,6 +2850,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 25163674,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2439,6 +2861,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14480743,
       "overall_flag": "green",
@@ -2448,6 +2872,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29054226,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2457,6 +2883,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 18140318,
       "overall_flag": "green",
@@ -2466,6 +2894,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 36499062,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2475,6 +2905,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 42895612,
       "overall_flag": "green",
@@ -2484,6 +2916,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 85670630,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2493,6 +2927,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7148872,
       "overall_flag": "yellow",
@@ -2510,6 +2946,8 @@
         }
       ],
       "total_reads": 14422367,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2519,6 +2957,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16491643,
       "overall_flag": "green",
@@ -2528,6 +2968,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 33243271,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2537,6 +2979,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3659345,
       "overall_flag": "red",
@@ -2554,6 +2998,8 @@
         }
       ],
       "total_reads": 7310110,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2563,6 +3009,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7921625,
       "overall_flag": "yellow",
@@ -2580,6 +3028,8 @@
         }
       ],
       "total_reads": 15924855,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2589,6 +3039,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16223756,
       "overall_flag": "green",
@@ -2598,6 +3050,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 32582557,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2607,6 +3061,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 25873850,
       "overall_flag": "green",
@@ -2616,6 +3072,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 51683549,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2625,6 +3083,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9983443,
       "overall_flag": "green",
@@ -2634,6 +3094,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20024519,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2643,6 +3105,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15828260,
       "overall_flag": "green",
@@ -2652,6 +3116,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31736493,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2661,6 +3127,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 5191447,
       "overall_flag": "yellow",
@@ -2678,6 +3146,8 @@
         }
       ],
       "total_reads": 10502500,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2687,6 +3157,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9813768,
       "overall_flag": "yellow",
@@ -2704,6 +3176,8 @@
         }
       ],
       "total_reads": 19572464,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2713,6 +3187,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9559605,
       "overall_flag": "yellow",
@@ -2730,6 +3206,8 @@
         }
       ],
       "total_reads": 19164560,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2739,6 +3217,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13782224,
       "overall_flag": "green",
@@ -2748,6 +3228,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 27594048,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2758,6 +3240,8 @@
         "red_uncapped"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": true,
       "mn_reads": 5529695,
       "overall_flag": "red",
@@ -2788,6 +3272,8 @@
         }
       ],
       "total_reads": 11216863,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {
         "description": [
           "uncapped"
@@ -2804,6 +3290,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14291395,
       "overall_flag": "green",
@@ -2813,6 +3301,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28722640,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2822,6 +3312,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10175176,
       "overall_flag": "green",
@@ -2831,6 +3323,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20590493,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2840,6 +3334,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 5423378,
       "overall_flag": "yellow",
@@ -2857,15 +3353,19 @@
         }
       ],
       "total_reads": 10747690,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR900SLO",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 19646586,
       "overall_flag": "green",
@@ -2890,11 +3390,13 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 39472843,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2904,6 +3406,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 25917864,
       "overall_flag": "green",
@@ -2913,6 +3417,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 51884823,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2922,6 +3428,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3770140,
       "overall_flag": "red",
@@ -2939,6 +3447,8 @@
         }
       ],
       "total_reads": 7655506,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2948,6 +3458,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17609472,
       "overall_flag": "green",
@@ -2957,6 +3469,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 35552786,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2966,6 +3480,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16556327,
       "overall_flag": "green",
@@ -2975,6 +3491,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 33362683,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -2984,6 +3502,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3478325,
       "overall_flag": "red",
@@ -3001,6 +3521,8 @@
         }
       ],
       "total_reads": 6836531,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3010,6 +3532,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 11591903,
       "overall_flag": "green",
@@ -3019,6 +3543,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 23386026,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3028,6 +3554,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15368061,
       "overall_flag": "green",
@@ -3037,6 +3565,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30751671,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3046,6 +3576,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14408222,
       "overall_flag": "green",
@@ -3055,6 +3587,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28999509,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3064,6 +3598,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 27080278,
       "overall_flag": "green",
@@ -3073,6 +3609,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 53920081,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3082,6 +3620,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12140285,
       "overall_flag": "green",
@@ -3091,6 +3631,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 24316687,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3100,6 +3642,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15083411,
       "overall_flag": "green",
@@ -3109,6 +3653,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30243524,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3118,6 +3664,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14317643,
       "overall_flag": "green",
@@ -3127,6 +3675,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28731574,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3136,6 +3686,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 20077640,
       "overall_flag": "green",
@@ -3145,6 +3697,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 40529055,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3154,6 +3708,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 20577567,
       "overall_flag": "green",
@@ -3163,6 +3719,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 41250828,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3172,6 +3730,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10205708,
       "overall_flag": "green",
@@ -3181,6 +3741,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20479471,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3190,6 +3752,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15342014,
       "overall_flag": "green",
@@ -3199,6 +3763,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30814739,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3208,6 +3774,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15064622,
       "overall_flag": "green",
@@ -3217,6 +3785,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30285637,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3226,6 +3796,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 18336495,
       "overall_flag": "green",
@@ -3235,6 +3807,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 36800937,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3244,6 +3818,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 18581491,
       "overall_flag": "green",
@@ -3253,6 +3829,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 37258897,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3262,6 +3840,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16181976,
       "overall_flag": "green",
@@ -3271,6 +3851,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 32521472,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3280,6 +3862,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13624071,
       "overall_flag": "green",
@@ -3289,6 +3873,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 27478806,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3298,6 +3884,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 8942767,
       "overall_flag": "yellow",
@@ -3315,6 +3903,8 @@
         }
       ],
       "total_reads": 17970063,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3324,6 +3914,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15827697,
       "overall_flag": "green",
@@ -3333,6 +3925,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31740315,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3342,6 +3936,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14685774,
       "overall_flag": "green",
@@ -3351,6 +3947,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29979023,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3360,6 +3958,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16992460,
       "overall_flag": "green",
@@ -3369,6 +3969,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 34088813,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3378,6 +3980,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15340261,
       "overall_flag": "green",
@@ -3387,6 +3991,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30715044,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3396,6 +4002,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17847493,
       "overall_flag": "green",
@@ -3405,15 +4013,19 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 35802705,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR360MUR",
       "flags": [
-        "perturbation"
+        "perturbation_untreated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": true,
       "is_uncapped": false,
       "mn_reads": 20496400,
       "overall_flag": "green",
@@ -3438,38 +4050,36 @@
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, genetically modified",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched genetic-perturbation keywords with no active-treatment keyword: crispr, genetically modified",
+          "rule": "metadata perturbation keyword match"
         }
       ],
       "total_reads": 41250193,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HCT116",
       "experiment": "ENCSR871CUV",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13666830,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 13846001,
       "read_flag": "green",
@@ -3478,18 +4088,28 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 27512831,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
@@ -3499,6 +4119,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15922311,
       "overall_flag": "green",
@@ -3508,6 +4130,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 32032976,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3517,6 +4141,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 2728969,
       "overall_flag": "red",
@@ -3534,6 +4160,8 @@
         }
       ],
       "total_reads": 5548581,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3543,6 +4171,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7521716,
       "overall_flag": "yellow",
@@ -3560,6 +4190,8 @@
         }
       ],
       "total_reads": 15188067,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3569,6 +4201,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3120987,
       "overall_flag": "red",
@@ -3586,6 +4220,8 @@
         }
       ],
       "total_reads": 6323802,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3595,6 +4231,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 21286948,
       "overall_flag": "green",
@@ -3604,6 +4242,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 42662120,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3613,6 +4253,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 3180257,
       "overall_flag": "red",
@@ -3630,6 +4272,8 @@
         }
       ],
       "total_reads": 6438457,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3639,6 +4283,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15367876,
       "overall_flag": "green",
@@ -3648,6 +4294,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30816494,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3657,6 +4305,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 27694434,
       "overall_flag": "green",
@@ -3666,6 +4316,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 55518882,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3675,6 +4327,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13347890,
       "overall_flag": "green",
@@ -3684,6 +4338,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 26840929,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3693,6 +4349,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13588311,
       "overall_flag": "green",
@@ -3702,6 +4360,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 27406802,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3709,27 +4369,23 @@
       "experiment": "ENCSR966RLG",
       "flags": [
         "red_low_reads",
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4455598,
       "overall_flag": "red",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 4524985,
       "read_flag": "red",
@@ -3745,18 +4401,28 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 8980583,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
@@ -3766,6 +4432,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 24747047,
       "overall_flag": "green",
@@ -3775,6 +4443,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 49925415,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3784,6 +4454,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6018422,
       "overall_flag": "yellow",
@@ -3801,6 +4473,8 @@
         }
       ],
       "total_reads": 12211044,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3810,6 +4484,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 38051894,
       "overall_flag": "green",
@@ -3819,6 +4495,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 76757864,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3828,6 +4506,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 5325461,
       "overall_flag": "yellow",
@@ -3845,6 +4525,8 @@
         }
       ],
       "total_reads": 10706077,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3854,6 +4536,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 22530275,
       "overall_flag": "green",
@@ -3863,6 +4547,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 45043588,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3872,6 +4558,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7630450,
       "overall_flag": "yellow",
@@ -3889,6 +4577,8 @@
         }
       ],
       "total_reads": 15259901,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3898,6 +4588,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14206260,
       "overall_flag": "green",
@@ -3907,6 +4599,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28333567,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3916,6 +4610,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12045172,
       "overall_flag": "green",
@@ -3925,6 +4621,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 24200870,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3934,6 +4632,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 348789,
       "overall_flag": "red",
@@ -3951,6 +4651,8 @@
         }
       ],
       "total_reads": 708176,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3960,6 +4662,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14798064,
       "overall_flag": "green",
@@ -3969,6 +4673,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29737117,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3978,6 +4684,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14982218,
       "overall_flag": "green",
@@ -3987,6 +4695,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30060674,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -3996,6 +4706,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9994659,
       "overall_flag": "green",
@@ -4005,6 +4717,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20122324,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4014,6 +4728,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 8776136,
       "overall_flag": "yellow",
@@ -4031,6 +4747,8 @@
         }
       ],
       "total_reads": 17800656,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4038,27 +4756,23 @@
       "experiment": "ENCSR718AQM",
       "flags": [
         "yellow_low_reads",
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 5545962,
       "overall_flag": "yellow",
       "perturbation_fields": {
         "biosample_summary": [
-          "5-phenyl",
           "crispr",
-          "genetically modified",
-          "indole-3-acetic acid",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
-        "5-phenyl",
         "crispr",
-        "genetically modified",
-        "indole-3-acetic acid",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 5672242,
       "read_flag": "yellow",
@@ -4074,18 +4788,28 @@
           "fields": {
             "biosample_summary": [
               "5-phenyl",
-              "crispr",
-              "genetically modified",
               "indole-3-acetic acid",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: 5-phenyl, crispr, genetically modified, indole-3-acetic acid, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: 5-phenyl, indole-3-acetic acid, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 11218204,
+      "treatment_fields": {
+        "biosample_summary": [
+          "5-phenyl",
+          "indole-3-acetic acid",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "5-phenyl",
+        "indole-3-acetic acid",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
@@ -4095,6 +4819,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 19228498,
       "overall_flag": "green",
@@ -4104,6 +4830,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 38881569,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4113,6 +4841,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 20423889,
       "overall_flag": "green",
@@ -4122,6 +4852,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 40683898,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4131,6 +4863,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 25827092,
       "overall_flag": "green",
@@ -4140,6 +4874,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 52136984,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4149,6 +4885,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 21536700,
       "overall_flag": "green",
@@ -4158,6 +4896,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 43001927,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4167,6 +4907,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 25405458,
       "overall_flag": "green",
@@ -4176,6 +4918,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 51061620,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4185,6 +4929,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15317759,
       "overall_flag": "green",
@@ -4194,6 +4940,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30966755,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4203,6 +4951,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15408599,
       "overall_flag": "green",
@@ -4212,6 +4962,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30841827,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4221,6 +4973,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 22302170,
       "overall_flag": "green",
@@ -4230,6 +4984,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 44825584,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4239,6 +4995,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6232187,
       "overall_flag": "yellow",
@@ -4256,6 +5014,8 @@
         }
       ],
       "total_reads": 12417810,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4265,6 +5025,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15071967,
       "overall_flag": "green",
@@ -4274,6 +5036,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30299312,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4283,6 +5047,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14285313,
       "overall_flag": "green",
@@ -4292,6 +5058,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 28624756,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4301,6 +5069,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 19575197,
       "overall_flag": "green",
@@ -4310,6 +5080,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 39568378,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4319,6 +5091,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13470880,
       "overall_flag": "green",
@@ -4328,6 +5102,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 27133450,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4337,6 +5113,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12548309,
       "overall_flag": "green",
@@ -4346,6 +5124,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 25240131,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4355,6 +5135,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14549574,
       "overall_flag": "green",
@@ -4364,6 +5146,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29346245,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4373,6 +5157,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 21930403,
       "overall_flag": "green",
@@ -4382,31 +5168,31 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 44101830,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
       "biosample": "HEK293T",
       "experiment": "ENCSR733DAS",
       "flags": [
-        "perturbation"
+        "perturbation_treated"
       ],
       "is_perturbation": true,
+      "is_perturbation_treated": true,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 33720487,
       "overall_flag": "green",
       "perturbation_fields": {
         "biosample_summary": [
           "crispr",
-          "dtag",
-          "genetically modified",
-          "treated"
+          "genetically modified"
         ]
       },
       "perturbation_keywords": [
         "crispr",
-        "dtag",
-        "genetically modified",
-        "treated"
+        "genetically modified"
       ],
       "pl_reads": 33559859,
       "read_flag": "green",
@@ -4414,18 +5200,26 @@
         {
           "fields": {
             "biosample_summary": [
-              "crispr",
               "dtag",
-              "genetically modified",
               "treated"
             ]
           },
           "flag": "perturb",
-          "reason": "metadata matched perturbation keywords: crispr, dtag, genetically modified, treated",
-          "rule": "metadata keyword match"
+          "reason": "metadata matched active-treatment keywords: dtag, treated",
+          "rule": "metadata treatment keyword match"
         }
       ],
       "total_reads": 67280346,
+      "treatment_fields": {
+        "biosample_summary": [
+          "dtag",
+          "treated"
+        ]
+      },
+      "treatment_keywords": [
+        "dtag",
+        "treated"
+      ],
       "uncapped_fields": {}
     },
     {
@@ -4435,6 +5229,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15640841,
       "overall_flag": "green",
@@ -4444,6 +5240,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31465366,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4453,6 +5251,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15881790,
       "overall_flag": "green",
@@ -4462,6 +5262,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31986919,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4471,6 +5273,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16947883,
       "overall_flag": "green",
@@ -4480,6 +5284,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 34169045,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4489,6 +5295,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10378529,
       "overall_flag": "green",
@@ -4498,6 +5306,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20968539,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4507,6 +5317,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 16100426,
       "overall_flag": "green",
@@ -4516,6 +5328,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 32445748,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4525,6 +5339,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9600925,
       "overall_flag": "yellow",
@@ -4542,6 +5358,8 @@
         }
       ],
       "total_reads": 19301319,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4551,6 +5369,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 6658725,
       "overall_flag": "yellow",
@@ -4568,6 +5388,8 @@
         }
       ],
       "total_reads": 13504588,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4577,6 +5399,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7695919,
       "overall_flag": "yellow",
@@ -4594,6 +5418,8 @@
         }
       ],
       "total_reads": 15335413,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4603,6 +5429,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 23800540,
       "overall_flag": "green",
@@ -4612,6 +5440,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 47392533,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4621,6 +5451,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17677095,
       "overall_flag": "green",
@@ -4630,6 +5462,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 35429854,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4639,6 +5473,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 11604646,
       "overall_flag": "green",
@@ -4648,6 +5484,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 23397558,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4657,6 +5495,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 5101656,
       "overall_flag": "yellow",
@@ -4674,6 +5514,8 @@
         }
       ],
       "total_reads": 10242408,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4683,6 +5525,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15064779,
       "overall_flag": "green",
@@ -4692,6 +5536,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 30398980,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4701,6 +5547,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 21318517,
       "overall_flag": "green",
@@ -4710,6 +5558,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 42478294,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4719,6 +5569,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10304383,
       "overall_flag": "green",
@@ -4728,6 +5580,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 20591463,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4737,6 +5591,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 4482460,
       "overall_flag": "red",
@@ -4754,6 +5610,8 @@
         }
       ],
       "total_reads": 9058417,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4763,6 +5621,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 12456240,
       "overall_flag": "green",
@@ -4772,6 +5632,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 24923001,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4781,6 +5643,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 13310089,
       "overall_flag": "green",
@@ -4790,6 +5654,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 26570734,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4799,6 +5665,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 14547991,
       "overall_flag": "green",
@@ -4808,6 +5676,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 29199828,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4817,6 +5687,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 7258828,
       "overall_flag": "yellow",
@@ -4834,6 +5706,8 @@
         }
       ],
       "total_reads": 14416502,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4843,6 +5717,8 @@
         "red_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 114433,
       "overall_flag": "red",
@@ -4860,6 +5736,8 @@
         }
       ],
       "total_reads": 227292,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4869,6 +5747,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15798564,
       "overall_flag": "green",
@@ -4878,6 +5758,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31894900,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4887,6 +5769,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 26053709,
       "overall_flag": "green",
@@ -4896,6 +5780,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 52291759,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4905,6 +5791,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 10996778,
       "overall_flag": "green",
@@ -4914,6 +5802,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 22204778,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4923,6 +5813,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 15581835,
       "overall_flag": "green",
@@ -4932,6 +5824,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 31274219,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4941,6 +5835,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 17978342,
       "overall_flag": "green",
@@ -4950,6 +5846,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 36236213,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4959,6 +5857,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 22848269,
       "overall_flag": "green",
@@ -4968,6 +5868,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 46070069,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4977,6 +5879,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 46257993,
       "overall_flag": "green",
@@ -4986,6 +5890,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 92403721,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -4995,6 +5901,8 @@
         "yellow_low_reads"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 9505498,
       "overall_flag": "yellow",
@@ -5012,6 +5920,8 @@
         }
       ],
       "total_reads": 19110698,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     },
     {
@@ -5021,6 +5931,8 @@
         "green"
       ],
       "is_perturbation": false,
+      "is_perturbation_treated": false,
+      "is_perturbation_untreated": false,
       "is_uncapped": false,
       "mn_reads": 21184659,
       "overall_flag": "green",
@@ -5030,6 +5942,8 @@
       "read_flag": "green",
       "reasons": [],
       "total_reads": 42563066,
+      "treatment_fields": {},
+      "treatment_keywords": [],
       "uncapped_fields": {}
     }
   ],
@@ -5038,19 +5952,14 @@
     "manual_red_experiments": {
       "ENCSR973QQI": "poor TSS-positioning"
     },
-    "perturbation_definition_source": "src/analysis/generate_warning_flags.py DEFAULT_EXCLUDE_KEYWORDS and METADATA_FIELDS",
+    "perturbation_definition_source": "src/analysis/generate_warning_flags.py DEFAULT_PERTURBATION_KEYWORDS, DEFAULT_TREATMENT_KEYWORDS, and METADATA_FIELDS",
     "perturbation_keywords": [
-      "5-phenyl",
       "crispr",
       "deplet",
-      "dtag",
       "gene-silencing",
       "genetically modified",
-      "indole-3-acetic acid",
       "knock",
-      "perturb",
-      "treated",
-      "treatment"
+      "perturb"
     ],
     "perturbation_metadata_fields": [
       "biosample",
@@ -5060,6 +5969,13 @@
     ],
     "read_counts": "/Users/adamhe/github/procap-atlas/configs/n_reads.txt",
     "red_read_threshold": 10000000,
+    "treatment_keywords": [
+      "5-phenyl",
+      "dtag",
+      "indole-3-acetic acid",
+      "treated",
+      "treatment"
+    ],
     "yellow_read_threshold": 20000000
   }
 }

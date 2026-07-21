@@ -28,18 +28,20 @@ DEFAULT_RED_READS = 10_000_000
 DEFAULT_MANUAL_RED_EXPERIMENTS = {
     "ENCSR973QQI": "poor TSS-positioning",
 }
-DEFAULT_EXCLUDE_KEYWORDS = (
+DEFAULT_PERTURBATION_KEYWORDS = (
     "perturb",
-    "treated",
-    "treatment",
     "genetically modified",
     "crispr",
-    "dtag",
-    "5-phenyl",
-    "indole-3-acetic acid",
     "gene-silencing",
     "knock",
     "deplet",
+)
+DEFAULT_TREATMENT_KEYWORDS = (
+    "treated",
+    "treatment",
+    "dtag",
+    "5-phenyl",
+    "indole-3-acetic acid",
 )
 METADATA_FIELDS = (
     "biosample",
@@ -54,6 +56,8 @@ TSV_FIELDS = [
     "overall_flag",
     "read_flag",
     "is_perturbation",
+    "is_perturbation_treated",
+    "is_perturbation_untreated",
     "is_uncapped",
     "flags",
     "total_reads",
@@ -61,6 +65,8 @@ TSV_FIELDS = [
     "mn_reads",
     "perturbation_keywords",
     "perturbation_fields",
+    "treatment_keywords",
+    "treatment_fields",
     "uncapped_fields",
     "reasons",
 ]
@@ -111,8 +117,17 @@ def parse_args() -> argparse.Namespace:
         action="append",
         default=[],
         help=(
-            "additional case-insensitive metadata keyword for perturbation flags; "
-            "may be repeated"
+            "additional case-insensitive metadata keyword for genetic-perturbation "
+            "flags (e.g. CRISPR/knockdown lines); may be repeated"
+        ),
+    )
+    parser.add_argument(
+        "--treatment-keyword",
+        action="append",
+        default=[],
+        help=(
+            "additional case-insensitive metadata keyword for active-treatment "
+            "flags (e.g. dTAG/auxin induction); may be repeated"
         ),
     )
     parser.add_argument(
@@ -181,7 +196,7 @@ def parse_manual_red(values: list[str]) -> dict[str, str]:
     return manual
 
 
-def find_perturbation_matches(
+def find_keyword_matches(
     exp: dict[str, Any], keywords: list[str]
 ) -> dict[str, list[str]]:
     matches: dict[str, list[str]] = {}
@@ -215,7 +230,8 @@ def read_flag(total_reads: int | None, red_threshold: int, yellow_threshold: int
 def build_rows(
     experiments: dict[str, dict[str, Any]],
     read_counts: dict[str, dict[str, int | None]],
-    keywords: list[str],
+    perturbation_keywords: list[str],
+    treatment_keywords: list[str],
     manual_red_experiments: dict[str, str],
     red_threshold: int,
     yellow_threshold: int,
@@ -262,21 +278,42 @@ def build_rows(
                 }
             )
 
-        perturb_matches = find_perturbation_matches(exp, keywords)
-        perturb_keywords = sorted(
+        perturb_matches = find_keyword_matches(exp, perturbation_keywords)
+        perturb_keywords_matched = sorted(
             {keyword for field_keywords in perturb_matches.values() for keyword in field_keywords}
         )
-        is_perturbation = bool(perturb_matches)
-        if is_perturbation:
-            flags.append("perturbation")
+        treatment_matches = find_keyword_matches(exp, treatment_keywords)
+        treatment_keywords_matched = sorted(
+            {keyword for field_keywords in treatment_matches.values() for keyword in field_keywords}
+        )
+
+        is_perturbation_treated = bool(treatment_matches)
+        is_perturbation_untreated = bool(perturb_matches) and not is_perturbation_treated
+        is_perturbation = is_perturbation_treated or is_perturbation_untreated
+
+        if is_perturbation_treated:
+            flags.append("perturbation_treated")
             reasons.append(
                 {
                     "flag": "perturb",
-                    "rule": "metadata keyword match",
+                    "rule": "metadata treatment keyword match",
+                    "fields": treatment_matches,
+                    "reason": (
+                        "metadata matched active-treatment keywords: "
+                        + ", ".join(treatment_keywords_matched)
+                    ),
+                }
+            )
+        elif is_perturbation_untreated:
+            flags.append("perturbation_untreated")
+            reasons.append(
+                {
+                    "flag": "perturb",
+                    "rule": "metadata perturbation keyword match",
                     "fields": perturb_matches,
                     "reason": (
-                        "metadata matched perturbation keywords: "
-                        + ", ".join(perturb_keywords)
+                        "metadata matched genetic-perturbation keywords with no "
+                        "active-treatment keyword: " + ", ".join(perturb_keywords_matched)
                     ),
                 }
             )
@@ -316,13 +353,17 @@ def build_rows(
             "overall_flag": overall_flag,
             "read_flag": flag,
             "is_perturbation": is_perturbation,
+            "is_perturbation_treated": is_perturbation_treated,
+            "is_perturbation_untreated": is_perturbation_untreated,
             "is_uncapped": is_uncapped,
             "flags": flags,
             "total_reads": total_reads,
             "pl_reads": reads.get("pl_reads"),
             "mn_reads": reads.get("mn_reads"),
-            "perturbation_keywords": perturb_keywords,
+            "perturbation_keywords": perturb_keywords_matched,
             "perturbation_fields": perturb_matches,
+            "treatment_keywords": treatment_keywords_matched,
+            "treatment_fields": treatment_matches,
             "uncapped_fields": uncapped_matches,
             "reasons": reasons,
         }
@@ -359,7 +400,8 @@ def write_json(
     output_path: Path,
     config_path: Path,
     reads_path: Path,
-    keywords: list[str],
+    perturbation_keywords: list[str],
+    treatment_keywords: list[str],
     red_threshold: int,
     yellow_threshold: int,
     manual_red_experiments: dict[str, str],
@@ -373,10 +415,12 @@ def write_json(
             "yellow_read_threshold": yellow_threshold,
             "perturbation_definition_source": (
                 "src/analysis/generate_warning_flags.py "
-                "DEFAULT_EXCLUDE_KEYWORDS and METADATA_FIELDS"
+                "DEFAULT_PERTURBATION_KEYWORDS, DEFAULT_TREATMENT_KEYWORDS, "
+                "and METADATA_FIELDS"
             ),
             "perturbation_metadata_fields": list(METADATA_FIELDS),
-            "perturbation_keywords": keywords,
+            "perturbation_keywords": perturbation_keywords,
+            "treatment_keywords": treatment_keywords,
             "manual_red_experiments": manual_red_experiments,
         },
         "experiments": rows,
@@ -391,8 +435,11 @@ def main() -> int:
     if args.red_read_threshold >= args.yellow_read_threshold:
         raise ValueError("--red-read-threshold must be less than --yellow-read-threshold")
 
-    keywords = sorted(
-        {keyword.lower() for keyword in (*DEFAULT_EXCLUDE_KEYWORDS, *args.perturb_keyword)}
+    perturbation_keywords = sorted(
+        {keyword.lower() for keyword in (*DEFAULT_PERTURBATION_KEYWORDS, *args.perturb_keyword)}
+    )
+    treatment_keywords = sorted(
+        {keyword.lower() for keyword in (*DEFAULT_TREATMENT_KEYWORDS, *args.treatment_keyword)}
     )
     manual_red_experiments = parse_manual_red(args.manual_red_experiment)
 
@@ -401,7 +448,8 @@ def main() -> int:
     rows = build_rows(
         experiments=experiments,
         read_counts=read_counts,
-        keywords=keywords,
+        perturbation_keywords=perturbation_keywords,
+        treatment_keywords=treatment_keywords,
         manual_red_experiments=manual_red_experiments,
         red_threshold=args.red_read_threshold,
         yellow_threshold=args.yellow_read_threshold,
@@ -413,7 +461,8 @@ def main() -> int:
         output_path=args.output_json,
         config_path=args.config,
         reads_path=args.reads,
-        keywords=keywords,
+        perturbation_keywords=perturbation_keywords,
+        treatment_keywords=treatment_keywords,
         red_threshold=args.red_read_threshold,
         yellow_threshold=args.yellow_read_threshold,
         manual_red_experiments=manual_red_experiments,
@@ -422,14 +471,16 @@ def main() -> int:
     counts = {}
     for row in rows:
         counts[row["overall_flag"]] = counts.get(row["overall_flag"], 0) + 1
-    n_perturb = sum(1 for row in rows if row["is_perturbation"])
+    n_perturb_treated = sum(1 for row in rows if row["is_perturbation_treated"])
+    n_perturb_untreated = sum(1 for row in rows if row["is_perturbation_untreated"])
     print(f"Wrote {len(rows)} experiments to {args.output_tsv}")
     print(f"Wrote structured output to {args.output_json}")
     print(
         "Overall flags: "
         + ", ".join(f"{flag}={counts[flag]}" for flag in sorted(counts))
     )
-    print(f"Perturbation flags: {n_perturb}")
+    print(f"Perturbation flags (treated): {n_perturb_treated}")
+    print(f"Perturbation flags (untreated): {n_perturb_untreated}")
     return 0
 
 
