@@ -59,7 +59,9 @@ The launcher contains hard-coded defaults for the Sherlock HPC environment,
 including Sherlock/Kundaje-specific partition and module assumptions. Adjust it
 before using another cluster. Generated jobs activate
 `${PROCAP_ATLAS_ENV:-procap-atlas}` by default to expose `uv` and command-line
-tools, then run Python entrypoints with `uv run --frozen`; the conda
+tools, then run Python entrypoints with `uv run --extra sherlock --frozen`
+(flags before the command, e.g. `uv run --extra sherlock --frozen python
+script.py`, not after); the conda
 environment is not the Python dependency source of truth.
 
 ## Benchmarking
@@ -244,7 +246,9 @@ logs/bpnet_modisco/
 
 [MotifCompendium](https://github.com/kundajelab/MotifCompendium) uses a
 separate external research environment and is intentionally not part of the root
-`uv` project:
+`uv` project. Run its scripts with plain `python` after activating its conda
+environment below — not through `uv run`, which has no visibility into that
+environment:
 
 ```bash
 git clone https://github.com/kundajelab/MotifCompendium.git

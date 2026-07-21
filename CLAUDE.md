@@ -47,6 +47,12 @@ compatibility; BPNet/preprocessing invocations must select it explicitly
 (`uv sync --extra sherlock` / `uv run --extra sherlock --frozen ...`), since a
 bare `uv sync` with no extras resolves an unpinned, newer Torch. Do not relax
 that pin unless Sherlock support is explicitly being dropped.
+`uv run`'s own flags (`--extra`, `--frozen`, `--project`) must precede the
+command being run — `uv run --extra sherlock --frozen python script.py`, not
+`uv run python script.py --extra sherlock --frozen`. Flags placed after the
+command are forwarded to the script as literal arguments instead of being read
+by `uv run`, so no extra actually gets selected and torch silently resolves
+unpinned.
 `pybigtools` is pinned to 0.2.5 because newer releases can require source builds
 that fail on Sherlock's older assembler/toolchain.
 

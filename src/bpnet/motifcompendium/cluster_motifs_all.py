@@ -173,18 +173,18 @@ def export_cluster_logo_svgs(mc, head, batch_size=100, logo_trimming=True):
             }
         )
 
+    # plot_motifs() saves via motif_logo.ax.figure, but the underlying
+    # LogoPlottingInput.ax is never populated when plotting starts from ax=None
+    # (MotifCompendium's plot_many_motif_logos()/_plot_motif_logo() only plots
+    # onto a locally-created Axes and never writes it back), so batched saving
+    # raises AttributeError. plot_motif() saves via its own local fig instead,
+    # so save per-motif rather than batching through plot_motifs().
     for start in range(0, len(motifs), batch_size):
         stop = min(start + batch_size, len(motifs))
-        utils_plotting.plot_motifs(
-            motifs[start:stop],
-            trim=logo_trimming,
-            save_locs=[str(path) for path in fwd_paths[start:stop]],
-        )
-        utils_plotting.plot_motifs(
-            rev_motifs[start:stop],
-            trim=logo_trimming,
-            save_locs=[str(path) for path in rev_paths[start:stop]],
-        )
+        for motif, path in zip(motifs[start:stop], fwd_paths[start:stop]):
+            utils_plotting.plot_motif(motif, trim=logo_trimming, save_loc=str(path))
+        for motif, path in zip(rev_motifs[start:stop], rev_paths[start:stop]):
+            utils_plotting.plot_motif(motif, trim=logo_trimming, save_loc=str(path))
         plt.close("all")
 
     logo_paths = pd.DataFrame.from_records(records)
