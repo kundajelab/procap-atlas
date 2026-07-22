@@ -271,6 +271,28 @@ logo report is capped to the top 500 clusters by `total_seqlets` by default; use
 collection HTML files are disabled by default; use `--per-cluster-html` to write
 them. SVG logo export is enabled by default; use `--skip-svg-logos` to disable it.
 
+### Motif-centered profile panels
+
+After `cluster_motifs_all.py` has produced its `_all_clustered.mc`,
+`_cluster_metadata.tsv`, and `_cluster_logo_paths.tsv` outputs for a head, build
+ProCapNet Fig. 2a-style panels (CWM logo, a dot sized by number of experiments,
+and avg. measured/predicted profile plots centered on the motif itself rather
+than a TSS) for the top clusters ranked by number of experiments:
+
+```bash
+python src/bpnet/motifcompendium/motif_centered_metaplot.py
+python src/bpnet/motifcompendium/motif_centered_metaplot.py --head count --top-n 20
+```
+
+This re-derives each cluster's seqlet genomic positions directly from the raw
+modisco h5 files (MotifCompendium itself only retains averaged, pattern-level
+CWMs/counts, not per-seqlet positions), averages measured/predicted signal within
+each experiment and then across experiments, and writes one same-sized,
+title-free SVG per (cluster, panel) under `figures/motif_metaplots/{head}/`
+(`logos_fwd/`, `weight_dots/`, `measured/`, `predicted/`), plus a manifest TSV and
+a low-fidelity preview PNG for sanity-checking row order before laying the SVGs
+out by hand in a vector editor.
+
 ## Notes
 
 - Fold `i` is held out for testing and fold `(i + 1) % 7` is used for
