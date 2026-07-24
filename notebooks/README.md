@@ -6,7 +6,8 @@
 viewer for one locus. It downloads the selected BPNet fold models, observed
 plus/minus BigWigs, metadata, and hg38, then:
 
-- generates fold-averaged predicted plus/minus signal locally;
+- generates predicted plus/minus signal locally by averaging fold logits and
+  log-counts before scaling;
 - stacks observed and predicted strand-specific signal in separate panels, with
   the minus strand shown as negative values, so scale differences are easier to
   inspect;
@@ -49,8 +50,8 @@ when you need the full shuffled-reference diagnostic panel set.
 The diagnostic figures include joint-profile and strand-specific profile
 DeepLIFT attributions. Each strand-specific target uses one softmax over both
 strands before summing the weighted logits for the selected strand. The
-notebook also plots centered logits and count-scaled profiles for the two
-shuffled-reference selections from every seed: the strongest fold-averaged
+notebook also plots centered logits and ensembled count-scaled profiles for the
+two shuffled-reference selections from every seed: the strongest fold-ensembled
 20 bp activity and the reference closest to that seed's median activity.
 
 The experimental completeness-preserving weighting workflow operates on
@@ -75,7 +76,7 @@ score of all overlapping perturbation windows and placing that score on the
 observed genomic nucleotide.
 
 Ranked reference-activity curves are drawn separately for every shuffle seed.
-A companion prediction figure shows all fold-averaged references for each seed
+A companion prediction figure shows all fold-ensembled references for each seed
 as faint signed plus/minus tracks with the seed mean overlaid.
 
 The full diagnostics workflow is designed to run on a Sherlock GPU through Open

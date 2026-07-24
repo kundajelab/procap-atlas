@@ -51,6 +51,7 @@ from src.bpnet.attribute.locus_diagnostics import (
     window_ism,
     window_scores_to_positions,
 )
+from src.modeling.profile import count_scaled_profile
 
 sns.set_style("whitegrid")
 
@@ -530,6 +531,47 @@ def activity_frame():
     return frame
 
 
+def reference_counts_array():
+    counts = np.empty((N_FOLDS, len(REFERENCE_SEEDS), N_REFERENCES), dtype=np.float64)
+    for row in activity_frame().itertuples(index=False):
+        seed_index = REFERENCE_SEEDS.index(row.seed)
+        counts[row.fold, seed_index, row.reference] = row.counts
+    return counts
+
+
+def fold_ensembled_count_scaled_profiles(centered_logits, counts):
+    """Average logits and log counts across folds, then scale profile probabilities."""
+    logits = np.asarray(centered_logits, dtype=np.float64)
+    counts = np.asarray(counts, dtype=np.float64)
+    mean_logits = logits.mean(axis=0)
+    mean_log_counts = np.log(np.clip(counts, 1e-300, None)).mean(axis=0)
+    return count_scaled_profile(mean_logits.reshape(-1, 2, OUT_WINDOW), mean_log_counts)
+
+
+def reference_ensemble_frame():
+    profiles = fold_ensembled_count_scaled_profiles(
+        diagnostics["reference_centered_logits"],
+        reference_counts_array(),
+    ).reshape(len(REFERENCE_SEEDS) * N_REFERENCES, 2, OUT_WINDOW)
+    counts = np.exp(
+        np.log(np.clip(reference_counts_array(), 1e-300, None)).mean(axis=0)
+    ).reshape(-1)
+    maxima, _, _ = rolling_profile_maxima(profiles, windows=(20,))
+    rows = []
+    for seed_index, seed in enumerate(REFERENCE_SEEDS):
+        for reference in range(N_REFERENCES):
+            row_index = seed_index * N_REFERENCES + reference
+            rows.append(
+                {
+                    "seed": seed,
+                    "reference": reference,
+                    "counts": counts[row_index],
+                    "max_20bp": maxima[20][row_index],
+                }
+            )
+    return pd.DataFrame(rows)
+
+
 def plot_reference_activity():
     frame = activity_frame()
     fig, axes = plt.subplots(1, 3, figsize=(15, 3.5))
@@ -553,11 +595,7 @@ def plot_reference_activity():
 
 
 def reference_order():
-    frame = (
-        activity_frame()
-        .groupby(["seed", "reference"], as_index=False)
-        .mean(numeric_only=True)
-    )
+    frame = reference_ensemble_frame()
     ordered = []
     boundaries = []
     for seed_index, seed in enumerate(REFERENCE_SEEDS):
@@ -570,7 +608,13 @@ def reference_order():
 
 
 def ordered_reference_profiles(key):
-    profiles = diagnostics[key].astype(np.float32).mean(axis=0)
+    if key == "reference_count_scaled":
+        profiles = fold_ensembled_count_scaled_profiles(
+            diagnostics["reference_centered_logits"],
+            reference_counts_array(),
+        ).reshape(len(REFERENCE_SEEDS), N_REFERENCES, 2, OUT_WINDOW)
+    else:
+        profiles = diagnostics[key].astype(np.float32).mean(axis=0)
     rows = np.stack(
         [
             profiles[seed_index, reference]
@@ -626,19 +670,29 @@ def plot_reference_profile_heatmaps(key="reference_count_scaled"):
 
 
 def plot_reference_peak_scatter():
-    frame = (
-        activity_frame()
-        .groupby(["seed", "reference"], as_index=False)
-        .mean(numeric_only=True)
-    )
-    genomic_profiles = diagnostics["genomic_count_scaled"].astype(np.float32)
+    frame = reference_ensemble_frame()
+    genomic_profiles = fold_ensembled_count_scaled_profiles(
+        diagnostics["genomic_centered_logits"],
+        activity_frame().groupby("fold")["genomic_counts"].first().to_numpy(),
+    ).reshape(1, 2, OUT_WINDOW)
     genomic_max, _, _ = rolling_profile_maxima(genomic_profiles, windows=(20,))
     fig, ax = plt.subplots(figsize=(7, 5))
     sns.scatterplot(
         data=frame, x="counts", y="max_20bp", hue="seed", palette="tab10", ax=ax
     )
     ax.scatter(
-        activity_frame()["genomic_counts"].mean(),
+        np.exp(
+            np.log(
+                np.clip(
+                    activity_frame()
+                    .groupby("fold")["genomic_counts"]
+                    .first()
+                    .to_numpy(),
+                    1e-300,
+                    None,
+                )
+            ).mean()
+        ),
         genomic_max[20].mean(),
         marker="*",
         s=180,
@@ -657,13 +711,14 @@ def plot_reference_peak_scatter():
 
 
 def plot_reference_position_envelope():
-    profiles = (
-        diagnostics["reference_count_scaled"]
-        .astype(np.float32)
-        .mean(axis=0)
-        .reshape(-1, 2, OUT_WINDOW)
-    )
-    genomic = diagnostics["genomic_count_scaled"].astype(np.float32).mean(axis=0)
+    profiles = fold_ensembled_count_scaled_profiles(
+        diagnostics["reference_centered_logits"],
+        reference_counts_array(),
+    ).reshape(-1, 2, OUT_WINDOW)
+    genomic = fold_ensembled_count_scaled_profiles(
+        diagnostics["genomic_centered_logits"],
+        activity_frame().groupby("fold")["genomic_counts"].first().to_numpy(),
+    )[0]
     if REVERSE_COMPLEMENT:
         profiles = profiles[:, [1, 0], ::-1]
         genomic = genomic[[1, 0], ::-1]
@@ -693,7 +748,10 @@ def plot_reference_position_envelope():
 
 
 def plot_seed_reference_predictions():
-    profiles = diagnostics["reference_count_scaled"].astype(np.float32).mean(axis=0)
+    profiles = fold_ensembled_count_scaled_profiles(
+        diagnostics["reference_centered_logits"],
+        reference_counts_array(),
+    ).reshape(len(REFERENCE_SEEDS), N_REFERENCES, 2, OUT_WINDOW)
     if REVERSE_COMPLEMENT:
         profiles = profiles[:, :, [1, 0], ::-1]
     x = np.arange(OUT_WINDOW)
@@ -718,17 +776,13 @@ def plot_seed_reference_predictions():
         ax.set_ylabel("Count-scaled signal")
     axes[0, 0].legend(frameon=False, ncol=2, fontsize=8)
     axes[-1, 0].set_xlabel("BPNet output position")
-    fig.suptitle("Fold-averaged shuffled-reference predictions by seed")
+    fig.suptitle("Fold-ensembled shuffled-reference predictions by seed")
     fig.tight_layout()
     return fig, axes
 
 
 def plot_example_reference_profiles(selection="strongest"):
-    frame = (
-        activity_frame()
-        .groupby(["seed", "reference"], as_index=False)
-        .mean(numeric_only=True)
-    )
+    frame = reference_ensemble_frame()
     examples = []
     for seed in REFERENCE_SEEDS:
         seed_frame = frame[frame["seed"] == seed]
@@ -753,11 +807,13 @@ def plot_example_reference_profiles(selection="strongest"):
             .astype(np.float32)
             .mean(axis=0)
         )
-        signal = (
-            diagnostics["reference_count_scaled"][:, seed_index, reference]
-            .astype(np.float32)
-            .mean(axis=0)
-        )
+        signal = fold_ensembled_count_scaled_profiles(
+            diagnostics["reference_centered_logits"][:, seed_index, reference],
+            activity_frame()
+            .query("seed == @row.seed and reference == @reference")
+            .sort_values("fold")["counts"]
+            .to_numpy(),
+        )[0]
         if REVERSE_COMPLEMENT:
             logits = logits[[1, 0], ::-1]
             signal = signal[[1, 0], ::-1]
@@ -1181,15 +1237,9 @@ def bigwig_values(path, chrom, start, end):
         return np.nan_to_num(np.asarray(bw.values(chrom, start, end), dtype=float))
 
 
-def scaled_prediction(model, X):
+def model_outputs(model, X):
     logits, log_counts = predict(model=model, X=X, batch_size=1, device=DEVICE)
-    logits = as_numpy(logits)
-    flat = logits.reshape(1, -1)
-    probabilities = np.exp(flat - flat.max(axis=1, keepdims=True))
-    probabilities /= probabilities.sum(axis=1, keepdims=True)
-    return (probabilities * np.exp(as_numpy(log_counts).reshape(1, -1))).reshape(
-        logits.shape
-    )[0]
+    return as_numpy(logits).astype(np.float32), as_numpy(log_counts).astype(np.float32)
 
 
 def plot_tracks():
@@ -1205,14 +1255,23 @@ def plot_tracks():
             "Choose a 1-based inclusive interval inside the model output."
         )
     left, right = start - output_start, end - output_start
-    predictions = []
+    logits_sum = None
+    log_counts_sum = None
     for path in resources["model_paths"]:
         model = torch.load(path, map_location="cpu", weights_only=False).eval()
-        predictions.append(scaled_prediction(model, X))
+        logits, log_counts = model_outputs(model, X)
+        if logits_sum is None:
+            logits_sum = np.zeros_like(logits, dtype=np.float64)
+            log_counts_sum = np.zeros_like(log_counts, dtype=np.float64)
+        logits_sum += logits
+        log_counts_sum += log_counts
         del model
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    prediction = np.mean(predictions, axis=0)
+    prediction = count_scaled_profile(
+        logits_sum / len(resources["model_paths"]),
+        log_counts_sum / len(resources["model_paths"]),
+    )[0]
     plus = prediction[0, left:right]
     minus = -prediction[1, left:right]
     observed_plus = bigwig_values(resources["observed"]["plus"], chrom, start, end)
