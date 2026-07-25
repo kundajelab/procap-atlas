@@ -49,6 +49,9 @@ notebook = [
 ]
 
 [tool.uv]
+# bpnet-lite declares MACS3, but this repository never calls it; skipping it
+# avoids slow source builds during environment setup.
+exclude-dependencies = ["macs3"]
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
