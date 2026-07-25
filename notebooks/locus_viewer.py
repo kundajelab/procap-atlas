@@ -35,6 +35,7 @@ from src.bpnet.attribute.locus_diagnostics import (
     reverse_complement_matrix,
     reverse_complement_tracks,
 )
+from src.modeling.profile import count_scaled_profile
 
 MODEL_REPO_ID = "adamyhe/procap-atlas"
 TRACK_REPO_ID = "adamyhe/procap-atlas-tracks"
@@ -218,15 +219,12 @@ def logo_offsets_for_region(region: str) -> tuple[str, int, int, tuple[int, int]
     return chrom, start, end, offsets
 
 
-def scaled_prediction(model: torch.nn.Module, X: torch.Tensor, device: str) -> np.ndarray:
-    """Return count-scaled strand profiles for one model."""
+def model_outputs(
+    model: torch.nn.Module, X: torch.Tensor, device: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return profile logits and log-count predictions for one model."""
     logits, log_counts = predict(model=model, X=X, batch_size=1, device=device)
-    logits = as_numpy(logits).astype(np.float32)
-    flat = logits.reshape(logits.shape[0], -1)
-    probabilities = np.exp(flat - flat.max(axis=1, keepdims=True))
-    probabilities /= probabilities.sum(axis=1, keepdims=True)
-    counts = np.exp(as_numpy(log_counts).reshape(logits.shape[0], -1))
-    return (probabilities * counts).reshape(logits.shape)[0]
+    return as_numpy(logits).astype(np.float32), as_numpy(log_counts).astype(np.float32)
 
 
 def ensemble_prediction(
@@ -235,17 +233,25 @@ def ensemble_prediction(
     n_folds: int,
     device: str,
 ) -> np.ndarray:
-    """Average count-scaled predictions across fold checkpoints."""
-    predictions = []
+    """Average fold model outputs before converting to count-scaled predictions."""
+    logits_sum = None
+    log_counts_sum = None
     for fold, path in enumerate(resources["model_paths"][:n_folds]):
         print(f"Predicting fold {fold + 1}/{n_folds}: {path.name}")
         model = torch.load(path, map_location="cpu", weights_only=False).eval()
-        predictions.append(scaled_prediction(model, X, device))
+        logits, log_counts = model_outputs(model, X, device)
+        if logits_sum is None:
+            logits_sum = np.zeros_like(logits, dtype=np.float64)
+            log_counts_sum = np.zeros_like(log_counts, dtype=np.float64)
+        logits_sum += logits
+        log_counts_sum += log_counts
         del model
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    return np.mean(predictions, axis=0)
+    mean_logits = logits_sum / n_folds
+    mean_log_counts = log_counts_sum / n_folds
+    return count_scaled_profile(mean_logits, mean_log_counts).astype(np.float32)[0]
 
 
 def bigwig_values(path: Path, chrom: str, start: int, end: int) -> np.ndarray:

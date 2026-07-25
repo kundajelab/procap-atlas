@@ -2,9 +2,9 @@
 """Generate final predicted PRO-cap BigWigs from trained BPNet fold models.
 
 Unlike benchmark_bpnet.py, this script predicts every filtered peak with every
-fold checkpoint for an experiment. Profile logits are rescaled to count-scale
-signal for each checkpoint before predictions are averaged and written as
-strand-specific BigWigs for visualization.
+fold checkpoint for an experiment. Profile logits and log-count predictions are
+averaged across checkpoints before conversion to count-scale signal and writing
+as strand-specific BigWigs for visualization.
 
 Usage:
     python src/bpnet/predict/generate_predicted_tracks.py -e ENCSR882DWM
@@ -92,6 +92,23 @@ def scale_profile_logits(profile_logits, log_counts) -> np.ndarray:
     logits = np.asarray(profile_logits, dtype=np.float64)
     scaled = count_scaled_profile(logits, log_counts)
     return scaled.reshape(logits.shape).astype(np.float32, copy=False)
+
+
+def ensemble_fold_predictions(
+    profile_logits: list[np.ndarray], log_counts: list[np.ndarray]
+) -> np.ndarray:
+    """Average fold model outputs, then convert to count-scale profiles."""
+    if not profile_logits:
+        raise ValueError("at least one fold prediction is required")
+    if len(profile_logits) != len(log_counts):
+        raise ValueError(
+            "profile_logits and log_counts must have the same number of folds; "
+            f"got {len(profile_logits)} and {len(log_counts)}"
+        )
+
+    mean_logits = np.mean(np.stack(profile_logits, axis=0, dtype=np.float64), axis=0)
+    mean_log_counts = np.mean(np.stack(log_counts, axis=0, dtype=np.float64), axis=0)
+    return scale_profile_logits(mean_logits, mean_log_counts)
 
 
 def prediction_to_strand_scores(prediction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -361,7 +378,8 @@ def main() -> None:
             )
         print(f"Predicting {len(loci):,} retained peaks across {n_folds} fold models")
 
-        accumulator = None
+        logits_accumulator = None
+        log_counts_accumulator = None
         for i, model_path in enumerate(models):
             print(f"Predicting fold model {i + 1}/{len(models)}: {model_path}")
             model = torch.load(
@@ -374,30 +392,42 @@ def main() -> None:
                 device=device,
                 batch_size=args.batch_size,
             )
-            scaled = scale_profile_logits(
+            profile_logits = (
                 pred[0].detach().cpu().numpy()
                 if hasattr(pred[0], "detach")
-                else np.asarray(pred[0]),
+                else np.asarray(pred[0])
+            )
+            log_counts = (
                 pred[1].detach().cpu().numpy()
                 if hasattr(pred[1], "detach")
-                else np.asarray(pred[1]),
+                else np.asarray(pred[1])
             )
 
-            if accumulator is None:
-                accumulator = np.zeros_like(scaled, dtype=np.float64)
-            elif accumulator.shape != scaled.shape:
+            if logits_accumulator is None:
+                logits_accumulator = np.zeros_like(profile_logits, dtype=np.float64)
+                log_counts_accumulator = np.zeros_like(log_counts, dtype=np.float64)
+            elif logits_accumulator.shape != profile_logits.shape:
                 raise ValueError(
-                    f"prediction shape changed from {accumulator.shape} "
-                    f"to {scaled.shape}"
+                    f"profile prediction shape changed from {logits_accumulator.shape} "
+                    f"to {profile_logits.shape}"
                 )
-            accumulator += scaled
+            elif log_counts_accumulator.shape != log_counts.shape:
+                raise ValueError(
+                    f"log-count prediction shape changed from "
+                    f"{log_counts_accumulator.shape} to {log_counts.shape}"
+                )
+            logits_accumulator += profile_logits
+            log_counts_accumulator += log_counts
 
-            del model, pred, scaled
+            del model, pred, profile_logits, log_counts
             gc.collect()
             if device == "cuda":
                 torch.cuda.empty_cache()
 
-        averaged = (accumulator / len(models)).astype(np.float32)
+        averaged = scale_profile_logits(
+            logits_accumulator / len(models),
+            log_counts_accumulator / len(models),
+        )
 
         chrom_sizes = {}
         with open(args.chrom_sizes) as f:

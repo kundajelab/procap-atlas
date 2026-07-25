@@ -108,8 +108,9 @@ cross-peak experiments.
 ## Predicted Tracks
 
 Generate final visualization tracks by predicting every filtered peak with every
-fold checkpoint, rescaling profile logits to count-scale signal, averaging
-across folds, and writing plus/minus BigWigs:
+fold checkpoint, averaging profile logits and log-count predictions across
+folds, rescaling the averaged outputs to count-scale signal, and writing
+plus/minus BigWigs:
 
 ```bash
 python src/bpnet/predict/generate_predicted_tracks.py -e ENCSR882DWM
