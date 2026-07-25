@@ -15,7 +15,9 @@ dependencies = [
     "matplotlib",
     "numpy",
     "pandas",
-    "pillow",
+    # Pillow 12.3.0 dropped manylinux_2_17 wheels (Sherlock's glibc tier),
+    # forcing a source build that fails without system jpeg headers.
+    "pillow<12.3.0",
     # Newer pybigtools releases can require source builds that fail on
     # Sherlock's older assembler/toolchain.
     "pybigtools==0.2.5",
