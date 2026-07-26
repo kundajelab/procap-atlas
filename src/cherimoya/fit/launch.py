@@ -63,12 +63,13 @@ def main():
                 "GPU_SKU:H100_SXM5",
                 "GPU_SKU:H200_SXM5",
                 "GPU_SKU:L40S",
+                "GPU_SKU:RTX_3090",
             ]
         ),
     )
     parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
-    parser.add_argument("--mem", type=str, default="32G")
+    parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument(
         "--time",
         type=str,
