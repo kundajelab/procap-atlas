@@ -38,7 +38,14 @@ source "$VENV_DIR/bin/activate"
 # 3.13. Upstream bumped to pyo3 0.28 (which supports 3.14) on its unreleased
 # master branch; install that commit first so pip's resolver sees
 # tangermeme's `pybigtools>=0.2` already satisfied and leaves it alone below.
-python3 -m pip install \
+#
+# CC=gcc: `ml load math` sets CC=mpicc, whose wrapped flags make its
+# underlying compiler emit AVX-512 VNNI instructions (e.g. vpdpbusd) when
+# building pybigtools' libdeflate-sys dependency; the system assembler on at
+# least some Sherlock nodes is too old to recognize them and fails with
+# "no such instruction" / "junk at end of line" errors. Plain gcc doesn't
+# bake in those flags and builds cleanly.
+CC=gcc python3 -m pip install \
     "pybigtools @ git+https://github.com/jackh726/bigtools.git@34e0a82ee9af2f4f6ebd3268ac692f64e839f100#subdirectory=pybigtools"
 
 # numpy is intentionally not installed here: py-pytorch already provides one
