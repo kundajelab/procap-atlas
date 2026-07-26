@@ -151,7 +151,11 @@ def main():
         extra_fit_args = ""
         if args.fit_args:
             extra_fit_args = " " + args.fit_args
-        apptainer_cmds = "\n".join(
+        # Each joined line must share the template's 12-space indent below,
+        # or textwrap.dedent can't find a common prefix to strip and leaves
+        # the whole script (including the #! line) indented, which sbatch
+        # rejects as "not a batch script".
+        apptainer_cmds = "\n            ".join(
             f'apptainer exec --nv {bind_args} "$APPTAINER_IMAGE" '
             f'python "$FIT_SCRIPT" -e {shlex.quote(exp_id)} --fold {fold} -v'
             f"{extra_fit_args}"
