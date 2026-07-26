@@ -329,7 +329,18 @@ def main():
     X_valid, y_valid = val
     y_valid = torch.abs(y_valid)
 
-    # Initialize and train model
+    # Initialize and train model. torch.compile() unconditionally raises on
+    # Python 3.14+ before torch 2.10 (see
+    # https://github.com/pytorch/pytorch/issues/169875); Sherlock's only
+    # torch>=2.9 build runs on py-pytorch/2.9.1_py314, so disable it there
+    # automatically rather than crashing, but re-enable it once torch>=2.10
+    # is available (e.g. a future Sherlock module). CheriBlock's fused
+    # conv+norm kernel and inference megakernel dispatch on plain
+    # `HAS_TRITON and x.is_cuda` checks independent of torch.compile, so
+    # this only gives up the extra glue-op fusion torch.compile adds on
+    # top, not Triton itself. torch.__version__ is a TorchVersion, which
+    # supports PEP 440-aware comparison against a plain string.
+    compile_supported = sys.version_info < (3, 14) or torch.__version__ >= "2.10"
     model = Cherimoya(
         name=params["name"],
         n_filters=params["n_filters"],
@@ -338,6 +349,7 @@ def main():
         n_layers=params["n_layers"],
         trimming=(params["in_window"] - params["out_window"]) // 2,
         verbose=params["verbose"],
+        compile=compile_supported,
     )
     model = model.to("cuda")
 

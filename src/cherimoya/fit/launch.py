@@ -14,14 +14,24 @@ Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
 src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
 Sherlock's GPU driver (see src/cherimoya/apptainer/README.md).
 
+--local skips SLURM entirely and runs each fold directly in the foreground
+with inherited stdout/stderr, via `uv run --extra cherimoya` instead of the
+Sherlock modules/venv -- useful on a GPU box you already have a shell on
+(e.g. a lab cluster), where a normal Python (unlike Sherlock's Python-3.14-only
+torch>=2.9 build) lets torch.compile work too. SLURM resource flags
+(--gpus/--partition/--cpus-per-task/--mem/--time) are ignored in this mode.
+
 Usage:
     python src/cherimoya/fit/launch.py                    # submit one job per experiment, 7 folds each
     python src/cherimoya/fit/launch.py --dry-run           # print sbatch scripts without submitting
     python src/cherimoya/fit/launch.py --time 48:00:00 --mem 32G --partition gpu
     python src/cherimoya/fit/launch.py --min-reads 20000000  # only well-covered experiments
+    python src/cherimoya/fit/launch.py --local             # run in the foreground, no SLURM
+    python src/cherimoya/fit/launch.py --local --dry-run   # print local commands without running
 """
 
 import argparse
+import os
 import shlex
 import subprocess
 import sys
@@ -36,12 +46,15 @@ CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 FIT_SCRIPT = REPO_ROOT / "src" / "cherimoya" / "fit" / "fit_cherimoya.py"
-NUMBA_CACHE_DIR = Path("/scratch/users/ayhe/numba_cache")
-# Resolved by bash at job runtime (not by Python at submission time) so it
-# works under any Sherlock username, matching setup_env.sh/test_install.sh.
+# Resolved by bash at job runtime (not by Python at submission time) so these
+# work under any Sherlock username, matching setup_env.sh/test_install.sh.
+NUMBA_CACHE_DIR = "${NUMBA_CACHE_DIR:-/scratch/users/${USER}/numba_cache}"
 VENV_DIR = "${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
 PYTORCH_MODULE = "py-pytorch/2.9.1_py314"
 TRITON_MODULE = "py-triton/3.5.1_py314"
+# --local doesn't run on Sherlock, so it has no reason to default into
+# Sherlock's scratch layout; a repo-relative cache dir works anywhere.
+LOCAL_NUMBA_CACHE_DIR = REPO_ROOT / ".cache" / "numba"
 
 
 def main():
@@ -49,7 +62,17 @@ def main():
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="print sbatch scripts without submitting",
+        help="print sbatch scripts (or local commands, with --local) without running them",
+    )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help=(
+            "run each fold directly in the foreground with inherited "
+            "stdout/stderr via `uv run --extra cherimoya`, instead of "
+            "submitting SLURM jobs; ignores SLURM resource flags "
+            "(--gpus/--partition/--cpus-per-task/--mem/--time)"
+        ),
     )
     # SLURM resource flags
     parser.add_argument(
@@ -114,10 +137,17 @@ def main():
     log_dir = REPO_ROOT / "logs" / "cherimoya_fit"
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    local_env = None
+    if args.local:
+        local_env = dict(os.environ)
+        local_env.setdefault("NUMBA_CACHE_DIR", str(LOCAL_NUMBA_CACHE_DIR))
+        Path(local_env["NUMBA_CACHE_DIR"]).mkdir(parents=True, exist_ok=True)
+
     submitted = 0
     skipped_trained = 0
     skipped_reads = 0
     skipped_complete = 0
+    local_failures = []
     for exp_id in experiments:
         # Skip experiments with too few reads
         n_reads = read_counts.get(exp_id, 0)
@@ -137,10 +167,46 @@ def main():
             skipped_complete += 1
             continue
 
-        job_name = f"cherimoya_{exp_id}"
         extra_fit_args = ""
         if args.fit_args:
             extra_fit_args = " " + args.fit_args
+
+        if args.local:
+            for fold in folds_to_run:
+                cmd = [
+                    "uv",
+                    "run",
+                    "--project",
+                    str(REPO_ROOT),
+                    "--extra",
+                    "cherimoya",
+                    "--frozen",
+                    "python3",
+                    str(FIT_SCRIPT),
+                    "-e",
+                    exp_id,
+                    "--fold",
+                    str(fold),
+                    "-v",
+                    *shlex.split(args.fit_args),
+                ]
+                if args.dry_run:
+                    print(shlex.join(cmd))
+                    continue
+
+                print(f"=== Training {exp_id} fold {fold} ===")
+                result = subprocess.run(cmd, cwd=REPO_ROOT, env=local_env)
+                if result.returncode != 0:
+                    local_failures.append((exp_id, fold, result.returncode))
+                    print(
+                        f"ERROR: {exp_id} fold {fold} exited with "
+                        f"{result.returncode}",
+                        file=sys.stderr,
+                    )
+            submitted += 1
+            continue
+
+        job_name = f"cherimoya_{exp_id}"
         # Each joined line must share the template's 12-space indent below,
         # or textwrap.dedent can't find a common prefix to strip and leaves
         # the whole script (including the #! line) indented, which sbatch
@@ -166,8 +232,8 @@ def main():
             #SBATCH --output={log_dir}/{job_name}.out
             #SBATCH --error={log_dir}/{job_name}.err
 
-            mkdir -p {NUMBA_CACHE_DIR}
-            export NUMBA_CACHE_DIR={shlex.quote(str(NUMBA_CACHE_DIR))}
+            mkdir -p "{NUMBA_CACHE_DIR}"
+            export NUMBA_CACHE_DIR="{NUMBA_CACHE_DIR}"
             FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}
 
             ml load math
@@ -196,14 +262,26 @@ def main():
                 file=sys.stderr,
             )
 
-    action = "Would submit" if args.dry_run else "Submitted"
+    if args.local:
+        action = "Would run" if args.dry_run else "Ran"
+        unit = "experiments"
+    else:
+        action = "Would submit" if args.dry_run else "Submitted"
+        unit = "jobs"
     total = len(experiments) * n_folds
     print(
-        f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
+        f"\n{action} {submitted} {unit}, skipped {skipped_reads} experiments "
         f"with <{args.min_reads:,} reads, skipped {skipped_complete} fully-trained "
         f"experiments, skipped {skipped_trained} already-trained folds "
         f"({total} total folds)"
     )
+    if args.local and not args.dry_run:
+        if local_failures:
+            print(f"{len(local_failures)} fold(s) failed:")
+            for exp_id, fold, returncode in local_failures:
+                print(f"  {exp_id} fold {fold} (exit {returncode})")
+        else:
+            print("All folds completed successfully.")
 
 
 if __name__ == "__main__":
