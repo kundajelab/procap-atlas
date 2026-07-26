@@ -65,6 +65,12 @@ Sherlock-specific workaround for its older compiler and OS stack, not a general
 Cherimoya requirement. Review partitions, bind paths, module setup, image paths,
 and resource requests before using these launchers on another cluster.
 
+`launch.py` submits one SLURM job per experiment, training that experiment's
+folds sequentially within the job (already-trained folds are skipped, and an
+experiment with every fold already trained is not submitted at all). `--time`
+is a flat budget for the whole job regardless of fold count (default
+`48:00:00`, the `owners` partition's per-job cap).
+
 ## Benchmarking
 
 ```bash
