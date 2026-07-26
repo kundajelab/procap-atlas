@@ -34,6 +34,7 @@ DEFAULT_SKUS = [
     "GPU_SKU:H100_SXM5",
     "GPU_SKU:H200_SXM5",
     "GPU_SKU:L40S",
+    "GPU_SKU:RTX_3090",
 ]
 
 CUDA_CHECK = (
@@ -86,7 +87,7 @@ def main():
         job_name = "cherimoya_check_gpu_" + sku.split(":")[-1]
         apptainer_cmd = (
             f'apptainer exec --nv --writable-tmpfs {bind_args} "$APPTAINER_IMAGE" '
-            f'python -c {shlex.quote(CUDA_CHECK)}'
+            f"python -c {shlex.quote(CUDA_CHECK)}"
         )
 
         sbatch_script = textwrap.dedent(f"""\
