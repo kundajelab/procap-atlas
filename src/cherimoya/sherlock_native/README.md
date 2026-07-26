@@ -64,6 +64,15 @@ modules put on `PATH` is new enough to target AVX-512 VNNI, but the paired
 assembler here isn't, so this fails with `no such instruction: vpdpbusd`
 without the flags.
 
+`pillow<12.3.0` and `leidenalg<0.11` are also pinned. Both dropped their
+`manylinux2014`/`manylinux_2_17` (glibc 2.17) wheels in newer releases,
+leaving only glibc 2.27+-tagged wheels that Sherlock's older glibc can't use;
+pip then falls back to a source build that fails on missing system `jpeg`/
+`igraph` headers. The pinned older releases still ship a glibc-2.17 wheel and
+support Python 3.14 (`pillow` via a real `cp314` wheel; `leidenalg` via a
+`cp38-abi3` wheel, forward-compatible through the stable ABI). The `pillow`
+pin matches the one already used for Sherlock in the root `pyproject.toml`.
+
 ## Verify
 
 ```bash

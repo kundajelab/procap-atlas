@@ -59,8 +59,19 @@ CFLAGS="-DLIBDEFLATE_ASSEMBLER_DOES_NOT_SUPPORT_AVX512VNNI -DLIBDEFLATE_ASSEMBLE
 # numpy is intentionally not installed here: py-pytorch already provides one
 # via --system-site-packages, and a second pip-installed copy could shadow
 # it and break torch's ABI.
+#
+# pillow<12.3.0 (transitive, via seaborn/matplotlib) and leidenalg<0.11
+# (transitive, via modisco): both dropped
+# their manylinux2014/manylinux_2_17 (glibc 2.17) wheels in newer releases,
+# leaving only glibc 2.27+-tagged wheels that Sherlock's older glibc can't
+# use, which falls back to a source build missing system jpeg/igraph
+# headers. Older releases still ship a glibc-2.17 wheel and support Python
+# 3.14 (pillow via a real cp314 wheel; leidenalg via a cp38-abi3 wheel,
+# forward-compatible through the stable ABI). Matches the same pillow pin
+# already used for Sherlock in the root pyproject.toml.
 python3 -m pip install \
-    scipy pandas h5py tqdm seaborn modisco tangermeme bam2bw joblib pyyaml
+    scipy pandas h5py tqdm seaborn modisco tangermeme bam2bw joblib pyyaml \
+    "pillow<12.3.0" "leidenalg<0.11"
 
 # --no-deps: both declare an unconditional macs3 dependency that nothing in
 # this repo calls, and would otherwise also try to replace the module-
