@@ -4,6 +4,10 @@
 Each submitted job is an 8-task SLURM array, one task for each trained
 n_filters model directory for a single experiment.
 
+Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
+src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
+Sherlock's GPU driver (see src/cherimoya/apptainer/README.md).
+
 Usage:
     python src/cherimoya/n_filters/launch_benchmark.py
     python src/cherimoya/n_filters/launch_benchmark.py --dry-run
@@ -29,8 +33,12 @@ BENCHMARK_SCRIPT = (
 )
 MODEL_ROOT = REPO_ROOT / "models" / "cherimoya_n_filters"
 METRICS_DIR = REPO_ROOT / "performance_metrics" / "cherimoya"
-APPTAINER_IMAGE = Path("/scratch/users/ayhe/apptainer/cherimoya.sif")
 NUMBA_CACHE_DIR = Path("/scratch/users/ayhe/numba_cache")
+# Resolved by bash at job runtime (not by Python at submission time) so it
+# works under any Sherlock username, matching setup_env.sh/test_install.sh.
+VENV_DIR = "${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
+PYTORCH_MODULE = "py-pytorch/2.9.1_py314"
+TRITON_MODULE = "py-triton/3.5.1_py314"
 N_FILTERS = [16, 24, 36, 48, 64, 96, 196, 256]
 
 
@@ -68,21 +76,6 @@ def main():
     parser.add_argument("--mem", type=str, default="32G")
     parser.add_argument("--time", type=str, default="6:00:00")
     parser.add_argument(
-        "--apptainer-image",
-        type=Path,
-        default=APPTAINER_IMAGE,
-        help=f"Apptainer image used to run benchmarks (default: {APPTAINER_IMAGE})",
-    )
-    parser.add_argument(
-        "--apptainer-bind",
-        action="append",
-        default=["/oak/stanford/groups/akundaje/ayhe", "/scratch/users/ayhe"],
-        help=(
-            "path to bind into the Apptainer container; may be repeated "
-            "(default: /oak/stanford/groups/akundaje/ayhe and /scratch/users/ayhe)"
-        ),
-    )
-    parser.add_argument(
         "--min-reads",
         type=int,
         default=0,
@@ -112,7 +105,6 @@ def main():
     log_dir = REPO_ROOT / "logs" / "cherimoya_n_filters_benchmark"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    bind_args = " ".join(f"--bind {shlex.quote(path)}" for path in args.apptainer_bind)
     n_filters_bash = " ".join(str(n) for n in N_FILTERS)
     extra_benchmark_args = f" {args.benchmark_args}" if args.benchmark_args else ""
 
@@ -131,8 +123,7 @@ def main():
 
         job_name = f"cherimoya_nf_bench_{exp_id}"
         benchmark_cmd = (
-            f'apptainer exec --nv --writable-tmpfs {bind_args} "$APPTAINER_IMAGE" '
-            f'python "$BENCHMARK_SCRIPT" -e "$EXP_ID" --model-dir "$MODEL_DIR" -v'
+            f'python3 "$BENCHMARK_SCRIPT" -e "$EXP_ID" --model-dir "$MODEL_DIR" -v'
             f"{extra_benchmark_args}"
         )
 
@@ -163,14 +154,16 @@ def main():
             MODEL_ROOT={shlex.quote(str(MODEL_ROOT))}
             METRICS_DIR={shlex.quote(str(METRICS_DIR))}
             BENCHMARK_SCRIPT={shlex.quote(str(BENCHMARK_SCRIPT))}
-            APPTAINER_IMAGE={shlex.quote(str(args.apptainer_image))}
             NUMBA_CACHE_DIR={shlex.quote(str(NUMBA_CACHE_DIR))}
             MODEL_DIR="$MODEL_ROOT/${{EXP_ID}}_nf${{N_FILTERS_VALUE}}"
             METRICS_PATH="$METRICS_DIR/${{EXP_ID}}_nf${{N_FILTERS_VALUE}}.json"
 
             mkdir -p "$NUMBA_CACHE_DIR"
             export NUMBA_CACHE_DIR
-            export APPTAINERENV_NUMBA_CACHE_DIR="$NUMBA_CACHE_DIR"
+
+            ml load math
+            ml load {PYTORCH_MODULE} {TRITON_MODULE}
+            source "{VENV_DIR}/bin/activate"
 
             if [[ -f "$METRICS_PATH" ]]; then
                 echo "Skipping existing benchmark: $METRICS_PATH"

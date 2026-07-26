@@ -21,9 +21,9 @@ else
     REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 fi
 
-APPTAINER_IMAGE="${APPTAINER_IMAGE:-/scratch/users/ayhe/cherimoya/cherimoya.sif}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-/scratch/users/${USER}/numba_cache}"
+CHERIMOYA_VENV_DIR="${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
 FORCE="${FORCE:-0}"
 
 if [[ ! -d "${REPO_ROOT}/models/cherimoya" ]]; then
@@ -33,16 +33,16 @@ if [[ ! -d "${REPO_ROOT}/models/cherimoya" ]]; then
 fi
 
 export CUDA_VISIBLE_DEVICES
-export APPTAINERENV_CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES}"
 export NUMBA_CACHE_DIR
-export APPTAINERENV_NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR}"
 
 mkdir -p "${NUMBA_CACHE_DIR}"
 
-BIND_ARGS=(
-    --bind /oak/stanford/groups/akundaje/ayhe
-    --bind /scratch/users/ayhe
-)
+# Native (non-Apptainer) Cherimoya environment: see
+# src/cherimoya/sherlock_native/README.md. The NGC-based Apptainer image
+# cannot run on Sherlock's GPU driver.
+ml load math
+ml load py-pytorch/2.9.1_py314 py-triton/3.5.1_py314
+source "${CHERIMOYA_VENV_DIR}/bin/activate"
 
 if [[ $# -gt 0 ]]; then
     model_names=("$@")
@@ -80,9 +80,8 @@ for model_name in "${model_names[@]}"; do
     fi
 
     echo "Benchmarking ${model_name} on CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}"
-    apptainer exec --nv --writable-tmpfs "${BIND_ARGS[@]}" "${APPTAINER_IMAGE}" \
-        python "${REPO_ROOT}/src/cherimoya/benchmark/benchmark_cherimoya.py" \
-            -e "${exp_id}" \
-            --model-dir "${model_dir}" \
-            -v
+    python3 "${REPO_ROOT}/src/cherimoya/benchmark/benchmark_cherimoya.py" \
+        -e "${exp_id}" \
+        --model-dir "${model_dir}" \
+        -v
 done

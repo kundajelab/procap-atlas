@@ -78,10 +78,12 @@ Cherimoya needs `torch>=2.9.0`/`triton>=3.5.1` (for `torch.optim.Muon` and
 newer APIs), which have no wheels compatible with Sherlock's pip/uv (capped at
 `torch==2.6.0`) or with macOS (`triton` has no macOS wheels). Its dependencies
 live in the `cherimoya` extra, declared mutually exclusive with the `sherlock`
-extra via `tool.uv.conflicts` (they can never resolve together). Use the
-Apptainer image on Sherlock (`src/cherimoya/apptainer/`), which bypasses this
-lock entirely, or `uv sync --extra cherimoya` for a native install on other
-Linux hardware.
+extra via `tool.uv.conflicts` (they can never resolve together). On Sherlock,
+use SRCC's `py-pytorch`/`py-triton` Lmod modules instead of `uv`
+(`src/cherimoya/sherlock_native/`) — the Apptainer image
+(`src/cherimoya/apptainer/`) bundles a newer CUDA than Sherlock's GPU driver
+supports and cannot run there. On other Linux hardware, `uv sync --extra
+cherimoya` gives a native install.
 `MotifCompendium` and `personal_bpnet` are separate optional/local research
 environments.
 `hubCheck` is treated as an external UCSC binary because it is not available

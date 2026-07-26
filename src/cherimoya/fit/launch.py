@@ -10,6 +10,10 @@ skipped, as low-coverage experiments tend to produce poorly calibrated models.
 Folds with an already-trained model file are also skipped automatically; an
 experiment with every fold already trained is not submitted at all.
 
+Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
+src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
+Sherlock's GPU driver (see src/cherimoya/apptainer/README.md).
+
 Usage:
     python src/cherimoya/fit/launch.py                    # submit one job per experiment, 7 folds each
     python src/cherimoya/fit/launch.py --dry-run           # print sbatch scripts without submitting
@@ -32,8 +36,12 @@ CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 FIT_SCRIPT = REPO_ROOT / "src" / "cherimoya" / "fit" / "fit_cherimoya.py"
-APPTAINER_IMAGE = Path("/scratch/users/ayhe/apptainer/cherimoya.sif")
 NUMBA_CACHE_DIR = Path("/scratch/users/ayhe/numba_cache")
+# Resolved by bash at job runtime (not by Python at submission time) so it
+# works under any Sherlock username, matching setup_env.sh/test_install.sh.
+VENV_DIR = "${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
+PYTORCH_MODULE = "py-pytorch/2.9.1_py314"
+TRITON_MODULE = "py-triton/3.5.1_py314"
 
 
 def main():
@@ -71,22 +79,6 @@ def main():
             "48:00:00 (default: 48:00:00)"
         ),
     )
-    parser.add_argument(
-        "--apptainer-image",
-        type=Path,
-        default=APPTAINER_IMAGE,
-        help=f"Apptainer image used to run Cherimoya training (default: {APPTAINER_IMAGE})",
-    )
-    parser.add_argument(
-        "--apptainer-bind",
-        action="append",
-        default=["/oak/stanford/groups/akundaje/ayhe", "/scratch/users/ayhe"],
-        help=(
-            "path to bind into the Apptainer container; may be repeated "
-            "(default: /oak and /scratch)"
-        ),
-    )
-    parser.add_argument("--apptainer-env", action="append", default=[""])
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -145,9 +137,6 @@ def main():
             continue
 
         job_name = f"cherimoya_{exp_id}"
-        bind_args = " ".join(
-            f"--bind {shlex.quote(path)}" for path in args.apptainer_bind
-        )
         extra_fit_args = ""
         if args.fit_args:
             extra_fit_args = " " + args.fit_args
@@ -155,9 +144,8 @@ def main():
         # or textwrap.dedent can't find a common prefix to strip and leaves
         # the whole script (including the #! line) indented, which sbatch
         # rejects as "not a batch script".
-        apptainer_cmds = "\n            ".join(
-            f'apptainer exec --nv --writable-tmpfs {bind_args} "$APPTAINER_IMAGE" '
-            f'python "$FIT_SCRIPT" -e {shlex.quote(exp_id)} --fold {fold} -v'
+        fit_cmds = "\n            ".join(
+            f'python3 "$FIT_SCRIPT" -e {shlex.quote(exp_id)} --fold {fold} -v'
             f"{extra_fit_args}"
             for fold in folds_to_run
         )
@@ -178,11 +166,15 @@ def main():
             #SBATCH --error={log_dir}/{job_name}.err
 
             mkdir -p {NUMBA_CACHE_DIR}
+            export NUMBA_CACHE_DIR={shlex.quote(str(NUMBA_CACHE_DIR))}
             FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}
-            APPTAINER_IMAGE={shlex.quote(str(args.apptainer_image))}
+
+            ml load math
+            ml load {PYTORCH_MODULE} {TRITON_MODULE}
+            source "{VENV_DIR}/bin/activate"
 
             nvidia-smi -L
-            {apptainer_cmds}
+            {fit_cmds}
         """)
 
         if args.dry_run:

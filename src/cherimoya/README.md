@@ -20,9 +20,13 @@ evaluation workflow, not as a public deployment pipeline.
   pip/uv (capped at `torch==2.6.0`), so the root `uv` project keeps them in
   separate, mutually exclusive extras (see the root `pyproject.toml`
   `tool.uv.conflicts`). Use one of:
-  - The Apptainer image on Sherlock; see [`apptainer/`](apptainer/README.md)
-  - `uv sync --extra cherimoya` for a native (non-Apptainer) install on other
-    (non-Sherlock, modern-glibc) Linux hardware
+  - On Sherlock: SRCC's `py-pytorch`/`py-triton` Lmod modules; see
+    [`sherlock_native/`](sherlock_native/README.md). The Apptainer image
+    under [`apptainer/`](apptainer/README.md) bundles a newer CUDA than
+    Sherlock's GPU driver supports and cannot run there — it remains useful
+    only for other clusters with old compilers but modern GPU drivers.
+  - `uv sync --extra cherimoya` for a native install on other (non-Sherlock,
+    modern-glibc) Linux hardware
 - Optional SLURM access for launchers
 
 ## Training
@@ -38,9 +42,12 @@ the remaining parameters, with warmup plus cosine learning-rate schedules.
 Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
 
-On Sherlock, use the Apptainer workflow; the default root `uv` environment
-(no extras, or `--extra sherlock`) pins `torch==2.6.0` for BPNet/preprocessing
-and does not include Cherimoya. On other Linux hardware, use
+On Sherlock, load SRCC's `py-pytorch`/`py-triton` modules (see
+[`sherlock_native/`](sherlock_native/README.md)) rather than using the root
+`uv` project's `cherimoya` extra or the Apptainer image — neither works on
+Sherlock's GPU driver. The default root `uv` environment (no extras, or
+`--extra sherlock`) pins `torch==2.6.0` for BPNet/preprocessing and does not
+include Cherimoya at all. On other (non-Sherlock) Linux hardware, use
 `uv sync --extra cherimoya` instead, which resolves Cherimoya's real
 `torch>=2.9.0`/`triton>=3.5.1` requirements directly. The `sherlock` and
 `cherimoya` extras are declared mutually exclusive and cannot be installed
@@ -60,10 +67,12 @@ python src/cherimoya/fit/launch.py --dry-run
 python src/cherimoya/fit/launch.py --min-reads 20000000 --fit-args "--max-epochs 100"
 ```
 
-The launcher defaults are for the Sherlock HPC environment. Apptainer is a
-Sherlock-specific workaround for its older compiler and OS stack, not a general
-Cherimoya requirement. Review partitions, bind paths, module setup, image paths,
-and resource requests before using these launchers on another cluster.
+The launcher defaults are for the Sherlock HPC environment and load SRCC's
+`py-pytorch`/`py-triton` modules directly (see
+[`sherlock_native/`](sherlock_native/README.md)); review partitions and
+resource requests, and swap in the Apptainer image (see
+[`apptainer/`](apptainer/README.md)) instead, before using these launchers on
+another cluster.
 
 `launch.py` submits one SLURM job per experiment, training that experiment's
 folds sequentially within the job (already-trained folds are skipped, and an

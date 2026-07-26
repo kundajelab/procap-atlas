@@ -1,6 +1,18 @@
 # Building the Cherimoya Apptainer Image
 
-This is a Sherlock HPC workaround. Sherlock's compiler and OS are very old, which makes installing newer packages a major challenge. The Apptainer image sidesteps that environment issue for the Cherimoya launch scripts.
+**On Sherlock, use [`../sherlock_native/`](../sherlock_native/README.md)
+instead.** This image bundles CUDA 13.2, but Sherlock's GPU driver caps out
+at CUDA 12.4 — a major-version gap with no compatibility path (see
+"Running" below) — so it cannot run on Sherlock at all, confirmed across
+multiple GPU SKUs. `sherlock_native/` uses SRCC's own `py-pytorch`/
+`py-triton` modules (CUDA 12.6, a same-major-version gap the driver *can*
+bridge) instead.
+
+This was originally a Sherlock HPC workaround: Sherlock's compiler and OS are
+very old, which makes installing newer packages a major challenge, and the
+Apptainer image sidesteps that environment issue for the Cherimoya launch
+scripts. It remains useful for other clusters with similarly old compilers
+but modern GPU drivers.
 
 Both definitions use `nvcr.io/nvidia/pytorch:26.05-py3`, which includes
 NVIDIA's PyTorch 2.12.0a0 build and matching PyTorch ecosystem packages.
@@ -62,9 +74,11 @@ choice.
 
 Sherlock does not expose GPU driver or CUDA version as a queryable SLURM
 constraint (only `GPU_BRD`/`GPU_GEN`/`GPU_SKU`/`GPU_MEM`/`GPU_CC`), so there
-is no way to target a compatible node ahead of time. `check_gpu.py` submits a
-short, cheap job per GPU SKU to test actual compatibility empirically instead
-of finding out mid-training:
+is no way to target a compatible node ahead of time. This image is currently
+confirmed broken on Sherlock (see the banner at the top of this file — use
+`sherlock_native/` there instead). `check_gpu.py` submits a short, cheap job
+per GPU SKU to test actual compatibility empirically — useful on other
+clusters, or to re-check Sherlock if its driver is ever updated:
 
 ```bash
 python src/cherimoya/apptainer/check_gpu.py --dry-run
@@ -74,8 +88,7 @@ python src/cherimoya/apptainer/check_gpu.py --skus GPU_SKU:L40S GPU_SKU:A100_PCI
 
 Check `logs/cherimoya_check_gpu/*.err` once the jobs finish — a line reading
 `OK: moved tensor to cuda:0` means that SKU (or rather, whichever node it
-happened to land on) works. If every SKU fails, request a GPU driver update
-from Sherlock support (SRCC) rather than continuing to try different SKUs.
+happened to land on) works.
 
 ## Troubleshooting
 
