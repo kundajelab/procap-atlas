@@ -53,6 +53,17 @@ requirement already satisfied and doesn't try to build the PyPI release
 itself. If pybigtools ships a PyPI release built against a
 3.14-compatible pyo3, switch back to a normal pinned PyPI install.
 
+Building pybigtools also needs
+`CFLAGS=-DLIBDEFLATE_ASSEMBLER_DOES_NOT_SUPPORT_{AVX512VNNI,VPCLMULQDQ,AVX_VNNI}`
+(already set in `setup_env.sh`): its bundled `libdeflate` detects the
+*compiler's* support for these instruction sets and compiles them
+unconditionally, but doesn't check whether the paired assembler (`binutils`)
+can actually encode them, unlike libdeflate's own CMake build, which probes
+this and disables affected codepaths automatically. Whatever `gcc` these Lmod
+modules put on `PATH` is new enough to target AVX-512 VNNI, but the paired
+assembler here isn't, so this fails with `no such instruction: vpdpbusd`
+without the flags.
+
 ## Verify
 
 ```bash

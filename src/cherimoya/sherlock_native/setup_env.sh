@@ -39,13 +39,21 @@ source "$VENV_DIR/bin/activate"
 # master branch; install that commit first so pip's resolver sees
 # tangermeme's `pybigtools>=0.2` already satisfied and leaves it alone below.
 #
-# CC=gcc: `ml load math` sets CC=mpicc, whose wrapped flags make its
-# underlying compiler emit AVX-512 VNNI instructions (e.g. vpdpbusd) when
-# building pybigtools' libdeflate-sys dependency; the system assembler on at
-# least some Sherlock nodes is too old to recognize them and fails with
-# "no such instruction" / "junk at end of line" errors. Plain gcc doesn't
-# bake in those flags and builds cleanly.
-CC=gcc python3 -m pip install \
+# pybigtools bundles libdeflate, which auto-detects the *compiler's* support
+# for AVX-512 VNNI/VPCLMULQDQ/AVX-VNNI and unconditionally compiles those
+# codepaths if the compiler is new enough -- but doesn't check whether the
+# paired *assembler* (binutils) can actually encode the resulting
+# instructions, unlike libdeflate's own CMake build, which probes this and
+# disables affected codepaths automatically (see libdeflate's CMakeLists.txt,
+# `check_assembler_support`). The Rust libdeflate-sys crate's build.rs skips
+# that probe, so whatever gcc these Lmod modules put on PATH (new enough to
+# target AVX-512 VNNI) gets paired with an older assembler here that can't
+# encode it, failing with "no such instruction: vpdpbusd" etc. Passing the
+# same -DLIBDEFLATE_ASSEMBLER_DOES_NOT_SUPPORT_* flags CMake would have
+# derived disables those codepaths explicitly; cc-rs forwards CFLAGS to the
+# compiler invocation.
+CFLAGS="-DLIBDEFLATE_ASSEMBLER_DOES_NOT_SUPPORT_AVX512VNNI -DLIBDEFLATE_ASSEMBLER_DOES_NOT_SUPPORT_VPCLMULQDQ -DLIBDEFLATE_ASSEMBLER_DOES_NOT_SUPPORT_AVX_VNNI" \
+    python3 -m pip install \
     "pybigtools @ git+https://github.com/jackh726/bigtools.git@34e0a82ee9af2f4f6ebd3268ac692f64e839f100#subdirectory=pybigtools"
 
 # numpy is intentionally not installed here: py-pytorch already provides one
