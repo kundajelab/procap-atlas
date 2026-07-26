@@ -39,8 +39,13 @@ import torch
 import yaml
 from data_loader import PeakGenerator
 from tangermeme.io import extract_loci
-from torch.optim import AdamW, Muon
-from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from torch.optim import SGD, AdamW, Muon
+from torch.optim.lr_scheduler import (
+    ConstantLR,
+    CosineAnnealingLR,
+    LinearLR,
+    SequentialLR,
+)
 
 from cherimoya import Cherimoya
 
@@ -234,6 +239,9 @@ def main():
         "muon_wd": 0.01,
         "adam_lr": 0.004,
         "adam_wd": 0.2,
+        "lw_lr": 0.001,
+        "lw_wd": 0.0,
+        "lw_momentum": 0.9,
         "max_epochs": 100,
         "early_stopping": 15,
         "training_chroms": train_chroms,
@@ -325,7 +333,7 @@ def main():
     model = Cherimoya(
         name=params["name"],
         n_filters=params["n_filters"],
-        n_outputs=len(params["signals"]),
+        signal_groups=[len(params["signals"])],
         n_control_tracks=0,
         n_layers=params["n_layers"],
         trimming=(params["in_window"] - params["out_window"]) // 2,
@@ -333,10 +341,19 @@ def main():
     )
     model = model.to("cuda")
 
-    # Separate parameters for Muon (2D weights) and AdamW (everything else)
-    muon_params, adam_params = [], []
+    # Separate parameters for Muon (2D projection weights), AdamW (everything
+    # else, including the 2D depth-wise conv_weight), and SGD (the lw0/lw1
+    # Kendall uncertainty loss weights).
+    muon_params, adam_params, lw_params = [], [], []
     for name, p in model.named_parameters():
-        if p.ndim == 2 and "weight" in name and name != "linear.weight":
+        if name in ("lw0", "lw1"):
+            lw_params.append(p)
+        elif (
+            p.ndim == 2
+            and "weight" in name
+            and name != "linear.weight"
+            and "conv_weight" not in name
+        ):
             muon_params.append(p)
         else:
             adam_params.append(p)
@@ -346,6 +363,12 @@ def main():
     )
     adam_optimizer = AdamW(
         adam_params, lr=params["adam_lr"], weight_decay=params["adam_wd"]
+    )
+    lw_optimizer = SGD(
+        lw_params,
+        lr=params["lw_lr"],
+        weight_decay=params["lw_wd"],
+        momentum=params["lw_momentum"],
     )
 
     # Warmup + cosine decay schedules
@@ -370,14 +393,25 @@ def main():
         ],
         milestones=[num_warmup_iters],
     )
+    # Linear warmup then flat (no cosine decay) for the Kendall loss weights.
+    lw_scheduler = SequentialLR(
+        lw_optimizer,
+        schedulers=[
+            LinearLR(lw_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
+            ConstantLR(lw_optimizer, factor=1.0, total_iters=1),
+        ],
+        milestones=[num_warmup_iters],
+    )
 
     # Train
     model.fit(
         training_data=train_data_loader,
         muon_optimizer=muon_optimizer,
         adam_optimizer=adam_optimizer,
+        lw_optimizer=lw_optimizer,
         muon_scheduler=muon_scheduler,
         adam_scheduler=adam_scheduler,
+        lw_scheduler=lw_scheduler,
         X_valid=X_valid,
         X_ctl_valid=None,
         y_valid=y_valid,
