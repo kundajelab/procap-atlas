@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.bpnet.predict.generate_predicted_tracks import (
-    ensemble_fold_predictions,
+    FoldPredictionAccumulator,
     prediction_to_strand_scores,
     scale_profile_logits,
 )
@@ -26,7 +26,10 @@ def test_ensemble_fold_predictions_averages_logits_and_log_counts_before_scaling
         np.array([[np.log(16.0)]]),
     ]
 
-    scaled = ensemble_fold_predictions(fold_logits, fold_log_counts)
+    accumulator = FoldPredictionAccumulator()
+    for logits, log_counts in zip(fold_logits, fold_log_counts):
+        accumulator.add(logits, log_counts)
+    scaled = accumulator.finalize()
 
     expected_logits = np.array([[[1.0, 0.0], [0.0, 0.0]]])
     expected_log_counts = np.array([[np.log(8.0)]])
