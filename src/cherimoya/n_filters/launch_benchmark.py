@@ -131,7 +131,7 @@ def main():
 
         job_name = f"cherimoya_nf_bench_{exp_id}"
         benchmark_cmd = (
-            f'apptainer exec --nv {bind_args} "$APPTAINER_IMAGE" '
+            f'apptainer exec --nv --writable-tmpfs {bind_args} "$APPTAINER_IMAGE" '
             f'python "$BENCHMARK_SCRIPT" -e "$EXP_ID" --model-dir "$MODEL_DIR" -v'
             f"{extra_benchmark_args}"
         )

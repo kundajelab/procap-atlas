@@ -30,6 +30,25 @@ letting pip resolve Cherimoya's `torch>=2.9.0` requirement can replace
 NVIDIA's `torch 2.12.0a0` build with PyPI Torch and leave companion packages
 incompatible.
 
+## Running
+
+Always pass `--writable-tmpfs` alongside `--nv`:
+
+```bash
+apptainer exec --nv --writable-tmpfs cherimoya.sif python ...
+```
+
+NVIDIA's container entrypoint tries to reset `/usr/local/cuda/compat/lib` at
+startup — a forward-compatibility shim that lets an older host GPU driver run
+a newer CUDA toolkit than it natively supports. Apptainer's container
+filesystem is read-only by default, so that reset fails silently (`rm: cannot
+remove '/usr/local/cuda/compat/lib': Read-only file system`), the compat shim
+never gets set up, and CUDA init then fails with `RuntimeError: ... Error 803:
+system has unsupported display driver / cuda driver combination` on any
+Sherlock GPU node whose driver predates this image's CUDA version.
+`--writable-tmpfs` gives the container an ephemeral writable overlay so the
+entrypoint's setup step can actually complete.
+
 ## Troubleshooting
 
 `nvcr.io/nvidia/pytorch:26.05-py3` is a large image (CUDA libraries

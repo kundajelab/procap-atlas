@@ -80,7 +80,7 @@ for model_name in "${model_names[@]}"; do
     fi
 
     echo "Benchmarking ${model_name} on CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}"
-    apptainer exec --nv "${BIND_ARGS[@]}" "${APPTAINER_IMAGE}" \
+    apptainer exec --nv --writable-tmpfs "${BIND_ARGS[@]}" "${APPTAINER_IMAGE}" \
         python "${REPO_ROOT}/src/cherimoya/benchmark/benchmark_cherimoya.py" \
             -e "${exp_id}" \
             --model-dir "${model_dir}" \

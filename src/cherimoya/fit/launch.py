@@ -156,7 +156,7 @@ def main():
         # the whole script (including the #! line) indented, which sbatch
         # rejects as "not a batch script".
         apptainer_cmds = "\n            ".join(
-            f'apptainer exec --nv {bind_args} "$APPTAINER_IMAGE" '
+            f'apptainer exec --nv --writable-tmpfs {bind_args} "$APPTAINER_IMAGE" '
             f'python "$FIT_SCRIPT" -e {shlex.quote(exp_id)} --fold {fold} -v'
             f"{extra_fit_args}"
             for fold in folds_to_run

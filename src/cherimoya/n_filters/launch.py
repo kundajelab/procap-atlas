@@ -133,7 +133,7 @@ def main():
 
         job_name = f"cherimoya_nf_{exp_id}"
         apptainer_cmd = (
-            f'apptainer exec --nv {bind_args} "$APPTAINER_IMAGE" '
+            f'apptainer exec --nv --writable-tmpfs {bind_args} "$APPTAINER_IMAGE" '
             f'python "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v '
             f'--n-filters "$N_FILTERS_VALUE" --output-dir "$OUTPUT_DIR"'
             f"{extra_fit_args}"
