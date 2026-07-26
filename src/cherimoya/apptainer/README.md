@@ -49,6 +49,34 @@ Sherlock GPU node whose driver predates this image's CUDA version.
 `--writable-tmpfs` gives the container an ephemeral writable overlay so the
 entrypoint's setup step can actually complete.
 
+NVIDIA's forward-compatibility mechanism can only bridge so large a gap. If a
+node's driver is old enough, CUDA init fails even with `--writable-tmpfs`,
+now with a clearer message: `RuntimeError: The NVIDIA driver on your system
+is too old (found version NNNNN)`. `nvcr.io/nvidia/pytorch:26.05-py3` bundles
+CUDA 13.2.1, which needs a driver newer than any that supports CUDA 12.4 or
+older (e.g. `found version 12040` = CUDA 12.4) — there is no PyTorch build
+(NGC or PyPI) that has both `torch.optim.Muon` (needs torch>=2.9.0, added
+after PyTorch moved to CUDA 13.x) and CUDA 12.4-or-older compatibility, so an
+old-driver node genuinely cannot run Cherimoya, regardless of image or wheel
+choice.
+
+Sherlock does not expose GPU driver or CUDA version as a queryable SLURM
+constraint (only `GPU_BRD`/`GPU_GEN`/`GPU_SKU`/`GPU_MEM`/`GPU_CC`), so there
+is no way to target a compatible node ahead of time. `check_gpu.py` submits a
+short, cheap job per GPU SKU to test actual compatibility empirically instead
+of finding out mid-training:
+
+```bash
+python src/cherimoya/apptainer/check_gpu.py --dry-run
+python src/cherimoya/apptainer/check_gpu.py
+python src/cherimoya/apptainer/check_gpu.py --skus GPU_SKU:L40S GPU_SKU:A100_PCIE
+```
+
+Check `logs/cherimoya_check_gpu/*.err` once the jobs finish — a line reading
+`OK: moved tensor to cuda:0` means that SKU (or rather, whichever node it
+happened to land on) works. If every SKU fails, request a GPU driver update
+from Sherlock support (SRCC) rather than continuing to try different SKUs.
+
 ## Troubleshooting
 
 `nvcr.io/nvidia/pytorch:26.05-py3` is a large image (CUDA libraries
