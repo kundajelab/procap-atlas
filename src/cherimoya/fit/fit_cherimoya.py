@@ -30,9 +30,14 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 import warnings
 from pathlib import Path
+
+# Must be set before `import torch` to take effect (read at torch's C++
+# extension init time); matches cherimoya_cli's own fit command.
+os.environ.setdefault("TORCH_CUDNN_V8_API_ENABLED", "1")
 
 import pandas as pd
 import torch
@@ -46,6 +51,8 @@ from torch.optim.lr_scheduler import (
     LinearLR,
     SequentialLR,
 )
+
+torch.backends.cudnn.benchmark = True
 
 from cherimoya import Cherimoya
 
@@ -147,9 +154,9 @@ def main():
     parser.add_argument("--n-filters", type=int, default=128)
     parser.add_argument("--n-layers", type=int, default=9)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--max-epochs", type=int, default=100)
-    parser.add_argument("--early-stopping", type=int, default=15)
-    parser.add_argument("--max-jitter", type=int, default=50)
+    parser.add_argument("--max-epochs", type=int, default=20)
+    parser.add_argument("--early-stopping", type=int, default=5)
+    parser.add_argument("--max-jitter", type=int, default=500)
     parser.add_argument("--random-state", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -229,21 +236,21 @@ def main():
         "checkpoint": None,
         "in_window": 2114,
         "out_window": 1000,
-        "max_jitter": 50,
+        "max_jitter": 500,
         "n_filters": 128,
         "n_layers": 9,
         "reverse_complement": True,
         "shuffle": True,
         "batch_size": 64,
         "muon_lr": 0.025,
-        "muon_wd": 0.01,
-        "adam_lr": 0.004,
-        "adam_wd": 0.2,
+        "muon_wd": 0.03,
+        "adam_lr": 0.001,
+        "adam_wd": 0.0,
         "lw_lr": 0.001,
         "lw_wd": 0.0,
         "lw_momentum": 0.9,
-        "max_epochs": 100,
-        "early_stopping": 15,
+        "max_epochs": 20,
+        "early_stopping": 5,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
@@ -294,7 +301,14 @@ def main():
         peaks=peaks,
         negatives=negatives,
         sequences=params["sequences"],
-        signals=params["signals"],
+        # Nested so cherimoya's normalize_signal_groups treats this as one
+        # stranded 2-channel group (correct RC channel-swap behavior)
+        # instead of two independent unstranded groups -- the latter is
+        # what a flat 2-element list means as of cherimoya's signal-groups
+        # refactor. params["signals"] itself stays flat: extract_loci
+        # (used directly for validation below) and the model's
+        # signal_groups=[len(params["signals"])] both need the flat form.
+        signals=[params["signals"]],
         chroms=params["training_chroms"],
         in_window=params["in_window"],
         out_window=params["out_window"],
@@ -384,7 +398,7 @@ def main():
     )
 
     # Warmup + cosine decay schedules
-    num_warmup_epochs = 5
+    num_warmup_epochs = 2
     max_epochs = params["max_epochs"]
     num_warmup_iters = len(train_data_loader) * num_warmup_epochs
     num_decay_iters = len(train_data_loader) * max(1, max_epochs - num_warmup_epochs)
@@ -430,7 +444,7 @@ def main():
         max_epochs=params["max_epochs"],
         batch_size=params["batch_size"],
         early_stopping=params["early_stopping"],
-        dtype=torch.bfloat16,
+        dtype=torch.float32,
     )
 
     print(f"\nModel saved to {output_dir}/")
