@@ -32,6 +32,15 @@ mkdir -p "$(dirname "$VENV_DIR")"
 python3 -m venv --system-site-packages "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
+# pybigtools (a hard tangermeme dependency) has no Python 3.14 wheel on PyPI
+# at any released version, and its latest PyPI release (0.3.0) fails to build
+# from source under 3.14 because it pins pyo3==0.22, which caps out at Python
+# 3.13. Upstream bumped to pyo3 0.28 (which supports 3.14) on its unreleased
+# master branch; install that commit first so pip's resolver sees
+# tangermeme's `pybigtools>=0.2` already satisfied and leaves it alone below.
+python3 -m pip install \
+    "pybigtools @ git+https://github.com/jackh726/bigtools.git@34e0a82ee9af2f4f6ebd3268ac692f64e839f100#subdirectory=pybigtools"
+
 # numpy is intentionally not installed here: py-pytorch already provides one
 # via --system-site-packages, and a second pip-installed copy could shadow
 # it and break torch's ABI.

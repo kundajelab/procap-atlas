@@ -27,8 +27,11 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
     python -m pip install --no-deps bpnet-lite
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
-    # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch.
-    python -m pip install --no-deps cherimoya==0.2.0
+    # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch. Installed
+    # from the v0.2.0 git tag rather than the PyPI wheel; cherimoya has no
+    # compiled extensions, so this is equivalent, and matches how prior
+    # cherimoya versions were installed here.
+    python -m pip install --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@v0.2.0"
 
     # Optional but useful for source/debugging
     python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam

@@ -25,7 +25,9 @@ Apptainer is not a general requirement for Cherimoya. On another cluster, prefer
 apptainer build cherimoya.sif cherimoya.def
 ```
 
-`cherimoya.def` installs `cherimoya==0.2.0` from PyPI.
+`cherimoya.def` installs `cherimoya==0.2.0` from its `v0.2.0` git tag rather
+than the PyPI wheel (equivalent, since cherimoya has no compiled extensions —
+just avoids a PyPI round-trip).
 
 `cherimoya-0.1.0.def` is kept as an archived definition for the previous
 `cherimoya==0.1.0` release, in case a model needs to be reproduced with that

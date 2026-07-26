@@ -42,6 +42,17 @@ which are `--no-deps` installed to avoid pulling in an unwanted `macs3` or
 replacing the module-provided torch/triton). Re-run it to rebuild the venv if
 it's ever corrupted or the scratch space is purged.
 
+`pybigtools` (a hard dependency of `tangermeme`, which `fit_cherimoya.py`
+imports) has no Python 3.14 wheel at any released version on PyPI, and its
+latest release (0.3.0) fails to build from source under 3.14 because it pins
+`pyo3==0.22`, which only supports up to Python 3.13. Upstream bumped to
+`pyo3` 0.28 (which does support 3.14) on its `master` branch, unreleased to
+PyPI as of this writing. `setup_env.sh` installs that exact commit from git
+before anything else, so pip's resolver sees `tangermeme`'s `pybigtools>=0.2`
+requirement already satisfied and doesn't try to build the PyPI release
+itself. If pybigtools ships a PyPI release built against a
+3.14-compatible pyo3, switch back to a normal pinned PyPI install.
+
 ## Verify
 
 ```bash
