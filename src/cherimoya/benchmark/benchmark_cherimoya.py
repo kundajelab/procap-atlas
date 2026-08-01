@@ -65,8 +65,35 @@ def main():
         help="save predictions and signals to disk",
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64)
+    parser.add_argument(
+        "--compile",
+        action="store_true",
+        help=(
+            "enable torch.compile() during inference (default: disabled). "
+            "Cherimoya.load() itself defaults to compile=True, but "
+            "torch.compile unconditionally raises on Python 3.14+ before "
+            "torch 2.10 (see https://github.com/pytorch/pytorch/issues/169875) "
+            "-- Sherlock's only torch>=2.9 build is py-pytorch/2.9.1_py314 -- "
+            "and a single inference pass over the test set is fast enough "
+            "that compilation's warmup cost isn't worth it by default"
+        ),
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
+
+    # See the matching comment in fit/fit_cherimoya.py. torch.__version__ is
+    # a TorchVersion, which supports PEP 440-aware comparison against a
+    # plain string.
+    compile_supported = args.compile and (
+        sys.version_info < (3, 14) or torch.__version__ >= "2.10"
+    )
+    if args.compile and not compile_supported:
+        print(
+            "Warning: --compile requested but torch.compile is unsupported "
+            f"on Python {'.'.join(map(str, sys.version_info[:3]))} with "
+            f"torch {torch.__version__}; running without compilation.",
+            file=sys.stderr,
+        )
 
     # Load experiment config
     with open(CONFIG_PATH) as f:
@@ -161,7 +188,9 @@ def main():
         )
         signals.append(torch.abs(y))
 
-        model = Cherimoya.load(model_paths[fold], device="cuda")
+        model = Cherimoya.load(
+            model_paths[fold], device="cuda", compile=compile_supported
+        )
         preds.append(
             predict(
                 model=model,
