@@ -75,10 +75,21 @@ resource requests, and swap in the Apptainer image (see
 another cluster.
 
 `launch.py` submits one SLURM job per experiment, training that experiment's
-folds sequentially within the job (already-trained folds are skipped, and an
-experiment with every fold already trained is not submitted at all). `--time`
-is a flat budget for the whole job regardless of fold count (default
+folds sequentially within the job (folds with a completed model are skipped,
+and an experiment with every fold already trained is not submitted at all).
+`--time` is a flat budget for the whole job regardless of fold count (default
 `48:00:00`, the `owners` partition's per-job cap).
+
+Jobs are submitted with `--requeue`, so SLURM automatically resubmits a
+pre-empted job (`akundaje`/`owners` are preemptible) instead of it just
+dying. The submitted script re-checks each fold for a completed model at the
+start of every run, not only once at submission time, so a requeued job
+skips whatever folds finished before pre-emption and only retrains the rest
+— cheap, since Cherimoya trains fast (~30s/epoch). "Completed" means a
+`{experiment}.fold{fold}.final.torch` file, written exactly once at the very
+end of training; the plain `.torch` file (no `.final`) is overwritten
+throughout training whenever validation correlation improves, so it can
+already exist after a single epoch and would wrongly look "done."
 
 ## Benchmarking
 

@@ -65,6 +65,14 @@ already present in the base image; letting pip resolve Cherimoya's
 `torch>=2.9.0` requirement can replace it with a different PyPI Torch build
 and leave companion packages incompatible.
 
+Unlike the old `nvcr.io/nvidia/pytorch:26.05-py3` image (a conda-managed
+Python), `pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime` is Ubuntu
+24.04-based and uses that distro's system Python, which PEP 668 protects
+from bare `pip install` (`error: externally-managed-environment`). Every
+`pip install` in `cherimoya.def` passes `--break-system-packages` for this
+reason — safe here since the image is single-purpose and not a shared
+system pip could conflict with apt over.
+
 ## Running
 
 ```bash

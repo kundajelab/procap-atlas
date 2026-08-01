@@ -7,8 +7,21 @@ folds sequentially within the job.
 
 Experiments with fewer total reads than --min-reads (default: 10_000_000) are
 skipped, as low-coverage experiments tend to produce poorly calibrated models.
-Folds with an already-trained model file are also skipped automatically; an
-experiment with every fold already trained is not submitted at all.
+Folds with a completed model are also skipped automatically; an experiment
+with every fold already trained is not submitted at all.
+
+SLURM jobs are submitted with --requeue, so a pre-empted job (the
+akundaje/owners partitions are preemptible) is automatically resubmitted by
+SLURM rather than needing a manual resubmit. The submitted script re-checks
+each fold for a completed model at the start of every run (not just once at
+submission time), so a requeued job skips whatever folds finished before
+pre-emption and only (re)trains the rest -- cherimoya trains fast enough
+(~30s/epoch) that redoing a partially-trained fold from scratch is cheap.
+"Completed" is judged by `{exp_id}.fold{fold}.final.torch`, which
+Cherimoya's fit() writes exactly once, at the very end of training --
+`{exp_id}.fold{fold}.torch` (no `.final`) is the wrong artifact for this,
+since it's overwritten throughout training whenever validation correlation
+improves and can already exist after a single epoch.
 
 Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
 src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
@@ -155,12 +168,16 @@ def main():
             skipped_reads += 1
             continue
 
-        # Skip folds that are already trained
+        # Skip folds with a completed model. `.final.torch` is written
+        # exactly once, at the very end of Cherimoya's fit() -- unlike
+        # `.torch` (no `.final`), which is overwritten throughout training
+        # whenever validation correlation improves, so checking that one
+        # would treat a fold pre-empted after a single epoch as complete.
         model_dir = REPO_ROOT / "models" / "cherimoya" / exp_id
         folds_to_run = [
             fold
             for fold in range(n_folds)
-            if not (model_dir / f"{exp_id}.fold{fold}.torch").exists()
+            if not (model_dir / f"{exp_id}.fold{fold}.final.torch").exists()
         ]
         skipped_trained += n_folds - len(folds_to_run)
         if not folds_to_run:
@@ -207,16 +224,15 @@ def main():
             continue
 
         job_name = f"cherimoya_{exp_id}"
-        # Each joined line must share the template's 12-space indent below,
-        # or textwrap.dedent can't find a common prefix to strip and leaves
-        # the whole script (including the #! line) indented, which sbatch
-        # rejects as "not a batch script".
-        fit_cmds = "\n            ".join(
-            f'python3 "$FIT_SCRIPT" -e {shlex.quote(exp_id)} --fold {fold} -v'
-            f"{extra_fit_args}"
-            for fold in folds_to_run
-        )
+        folds_bash = " ".join(str(fold) for fold in folds_to_run)
 
+        # The fold loop below re-checks each fold's .final.torch at runtime
+        # (not just once at submission time, in `folds_to_run` above), so a
+        # SLURM-requeued rerun of this same script skips whatever folds
+        # finished before pre-emption instead of blindly retraining all of
+        # them. --requeue is what makes a pre-empted job actually retry
+        # automatically; --open-mode=append keeps prior attempts' output
+        # instead of truncating the log on each retry.
         sbatch_script = textwrap.dedent(f"""\
             #!/bin/bash -l
             #SBATCH --job-name={job_name}
@@ -229,19 +245,33 @@ def main():
             #SBATCH --mem={args.mem}
             #SBATCH --partition={args.partition}
             #SBATCH --time={args.time}
+            #SBATCH --requeue
+            #SBATCH --open-mode=append
             #SBATCH --output={log_dir}/{job_name}.out
             #SBATCH --error={log_dir}/{job_name}.err
 
             mkdir -p "{NUMBA_CACHE_DIR}"
             export NUMBA_CACHE_DIR="{NUMBA_CACHE_DIR}"
             FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}
+            EXP_ID={shlex.quote(exp_id)}
+            MODEL_DIR={shlex.quote(str(model_dir))}
+            FOLDS=({folds_bash})
 
             ml load math
             ml load {PYTORCH_MODULE} {TRITON_MODULE}
             source "{VENV_DIR}/bin/activate"
 
             nvidia-smi -L
-            {fit_cmds}
+
+            for FOLD in "${{FOLDS[@]}}"; do
+                MODEL_PATH="$MODEL_DIR/${{EXP_ID}}.fold${{FOLD}}.final.torch"
+                if [[ -f "$MODEL_PATH" ]]; then
+                    echo "Skipping already-completed fold $FOLD: $MODEL_PATH"
+                    continue
+                fi
+                echo "Training $EXP_ID fold $FOLD"
+                python3 "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v{extra_fit_args}
+            done
         """)
 
         if args.dry_run:
