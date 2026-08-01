@@ -154,8 +154,8 @@ def main():
     parser.add_argument("--n-filters", type=int, default=128)
     parser.add_argument("--n-layers", type=int, default=9)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--max-epochs", type=int, default=20)
-    parser.add_argument("--early-stopping", type=int, default=5)
+    parser.add_argument("--max-epochs", type=int, default=100)
+    parser.add_argument("--early-stopping", type=int, default=None)
     parser.add_argument("--max-jitter", type=int, default=500)
     parser.add_argument("--random-state", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -249,8 +249,8 @@ def main():
         "lw_lr": 0.001,
         "lw_wd": 0.0,
         "lw_momentum": 0.9,
-        "max_epochs": 20,
-        "early_stopping": 5,
+        "max_epochs": 100,
+        "early_stopping": None,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
@@ -398,7 +398,7 @@ def main():
     )
 
     # Warmup + cosine decay schedules
-    num_warmup_epochs = 2
+    num_warmup_epochs = 5
     max_epochs = params["max_epochs"]
     num_warmup_iters = len(train_data_loader) * num_warmup_epochs
     num_decay_iters = len(train_data_loader) * max(1, max_epochs - num_warmup_epochs)
