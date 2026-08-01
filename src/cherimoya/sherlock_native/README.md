@@ -6,14 +6,14 @@ Lmod modules instead of the Apptainer image under
 
 ## Why this exists
 
-The Apptainer image (`nvcr.io/nvidia/pytorch:26.05-py3`) bundles CUDA 13.2,
-but Sherlock's GPU driver caps out at CUDA 12.4 across the SKUs tested
-(`A30`, `L40S`) — a major-version gap that NVIDIA's forward-compatibility
-shim cannot bridge (see [`../apptainer/README.md`](../apptainer/README.md)'s
-"Running" section for the full diagnosis). No PyTorch build, from NGC or
-PyPI, has both `torch.optim.Muon` (needs `torch>=2.9.0`) and CUDA
-12.4-or-older compatibility — PyPI's own `cu124` wheel index tops out at
-`torch==2.6.0`.
+The Apptainer image under [`../apptainer/`](../apptainer/README.md) used to
+bootstrap from `nvcr.io/nvidia/pytorch:26.05-py3`, which bundles CUDA 13.2 —
+Sherlock's GPU driver caps out at CUDA 12.4 across the SKUs tested (`A30`,
+`L40S`), a major-version gap that NVIDIA's forward-compatibility shim cannot
+bridge (see `../apptainer/README.md`'s "Historical note" for the full
+diagnosis). At the time, no PyTorch build, from NGC or PyPI, combined
+`torch.optim.Muon` (needs `torch>=2.9.0`) with CUDA 12.4-or-older
+compatibility — PyPI's own `cu124` wheel index tops out at `torch==2.6.0`.
 
 Sherlock's `py-pytorch/2.9.1_py314` module sidesteps this: it's compiled
 against CUDA 12.6, a same-*major*-version gap the driver's compatibility
@@ -21,9 +21,12 @@ mechanism does bridge. Confirmed working (`torch.zeros(1).cuda()` succeeds)
 on both `A30` and `L40S`. `py-triton/3.5.1_py314` is a matching module built
 for the same Python 3.14, satisfying Cherimoya's `triton>=3.5.1` exactly.
 
-This makes the Apptainer image effectively non-functional on Sherlock as of
-this writing; this native path is the one to use there. Apptainer remains
-useful for other clusters with old compilers but modern GPU drivers.
+`../apptainer/`'s `cherimoya.def` now bootstraps from
+`pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime` instead, which uses the same
+CUDA 12.6 the driver can bridge — but that switch hasn't been build-tested on
+real Sherlock hardware yet (see its README's banner). Until it's verified
+with `check_gpu.py`, this native path remains the *confirmed*-working option
+on Sherlock.
 
 ## Setup
 

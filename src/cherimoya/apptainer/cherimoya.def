@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:26.05-py3
+From: pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -10,12 +10,12 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
         libcurl4-openssl-dev libssl-dev libbz2-dev liblzma-dev zlib1g-dev
     rm -rf /var/lib/apt/lists/*
 
-    # Leave setuptools alone: nvcr.io/nvidia/pytorch pins its torch build to
-    # setuptools<82, and upgrading it here breaks that constraint.
+    # Don't touch setuptools; there's no need to for a --no-deps install
+    # below, and some base torch builds pin it against their own build.
     python -m pip install --upgrade pip wheel
 
     # Install non-PyTorch Cherimoya dependencies while preserving the
-    # NVIDIA-tested torch/torchvision pair already present in the base image.
+    # base image's own torch/torchvision build (torch 2.13.0, CUDA 12.6).
     python -m pip install pynvml \
         numpy scipy pandas h5py tqdm seaborn modisco tangermeme \
         bam2bw joblib
@@ -27,7 +27,7 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
     python -m pip install --no-deps bpnet-lite
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
-    # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch. Installed
+    # the base image's torch 2.13.0 build with a fresh PyPI resolve. Installed
     # from the v0.2.0 git tag rather than the PyPI wheel; cherimoya has no
     # compiled extensions, so this is equivalent, and matches how prior
     # cherimoya versions were installed here.
