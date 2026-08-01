@@ -98,6 +98,24 @@ predictions/cherimoya/{model_dir_name}.npz
 
 Prediction output is written only when `--save-output` is used.
 
+Submit benchmarking jobs through SLURM:
+
+```bash
+python src/cherimoya/benchmark/launch.py --dry-run
+python src/cherimoya/benchmark/launch.py --min-reads 20000000
+python src/cherimoya/benchmark/launch.py --local             # run in the foreground, no SLURM
+```
+
+`launch.py` submits one SLURM job per experiment via `benchmark_cherimoya.py`,
+mirroring [`src/bpnet/benchmark/launch.py`](../bpnet/benchmark/launch.py) but
+using SRCC's `py-pytorch`/`py-triton` modules (see
+[`sherlock_native/`](sherlock_native/README.md)) instead of the `procap-atlas`
+conda environment. Experiments with any missing fold model are skipped, as are
+experiments with an existing metrics JSON (override with `--force`). `--local`
+runs each experiment directly in the foreground via `uv run --extra
+cherimoya`, bypassing SLURM entirely — useful on a GPU box you already have a
+shell on (e.g. a lab cluster).
+
 ## Architecture Sweep
 
 The `n_filters/` directory runs a Cherimoya filter-count sweep over `16`, `24`,
