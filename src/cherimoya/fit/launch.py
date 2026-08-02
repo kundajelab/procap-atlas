@@ -23,22 +23,33 @@ Cherimoya's fit() writes exactly once, at the very end of training --
 since it's overwritten throughout training whenever validation correlation
 improves and can already exist after a single epoch.
 
-Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
-src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
-Sherlock's GPU driver (see src/cherimoya/apptainer/README.md).
+By default, jobs run natively on Sherlock using SRCC's py-pytorch/py-triton
+modules (see src/cherimoya/sherlock_native/). That module pair is Python
+3.14-only, which makes torch.compile() unconditionally raise (see the
+comment above `compile_supported` in fit_cherimoya.py) until Sherlock ships
+a torch>=2.10 build.
+
+--apptainer runs each fold via `apptainer exec --nv` against the Cherimoya
+Apptainer image instead (see src/cherimoya/apptainer/) -- its
+pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime base image bundles Python 3.12
+and torch 2.13.0, so it isn't subject to that restriction and trains with
+torch.compile enabled. This path is unverified on real Sherlock hardware as
+of this writing (see src/cherimoya/apptainer/README.md's banner) -- confirm
+with check_gpu.py before relying on it for real jobs.
 
 --local skips SLURM entirely and runs each fold directly in the foreground
 with inherited stdout/stderr, via `uv run --extra cherimoya` instead of the
-Sherlock modules/venv -- useful on a GPU box you already have a shell on
-(e.g. a lab cluster), where a normal Python (unlike Sherlock's Python-3.14-only
-torch>=2.9 build) lets torch.compile work too. SLURM resource flags
-(--gpus/--partition/--cpus-per-task/--mem/--time) are ignored in this mode.
+Sherlock modules/venv or Apptainer -- useful on a GPU box you already have a
+shell on (e.g. a lab cluster), where a normal Python also lets torch.compile
+work. SLURM resource flags (--gpus/--partition/--cpus-per-task/--mem/--time)
+are ignored in this mode, and it cannot be combined with --apptainer.
 
 Usage:
     python src/cherimoya/fit/launch.py                    # submit one job per experiment, 7 folds each
     python src/cherimoya/fit/launch.py --dry-run           # print sbatch scripts without submitting
     python src/cherimoya/fit/launch.py --time 48:00:00 --mem 32G --partition gpu
     python src/cherimoya/fit/launch.py --min-reads 20000000  # only well-covered experiments
+    python src/cherimoya/fit/launch.py --apptainer         # run via the Apptainer image, compiled
     python src/cherimoya/fit/launch.py --local             # run in the foreground, no SLURM
     python src/cherimoya/fit/launch.py --local --dry-run   # print local commands without running
 """
@@ -65,6 +76,7 @@ NUMBA_CACHE_DIR = "${NUMBA_CACHE_DIR:-/scratch/users/${USER}/numba_cache}"
 VENV_DIR = "${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
 PYTORCH_MODULE = "py-pytorch/2.9.1_py314"
 TRITON_MODULE = "py-triton/3.5.1_py314"
+APPTAINER_IMAGE = "${CHERIMOYA_APPTAINER_IMAGE:-/scratch/users/${USER}/apptainer/cherimoya.sif}"
 # --local doesn't run on Sherlock, so it has no reason to default into
 # Sherlock's scratch layout; a repo-relative cache dir works anywhere.
 LOCAL_NUMBA_CACHE_DIR = REPO_ROOT / ".cache" / "numba"
@@ -84,7 +96,35 @@ def main():
             "run each fold directly in the foreground with inherited "
             "stdout/stderr via `uv run --extra cherimoya`, instead of "
             "submitting SLURM jobs; ignores SLURM resource flags "
-            "(--gpus/--partition/--cpus-per-task/--mem/--time)"
+            "(--gpus/--partition/--cpus-per-task/--mem/--time); cannot be "
+            "combined with --apptainer"
+        ),
+    )
+    parser.add_argument(
+        "--apptainer",
+        action="store_true",
+        help=(
+            "run each fold via `apptainer exec --nv` against the Cherimoya "
+            "Apptainer image (see src/cherimoya/apptainer/), instead of "
+            "SRCC's py-pytorch/py-triton modules -- its Python 3.12 + "
+            "torch 2.13.0 build trains with torch.compile enabled, unlike "
+            "the Python-3.14-only native module (see fit_cherimoya.py)"
+        ),
+    )
+    parser.add_argument(
+        "--apptainer-image",
+        type=str,
+        default=APPTAINER_IMAGE,
+        help=f"path to the Cherimoya Apptainer .sif image (default: {APPTAINER_IMAGE})",
+    )
+    parser.add_argument(
+        "--apptainer-bind",
+        action="append",
+        default=None,
+        help=(
+            "path to bind into the Apptainer container; may be repeated "
+            "(default: the repo root -- add more if models/data live "
+            "outside it, e.g. on scratch or oak)"
         ),
     )
     # SLURM resource flags
@@ -130,6 +170,8 @@ def main():
         help="extra arguments forwarded to fit_cherimoya.py (e.g. '--max-epochs 100')",
     )
     args = parser.parse_args()
+    if args.local and args.apptainer:
+        parser.error("--local and --apptainer cannot be combined")
 
     # Load experiment list
     with open(CONFIG_PATH) as f:
@@ -149,6 +191,9 @@ def main():
 
     log_dir = REPO_ROOT / "logs" / "cherimoya_fit"
     log_dir.mkdir(parents=True, exist_ok=True)
+
+    apptainer_binds = args.apptainer_bind or [str(REPO_ROOT)]
+    apptainer_bind_args = " ".join(f"--bind {shlex.quote(path)}" for path in apptainer_binds)
 
     local_env = None
     if args.local:
@@ -226,6 +271,42 @@ def main():
         job_name = f"cherimoya_{exp_id}"
         folds_bash = " ".join(str(fold) for fold in folds_to_run)
 
+        # Built as a flat list of lines (rather than a nested triple-quoted
+        # block) and joined with the same 12-space indent as the rest of the
+        # template below, so the final textwrap.dedent() still finds a
+        # common prefix across every line -- a mismatched indent here leaves
+        # the whole script indented, which sbatch rejects as "not a batch
+        # script" (see the historical version of this comment in git log).
+        if args.apptainer:
+            setup_lines = [
+                f"FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}",
+                f'APPTAINER_IMAGE="{args.apptainer_image}"',
+                f"EXP_ID={shlex.quote(exp_id)}",
+                f"MODEL_DIR={shlex.quote(str(model_dir))}",
+                f"FOLDS=({folds_bash})",
+                "",
+            ]
+            run_fold_cmd = (
+                f'apptainer exec --nv {apptainer_bind_args} "$APPTAINER_IMAGE" '
+                f'python "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v{extra_fit_args}'
+            )
+        else:
+            setup_lines = [
+                f'mkdir -p "{NUMBA_CACHE_DIR}"',
+                f'export NUMBA_CACHE_DIR="{NUMBA_CACHE_DIR}"',
+                f"FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}",
+                f"EXP_ID={shlex.quote(exp_id)}",
+                f"MODEL_DIR={shlex.quote(str(model_dir))}",
+                f"FOLDS=({folds_bash})",
+                "",
+                "ml load math",
+                f"ml load {PYTORCH_MODULE} {TRITON_MODULE}",
+                f'source "{VENV_DIR}/bin/activate"',
+                "",
+            ]
+            run_fold_cmd = f'python3 "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v{extra_fit_args}'
+        setup_block = "\n            ".join(setup_lines)
+
         # The fold loop below re-checks each fold's .final.torch at runtime
         # (not just once at submission time, in `folds_to_run` above), so a
         # SLURM-requeued rerun of this same script skips whatever folds
@@ -250,17 +331,7 @@ def main():
             #SBATCH --output={log_dir}/{job_name}.out
             #SBATCH --error={log_dir}/{job_name}.err
 
-            mkdir -p "{NUMBA_CACHE_DIR}"
-            export NUMBA_CACHE_DIR="{NUMBA_CACHE_DIR}"
-            FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}
-            EXP_ID={shlex.quote(exp_id)}
-            MODEL_DIR={shlex.quote(str(model_dir))}
-            FOLDS=({folds_bash})
-
-            ml load math
-            ml load {PYTORCH_MODULE} {TRITON_MODULE}
-            source "{VENV_DIR}/bin/activate"
-
+            {setup_block}
             nvidia-smi -L
 
             for FOLD in "${{FOLDS[@]}}"; do
@@ -270,7 +341,7 @@ def main():
                     continue
                 fi
                 echo "Training $EXP_ID fold $FOLD"
-                python3 "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v{extra_fit_args}
+                {run_fold_cmd}
             done
         """)
 

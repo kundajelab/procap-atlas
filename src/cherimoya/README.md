@@ -70,9 +70,15 @@ python src/cherimoya/fit/launch.py --min-reads 20000000 --fit-args "--max-epochs
 The launcher defaults are for the Sherlock HPC environment and load SRCC's
 `py-pytorch`/`py-triton` modules directly (see
 [`sherlock_native/`](sherlock_native/README.md)); review partitions and
-resource requests, and swap in the Apptainer image (see
-[`apptainer/`](apptainer/README.md)) instead, before using these launchers on
-another cluster.
+resource requests before using these launchers on another cluster.
+
+`--apptainer` runs each fold via `apptainer exec --nv` against the Cherimoya
+Apptainer image (see [`apptainer/`](apptainer/README.md)) instead of the
+native modules. That image's Python 3.12 + torch 2.13.0 build isn't subject
+to the native module's Python-3.14 `torch.compile` restriction (see
+`fit_cherimoya.py`'s `compile_supported`), so training runs compiled. This
+path is unverified on real Sherlock hardware as of this writing — confirm
+with `apptainer/check_gpu.py` before relying on it for real jobs.
 
 `launch.py` submits one SLURM job per experiment, training that experiment's
 folds sequentially within the job (folds with a completed model are skipped,
