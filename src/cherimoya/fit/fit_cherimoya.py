@@ -154,7 +154,7 @@ def main():
     parser.add_argument("--n-filters", type=int, default=128)
     parser.add_argument("--n-layers", type=int, default=9)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--max-epochs", type=int, default=100)
+    parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument("--early-stopping", type=int, default=None)
     parser.add_argument("--max-jitter", type=int, default=500)
     parser.add_argument("--random-state", type=int, default=None)
@@ -249,7 +249,7 @@ def main():
         "lw_lr": 0.001,
         "lw_wd": 0.0,
         "lw_momentum": 0.9,
-        "max_epochs": 100,
+        "max_epochs": 50,
         "early_stopping": None,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,

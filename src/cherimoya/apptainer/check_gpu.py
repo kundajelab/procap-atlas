@@ -59,8 +59,8 @@ def main():
         default=DEFAULT_SKUS,
         help=f"GPU_SKU constraints to test, one job each (default: {DEFAULT_SKUS})",
     )
-    parser.add_argument("--partition", type=str, default="akundaje,owners")
-    parser.add_argument("--time", type=str, default="00:05:00")
+    parser.add_argument("--partition", type=str, default="gpu,akundaje,owners")
+    parser.add_argument("--time", type=str, default="00:30:00")
     parser.add_argument(
         "--apptainer-image",
         type=Path,
