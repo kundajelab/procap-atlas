@@ -20,11 +20,13 @@ evaluation workflow, not as a public deployment pipeline.
   pip/uv (capped at `torch==2.6.0`), so the root `uv` project keeps them in
   separate, mutually exclusive extras (see the root `pyproject.toml`
   `tool.uv.conflicts`). Use one of:
-  - On Sherlock: SRCC's `py-pytorch`/`py-triton` Lmod modules; see
-    [`sherlock_native/`](sherlock_native/README.md). The Apptainer image
-    under [`apptainer/`](apptainer/README.md) bundles a newer CUDA than
-    Sherlock's GPU driver supports and cannot run there — it remains useful
-    only for other clusters with old compilers but modern GPU drivers.
+  - On Sherlock: the Cherimoya Apptainer image (see
+    [`apptainer/`](apptainer/README.md)) is the default for the SLURM
+    launchers below and lets training run with `torch.compile` enabled.
+    SRCC's `py-pytorch`/`py-triton` Lmod modules (see
+    [`sherlock_native/`](sherlock_native/README.md)) are also confirmed
+    working and available as a fallback (`--native`), but that module pair
+    disables `torch.compile`.
   - `uv sync --extra cherimoya` for a native install on other (non-Sherlock,
     modern-glibc) Linux hardware
 - Optional SLURM access for launchers
@@ -42,14 +44,16 @@ the remaining parameters, with warmup plus cosine learning-rate schedules.
 Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
 
-On Sherlock, load SRCC's `py-pytorch`/`py-triton` modules (see
-[`sherlock_native/`](sherlock_native/README.md)) rather than using the root
-`uv` project's `cherimoya` extra or the Apptainer image — neither works on
-Sherlock's GPU driver. The default root `uv` environment (no extras, or
-`--extra sherlock`) pins `torch==2.6.0` for BPNet/preprocessing and does not
-include Cherimoya at all. On other (non-Sherlock) Linux hardware, use
-`uv sync --extra cherimoya` instead, which resolves Cherimoya's real
-`torch>=2.9.0`/`triton>=3.5.1` requirements directly. The `sherlock` and
+On Sherlock, run the script above via `apptainer exec --nv` against the
+Cherimoya Apptainer image (see [`apptainer/`](apptainer/README.md)), or load
+SRCC's `py-pytorch`/`py-triton` modules instead (see
+[`sherlock_native/`](sherlock_native/README.md)) — the root `uv` project's
+`cherimoya` extra does not work there, since the default root `uv`
+environment (no extras, or `--extra sherlock`) pins `torch==2.6.0` for
+BPNet/preprocessing and does not include Cherimoya at all. On other
+(non-Sherlock) Linux hardware, use `uv sync --extra cherimoya` instead,
+which resolves Cherimoya's real `torch>=2.9.0`/`triton>=3.5.1` requirements
+directly. The `sherlock` and
 `cherimoya` extras are declared mutually exclusive and cannot be installed
 together.
 
@@ -67,18 +71,32 @@ python src/cherimoya/fit/launch.py --dry-run
 python src/cherimoya/fit/launch.py --min-reads 20000000 --fit-args "--max-epochs 100"
 ```
 
-The launcher defaults are for the Sherlock HPC environment and load SRCC's
-`py-pytorch`/`py-triton` modules directly (see
-[`sherlock_native/`](sherlock_native/README.md)); review partitions and
-resource requests before using these launchers on another cluster.
-
-`--apptainer` runs each fold via `apptainer exec --nv` against the Cherimoya
-Apptainer image (see [`apptainer/`](apptainer/README.md)) instead of the
-native modules. That image's Python 3.12 + torch 2.13.0 build isn't subject
-to the native module's Python-3.14 `torch.compile` restriction (see
+The launcher defaults are for the Sherlock HPC environment and review
+partitions and resource requests before using these launchers on another
+cluster. By default, jobs run each fold via `apptainer exec --nv` against
+the Cherimoya Apptainer image (see [`apptainer/`](apptainer/README.md)).
+That image's Python 3.12 + torch 2.13.0 build isn't subject to Sherlock's
+native module's Python-3.14 `torch.compile` restriction (see
 `fit_cherimoya.py`'s `compile_supported`), so training runs compiled.
 `apptainer/check_gpu.py` has confirmed this path works on real Sherlock
 hardware across every GPU SKU tested.
+
+`--native` runs each fold using SRCC's `py-pytorch`/`py-triton` Sherlock
+modules instead (see [`sherlock_native/`](sherlock_native/README.md)) --
+useful as a fallback, but that module pair disables `torch.compile`, so
+prefer the Apptainer default unless you have a specific reason not to.
+
+`--local` skips SLURM entirely and runs each fold directly in the
+foreground (still via Apptainer by default; add `--native` for a `uv run
+--extra cherimoya` invocation instead) -- useful on a GPU box you already
+have a shell on. Combined with `--dry-run`, `--local` prints one runnable
+command per fold instead of running them, which you can pipe into something
+like `simple_gpu_scheduler` to fan a personal multi-GPU box out in
+parallel:
+
+```bash
+python src/cherimoya/fit/launch.py --local --dry-run | simple_gpu_scheduler --gpus 0 1 2 3
+```
 
 `launch.py` submits one SLURM job per experiment, training that experiment's
 folds sequentially within the job (folds with a completed model are skipped,
@@ -121,19 +139,30 @@ Submit benchmarking jobs through SLURM:
 python src/cherimoya/benchmark/launch.py --dry-run
 python src/cherimoya/benchmark/launch.py --min-reads 20000000
 python src/cherimoya/benchmark/launch.py --local             # run in the foreground, no SLURM
+python src/cherimoya/benchmark/launch.py --local --dry-run | simple_gpu_scheduler --gpus 0 1 2 3
 ```
 
 `launch.py` submits one SLURM job per experiment via `benchmark_cherimoya.py`,
-mirroring [`src/bpnet/benchmark/launch.py`](../bpnet/benchmark/launch.py) but
-using SRCC's `py-pytorch`/`py-triton` modules (see
-[`sherlock_native/`](sherlock_native/README.md)) instead of the `procap-atlas`
-conda environment. Experiments with any missing fold model are skipped, as are
-experiments with an existing metrics JSON (override with `--force`). `--local`
-runs each experiment directly in the foreground via `uv run --extra
-cherimoya`, bypassing SLURM entirely — useful on a GPU box you already have a
-shell on (e.g. a lab cluster).
+mirroring [`src/bpnet/benchmark/launch.py`](../bpnet/benchmark/launch.py). By
+default, jobs run via `apptainer exec --nv` against the Cherimoya Apptainer
+image (see [`apptainer/`](apptainer/README.md)); `--native` uses SRCC's
+`py-pytorch`/`py-triton` modules instead (see
+[`sherlock_native/`](sherlock_native/README.md)). Experiments with any missing
+fold model are skipped, as are experiments with an existing metrics JSON
+(override with `--force`). `--local` bypasses SLURM entirely and runs each
+experiment directly in the foreground (still via Apptainer by default; add
+`--native` for a `uv run --extra cherimoya` invocation instead) — useful on a
+GPU box you already have a shell on. Combined with `--dry-run`, `--local`
+prints one runnable command per experiment instead of running them, which you
+can pipe into something like `simple_gpu_scheduler` to fan a personal
+multi-GPU box out in parallel.
 
-## Architecture Sweep
+## Architecture Sweep (deprecated)
+
+**Deprecated**: this sweep predates the current Cherimoya v0.2.0 models and
+training defaults, and we're not continuing this investigation with them.
+`n_filters/` is left in place for reference but is not being run or
+maintained going forward.
 
 The `n_filters/` directory runs a Cherimoya filter-count sweep over `16`, `24`,
 `36`, `48`, `64`, `96`, `196`, and `256` filters:

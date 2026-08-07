@@ -2,13 +2,17 @@
 # Bootstrap the native (non-Apptainer) Cherimoya environment on Sherlock,
 # using SRCC's own py-pytorch/py-triton modules instead of an NGC container.
 #
-# Background: nvcr.io/nvidia/pytorch:26.05-py3 (the Apptainer image under
-# src/cherimoya/apptainer/) bundles CUDA 13.2, but Sherlock's GPU driver caps
-# out at CUDA 12.4 -- a major-version gap that NVIDIA's forward-compatibility
-# mechanism can't bridge, so that image cannot run on Sherlock at all
-# (confirmed across multiple GPU SKUs). py-pytorch/2.9.1_py314 is compiled
-# against CUDA 12.6, a same-major-version gap that the driver *does* bridge;
-# confirmed working (torch.zeros(1).cuda()) on both L40S and A30.
+# Background: the Apptainer image under src/cherimoya/apptainer/ originally
+# bootstrapped from nvcr.io/nvidia/pytorch:26.05-py3, which bundles CUDA
+# 13.2, but Sherlock's GPU driver caps out at CUDA 12.4 -- a major-version
+# gap that NVIDIA's forward-compatibility mechanism can't bridge, so that
+# image couldn't run on Sherlock at all (confirmed across multiple GPU
+# SKUs). py-pytorch/2.9.1_py314 is compiled against CUDA 12.6, a
+# same-major-version gap that the driver *does* bridge; confirmed working
+# (torch.zeros(1).cuda()) on both L40S and A30. The Apptainer image has
+# since switched to a CUDA 12.6 base image and is also confirmed working
+# (see src/cherimoya/apptainer/README.md) -- this native path remains a
+# valid fallback (--native on the launchers), not the only working option.
 #
 # This creates a venv on top of that module pair and installs everything else
 # Cherimoya needs into it. --system-site-packages lets the venv still see

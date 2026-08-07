@@ -5,15 +5,22 @@ Reads experiment IDs from configs/experiment_config.yaml and submits one
 sbatch job per experiment via benchmark_cherimoya.py. Jobs are skipped if the
 metrics JSON already exists or if any fold model is missing.
 
-Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
-src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
-Sherlock's GPU driver (see src/cherimoya/apptainer/README.md).
+By default, jobs run via `apptainer exec --nv` against the Cherimoya
+Apptainer image (see src/cherimoya/apptainer/). check_gpu.py has confirmed
+this path works on real Sherlock hardware across every GPU SKU tested (see
+src/cherimoya/apptainer/README.md).
+
+--native runs each experiment natively instead, using SRCC's py-pytorch/
+py-triton Sherlock modules (see src/cherimoya/sherlock_native/).
 
 --local skips SLURM entirely and runs each experiment directly in the
-foreground with inherited stdout/stderr, via `uv run --extra cherimoya`
-instead of the Sherlock modules/venv -- useful on a GPU box you already have
-a shell on (e.g. a lab cluster). SLURM resource flags
+foreground with inherited stdout/stderr, instead of submitting SLURM jobs.
+It still uses Apptainer by default (add --native for a `uv run --extra
+cherimoya` invocation instead). SLURM resource flags
 (--gpus/--partition/--cpus-per-task/--mem/--time) are ignored in this mode.
+Combined with --dry-run, --local prints one runnable command per experiment
+instead of executing them -- pipe that into something like
+`simple_gpu_scheduler` to fan a personal multi-GPU box out in parallel.
 
 Usage:
     python src/cherimoya/benchmark/launch.py
@@ -21,6 +28,7 @@ Usage:
     python src/cherimoya/benchmark/launch.py --save-output
     python src/cherimoya/benchmark/launch.py --min-reads 20000000
     python src/cherimoya/benchmark/launch.py --benchmark-args '-b 128'
+    python src/cherimoya/benchmark/launch.py --native
     python src/cherimoya/benchmark/launch.py --local
     python src/cherimoya/benchmark/launch.py --local --dry-run
 """
@@ -47,9 +55,24 @@ NUMBA_CACHE_DIR = "${NUMBA_CACHE_DIR:-/scratch/users/${USER}/numba_cache}"
 VENV_DIR = "${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
 PYTORCH_MODULE = "py-pytorch/2.9.1_py314"
 TRITON_MODULE = "py-triton/3.5.1_py314"
+APPTAINER_IMAGE = "${CHERIMOYA_APPTAINER_IMAGE:-/scratch/users/${USER}/apptainer/cherimoya.sif}"
 # --local doesn't run on Sherlock, so it has no reason to default into
 # Sherlock's scratch layout; a repo-relative cache dir works anywhere.
 LOCAL_NUMBA_CACHE_DIR = REPO_ROOT / ".cache" / "numba"
+
+
+def resolve_local_apptainer_image(value):
+    """Resolve APPTAINER_IMAGE's bash ${VAR:-default} template to a real path.
+
+    --local runs commands via subprocess.run() directly, with no shell to
+    expand that syntax (unlike the sbatch script, which bash interprets), so
+    passing it through unresolved would make apptainer look for a file
+    literally named "${CHERIMOYA_APPTAINER_IMAGE:-...}".
+    """
+    if value != APPTAINER_IMAGE:
+        return value
+    default = f"/scratch/users/{os.environ.get('USER', '')}/apptainer/cherimoya.sif"
+    return os.environ.get("CHERIMOYA_APPTAINER_IMAGE", default)
 
 
 def main():
@@ -65,10 +88,37 @@ def main():
         "--local",
         action="store_true",
         help=(
-            "run each experiment directly in the foreground with inherited "
-            "stdout/stderr via `uv run --extra cherimoya`, instead of "
+            "run each experiment directly in the foreground, instead of "
             "submitting SLURM jobs; ignores SLURM resource flags "
-            "(--gpus/--partition/--cpus-per-task/--mem/--time)"
+            "(--gpus/--partition/--cpus-per-task/--mem/--time); combined "
+            "with --dry-run, prints one command per experiment instead of "
+            "running them (e.g. to pipe into simple_gpu_scheduler)"
+        ),
+    )
+    parser.add_argument(
+        "--native",
+        action="store_true",
+        help=(
+            "use SRCC's py-pytorch/py-triton Sherlock modules instead of "
+            "the Apptainer image (default) -- either for SLURM submission "
+            "or, combined with --local, for foreground execution via "
+            "`uv run --extra cherimoya`"
+        ),
+    )
+    parser.add_argument(
+        "--apptainer-image",
+        type=str,
+        default=APPTAINER_IMAGE,
+        help=f"path to the Cherimoya Apptainer .sif image (default: {APPTAINER_IMAGE})",
+    )
+    parser.add_argument(
+        "--apptainer-bind",
+        action="append",
+        default=None,
+        help=(
+            "path to bind into the Apptainer container; may be repeated "
+            "(default: the repo root -- add more if models/data live "
+            "outside it, e.g. on scratch or oak)"
         ),
     )
     parser.add_argument(
@@ -120,6 +170,12 @@ def main():
     parser.add_argument("--mem", type=str, default="32G")
     parser.add_argument("--time", type=str, default="6:00:00")
     args = parser.parse_args()
+    use_apptainer = not args.native
+    local_apptainer_image = (
+        resolve_local_apptainer_image(args.apptainer_image)
+        if args.local and use_apptainer
+        else None
+    )
 
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
@@ -137,8 +193,13 @@ def main():
     log_dir = REPO_ROOT / "logs" / "cherimoya_benchmark"
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    apptainer_binds = args.apptainer_bind or [str(REPO_ROOT)]
+    apptainer_bind_args = " ".join(f"--bind {shlex.quote(path)}" for path in apptainer_binds)
+
+    # Only the native path needs a host-side NUMBA_CACHE_DIR override; the
+    # Apptainer image sets its own via %environment.
     local_env = None
-    if args.local:
+    if args.local and not use_apptainer:
         local_env = dict(os.environ)
         local_env.setdefault("NUMBA_CACHE_DIR", str(LOCAL_NUMBA_CACHE_DIR))
         Path(local_env["NUMBA_CACHE_DIR"]).mkdir(parents=True, exist_ok=True)
@@ -172,22 +233,38 @@ def main():
             continue
 
         if args.local:
-            cmd = [
-                "uv",
-                "run",
-                "--project",
-                str(REPO_ROOT),
-                "--extra",
-                "cherimoya",
-                "--frozen",
-                "python3",
-                str(BENCHMARK_SCRIPT),
-                "-e",
-                exp_id,
-                "--model-dir",
-                str(model_dir),
-                "-v",
-            ]
+            if use_apptainer:
+                cmd = [
+                    "apptainer",
+                    "exec",
+                    "--nv",
+                    *[part for path in apptainer_binds for part in ("--bind", path)],
+                    local_apptainer_image,
+                    "python",
+                    str(BENCHMARK_SCRIPT),
+                    "-e",
+                    exp_id,
+                    "--model-dir",
+                    str(model_dir),
+                    "-v",
+                ]
+            else:
+                cmd = [
+                    "uv",
+                    "run",
+                    "--project",
+                    str(REPO_ROOT),
+                    "--extra",
+                    "cherimoya",
+                    "--frozen",
+                    "python3",
+                    str(BENCHMARK_SCRIPT),
+                    "-e",
+                    exp_id,
+                    "--model-dir",
+                    str(model_dir),
+                    "-v",
+                ]
             if args.save_output:
                 cmd.append("--save-output")
             if args.benchmark_args:
@@ -210,14 +287,45 @@ def main():
             continue
 
         job_name = f"cherimoya_bench_{exp_id}"
-        benchmark_cmd = (
-            f'python3 "$BENCHMARK_SCRIPT" -e {shlex.quote(exp_id)}'
-            f" --model-dir {shlex.quote(str(model_dir))} -v"
-        )
+        extra_benchmark_args = ""
         if args.save_output:
-            benchmark_cmd += " --save-output"
+            extra_benchmark_args += " --save-output"
         if args.benchmark_args:
-            benchmark_cmd += f" {args.benchmark_args}"
+            extra_benchmark_args += f" {args.benchmark_args}"
+
+        # Built as a flat list of lines (rather than a nested triple-quoted
+        # block) and joined with the same 12-space indent as the rest of the
+        # template below, so the final textwrap.dedent() still finds a
+        # common prefix across every line -- a mismatched indent here leaves
+        # the whole script indented, which sbatch rejects as "not a batch
+        # script".
+        if use_apptainer:
+            setup_lines = [
+                f"BENCHMARK_SCRIPT={shlex.quote(str(BENCHMARK_SCRIPT))}",
+                f'APPTAINER_IMAGE="{args.apptainer_image}"',
+                "",
+            ]
+            benchmark_cmd = (
+                f'apptainer exec --nv {apptainer_bind_args} "$APPTAINER_IMAGE" '
+                f'python "$BENCHMARK_SCRIPT" -e {shlex.quote(exp_id)} '
+                f"--model-dir {shlex.quote(str(model_dir))} -v{extra_benchmark_args}"
+            )
+        else:
+            setup_lines = [
+                f'mkdir -p "{NUMBA_CACHE_DIR}"',
+                f'export NUMBA_CACHE_DIR="{NUMBA_CACHE_DIR}"',
+                f"BENCHMARK_SCRIPT={shlex.quote(str(BENCHMARK_SCRIPT))}",
+                "",
+                "ml load math",
+                f"ml load {PYTORCH_MODULE} {TRITON_MODULE}",
+                f'source "{VENV_DIR}/bin/activate"',
+                "",
+            ]
+            benchmark_cmd = (
+                f'python3 "$BENCHMARK_SCRIPT" -e {shlex.quote(exp_id)} '
+                f"--model-dir {shlex.quote(str(model_dir))} -v{extra_benchmark_args}"
+            )
+        setup_block = "\n            ".join(setup_lines)
 
         sbatch_script = textwrap.dedent(f"""\
             #!/bin/bash -l
@@ -234,14 +342,7 @@ def main():
             #SBATCH --output={log_dir}/{job_name}.out
             #SBATCH --error={log_dir}/{job_name}.err
 
-            mkdir -p "{NUMBA_CACHE_DIR}"
-            export NUMBA_CACHE_DIR="{NUMBA_CACHE_DIR}"
-            BENCHMARK_SCRIPT={shlex.quote(str(BENCHMARK_SCRIPT))}
-
-            ml load math
-            ml load {PYTORCH_MODULE} {TRITON_MODULE}
-            source "{VENV_DIR}/bin/activate"
-
+            {setup_block}
             nvidia-smi -L
             {benchmark_cmd}
         """)

@@ -23,35 +23,39 @@ Cherimoya's fit() writes exactly once, at the very end of training --
 since it's overwritten throughout training whenever validation correlation
 improves and can already exist after a single epoch.
 
-By default, jobs run natively on Sherlock using SRCC's py-pytorch/py-triton
-modules (see src/cherimoya/sherlock_native/). That module pair is Python
-3.14-only, which makes torch.compile() unconditionally raise (see the
-comment above `compile_supported` in fit_cherimoya.py) until Sherlock ships
-a torch>=2.10 build.
-
---apptainer runs each fold via `apptainer exec --nv` against the Cherimoya
-Apptainer image instead (see src/cherimoya/apptainer/) -- its
+By default, jobs run via `apptainer exec --nv` against the Cherimoya
+Apptainer image (see src/cherimoya/apptainer/) -- its
 pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime base image bundles Python 3.12
-and torch 2.13.0, so it isn't subject to that restriction and trains with
-torch.compile enabled. check_gpu.py has confirmed this path works on real
-Sherlock hardware across every GPU SKU tested (see
-src/cherimoya/apptainer/README.md).
+and torch 2.13.0, so it trains with torch.compile enabled. check_gpu.py has
+confirmed this path works on real Sherlock hardware across every GPU SKU
+tested (see src/cherimoya/apptainer/README.md).
+
+--native runs each fold natively instead, using SRCC's py-pytorch/py-triton
+Sherlock modules (see src/cherimoya/sherlock_native/). That module pair is
+Python 3.14-only, which makes torch.compile() unconditionally raise (see the
+comment above `compile_supported` in fit_cherimoya.py) until Sherlock ships
+a torch>=2.10 build -- prefer the Apptainer default unless you have a
+specific reason to fall back to native modules.
 
 --local skips SLURM entirely and runs each fold directly in the foreground
-with inherited stdout/stderr, via `uv run --extra cherimoya` instead of the
-Sherlock modules/venv or Apptainer -- useful on a GPU box you already have a
-shell on (e.g. a lab cluster), where a normal Python also lets torch.compile
-work. SLURM resource flags (--gpus/--partition/--cpus-per-task/--mem/--time)
-are ignored in this mode, and it cannot be combined with --apptainer.
+with inherited stdout/stderr, instead of submitting SLURM jobs -- useful on
+a GPU box you already have a shell on (e.g. a lab cluster). It still uses
+Apptainer by default (add --native for a `uv run --extra cherimoya`
+invocation instead, e.g. if that box has no Apptainer image built). SLURM
+resource flags (--gpus/--partition/--cpus-per-task/--mem/--time) are ignored
+in this mode. Combined with --dry-run, --local prints one runnable command
+per fold instead of executing them -- pipe that into something like
+`simple_gpu_scheduler` to fan a personal multi-GPU box out in parallel
+instead of running folds one at a time.
 
 Usage:
     python src/cherimoya/fit/launch.py                    # submit one job per experiment, 7 folds each
     python src/cherimoya/fit/launch.py --dry-run           # print sbatch scripts without submitting
     python src/cherimoya/fit/launch.py --time 48:00:00 --mem 32G --partition gpu
     python src/cherimoya/fit/launch.py --min-reads 20000000  # only well-covered experiments
-    python src/cherimoya/fit/launch.py --apptainer         # run via the Apptainer image, compiled
+    python src/cherimoya/fit/launch.py --native            # run via SRCC's native modules instead of Apptainer
     python src/cherimoya/fit/launch.py --local             # run in the foreground, no SLURM
-    python src/cherimoya/fit/launch.py --local --dry-run   # print local commands without running
+    python src/cherimoya/fit/launch.py --local --dry-run   # print one command per fold, e.g. for simple_gpu_scheduler
 """
 
 import argparse
@@ -82,6 +86,20 @@ APPTAINER_IMAGE = "${CHERIMOYA_APPTAINER_IMAGE:-/scratch/users/${USER}/apptainer
 LOCAL_NUMBA_CACHE_DIR = REPO_ROOT / ".cache" / "numba"
 
 
+def resolve_local_apptainer_image(value):
+    """Resolve APPTAINER_IMAGE's bash ${VAR:-default} template to a real path.
+
+    --local runs commands via subprocess.run() directly, with no shell to
+    expand that syntax (unlike the sbatch script, which bash interprets), so
+    passing it through unresolved would make apptainer look for a file
+    literally named "${CHERIMOYA_APPTAINER_IMAGE:-...}".
+    """
+    if value != APPTAINER_IMAGE:
+        return value
+    default = f"/scratch/users/{os.environ.get('USER', '')}/apptainer/cherimoya.sif"
+    return os.environ.get("CHERIMOYA_APPTAINER_IMAGE", default)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -93,22 +111,24 @@ def main():
         "--local",
         action="store_true",
         help=(
-            "run each fold directly in the foreground with inherited "
-            "stdout/stderr via `uv run --extra cherimoya`, instead of "
+            "run each fold directly in the foreground, instead of "
             "submitting SLURM jobs; ignores SLURM resource flags "
-            "(--gpus/--partition/--cpus-per-task/--mem/--time); cannot be "
-            "combined with --apptainer"
+            "(--gpus/--partition/--cpus-per-task/--mem/--time); combined "
+            "with --dry-run, prints one command per fold instead of "
+            "running them (e.g. to pipe into simple_gpu_scheduler)"
         ),
     )
     parser.add_argument(
-        "--apptainer",
+        "--native",
         action="store_true",
         help=(
-            "run each fold via `apptainer exec --nv` against the Cherimoya "
-            "Apptainer image (see src/cherimoya/apptainer/), instead of "
-            "SRCC's py-pytorch/py-triton modules -- its Python 3.12 + "
-            "torch 2.13.0 build trains with torch.compile enabled, unlike "
-            "the Python-3.14-only native module (see fit_cherimoya.py)"
+            "use SRCC's py-pytorch/py-triton Sherlock modules instead of "
+            "the Apptainer image (default) -- either for SLURM submission "
+            "or, combined with --local, for foreground execution via "
+            "`uv run --extra cherimoya`. The native module pair is "
+            "Python-3.14-only, which disables torch.compile (see "
+            "fit_cherimoya.py); prefer the Apptainer default unless you "
+            "have a specific reason to fall back"
         ),
     )
     parser.add_argument(
@@ -170,8 +190,12 @@ def main():
         help="extra arguments forwarded to fit_cherimoya.py (e.g. '--max-epochs 100')",
     )
     args = parser.parse_args()
-    if args.local and args.apptainer:
-        parser.error("--local and --apptainer cannot be combined")
+    use_apptainer = not args.native
+    local_apptainer_image = (
+        resolve_local_apptainer_image(args.apptainer_image)
+        if args.local and use_apptainer
+        else None
+    )
 
     # Load experiment list
     with open(CONFIG_PATH) as f:
@@ -195,8 +219,10 @@ def main():
     apptainer_binds = args.apptainer_bind or [str(REPO_ROOT)]
     apptainer_bind_args = " ".join(f"--bind {shlex.quote(path)}" for path in apptainer_binds)
 
+    # Only the native path needs a host-side NUMBA_CACHE_DIR override; the
+    # Apptainer image sets its own via %environment.
     local_env = None
-    if args.local:
+    if args.local and not use_apptainer:
         local_env = dict(os.environ)
         local_env.setdefault("NUMBA_CACHE_DIR", str(LOCAL_NUMBA_CACHE_DIR))
         Path(local_env["NUMBA_CACHE_DIR"]).mkdir(parents=True, exist_ok=True)
@@ -235,23 +261,44 @@ def main():
 
         if args.local:
             for fold in folds_to_run:
-                cmd = [
-                    "uv",
-                    "run",
-                    "--project",
-                    str(REPO_ROOT),
-                    "--extra",
-                    "cherimoya",
-                    "--frozen",
-                    "python3",
-                    str(FIT_SCRIPT),
-                    "-e",
-                    exp_id,
-                    "--fold",
-                    str(fold),
-                    "-v",
-                    *shlex.split(args.fit_args),
-                ]
+                if use_apptainer:
+                    cmd = [
+                        "apptainer",
+                        "exec",
+                        "--nv",
+                        *[
+                            part
+                            for path in apptainer_binds
+                            for part in ("--bind", path)
+                        ],
+                        local_apptainer_image,
+                        "python",
+                        str(FIT_SCRIPT),
+                        "-e",
+                        exp_id,
+                        "--fold",
+                        str(fold),
+                        "-v",
+                        *shlex.split(args.fit_args),
+                    ]
+                else:
+                    cmd = [
+                        "uv",
+                        "run",
+                        "--project",
+                        str(REPO_ROOT),
+                        "--extra",
+                        "cherimoya",
+                        "--frozen",
+                        "python3",
+                        str(FIT_SCRIPT),
+                        "-e",
+                        exp_id,
+                        "--fold",
+                        str(fold),
+                        "-v",
+                        *shlex.split(args.fit_args),
+                    ]
                 if args.dry_run:
                     print(shlex.join(cmd))
                     continue
@@ -277,7 +324,7 @@ def main():
         # common prefix across every line -- a mismatched indent here leaves
         # the whole script indented, which sbatch rejects as "not a batch
         # script" (see the historical version of this comment in git log).
-        if args.apptainer:
+        if use_apptainer:
             setup_lines = [
                 f"FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}",
                 f'APPTAINER_IMAGE="{args.apptainer_image}"',

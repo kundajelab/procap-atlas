@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Submit Cherimoya n_filters sweep benchmark jobs.
+"""DEPRECATED: this sweep predates the current Cherimoya v0.2.0 models and
+training defaults; we're not continuing this investigation with them. Kept
+for reference only -- see src/cherimoya/README.md's Architecture Sweep
+section.
+
+Submit Cherimoya n_filters sweep benchmark jobs.
 
 Each submitted job is an 8-task SLURM array, one task for each trained
 n_filters model directory for a single experiment.

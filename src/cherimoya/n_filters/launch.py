@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Submit Cherimoya n_filters sweep jobs as one SLURM job per experiment.
+"""DEPRECATED: this sweep predates the current Cherimoya v0.2.0 models and
+training defaults; we're not continuing this investigation with them. Kept
+for reference only -- see src/cherimoya/README.md's Architecture Sweep
+section.
+
+Submit Cherimoya n_filters sweep jobs as one SLURM job per experiment.
 
 Each submitted job loops over all n_filters values and folds for a single
 experiment. This keeps the number of queued SLURM jobs bounded by the number of
