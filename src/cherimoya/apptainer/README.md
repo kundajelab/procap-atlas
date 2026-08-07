@@ -1,10 +1,10 @@
 # Building the Cherimoya Apptainer Image
 
-**On Sherlock, this image is an untested candidate fix, not a confirmed
-path — verify with `check_gpu.py` (see "Running" below) before relying on it
-for real jobs.** [`../sherlock_native/`](../sherlock_native/README.md)
-remains the *confirmed*-working Sherlock option (SRCC's own `py-pytorch`/
-`py-triton` Lmod modules).
+**Confirmed working on Sherlock**: `check_gpu.py` (see "Running" below) has
+passed on all tested GPU SKUs (`A100_PCIE`, `A100_SXM4`, `A40`, `H100_SXM5`,
+`H200_SXM5`, `L40S`, `RTX_3090`). [`../sherlock_native/`](../sherlock_native/README.md)
+(SRCC's own `py-pytorch`/`py-triton` Lmod modules) is still a valid
+alternative, but this image is no longer just a candidate fix.
 
 `cherimoya.def` used to bootstrap from `nvcr.io/nvidia/pytorch:26.05-py3`
 (CUDA 13.2), which is confirmed broken on Sherlock — its GPU driver caps out
@@ -16,9 +16,8 @@ suggested by SRCC support: CUDA 12.6 is the same version Sherlock's
 driver's compatibility mechanism (see
 [`../sherlock_native/README.md`](../sherlock_native/README.md)), and torch
 2.13.0 comfortably satisfies Cherimoya's `torch>=2.9.0` requirement (needed
-for `torch.optim.Muon`). This hasn't yet been build-and-run-tested on real
-Sherlock hardware, though, so treat it as promising rather than proven until
-`check_gpu.py` (or a real training job) confirms it.
+for `torch.optim.Muon`). `check_gpu.py` has since confirmed this actually
+works on real Sherlock hardware, across every SKU tested.
 
 This was originally a Sherlock HPC workaround: Sherlock's compiler and OS are
 very old, which makes installing newer packages a major challenge, and the

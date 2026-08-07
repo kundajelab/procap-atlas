@@ -76,9 +76,9 @@ resource requests before using these launchers on another cluster.
 Apptainer image (see [`apptainer/`](apptainer/README.md)) instead of the
 native modules. That image's Python 3.12 + torch 2.13.0 build isn't subject
 to the native module's Python-3.14 `torch.compile` restriction (see
-`fit_cherimoya.py`'s `compile_supported`), so training runs compiled. This
-path is unverified on real Sherlock hardware as of this writing — confirm
-with `apptainer/check_gpu.py` before relying on it for real jobs.
+`fit_cherimoya.py`'s `compile_supported`), so training runs compiled.
+`apptainer/check_gpu.py` has confirmed this path works on real Sherlock
+hardware across every GPU SKU tested.
 
 `launch.py` submits one SLURM job per experiment, training that experiment's
 folds sequentially within the job (folds with a completed model are skipped,

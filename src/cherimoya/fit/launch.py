@@ -33,9 +33,9 @@ a torch>=2.10 build.
 Apptainer image instead (see src/cherimoya/apptainer/) -- its
 pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime base image bundles Python 3.12
 and torch 2.13.0, so it isn't subject to that restriction and trains with
-torch.compile enabled. This path is unverified on real Sherlock hardware as
-of this writing (see src/cherimoya/apptainer/README.md's banner) -- confirm
-with check_gpu.py before relying on it for real jobs.
+torch.compile enabled. check_gpu.py has confirmed this path works on real
+Sherlock hardware across every GPU SKU tested (see
+src/cherimoya/apptainer/README.md).
 
 --local skips SLURM entirely and runs each fold directly in the foreground
 with inherited stdout/stderr, via `uv run --extra cherimoya` instead of the

@@ -23,10 +23,12 @@ for the same Python 3.14, satisfying Cherimoya's `triton>=3.5.1` exactly.
 
 `../apptainer/`'s `cherimoya.def` now bootstraps from
 `pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime` instead, which uses the same
-CUDA 12.6 the driver can bridge — but that switch hasn't been build-tested on
-real Sherlock hardware yet (see its README's banner). Until it's verified
-with `check_gpu.py`, this native path remains the *confirmed*-working option
-on Sherlock.
+CUDA 12.6 the driver can bridge — `check_gpu.py` has since confirmed this
+works on real Sherlock hardware across every SKU tested (see its README).
+Both this native path and the Apptainer image are now confirmed-working
+options on Sherlock; the Apptainer image additionally supports
+`torch.compile` (see [`../README.md`](../README.md)'s Training section for
+the compile tradeoffs of each mode).
 
 ## Setup
 
