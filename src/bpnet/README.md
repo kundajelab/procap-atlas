@@ -64,6 +64,17 @@ tools, then run Python entrypoints with `uv run --extra sherlock --frozen`
 script.py`, not after); the conda
 environment is not the Python dependency source of truth.
 
+`launch.py` submits one SLURM job per (experiment, fold) pair, each trained
+with `--requeue`, so a pre-empted job (`akundaje`/`owners` are preemptible)
+is automatically resubmitted by SLURM. Since bpnet-lite's `fit()` has no
+resume support, a requeued job just retrains that fold from epoch 0, but
+first re-checks for a completed model in case the job actually finished just
+before being marked pre-empted. "Completed" means a
+`{experiment}.fold{fold}.final.torch` file, written exactly once at the very
+end of training; the plain `.torch` file (no `.final`) is overwritten
+throughout training whenever validation loss improves, so it can already
+exist after a single epoch and would wrongly look "done."
+
 ## Benchmarking
 
 ```bash
