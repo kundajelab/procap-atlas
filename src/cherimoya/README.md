@@ -41,6 +41,13 @@ python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0 --n-filters 19
 
 The training script uses `torch.optim.Muon` for 2D weight matrices and AdamW for
 the remaining parameters, with warmup plus cosine learning-rate schedules.
+`--decay-epochs N` decouples the cosine decay's length from `--max-epochs`
+(default: decay across the whole run past warmup, so it finishes exactly
+when training ends). Setting it shorter anneals the LR to its floor early
+and then holds flat for the rest of training, instead of stretching the
+decay across the full epoch budget -- e.g. `--max-epochs 50 --decay-epochs
+18` decays as fast as the historical `max_epochs=20` config did, while still
+giving the model 50 epochs total.
 Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
 
@@ -186,3 +193,22 @@ The first Cherimoya models were trained while `cherimoya` was in early
 development, using commit `69f16dc7ff48ad094aafd4b93433972181c65d50`. Check out
 that commit only if you need to reproduce that initial model set. A second set
 of models were trained using `c0cbabe26cabfb5012f4fc5328af832e32f9ed04`.
+
+## Loss Weight Inspection
+
+```bash
+python src/cherimoya/inspect_loss_weights.py
+python src/cherimoya/inspect_loss_weights.py --configs current _20_5_2
+python src/cherimoya/inspect_loss_weights.py --model-dir-root /scratch/users/ayhe/procap-atlas/models/cherimoya
+```
+
+`Cherimoya.fit()` learns a Kendall uncertainty weighting between profile and
+count loss (`lw0`/`lw1`), which freezes once its gradient drops below a fixed
+threshold. `inspect_loss_weights.py` loads saved checkpoints directly
+(CPU-only -- no GPU needed, but still needs `cherimoya`/`triton` importable,
+so run it in a Cherimoya environment) and reports `lw0`, `lw1`, the implied
+`w0/w1` ratio, and freeze status, for both the best (`*.torch`, what
+`benchmark_cherimoya.py` actually loads) and final (`*.final.torch`)
+checkpoint per fold. Useful for testing whether a training-length change
+shifts benchmark metrics via this learned weighting drifting differently
+across configs, rather than (or in addition to) the LR schedule.

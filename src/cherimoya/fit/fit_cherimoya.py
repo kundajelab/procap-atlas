@@ -27,6 +27,7 @@ for training.
 
 Usage:
     python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0
+    python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0 --max-epochs 50 --decay-epochs 18
 """
 
 import argparse
@@ -155,6 +156,20 @@ def main():
     parser.add_argument("--n-layers", type=int, default=9)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--max-epochs", type=int, default=50)
+    parser.add_argument(
+        "--decay-epochs",
+        type=int,
+        default=None,
+        help=(
+            "length of the cosine LR decay, in epochs, decoupled from "
+            "--max-epochs (default: None, meaning max_epochs - "
+            "num_warmup_epochs, i.e. decay finishes exactly when training "
+            "ends -- the historical behavior). Setting this shorter than "
+            "max_epochs - num_warmup_epochs anneals the LR to eta_min "
+            "early and then holds it flat for the remaining epochs, "
+            "instead of stretching the decay across the full run"
+        ),
+    )
     parser.add_argument("--early-stopping", type=int, default=None)
     parser.add_argument("--max-jitter", type=int, default=500)
     parser.add_argument("--random-state", type=int, default=None)
@@ -397,28 +412,42 @@ def main():
         momentum=params["lw_momentum"],
     )
 
-    # Warmup + cosine decay schedules
+    # Warmup + cosine decay schedules. --decay-epochs decouples the cosine
+    # decay's length from max_epochs (default: None, i.e. decay across the
+    # whole run past warmup, the historical behavior). When decay_epochs is
+    # shorter than max_epochs - num_warmup_epochs, a third ConstantLR stage
+    # holds the LR flat at eta_min for the remaining epochs -- CosineAnnealingLR
+    # is periodic, so without this stage the LR would start rising again past
+    # T_max instead of staying at its floor.
     num_warmup_epochs = 5
     max_epochs = params["max_epochs"]
+    eta_min = 1e-5
+    decay_epochs = args.decay_epochs or max(1, max_epochs - num_warmup_epochs)
+    hold_epochs = max(0, max_epochs - num_warmup_epochs - decay_epochs)
     num_warmup_iters = len(train_data_loader) * num_warmup_epochs
-    num_decay_iters = len(train_data_loader) * max(1, max_epochs - num_warmup_epochs)
+    num_decay_iters = len(train_data_loader) * decay_epochs
+    num_hold_iters = len(train_data_loader) * hold_epochs
 
-    muon_scheduler = SequentialLR(
-        muon_optimizer,
-        schedulers=[
-            LinearLR(muon_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
-            CosineAnnealingLR(muon_optimizer, T_max=num_decay_iters, eta_min=1e-5),
-        ],
-        milestones=[num_warmup_iters],
-    )
-    adam_scheduler = SequentialLR(
-        adam_optimizer,
-        schedulers=[
-            LinearLR(adam_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
-            CosineAnnealingLR(adam_optimizer, T_max=num_decay_iters, eta_min=1e-5),
-        ],
-        milestones=[num_warmup_iters],
-    )
+    def build_lr_scheduler(optimizer, base_lr):
+        schedulers = [
+            LinearLR(optimizer, start_factor=0.01, total_iters=num_warmup_iters),
+            CosineAnnealingLR(optimizer, T_max=num_decay_iters, eta_min=eta_min),
+        ]
+        milestones = [num_warmup_iters]
+        if num_hold_iters > 0:
+            # ConstantLR reverts to the optimizer's base_lr once total_iters
+            # is reached (it's designed for warmup, not an indefinite hold),
+            # so total_iters must comfortably exceed num_hold_iters -- setting
+            # it to exactly num_hold_iters would snap the LR back up to
+            # base_lr right at the last step of training.
+            schedulers.append(
+                ConstantLR(optimizer, factor=eta_min / base_lr, total_iters=num_hold_iters * 10 + 10**6)
+            )
+            milestones.append(num_warmup_iters + num_decay_iters)
+        return SequentialLR(optimizer, schedulers=schedulers, milestones=milestones)
+
+    muon_scheduler = build_lr_scheduler(muon_optimizer, params["muon_lr"])
+    adam_scheduler = build_lr_scheduler(adam_optimizer, params["adam_lr"])
     # Linear warmup then flat (no cosine decay) for the Kendall loss weights.
     lw_scheduler = SequentialLR(
         lw_optimizer,
