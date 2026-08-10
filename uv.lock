@@ -252,8 +252,8 @@ wheels = [
 
 [[package]]
 name = "cherimoya"
-version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
+version = "0.2.1"
+source = { git = "https://github.com/jmschrei/cherimoya.git?rev=8e4283fe56db4a29418c1d8119da3240d7c709ba#8e4283fe56db4a29418c1d8119da3240d7c709ba" }
 dependencies = [
     { name = "bam2bw", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "bpnet-lite", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
@@ -268,10 +268,6 @@ dependencies = [
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "tqdm", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "triton", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/17/80830a938ea2902bc33976df15034528d19bb0ba10b5a88594b651360074/cherimoya-0.2.0.tar.gz", hash = "sha256:981810af21b8d923643ce612de7a8c136ef132cbedf1e0c657b38b2880213d1b", size = 118498, upload-time = "2026-07-14T13:54:21.826Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/ea/4e8a59563fe0706953cf9bd516065b0bdbf2b2593484087efdad994eec48/cherimoya-0.2.0-py3-none-any.whl", hash = "sha256:fc33ab1ed7541ebd5b340f52a972979de77298243d658edcdb8ccd7dc14daa14", size = 89668, upload-time = "2026-07-14T13:54:20.87Z" },
 ]
 
 [[package]]
@@ -1774,7 +1770,7 @@ notebook = [
 [package.metadata]
 requires-dist = [
     { name = "bpnet-lite", specifier = ">=1.0.0" },
-    { name = "cherimoya", marker = "sys_platform == 'linux' and extra == 'cherimoya'", specifier = "==0.2.0" },
+    { name = "cherimoya", marker = "sys_platform == 'linux' and extra == 'cherimoya'", git = "https://github.com/jmschrei/cherimoya.git?rev=8e4283fe56db4a29418c1d8119da3240d7c709ba" },
     { name = "huggingface-hub", marker = "extra == 'hub'" },
     { name = "joblib" },
     { name = "jupyter-client" },

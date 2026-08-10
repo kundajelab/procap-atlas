@@ -34,11 +34,14 @@ From: pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
     python -m pip install --break-system-packages --no-deps bpnet-lite
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
-    # the base image's torch 2.13.0 build with a fresh PyPI resolve. Installed
-    # from the v0.2.0 git tag rather than the PyPI wheel; cherimoya has no
-    # compiled extensions, so this is equivalent, and matches how prior
-    # cherimoya versions were installed here.
-    python -m pip install --break-system-packages --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@v0.2.0"
+    # the base image's torch 2.13.0 build with a fresh PyPI resolve. Pinned to
+    # an exact commit rather than the "v0.2.0" tag or the PyPI wheel: the
+    # v0.2.0 tag was force-moved upstream to this commit (adds EMA weight
+    # averaging and switches checkpoint selection to valid_count_corr instead
+    # of a combined loss), but the PyPI 0.2.0 release predates that rewrite
+    # and still has the old behavior -- a tag can move again, so pin the
+    # commit directly for reproducibility.
+    python -m pip install --break-system-packages --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba"
 
     # Optional but useful for source/debugging
     python -m pip install --break-system-packages pytest ipython jupyter pandas polars pyBigWig pysam

@@ -42,7 +42,13 @@ sherlock = [
 # Apptainer on Sherlock bypasses this lock entirely; use this extra for a
 # native (non-Apptainer) Cherimoya install on other, modern-glibc Linux
 # hardware. See src/cherimoya/apptainer/ for the Sherlock path.
-cherimoya = ["cherimoya==0.2.0; sys_platform == 'linux'"]
+# Pinned to an exact commit rather than PyPI's 0.2.0 release or the "v0.2.0"
+# git tag: the tag was force-moved upstream to this commit (adds EMA weight
+# averaging, switches checkpoint selection to valid_count_corr instead of a
+# combined loss), but the PyPI 0.2.0 wheel predates that rewrite and still
+# has the old behavior -- see src/cherimoya/apptainer/cherimoya.def and
+# src/cherimoya/sherlock_native/setup_env.sh, pinned to the same commit.
+cherimoya = ["cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba ; sys_platform == 'linux'"]
 # MotifCompendium and personal_bpnet are external/local research dependencies
 # until resolvable install sources are confirmed.
 # Metaformer / promoterai-torch is still in development and will be added

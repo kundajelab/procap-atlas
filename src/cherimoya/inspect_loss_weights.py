@@ -3,22 +3,35 @@
 across archived training-hyperparameter configs.
 
 Cherimoya.fit() learns per-fold weights balancing profile loss (lw0) against
-count loss (lw1): w0 = 1/(2*lw0**2), w1 = 1/(2*lw1**2). Both start at 1.0 and
-are optimized by their own SGD optimizer until
-torch.abs(self.lw0.grad).sum() < 1, at which point they're frozen for the
-rest of training (see cherimoya.py's fit()). The upstream author's
-hypothesis for why longer training (uncapped max_epochs, no early_stopping)
-shifts benchmark metrics toward profile shape at some cost to count
-correlation: profile loss has larger magnitude, so the automatic weighting
-can keep "slowly squeezing" w0 up relative to w1 before freezing, given
-enough epochs -- a longer run gives it more room to drift before the
-threshold check catches it.
+count loss (lw1) during training: w0 = 1/(2*lw0**2), w1 = 1/(2*lw1**2). Both
+start at 1.0 and are optimized by their own SGD optimizer until
+torch.abs(self.lw0.grad).mean() < 1, at which point they're frozen for the
+rest of training (see cherimoya.py's fit(), pinned commit
+8e4283fe56db4a29418c1d8119da3240d7c709ba -- see cherimoya.def/setup_env.sh
+for why an exact commit rather than a tag or PyPI version).
+
+This was written to test the upstream author's hypothesis for why longer
+training (uncapped max_epochs, no early_stopping) shifts benchmark metrics
+toward profile shape at some cost to count correlation: profile loss has
+larger raw magnitude, so the automatic weighting could keep "slowly
+squeezing" w0 up relative to w1 before freezing, given enough epochs. That
+hypothesis did NOT hold up empirically: w0/w1 came back nearly identical
+(~0.025-0.028) across every config already benchmarked (20_5_2, 100_None_5,
+current), with best and final checkpoints matching almost exactly within
+each config -- these weights freeze very early and don't meaningfully drift
+regardless of run length. The loss weights are also not what selects the
+"best" checkpoint at all: fit() saves *.torch whenever
+valid_count_corr > best_corr (a bare validation-set count-correlation
+comparison, evaluated on EMA-averaged weights), not by loss. The
+count-metric regression is more likely explained by that selection rule
+itself getting more chances to overfit the validation set with more
+epochs/no early stopping, not by the loss weighting.
 
 This script loads saved checkpoints directly (CPU-only, no GPU needed) and
 reports lw0, lw1, the implied w0/w1 ratio, and whether each is frozen
 (requires_grad == False), for both the "best" (*.torch) and "final"
-(*.final.torch) checkpoint per fold -- the two can differ if freezing
-happens after the best-validation-loss epoch, which matters because
+(*.final.torch, EMA weights) checkpoint per fold -- the two can differ if
+freezing happens after the best-count-corr epoch, which matters because
 benchmark_cherimoya.py loads *.torch (best), not *.final.torch.
 
 Must run in a Cherimoya environment (needs triton importable, even though

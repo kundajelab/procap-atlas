@@ -80,7 +80,16 @@ python3 -m pip install \
 # --no-deps: both declare an unconditional macs3 dependency that nothing in
 # this repo calls, and would otherwise also try to replace the module-
 # provided torch/triton with PyPI builds.
-python3 -m pip install --no-deps bpnet-lite cherimoya==0.2.0
+#
+# cherimoya is pinned to an exact commit rather than PyPI's 0.2.0 release:
+# the upstream "v0.2.0" git tag was force-moved to a commit that adds EMA
+# weight averaging and switches checkpoint selection to valid_count_corr
+# instead of a combined loss, but the PyPI 0.2.0 wheel predates that rewrite
+# and still has the old behavior. Pinning the commit directly (matching
+# src/cherimoya/apptainer/cherimoya.def) keeps this path on the same
+# algorithm instead of silently training under different code.
+python3 -m pip install --no-deps bpnet-lite
+python3 -m pip install --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba"
 
 echo "Cherimoya native Sherlock environment ready at $VENV_DIR"
 echo "Activate it in future sessions with:"
