@@ -170,7 +170,17 @@ def main():
             "instead of stretching the decay across the full run"
         ),
     )
-    parser.add_argument("--early-stopping", type=int, default=None)
+    parser.add_argument(
+        "--early-stopping",
+        type=int,
+        default=5,
+        help=(
+            "stop after this many consecutive epochs without a new best "
+            "valid_count_corr (default: 5, matching the historical "
+            "max_epochs=20 config). Pass a large number (e.g. 999999) to "
+            "effectively disable it and train the full --max-epochs budget"
+        ),
+    )
     parser.add_argument("--max-jitter", type=int, default=500)
     parser.add_argument("--random-state", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -265,7 +275,7 @@ def main():
         "lw_wd": 0.0,
         "lw_momentum": 0.9,
         "max_epochs": 50,
-        "early_stopping": None,
+        "early_stopping": 5,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
