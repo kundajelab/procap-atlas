@@ -28,6 +28,7 @@ for training.
 Usage:
     python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0
     python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0 --max-epochs 50 --decay-epochs 18
+    python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0 --max-epochs 20 --warmup-epochs 2
 """
 
 import argparse
@@ -157,15 +158,25 @@ def main():
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument(
+        "--warmup-epochs",
+        type=int,
+        default=5,
+        help=(
+            "length of the linear LR warmup, in epochs (default: 5). The "
+            "historical max_epochs=20 config used 2 -- pass --warmup-epochs 2 "
+            "to reproduce it exactly when also using --max-epochs 20"
+        ),
+    )
+    parser.add_argument(
         "--decay-epochs",
         type=int,
         default=None,
         help=(
             "length of the cosine LR decay, in epochs, decoupled from "
             "--max-epochs (default: None, meaning max_epochs - "
-            "num_warmup_epochs, i.e. decay finishes exactly when training "
+            "--warmup-epochs, i.e. decay finishes exactly when training "
             "ends -- the historical behavior). Setting this shorter than "
-            "max_epochs - num_warmup_epochs anneals the LR to eta_min "
+            "max_epochs - warmup_epochs anneals the LR to eta_min "
             "early and then holds it flat for the remaining epochs, "
             "instead of stretching the decay across the full run"
         ),
@@ -173,12 +184,16 @@ def main():
     parser.add_argument(
         "--early-stopping",
         type=int,
-        default=5,
+        default=None,
         help=(
             "stop after this many consecutive epochs without a new best "
-            "valid_count_corr (default: 5, matching the historical "
-            "max_epochs=20 config). Pass a large number (e.g. 999999) to "
-            "effectively disable it and train the full --max-epochs budget"
+            "valid_count_corr (default: None, training the full "
+            "--max-epochs budget). Tried re-enabling this at 5 (matching "
+            "the historical max_epochs=20 config) paired with both "
+            "decay_epochs=None and decay_epochs=15 -- both variants "
+            "underperformed disabled early stopping on every benchmark "
+            "metric (profile and count alike), so it stays off by default; "
+            "see performance_metrics/cherimoya/50_None_5* for the comparison"
         ),
     )
     parser.add_argument("--max-jitter", type=int, default=500)
@@ -275,7 +290,7 @@ def main():
         "lw_wd": 0.0,
         "lw_momentum": 0.9,
         "max_epochs": 50,
-        "early_stopping": 5,
+        "early_stopping": None,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
@@ -429,7 +444,7 @@ def main():
     # holds the LR flat at eta_min for the remaining epochs -- CosineAnnealingLR
     # is periodic, so without this stage the LR would start rising again past
     # T_max instead of staying at its floor.
-    num_warmup_epochs = 5
+    num_warmup_epochs = args.warmup_epochs
     max_epochs = params["max_epochs"]
     eta_min = 1e-5
     decay_epochs = args.decay_epochs or max(1, max_epochs - num_warmup_epochs)
