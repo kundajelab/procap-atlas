@@ -274,11 +274,14 @@ Run clustering from the PRO-cap atlas repo after MoDISco outputs are available:
 
 ```bash
 python src/bpnet/motifcompendium/cluster_motifs.py
-python src/bpnet/motifcompendium/cluster_motifs_all.py
 ```
 
+`cluster_motifs_filtered.py` is unused/exploration-only (its entropy-based
+filter killed too many real motifs) and kept for reference; `cluster_motifs.py`
+is the pipeline in active use, and its output feeds Hit Calling below.
+
 Outputs include similarity distributions and clustered motif reports under
-`motifcompendium/`. The all-motifs pipeline writes a full TSV plus a lightweight
+`motifcompendium/bpnet/`. The pipeline writes a full TSV plus a lightweight
 summary HTML for every cluster, with links to exported forward/reverse SVG logo
 files for every cluster. To keep embedded-logo HTML files manageable, the main
 logo report is capped to the top 500 clusters by `total_seqlets` by default; use
@@ -352,7 +355,7 @@ default trimming.
 ```bash
 python src/bpnet/hitcall/compute_trim_floor.py --head profile
 python src/bpnet/hitcall/compute_trim_floor.py --head count --min-len 8
-python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet_all_motifs/motifcompendium_profile_trim_coords_min6bp.tsv
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet/motifcompendium_profile_trim_coords_min6bp.tsv
 ```
 
 After `call_hits_bpnet.py`, run `report_bpnet.py` to QC and filter hits by
