@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""Submit SLURM jobs to convert BPNet attribution NPZ files to BigWigs.
+"""Submit SLURM jobs to call Fi-NeMo motif hits from BPNet attributions.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
-sbatch job per (experiment, head) pair via attribution_to_bigwig.py.
+sbatch job per (experiment, head) pair via call_hits_bpnet.py, calling hits
+against the shared MotifCompendium cluster-average motif set for each head.
 
-Jobs are skipped if the output BigWig already exists or if the required
-attribution/OHE NPZ files are missing.
+Jobs are skipped if the output hits.tsv already exists or if the required
+OHE/attribution files or the MotifCompendium cluster-average h5 are missing
+(run attribute/launch.py and motifcompendium/cluster_motifs_all.py first).
 
 Usage:
-    python src/bpnet/attribute/launch_bigwig_conversion.py
-    python src/bpnet/attribute/launch_bigwig_conversion.py --dry-run
-    python src/bpnet/attribute/launch_bigwig_conversion.py --head profile
-    python src/bpnet/attribute/launch_bigwig_conversion.py --head profile --head count
-    python src/bpnet/attribute/launch_bigwig_conversion.py --min-reads 20000000
+    python src/bpnet/hitcall/launch.py                    # submit all experiments, profile head
+    python src/bpnet/hitcall/launch.py --dry-run           # print sbatch scripts without submitting
+    python src/bpnet/hitcall/launch.py --head count        # count head only
+    python src/bpnet/hitcall/launch.py --head profile --head count  # both heads
+    python src/bpnet/hitcall/launch.py --time 12:00:00 --mem 32G
+    python src/bpnet/hitcall/launch.py --min-reads 20000000  # only well-covered experiments
 """
 
 import argparse
-import shlex
 import subprocess
 import sys
 import textwrap
@@ -28,7 +30,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
-CONVERSION_SCRIPT = REPO_ROOT / "src" / "bpnet" / "attribute" / "attribution_to_bigwig.py"
+CALL_HITS_SCRIPT = REPO_ROOT / "src" / "bpnet" / "hitcall" / "call_hits_bpnet.py"
 
 
 def main():
@@ -45,8 +47,18 @@ def main():
         choices=["profile", "count"],
         default=None,
         metavar="HEAD",
-        help="attribution head(s) to run; repeatable (default: profile count)",
+        help="attribution/motif head(s) to call hits against; repeatable (default: profile)",
     )
+    # SLURM resource flags
+    parser.add_argument(
+        "--gpus",
+        type=str,
+        default="GPU_GEN:AMP|GPU_GEN:LOV|GPU_GEN:HPR",
+    )
+    parser.add_argument("--partition", type=str, default="akundaje,owners")
+    parser.add_argument("--cpus-per-task", type=int, default=4)
+    parser.add_argument("--mem", type=str, default="32G")
+    parser.add_argument("--time", type=str, default="12:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -54,70 +66,63 @@ def main():
         help="skip experiments with fewer total reads than this (default: 0, disabled)",
     )
     parser.add_argument(
-        "--conversion-args",
+        "--call-hits-args",
         type=str,
         default="",
-        help="extra arguments forwarded to attribution_to_bigwig.py",
+        help="extra arguments forwarded to call_hits_bpnet.py (e.g. '--global-lambda 0.6')",
     )
-    # SLURM resource flags, matching modisco/launch_report.py defaults.
-    parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
-    parser.add_argument("--cpus-per-task", type=int, default=1)
-    parser.add_argument("--mem", type=str, default="16G")
-    parser.add_argument("--time", type=str, default="2:00:00")
     args = parser.parse_args()
 
-    heads = args.head if args.head is not None else ["profile", "count"]
+    heads = args.head if args.head is not None else ["profile"]
 
+    # Load experiment list
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
     experiments = list(config["experiments"].keys())
 
+    # Load read counts for filtering
     read_counts_df = pd.read_csv(
         N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
     )
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
-    out_dir = attr_dir / "bigwigs"
-    log_dir = REPO_ROOT / "logs" / "bpnet_attr_bigwig"
+    mc_dir = REPO_ROOT / "motifcompendium" / "bpnet_all_motifs"
+    out_dir = REPO_ROOT / "hitcalls" / "bpnet"
+    log_dir = REPO_ROOT / "logs" / "bpnet_hitcall"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     submitted = 0
     skipped_done = 0
-    skipped_no_attr = 0
+    skipped_missing = 0
     skipped_reads = 0
-
     for exp_id in experiments:
+        # Skip experiments with too few reads
         n_reads = read_counts.get(exp_id, 0)
         if n_reads < args.min_reads:
             skipped_reads += 1
             continue
 
+        model_dir_name = exp_id
         ohe_path = attr_dir / f"{exp_id}_ohe.npz"
-        if not ohe_path.exists():
-            skipped_no_attr += len(heads)
-            continue
 
         for head in heads:
-            attr_path = attr_dir / f"{exp_id}_{head}.npz"
-            if not attr_path.exists():
-                skipped_no_attr += 1
+            attr_path = attr_dir / f"{model_dir_name}_{head}.npz"
+            motif_h5 = mc_dir / f"motifcompendium_{head}_cluster_averages.h5"
+            if not (ohe_path.exists() and attr_path.exists() and motif_h5.exists()):
+                skipped_missing += 1
                 continue
 
-            output_path = out_dir / f"{exp_id}_{head}.bigWig"
-            if output_path.exists():
+            hits_path = out_dir / f"{model_dir_name}_{head}" / "hits.tsv"
+            if hits_path.exists():
                 skipped_done += 1
                 continue
 
-            job_name = f"attr_bigwig_{exp_id}_{head}"
-            conversion_cmd = (
-                f"uv run --project {shlex.quote(str(REPO_ROOT))} --extra sherlock --frozen "
-                f"python {shlex.quote(str(CONVERSION_SCRIPT))}"
-                f" -e {shlex.quote(exp_id)}"
-                f" --head {shlex.quote(head)}"
+            job_name = f"bpnet_hitcall_{exp_id}_{head}"
+            call_hits_cmd = (
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {CALL_HITS_SCRIPT} "
+                f"-e {exp_id} --head {head} -v {args.call_hits_args}"
             )
-            if args.conversion_args:
-                conversion_cmd += f" {args.conversion_args}"
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l
@@ -125,33 +130,21 @@ def main():
                 #SBATCH --ntasks=1
                 #SBATCH --ntasks-per-node=1
                 #SBATCH --nodes=1
+                #SBATCH --gpus=1
+                #SBATCH -C {args.gpus}
                 #SBATCH --cpus-per-task={args.cpus_per_task}
                 #SBATCH --mem={args.mem}
                 #SBATCH --partition={args.partition}
                 #SBATCH --time={args.time}
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
-                #SBATCH -C NO_GPU
 
-                ml gh # github CLI
-                ml gcc/12.4.0
-                ml cmake/3.31.4
-                ml openblas/0.3.28
-                ml xsimd/8.1.0
-                ml xz/5.8.1
-                ml hdf5/1.14.4
-                ml arrow/22.0.0
-                ml load py-pyarrow/18.1.0_py312
-                ml lz4/1.8.0
                 ml biology
                 ml htslib
-                ml ucsc-utils
 
                 mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
-
-                cd {REPO_ROOT}
-                mkdir -p {out_dir}
-                time {conversion_cmd}
+                nvidia-smi -L
+                {call_hits_cmd}
             """)
 
             if args.dry_run:
@@ -176,8 +169,9 @@ def main():
     total = len(experiments) * len(heads)
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
-        f"with <{args.min_reads:,} reads, skipped {skipped_no_attr} missing "
-        f"attribution/OHE files, skipped {skipped_done} already done ({total} total)"
+        f"with <{args.min_reads:,} reads, skipped {skipped_missing} missing "
+        f"attributions/MotifCompendium outputs, skipped {skipped_done} already "
+        f"called ({total} total)"
     )
 
 

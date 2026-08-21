@@ -6,7 +6,20 @@ sbatch job per (experiment, fold) pair via fit_bpnet.py.
 
 Experiments with fewer total reads than --min-reads (default: 10_000_000) are
 skipped, as low-coverage experiments tend to produce poorly calibrated models.
-Experiments with an already-trained model file are also skipped automatically.
+Folds with a completed model are also skipped automatically.
+
+Jobs are submitted with --requeue, so a pre-empted job (the akundaje/owners
+partitions are preemptible) is automatically resubmitted by SLURM instead of
+needing a manual resubmit. Since each job trains a single (experiment, fold)
+pair from scratch (bpnet-lite's fit() has no resume support), a requeued job
+just retrains that fold from epoch 0 -- but it still re-checks for a
+completed model right before doing so, in case the job actually finished
+just before being marked pre-empted. "Completed" means a
+`{exp_id}.fold{fold}.final.torch` file, which bpnet-lite's fit() writes
+exactly once, at the very end of training -- `{exp_id}.fold{fold}.torch` (no
+`.final`) is the wrong artifact for this, since it's overwritten throughout
+training whenever validation loss improves and can already exist after a
+single epoch.
 
 Usage:
     python src/bpnet/fit/launch.py                    # submit all experiments x 7 folds
@@ -16,6 +29,7 @@ Usage:
 """
 
 import argparse
+import shlex
 import subprocess
 import sys
 import textwrap
@@ -93,16 +107,21 @@ def main():
             continue
 
         for fold in range(n_folds):
-            # Skip if model already trained
+            # Skip if model already trained. `.final.torch` is written
+            # exactly once, at the very end of bpnet-lite's fit() -- unlike
+            # `.torch` (no `.final`), which is overwritten throughout
+            # training whenever validation loss improves, so checking that
+            # one would treat a fold pre-empted after a single epoch as
+            # complete.
             model_dir = REPO_ROOT / "models" / "bpnet" / exp_id
-            model_path = model_dir / f"{exp_id}.fold{fold}.torch"
+            model_path = model_dir / f"{exp_id}.fold{fold}.final.torch"
             if model_path.exists():
                 skipped_trained += 1
                 continue
 
             job_name = f"bpnet_{exp_id}_f{fold}"
             fit_cmd = (
-                f"uv run --project {REPO_ROOT} --frozen --extra bpnet python "
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python "
                 f"{FIT_SCRIPT} -e {exp_id} --fold {fold} -v"
             )
             if args.fit_args:
@@ -120,6 +139,8 @@ def main():
                 #SBATCH --mem={args.mem}
                 #SBATCH --partition={args.partition}
                 #SBATCH --time={args.time}
+                #SBATCH --requeue
+                #SBATCH --open-mode=append
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
 
@@ -135,6 +156,13 @@ def main():
                 ml ucsc-utils
 
                 mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
+
+                MODEL_PATH={shlex.quote(str(model_path))}
+                if [[ -f "$MODEL_PATH" ]]; then
+                    echo "Already completed: $MODEL_PATH"
+                    exit 0
+                fi
+
                 nvidia-smi -L
                 {fit_cmd}
             """)

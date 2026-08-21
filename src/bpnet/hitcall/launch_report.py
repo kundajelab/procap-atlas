@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Submit SLURM jobs to run `modisco report` on completed modisco .h5 outputs.
+"""Submit SLURM jobs to run report_bpnet.py on completed Fi-NeMo hit calls.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
-sbatch job per (experiment, head) pair. Jobs are skipped if the report
-directory already exists or if the .h5 file is missing (run launch.py first).
+sbatch job per (experiment, head) pair via report_bpnet.py, which runs
+`finemo report --no-recall` and filters hits by per-motif cwm_similarity.
+
+Jobs are skipped if hits_filtered.tsv already exists or if hits_unique.tsv is
+missing (run call_hits_bpnet.py/hitcall/launch.py first). This step does not
+use a GPU, unlike hit calling itself, so it runs as a separate, cheaper
+launcher -- mirroring modisco/launch.py vs modisco/launch_report.py.
 
 Usage:
-    python src/bpnet/modisco/launch_report.py                    # submit all experiments, both heads
-    python src/bpnet/modisco/launch_report.py --dry-run           # print sbatch scripts without submitting
-    python src/bpnet/modisco/launch_report.py --head count        # count head only
-    python src/bpnet/modisco/launch_report.py --head profile      # profile head only
-    python src/bpnet/modisco/launch_report.py --min-reads 20000000
+    python src/bpnet/hitcall/launch_report.py                    # submit all experiments, profile head
+    python src/bpnet/hitcall/launch_report.py --dry-run           # print sbatch scripts without submitting
+    python src/bpnet/hitcall/launch_report.py --head count        # count head only
+    python src/bpnet/hitcall/launch_report.py --head profile --head count  # both heads
+    python src/bpnet/hitcall/launch_report.py --min-reads 20000000
+    python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.85'
 """
 
 import argparse
@@ -25,9 +31,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
-JASPAR_PATH = (
-    REPO_ROOT / "data" / "JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt"
-)
+REPORT_SCRIPT = REPO_ROOT / "src" / "bpnet" / "hitcall" / "report_bpnet.py"
 
 
 def main():
@@ -44,7 +48,7 @@ def main():
         choices=["profile", "count"],
         default=None,
         metavar="HEAD",
-        help="attribution head(s) to run; repeatable (default: profile count)",
+        help="attribution/motif head(s) to report on; repeatable (default: profile)",
     )
     # SLURM resource flags
     parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
@@ -57,9 +61,15 @@ def main():
         default=0,
         help="skip experiments with fewer total reads than this (default: 0, disabled)",
     )
+    parser.add_argument(
+        "--report-args",
+        type=str,
+        default="",
+        help="extra arguments forwarded to report_bpnet.py (e.g. '--cwm-similarity-threshold 0.85')",
+    )
     args = parser.parse_args()
 
-    heads = args.head if args.head is not None else ["profile", "count"]
+    heads = args.head if args.head is not None else ["profile"]
 
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
@@ -70,40 +80,38 @@ def main():
     )
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
-    out_dir = REPO_ROOT / "modisco" / "bpnet"
-    log_dir = REPO_ROOT / "logs" / "bpnet_modisco"
+    hitcalls_dir = REPO_ROOT / "hitcalls" / "bpnet"
+    log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_report"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     submitted = 0
     skipped_done = 0
-    skipped_no_h5 = 0
+    skipped_missing = 0
     skipped_reads = 0
-
     for exp_id in experiments:
         n_reads = read_counts.get(exp_id, 0)
         if n_reads < args.min_reads:
             skipped_reads += 1
             continue
 
+        model_dir_name = exp_id
+
         for head in heads:
-            out_h5 = out_dir / f"{exp_id}_{head}.modisco.h5"
-            if not out_h5.exists():
-                skipped_no_h5 += 1
+            hits_dir = hitcalls_dir / f"{model_dir_name}_{head}"
+            hits_tsv = hits_dir / "hits_unique.tsv"
+            if not hits_tsv.exists():
+                skipped_missing += 1
                 continue
 
-            report_dir = out_dir / f"{exp_id}_{head}.modisco"
-            if report_dir.exists():
+            hits_filtered = hits_dir / "hits_filtered.tsv"
+            if hits_filtered.exists():
                 skipped_done += 1
                 continue
 
-            job_name = f"modisco_report_{exp_id}_{head}"
-
-            modisco_report_cmd = (
-                f"uv run --project {REPO_ROOT} --extra sherlock --frozen modisco report"
-                f" -i {out_h5}"
-                f" -o {exp_id}_{head}.modisco"
-                f" -m {JASPAR_PATH}"
-                f" --lite"
+            job_name = f"bpnet_hitcall_report_{exp_id}_{head}"
+            report_cmd = (
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {REPORT_SCRIPT} "
+                f"-e {exp_id} --head {head} -v {args.report_args}"
             )
 
             sbatch_script = textwrap.dedent(f"""\
@@ -120,22 +128,11 @@ def main():
                 #SBATCH --error={log_dir}/{job_name}.err
                 #SBATCH -C NO_GPU
 
-                ml openblas/0.3.28
-                ml xsimd/8.1.0
-                ml xz/5.8.1
-                ml hdf5/1.14.4
-                ml arrow/22.0.0
-                ml load py-pyarrow/18.1.0_py312
-                ml lz4/1.8.0
                 ml biology
                 ml htslib
-                ml ucsc-utils
-                ml gcc/14.2.0
-                
-                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
 
-                cd {out_dir}
-                time {modisco_report_cmd}
+                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
+                {report_cmd}
             """)
 
             if args.dry_run:
@@ -160,8 +157,8 @@ def main():
     total = len(experiments) * len(heads)
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
-        f"with <{args.min_reads:,} reads, skipped {skipped_no_h5} missing .h5, "
-        f"skipped {skipped_done} already done ({total} total)"
+        f"with <{args.min_reads:,} reads, skipped {skipped_missing} missing "
+        f"hits_unique.tsv, skipped {skipped_done} already reported ({total} total)"
     )
 
 

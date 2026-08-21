@@ -32,10 +32,22 @@ uv sync --group dev
 uv run pytest
 ```
 
-On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
-and `pybigtools` to 0.2.5 for Sherlock compatibility. Cherimoya uses
-`torch.optim.Muon` and should be run through its separate Apptainer workflow on
-Sherlock.
+`pybigtools` is pinned to 0.2.5 for Sherlock compatibility. Torch is not a base
+dependency — it lives in two mutually exclusive extras, because Sherlock's
+pip/uv can only resolve wheels up to `torch==2.6.0`, while Cherimoya needs its
+real `torch>=2.9.0`/`triton>=3.5.1`:
+
+```bash
+uv sync --extra sherlock # BPNet / preprocessing (torch==2.6.0)
+uv sync --extra cherimoya # native Cherimoya, non-Sherlock Linux hardware only
+uv sync --extra hub # huggingface upload
+```
+
+**`uv run` flags (`--extra`, `--frozen`, `--project`) must come *before* the
+command being run, not after** — `uv run --extra sherlock python script.py`,
+not `uv run python script.py --extra sherlock`. Put after the script, `--extra
+sherlock` is just forwarded as a literal argument to the script instead of
+being read by `uv run`, so no extra actually gets selected.
 
 Use `environment.yml` only to create an optional conda tools environment with
 `uv` plus non-Python command-line tools from conda/bioconda:
@@ -50,19 +62,10 @@ Do not add Python package requirements to `environment.yml` or restore a
 conda-plus-pip dependency workflow. New Python dependencies belong in
 `pyproject.toml` and must be reflected in `uv.lock`.
 
-Additional python dependencies for specific model architectures / HuggingFace
-uploads are optional dependencies:
-
-```bash
-uv sync --extra bpnet # bpnet models
-uv sync --extra hub # huggingface
-uv sync --extra plot # visualization
-```
-
 Non-Apptainer cluster launchers activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by
 default to expose `uv` and command-line tools, then run repo Python entrypoints
-with `uv run --frozen`. Set `PROCAP_ATLAS_ENV` before submission if your
-environment has a different name:
+with `uv run --extra sherlock --frozen`. Set `PROCAP_ATLAS_ENV` before
+submission if your environment has a different name:
 
 ```bash
 export PROCAP_ATLAS_ENV=my-env-name
@@ -70,11 +73,13 @@ export PROCAP_ATLAS_ENV=my-env-name
 
 Cherimoya can be difficult to install on certain HPC environments with very old
 compilers or custom setups (e.g. Stanford's Sherlock). To get around this, I
-build and run the Cherimoya scripts through an apptainer (see
-`src/cherimoya/apptainer`) for details.
+build and run the Cherimoya scripts through an Apptainer image on Sherlock (see
+[`src/cherimoya/apptainer/`](src/cherimoya/apptainer/README.md)); on other
+Linux hardware, use `uv sync --extra cherimoya` directly instead.
 
 `MotifCompendium` and `personal_bpnet` are separate optional/local research
-environments. They are not part of the default `uv` project.
+environments, run with plain `python` inside their own conda environment, not
+through `uv run`. They are not part of the default `uv` project.
 `hubCheck` is also treated as an external UCSC binary because it is not
 available from the configured conda channels.
 

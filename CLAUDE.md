@@ -42,9 +42,17 @@ the root README.
 Python dependencies are managed by `uv`. The root `pyproject.toml` and
 `uv.lock` are the source of truth for Python packages.
 New Python dependencies must be added there, not to `environment.yml`.
-On Linux/HPC systems, the default non-Cherimoya environment pins Torch to 2.6.0
-for Sherlock compatibility. Do not relax that pin for BPNet/preprocessing unless
-Sherlock support is explicitly being dropped.
+On Linux/HPC systems, the `sherlock` extra pins Torch to 2.6.0 for Sherlock
+compatibility; BPNet/preprocessing invocations must select it explicitly
+(`uv sync --extra sherlock` / `uv run --extra sherlock --frozen ...`), since a
+bare `uv sync` with no extras resolves an unpinned, newer Torch. Do not relax
+that pin unless Sherlock support is explicitly being dropped.
+`uv run`'s own flags (`--extra`, `--frozen`, `--project`) must precede the
+command being run — `uv run --extra sherlock --frozen python script.py`, not
+`uv run python script.py --extra sherlock --frozen`. Flags placed after the
+command are forwarded to the script as literal arguments instead of being read
+by `uv run`, so no extra actually gets selected and torch silently resolves
+unpinned.
 `pybigtools` is pinned to 0.2.5 because newer releases can require source builds
 that fail on Sherlock's older assembler/toolchain.
 
@@ -64,10 +72,18 @@ uv sync --group dev
 
 Non-Apptainer cluster launchers activate `${PROCAP_ATLAS_ENV:-procap-atlas}` by
 default to expose `uv` and command-line tools, then run repo Python entrypoints
-with `uv run --frozen`.
+with `uv run --extra sherlock --frozen`.
 Do not restore a conda-plus-pip Python dependency workflow.
-Cherimoya should be treated as a separate Apptainer/local environment on
-Sherlock because it uses `torch.optim.Muon`.
+Cherimoya needs `torch>=2.9.0`/`triton>=3.5.1` (for `torch.optim.Muon` and
+newer APIs), which have no wheels compatible with Sherlock's pip/uv (capped at
+`torch==2.6.0`) or with macOS (`triton` has no macOS wheels). Its dependencies
+live in the `cherimoya` extra, declared mutually exclusive with the `sherlock`
+extra via `tool.uv.conflicts` (they can never resolve together). On Sherlock,
+use SRCC's `py-pytorch`/`py-triton` Lmod modules instead of `uv`
+(`src/cherimoya/sherlock_native/`) — the Apptainer image
+(`src/cherimoya/apptainer/`) bundles a newer CUDA than Sherlock's GPU driver
+supports and cannot run there. On other Linux hardware, `uv sync --extra
+cherimoya` gives a native install.
 `MotifCompendium` and `personal_bpnet` are separate optional/local research
 environments.
 `hubCheck` is treated as an external UCSC binary because it is not available

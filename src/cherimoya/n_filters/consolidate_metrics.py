@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Consolidate and plot Cherimoya n_filters sweep benchmark metrics."""
+"""DEPRECATED: this sweep predates the current Cherimoya v0.2.0 models and
+training defaults; we're not continuing this investigation with them. Kept
+for reference only -- see src/cherimoya/README.md's Architecture Sweep
+section.
+
+Consolidate and plot Cherimoya n_filters sweep benchmark metrics."""
 
 import argparse
 import json

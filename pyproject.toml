@@ -8,13 +8,19 @@ version = "0.1.0"
 description = "Local Python environment for PRO-cap atlas scripts"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "bpnet-lite",
+    "bpnet-lite>=1.0.0",
+    # finemo's pyBigWig dependency ships Linux-only wheels and fails to build
+    # cleanly from sdist on macOS; Fi-NeMo hit calling is a Sherlock/Linux step.
+    "finemo; sys_platform == 'linux'",
     "joblib",
     "jupyter-client",
+    "leidenalg==0.10.2",
     "matplotlib",
     "numpy",
     "pandas",
-    "pillow",
+    # Pillow 12.3.0 dropped manylinux_2_17 wheels (Sherlock's glibc tier),
+    # forcing a source build that fails without system jpeg headers.
+    "pillow<12.3.0",
     # Newer pybigtools releases can require source builds that fail on
     # Sherlock's older assembler/toolchain.
     "pybigtools==0.2.5",
@@ -23,15 +29,29 @@ dependencies = [
     "scipy",
     "seaborn",
     "tangermeme>=1.4.0",
-    "torch==2.6.0; sys_platform == 'linux'",
-    "torch; sys_platform != 'linux'",
     "tqdm",
 ]
 
 [project.optional-dependencies]
 hub = ["huggingface-hub"]
-bpnet = ["bpnet-lite", "leidenalg==0.10.2"]
-cherimoya = ["cherimoya", "leidenalg==0.10.2"]
+# torch is not a base dependency: Sherlock's pip/uv can only resolve wheels up
+# to torch==2.6.0, while Cherimoya needs its real torch>=2.9.0/triton>=3.5.1.
+# These can't be satisfied by one resolution, so each lives in its own extra
+# below, declared mutually exclusive via tool.uv.conflicts.
+sherlock = [
+    "torch==2.6.0; sys_platform == 'linux'",
+    "torch; sys_platform != 'linux'",
+]
+# Apptainer on Sherlock bypasses this lock entirely; use this extra for a
+# native (non-Apptainer) Cherimoya install on other, modern-glibc Linux
+# hardware. See src/cherimoya/apptainer/ for the Sherlock path.
+# Pinned to an exact commit rather than PyPI's 0.2.0 release or the "v0.2.0"
+# git tag: the tag was force-moved upstream to this commit (adds EMA weight
+# averaging, switches checkpoint selection to valid_count_corr instead of a
+# combined loss), but the PyPI 0.2.0 wheel predates that rewrite and still
+# has the old behavior -- see src/cherimoya/apptainer/cherimoya.def and
+# src/cherimoya/sherlock_native/setup_env.sh, pinned to the same commit.
+cherimoya = ["cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba ; sys_platform == 'linux'"]
 # MotifCompendium and personal_bpnet are external/local research dependencies
 # until resolvable install sources are confirmed.
 # Metaformer / promoterai-torch is still in development and will be added
@@ -40,7 +60,6 @@ cherimoya = ["cherimoya", "leidenalg==0.10.2"]
 [dependency-groups]
 dev = ["pytest"]
 notebook = [
-    "bpnet-lite",
     "ipykernel",
     "jupyterlab",
     # pyzmq 27.1 has no manylinux2014 x86_64 wheel and builds against
@@ -49,11 +68,20 @@ notebook = [
 ]
 
 [tool.uv]
-# bpnet-lite declares MACS3, but this repository never calls it; skipping it
-# avoids slow source builds during environment setup.
+# bpnet-lite and cherimoya both declare MACS3, but this repository never
+# calls it; skipping it avoids slow source builds during environment setup.
 exclude-dependencies = ["macs3"]
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+# sherlock's torch==2.6.0 pin and cherimoya's real torch>=2.9.0 requirement
+# are never installed together, so let uv resolve them independently instead
+# of forcing one universal torch version across both.
+conflicts = [
+    [
+        { extra = "sherlock" },
+        { extra = "cherimoya" },
+    ],
 ]
 
 [tool.setuptools]

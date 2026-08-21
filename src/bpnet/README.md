@@ -59,8 +59,21 @@ The launcher contains hard-coded defaults for the Sherlock HPC environment,
 including Sherlock/Kundaje-specific partition and module assumptions. Adjust it
 before using another cluster. Generated jobs activate
 `${PROCAP_ATLAS_ENV:-procap-atlas}` by default to expose `uv` and command-line
-tools, then run Python entrypoints with `uv run --frozen`; the conda
+tools, then run Python entrypoints with `uv run --extra sherlock --frozen`
+(flags before the command, e.g. `uv run --extra sherlock --frozen python
+script.py`, not after); the conda
 environment is not the Python dependency source of truth.
+
+`launch.py` submits one SLURM job per (experiment, fold) pair, each trained
+with `--requeue`, so a pre-empted job (`akundaje`/`owners` are preemptible)
+is automatically resubmitted by SLURM. Since bpnet-lite's `fit()` has no
+resume support, a requeued job just retrains that fold from epoch 0, but
+first re-checks for a completed model in case the job actually finished just
+before being marked pre-empted. "Completed" means a
+`{experiment}.fold{fold}.final.torch` file, written exactly once at the very
+end of training; the plain `.torch` file (no `.final`) is overwritten
+throughout training whenever validation loss improves, so it can already
+exist after a single epoch and would wrongly look "done."
 
 ## Benchmarking
 
@@ -245,7 +258,9 @@ logs/bpnet_modisco/
 
 [MotifCompendium](https://github.com/kundajelab/MotifCompendium) uses a
 separate external research environment and is intentionally not part of the root
-`uv` project:
+`uv` project. Run its scripts with plain `python` after activating its conda
+environment below — not through `uv run`, which has no visibility into that
+environment:
 
 ```bash
 git clone https://github.com/kundajelab/MotifCompendium.git
@@ -270,6 +285,129 @@ logo report is capped to the top 500 clusters by `total_seqlets` by default; use
 `--logo-report-top-n 0` to include all cluster logos. Per-cluster motif
 collection HTML files are disabled by default; use `--per-cluster-html` to write
 them. SVG logo export is enabled by default; use `--skip-svg-logos` to disable it.
+
+## Hit Calling
+
+[Fi-NeMo](https://github.com/kundajelab/Fi-NeMo) calls individual motif
+instances from attributions using the atlas-wide MotifCompendium clustered
+motif set (`motifcompendium_{head}_cluster_averages.h5` from Motif Clustering
+above), so a hit's `motif_name` (e.g. `pos_patterns.42`) is the same cluster
+identity for every experiment it is called in. `finemo` is a regular `uv`
+project dependency (Linux only; its `pyBigWig` dependency has no macOS wheel).
+Run after Motif Clustering has produced the cluster-averages `.h5` for the
+desired head:
+
+```bash
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --head count
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_gc0.1
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --modisco-h5 modisco/bpnet/ENCSR882DWM_profile.modisco.h5
+
+python src/bpnet/hitcall/launch.py --dry-run
+python src/bpnet/hitcall/launch.py --head profile --head count
+python src/bpnet/hitcall/launch.py --min-reads 20000000
+```
+
+Outputs:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/peaks.narrowPeak
+hitcalls/bpnet/{model_dir_name}_{head}/regions.npz
+hitcalls/bpnet/{model_dir_name}_{head}/hits.tsv
+hitcalls/bpnet/{model_dir_name}_{head}/hits_unique.tsv
+hitcalls/bpnet/{model_dir_name}_{head}/hits.bed
+hitcalls/bpnet/{model_dir_name}_{head}/peaks_qc.tsv
+hitcalls/bpnet/{model_dir_name}_{head}/motif_data.tsv
+hitcalls/bpnet/{model_dir_name}_{head}/motif_cwms.npy
+hitcalls/bpnet/{model_dir_name}_{head}/parameters.json
+```
+
+`call_hits_bpnet.py` first rebuilds the peak coordinates behind the saved
+`{experiment}_ohe.npz`/attribution arrays: `extract_loci` (used by
+`save_ohe.py`/`attribute_bpnet.py`) silently drops peaks that fall off a
+chromosome end or overlap the blacklist, so `peaks.narrowPeak` is regenerated
+from the same filtering rather than reusing `filtered_peaks` directly, keeping
+row order aligned with the saved arrays. Default settings (`--region-width
+2114`, i.e. the model's full input window rather than Fi-NeMo's own 1000bp
+default; `--global-lambda 0.7`; `--cwm-trim-threshold 0.3`) follow [Kelly
+Cochran's ProCapNet run_finemo.py](https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attributions_genomewide/run_finemo.py).
+
+Use `--modisco-h5` to call hits against a specific experiment's own
+`modisco/bpnet/{experiment}_{head}.modisco.h5` instead of the shared
+compendium file (per-model motifs, not atlas-comparable). Use
+`--cwm-trim-thresholds`/`--cwm-trim-coords` (Fi-NeMo's `-T`/`-R`) to override
+trimming for specific motifs if any come out over-trimmed by the default
+threshold — short core-promoter motifs (e.g. Initiator elements) are
+particularly at risk, which is why Kelly Cochran's ProCapNet run patched
+Fi-NeMo's trimming with a minimum-length floor that the current Fi-NeMo
+release does not have built in.
+
+Generate a ready-to-use `--cwm-trim-coords` floor file with
+`compute_trim_floor.py`: it replicates Fi-NeMo's own `trim_motif` against the
+MotifCompendium cluster-average CWMs, symmetrically widens (clamped to the
+untrimmed motif width) any motif trimmed below `--min-len` bp, and writes only
+the widened motifs to the output TSV — everything else keeps Fi-NeMo's
+default trimming.
+
+```bash
+python src/bpnet/hitcall/compute_trim_floor.py --head profile
+python src/bpnet/hitcall/compute_trim_floor.py --head count --min-len 8
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet_all_motifs/motifcompendium_profile_trim_coords_min6bp.tsv
+```
+
+After `call_hits_bpnet.py`, run `report_bpnet.py` to QC and filter hits by
+per-motif CWM similarity, following the same principle as the [Human
+Development Multiomic Atlas fetal-atlas
+paper](https://github.com/GreenleafLab/HDMA/blob/main/code/03-chrombpnet/02-compendium/06b-reconcile_hits.py):
+drop all hits for any motif whose hit-derived CWM correlates poorly with the
+reference motif CWM (a real, data-driven quality signal for spurious/noisy
+compendium clusters, computed from the hits actually called rather than the
+motif's shape at discovery time). This runs `finemo report --no-recall`
+(seqlet-recall metrics require TF-MoDISco seqlets, which the lightweight
+MotifCompendium cluster-average h5 doesn't retain) and drops hits for any
+motif at or below `--cwm-similarity-threshold` (default 0.9, matching HDMA):
+
+```bash
+python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM
+python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --head count
+python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --cwm-similarity-threshold 0.85
+
+python src/bpnet/hitcall/launch_report.py --dry-run
+python src/bpnet/hitcall/launch_report.py --head profile --head count
+python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.85'
+```
+
+`launch_report.py` is a separate launcher from `hitcall/launch.py`, mirroring
+`modisco/launch.py` vs `modisco/launch_report.py`: `finemo report` doesn't use
+a GPU, so it runs as its own cheap CPU-only SLURM job (`-C NO_GPU`) rather
+than being folded into hit calling's GPU job, and the `--cwm-similarity-threshold`
+QC cutoff stays quick to retune without rerunning hit calling itself.
+
+Outputs:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/report/                          # finemo report on the pre-filter hits: motif_report.tsv, motif_occurrences.tsv, CWM logos, report.html
+hitcalls/bpnet/{model_dir_name}_{head}/report/cwm_similarity_distribution.png  # cwm_similarity histogram with the drop threshold marked
+hitcalls/bpnet/{model_dir_name}_{head}/hits_filtered.tsv                # hits with low-similarity motifs removed
+hitcalls/bpnet/{model_dir_name}_{head}/comparison/pre_filter/            # hit-stat/peak-distribution/co-occurrence plots on the pre-filter hits
+hitcalls/bpnet/{model_dir_name}_{head}/comparison/post_filter/           # same plots on hits_filtered.tsv, for a direct before/after comparison
+```
+
+`finemo report`'s own `report.html` only visualizes the pre-filter hit set
+(`hits_unique.tsv`); there's no built-in visualization of the post-filter
+`hits_filtered.tsv` or a side-by-side comparison. `report_bpnet.py` closes
+that gap by re-running Fi-NeMo's own plotting functions
+(`plot_hit_stat_distributions`, `plot_hit_peak_distributions`,
+`plot_peak_motif_indicator_heatmap`) directly on both the pre- and
+post-filter hits, so `comparison/pre_filter/` and `comparison/post_filter/`
+are directly comparable panel-by-panel.
+
+If `call_hits_bpnet.py` was run with `--cwm-trim-thresholds`/
+`--cwm-trim-coords` overrides, pass the same `--cwm-trim-threshold` here —
+`finemo report` only exposes a single global threshold, so per-motif
+overrides from `compute_trim_floor.py` can't be exactly reproduced at report
+time, and `cwm_similarity` for those specific motifs may be computed against
+a slightly different template width than was actually used to call hits.
 
 ## Notes
 

@@ -125,7 +125,7 @@ def main():
 
             job_name = f"bpnet_attr_{exp_id}_{head}"
             attr_cmd = (
-                f"uv run --project {REPO_ROOT} --frozen --extra bpnet python {ATTRIBUTE_SCRIPT} "
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {ATTRIBUTE_SCRIPT} "
                 f"-e {exp_id} --head {head} -v {args.attribute_args}"
             )
 

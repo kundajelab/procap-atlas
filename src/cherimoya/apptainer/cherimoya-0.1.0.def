@@ -1,0 +1,44 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/pytorch:26.05-py3
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        git wget curl build-essential \
+        samtools bedtools tabix \
+        libcurl4-openssl-dev libssl-dev libbz2-dev liblzma-dev zlib1g-dev
+    rm -rf /var/lib/apt/lists/*
+
+    # Leave setuptools alone: nvcr.io/nvidia/pytorch pins its torch build to
+    # setuptools<82, and upgrading it here breaks that constraint.
+    python -m pip install --upgrade pip wheel
+
+    # Install non-PyTorch Cherimoya dependencies while preserving the
+    # NVIDIA-tested torch/torchvision pair already present in the base image.
+    python -m pip install pynvml \
+        numpy scipy pandas h5py tqdm seaborn modisco tangermeme \
+        bam2bw joblib
+
+    # bpnet-lite declares an unconditional macs3 dependency that nothing in
+    # this repo calls; --no-deps skips it (bpnetlite.performance, the only
+    # submodule Cherimoya's scripts import, only needs torch and its own
+    # .losses module, both already present).
+    python -m pip install --no-deps bpnet-lite
+
+    # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
+    # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch.
+    python -m pip install --no-deps cherimoya==0.1.0
+
+    # Optional but useful for source/debugging
+    python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam
+
+%environment
+    export PYTHONNOUSERSITE=1
+    export NUMBA_CACHE_DIR=/tmp/numba_cache/
+    export TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor_cache
+    export TRITON_CACHE_DIR=/tmp/triton_cache
+    export XDG_CACHE_HOME=/tmp/.cache
+
+%runscript
+    exec "$@"

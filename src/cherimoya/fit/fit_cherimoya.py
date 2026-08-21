@@ -27,20 +27,34 @@ for training.
 
 Usage:
     python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0
+    python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0 --max-epochs 50 --decay-epochs 18
+    python src/cherimoya/fit/fit_cherimoya.py -e ENCSR261KBX -f 0 --max-epochs 20 --warmup-epochs 2
 """
 
 import argparse
+import os
 import sys
 import warnings
 from pathlib import Path
+
+# Must be set before `import torch` to take effect (read at torch's C++
+# extension init time); matches cherimoya_cli's own fit command.
+os.environ.setdefault("TORCH_CUDNN_V8_API_ENABLED", "1")
 
 import pandas as pd
 import torch
 import yaml
 from data_loader import PeakGenerator
 from tangermeme.io import extract_loci
-from torch.optim import AdamW, Muon
-from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from torch.optim import SGD, AdamW, Muon
+from torch.optim.lr_scheduler import (
+    ConstantLR,
+    CosineAnnealingLR,
+    LinearLR,
+    SequentialLR,
+)
+
+torch.backends.cudnn.benchmark = True
 
 from cherimoya import Cherimoya
 
@@ -142,9 +156,47 @@ def main():
     parser.add_argument("--n-filters", type=int, default=128)
     parser.add_argument("--n-layers", type=int, default=9)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--max-epochs", type=int, default=100)
-    parser.add_argument("--early-stopping", type=int, default=15)
-    parser.add_argument("--max-jitter", type=int, default=50)
+    parser.add_argument("--max-epochs", type=int, default=50)
+    parser.add_argument(
+        "--warmup-epochs",
+        type=int,
+        default=5,
+        help=(
+            "length of the linear LR warmup, in epochs (default: 5). The "
+            "historical max_epochs=20 config used 2 -- pass --warmup-epochs 2 "
+            "to reproduce it exactly when also using --max-epochs 20"
+        ),
+    )
+    parser.add_argument(
+        "--decay-epochs",
+        type=int,
+        default=None,
+        help=(
+            "length of the cosine LR decay, in epochs, decoupled from "
+            "--max-epochs (default: None, meaning max_epochs - "
+            "--warmup-epochs, i.e. decay finishes exactly when training "
+            "ends -- the historical behavior). Setting this shorter than "
+            "max_epochs - warmup_epochs anneals the LR to eta_min "
+            "early and then holds it flat for the remaining epochs, "
+            "instead of stretching the decay across the full run"
+        ),
+    )
+    parser.add_argument(
+        "--early-stopping",
+        type=int,
+        default=None,
+        help=(
+            "stop after this many consecutive epochs without a new best "
+            "valid_count_corr (default: None, training the full "
+            "--max-epochs budget). Tried re-enabling this at 5 (matching "
+            "the historical max_epochs=20 config) paired with both "
+            "decay_epochs=None and decay_epochs=15 -- both variants "
+            "underperformed disabled early stopping on every benchmark "
+            "metric (profile and count alike), so it stays off by default; "
+            "see performance_metrics/cherimoya/50_None_5* for the comparison"
+        ),
+    )
+    parser.add_argument("--max-jitter", type=int, default=500)
     parser.add_argument("--random-state", type=int, default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -224,18 +276,21 @@ def main():
         "checkpoint": None,
         "in_window": 2114,
         "out_window": 1000,
-        "max_jitter": 50,
+        "max_jitter": 500,
         "n_filters": 128,
         "n_layers": 9,
         "reverse_complement": True,
         "shuffle": True,
         "batch_size": 64,
         "muon_lr": 0.025,
-        "muon_wd": 0.01,
-        "adam_lr": 0.004,
-        "adam_wd": 0.2,
-        "max_epochs": 100,
-        "early_stopping": 15,
+        "muon_wd": 0.03,
+        "adam_lr": 0.001,
+        "adam_wd": 0.0,
+        "lw_lr": 0.001,
+        "lw_wd": 0.0,
+        "lw_momentum": 0.9,
+        "max_epochs": 50,
+        "early_stopping": None,
         "training_chroms": train_chroms,
         "validation_chroms": valid_chroms,
         "random_state": None,
@@ -286,7 +341,14 @@ def main():
         peaks=peaks,
         negatives=negatives,
         sequences=params["sequences"],
-        signals=params["signals"],
+        # Nested so cherimoya's normalize_signal_groups treats this as one
+        # stranded 2-channel group (correct RC channel-swap behavior)
+        # instead of two independent unstranded groups -- the latter is
+        # what a flat 2-element list means as of cherimoya's signal-groups
+        # refactor. params["signals"] itself stays flat: extract_loci
+        # (used directly for validation below) and the model's
+        # signal_groups=[len(params["signals"])] both need the flat form.
+        signals=[params["signals"]],
         chroms=params["training_chroms"],
         in_window=params["in_window"],
         out_window=params["out_window"],
@@ -321,22 +383,43 @@ def main():
     X_valid, y_valid = val
     y_valid = torch.abs(y_valid)
 
-    # Initialize and train model
+    # Initialize and train model. torch.compile() unconditionally raises on
+    # Python 3.14+ before torch 2.10 (see
+    # https://github.com/pytorch/pytorch/issues/169875); Sherlock's only
+    # torch>=2.9 build runs on py-pytorch/2.9.1_py314, so disable it there
+    # automatically rather than crashing, but re-enable it once torch>=2.10
+    # is available (e.g. a future Sherlock module). CheriBlock's fused
+    # conv+norm kernel and inference megakernel dispatch on plain
+    # `HAS_TRITON and x.is_cuda` checks independent of torch.compile, so
+    # this only gives up the extra glue-op fusion torch.compile adds on
+    # top, not Triton itself. torch.__version__ is a TorchVersion, which
+    # supports PEP 440-aware comparison against a plain string.
+    compile_supported = sys.version_info < (3, 14) or torch.__version__ >= "2.10"
     model = Cherimoya(
         name=params["name"],
         n_filters=params["n_filters"],
-        n_outputs=len(params["signals"]),
+        signal_groups=[len(params["signals"])],
         n_control_tracks=0,
         n_layers=params["n_layers"],
         trimming=(params["in_window"] - params["out_window"]) // 2,
         verbose=params["verbose"],
+        compile=compile_supported,
     )
     model = model.to("cuda")
 
-    # Separate parameters for Muon (2D weights) and AdamW (everything else)
-    muon_params, adam_params = [], []
+    # Separate parameters for Muon (2D projection weights), AdamW (everything
+    # else, including the 2D depth-wise conv_weight), and SGD (the lw0/lw1
+    # Kendall uncertainty loss weights).
+    muon_params, adam_params, lw_params = [], [], []
     for name, p in model.named_parameters():
-        if p.ndim == 2 and "weight" in name and name != "linear.weight":
+        if name in ("lw0", "lw1"):
+            lw_params.append(p)
+        elif (
+            p.ndim == 2
+            and "weight" in name
+            and name != "linear.weight"
+            and "conv_weight" not in name
+        ):
             muon_params.append(p)
         else:
             adam_params.append(p)
@@ -347,26 +430,55 @@ def main():
     adam_optimizer = AdamW(
         adam_params, lr=params["adam_lr"], weight_decay=params["adam_wd"]
     )
-
-    # Warmup + cosine decay schedules
-    num_warmup_epochs = 5
-    max_epochs = params["max_epochs"]
-    num_warmup_iters = len(train_data_loader) * num_warmup_epochs
-    num_decay_iters = len(train_data_loader) * max(1, max_epochs - num_warmup_epochs)
-
-    muon_scheduler = SequentialLR(
-        muon_optimizer,
-        schedulers=[
-            LinearLR(muon_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
-            CosineAnnealingLR(muon_optimizer, T_max=num_decay_iters, eta_min=1e-5),
-        ],
-        milestones=[num_warmup_iters],
+    lw_optimizer = SGD(
+        lw_params,
+        lr=params["lw_lr"],
+        weight_decay=params["lw_wd"],
+        momentum=params["lw_momentum"],
     )
-    adam_scheduler = SequentialLR(
-        adam_optimizer,
+
+    # Warmup + cosine decay schedules. --decay-epochs decouples the cosine
+    # decay's length from max_epochs (default: None, i.e. decay across the
+    # whole run past warmup, the historical behavior). When decay_epochs is
+    # shorter than max_epochs - num_warmup_epochs, a third ConstantLR stage
+    # holds the LR flat at eta_min for the remaining epochs -- CosineAnnealingLR
+    # is periodic, so without this stage the LR would start rising again past
+    # T_max instead of staying at its floor.
+    num_warmup_epochs = args.warmup_epochs
+    max_epochs = params["max_epochs"]
+    eta_min = 1e-5
+    decay_epochs = args.decay_epochs or max(1, max_epochs - num_warmup_epochs)
+    hold_epochs = max(0, max_epochs - num_warmup_epochs - decay_epochs)
+    num_warmup_iters = len(train_data_loader) * num_warmup_epochs
+    num_decay_iters = len(train_data_loader) * decay_epochs
+    num_hold_iters = len(train_data_loader) * hold_epochs
+
+    def build_lr_scheduler(optimizer, base_lr):
+        schedulers = [
+            LinearLR(optimizer, start_factor=0.01, total_iters=num_warmup_iters),
+            CosineAnnealingLR(optimizer, T_max=num_decay_iters, eta_min=eta_min),
+        ]
+        milestones = [num_warmup_iters]
+        if num_hold_iters > 0:
+            # ConstantLR reverts to the optimizer's base_lr once total_iters
+            # is reached (it's designed for warmup, not an indefinite hold),
+            # so total_iters must comfortably exceed num_hold_iters -- setting
+            # it to exactly num_hold_iters would snap the LR back up to
+            # base_lr right at the last step of training.
+            schedulers.append(
+                ConstantLR(optimizer, factor=eta_min / base_lr, total_iters=num_hold_iters * 10 + 10**6)
+            )
+            milestones.append(num_warmup_iters + num_decay_iters)
+        return SequentialLR(optimizer, schedulers=schedulers, milestones=milestones)
+
+    muon_scheduler = build_lr_scheduler(muon_optimizer, params["muon_lr"])
+    adam_scheduler = build_lr_scheduler(adam_optimizer, params["adam_lr"])
+    # Linear warmup then flat (no cosine decay) for the Kendall loss weights.
+    lw_scheduler = SequentialLR(
+        lw_optimizer,
         schedulers=[
-            LinearLR(adam_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
-            CosineAnnealingLR(adam_optimizer, T_max=num_decay_iters, eta_min=1e-5),
+            LinearLR(lw_optimizer, start_factor=0.01, total_iters=num_warmup_iters),
+            ConstantLR(lw_optimizer, factor=1.0, total_iters=1),
         ],
         milestones=[num_warmup_iters],
     )
@@ -376,15 +488,17 @@ def main():
         training_data=train_data_loader,
         muon_optimizer=muon_optimizer,
         adam_optimizer=adam_optimizer,
+        lw_optimizer=lw_optimizer,
         muon_scheduler=muon_scheduler,
         adam_scheduler=adam_scheduler,
+        lw_scheduler=lw_scheduler,
         X_valid=X_valid,
         X_ctl_valid=None,
         y_valid=y_valid,
         max_epochs=params["max_epochs"],
         batch_size=params["batch_size"],
         early_stopping=params["early_stopping"],
-        dtype=torch.bfloat16,
+        dtype=torch.float32,
     )
 
     print(f"\nModel saved to {output_dir}/")

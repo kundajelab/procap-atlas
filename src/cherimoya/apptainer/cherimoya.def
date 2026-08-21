@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:26.05-py3
+From: pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -10,20 +10,41 @@ From: nvcr.io/nvidia/pytorch:26.05-py3
         libcurl4-openssl-dev libssl-dev libbz2-dev liblzma-dev zlib1g-dev
     rm -rf /var/lib/apt/lists/*
 
-    python -m pip install --upgrade pip setuptools wheel
+    # This image's Python is the Ubuntu 24.04 system Python, which refuses
+    # bare `pip install` under PEP 668 ("externally-managed-environment").
+    # That protection exists to keep pip from clobbering apt-managed
+    # packages on a real, shared system; it doesn't apply to a
+    # single-purpose container image being built for this one application,
+    # so --break-system-packages on every install below is safe here.
+
+    # Don't touch setuptools; there's no need to for a --no-deps install
+    # below, and some base torch builds pin it against their own build.
+    python -m pip install --break-system-packages --upgrade pip wheel
 
     # Install non-PyTorch Cherimoya dependencies while preserving the
-    # NVIDIA-tested torch/torchvision pair already present in the base image.
-    python -m pip install pynvml \
-        numpy scipy pandas h5py tqdm seaborn modisco tangermeme macs3 \
-        bam2bw bpnet-lite joblib
+    # base image's own torch/torchvision build (torch 2.13.0, CUDA 12.6).
+    python -m pip install --break-system-packages pynvml \
+        numpy scipy pandas h5py tqdm seaborn modisco tangermeme \
+        bam2bw joblib
+
+    # bpnet-lite declares an unconditional macs3 dependency that nothing in
+    # this repo calls; --no-deps skips it (bpnetlite.performance, the only
+    # submodule Cherimoya's scripts import, only needs torch and its own
+    # .losses module, both already present).
+    python -m pip install --break-system-packages --no-deps bpnet-lite
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
-    # nvcr.io/nvidia/pytorch's torch 2.12.0a0 build with PyPI torch.
-    python -m pip install --no-deps cherimoya==0.1.0
+    # the base image's torch 2.13.0 build with a fresh PyPI resolve. Pinned to
+    # an exact commit rather than the "v0.2.0" tag or the PyPI wheel: the
+    # v0.2.0 tag was force-moved upstream to this commit (adds EMA weight
+    # averaging and switches checkpoint selection to valid_count_corr instead
+    # of a combined loss), but the PyPI 0.2.0 release predates that rewrite
+    # and still has the old behavior -- a tag can move again, so pin the
+    # commit directly for reproducibility.
+    python -m pip install --break-system-packages --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba"
 
     # Optional but useful for source/debugging
-    python -m pip install pytest ipython jupyter pandas polars pyBigWig pysam macs3
+    python -m pip install --break-system-packages pytest ipython jupyter pandas polars pyBigWig pysam
 
 %environment
     export PYTHONNOUSERSITE=1

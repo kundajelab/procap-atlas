@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
-"""Submit Cherimoya n_filters sweep jobs as one SLURM job per experiment.
+"""DEPRECATED: this sweep predates the current Cherimoya v0.2.0 models and
+training defaults; we're not continuing this investigation with them. Kept
+for reference only -- see src/cherimoya/README.md's Architecture Sweep
+section.
+
+Submit Cherimoya n_filters sweep jobs as one SLURM job per experiment.
 
 Each submitted job loops over all n_filters values and folds for a single
 experiment. This keeps the number of queued SLURM jobs bounded by the number of
 experiments instead of the number of experiment/filter/fold combinations.
+
+Jobs run natively on Sherlock using SRCC's py-pytorch/py-triton modules (see
+src/cherimoya/sherlock_native/), not the Apptainer image, which cannot run on
+Sherlock's GPU driver (see src/cherimoya/apptainer/README.md).
 
 Usage:
     python src/cherimoya/n_filters/launch.py
@@ -27,8 +36,12 @@ CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 FIT_SCRIPT = REPO_ROOT / "src" / "cherimoya" / "fit" / "fit_cherimoya.py"
 MODEL_ROOT = REPO_ROOT / "models" / "cherimoya_n_filters"
-APPTAINER_IMAGE = Path("/scratch/users/ayhe/apptainer/cherimoya.sif")
 NUMBA_CACHE_DIR = Path("/scratch/users/ayhe/numba_cache")
+# Resolved by bash at job runtime (not by Python at submission time) so it
+# works under any Sherlock username, matching setup_env.sh/test_install.sh.
+VENV_DIR = "${CHERIMOYA_VENV_DIR:-/scratch/users/${USER}/venvs/cherimoya-sherlock}"
+PYTORCH_MODULE = "py-pytorch/2.9.1_py314"
+TRITON_MODULE = "py-triton/3.5.1_py314"
 N_FILTERS = [16, 24, 36, 48, 64, 96, 196, 256]
 
 
@@ -69,21 +82,6 @@ def main():
     parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="7-00:00:00")
     parser.add_argument(
-        "--apptainer-image",
-        type=Path,
-        default=APPTAINER_IMAGE,
-        help=f"Apptainer image used to run Cherimoya training (default: {APPTAINER_IMAGE})",
-    )
-    parser.add_argument(
-        "--apptainer-bind",
-        action="append",
-        default=["/oak/stanford/groups/akundaje/ayhe", "/scratch/users/ayhe"],
-        help=(
-            "path to bind into the Apptainer container; may be repeated "
-            "(default: /oak/stanford/groups/akundaje/ayhe and /scratch/users/ayhe)"
-        ),
-    )
-    parser.add_argument(
         "--min-reads",
         type=int,
         default=0,
@@ -114,7 +112,6 @@ def main():
     log_dir = REPO_ROOT / "logs" / "cherimoya_n_filters"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    bind_args = " ".join(f"--bind {shlex.quote(path)}" for path in args.apptainer_bind)
     n_filters_bash = " ".join(str(n) for n in N_FILTERS)
     extra_fit_args = f" {args.fit_args}" if args.fit_args else ""
 
@@ -132,9 +129,8 @@ def main():
             continue
 
         job_name = f"cherimoya_nf_{exp_id}"
-        apptainer_cmd = (
-            f'apptainer exec --nv {bind_args} "$APPTAINER_IMAGE" '
-            f'python "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v '
+        fit_cmd = (
+            f'python3 "$FIT_SCRIPT" -e "$EXP_ID" --fold "$FOLD" -v '
             f'--n-filters "$N_FILTERS_VALUE" --output-dir "$OUTPUT_DIR"'
             f"{extra_fit_args}"
         )
@@ -163,12 +159,14 @@ def main():
             REPO_ROOT={shlex.quote(str(REPO_ROOT))}
             MODEL_ROOT={shlex.quote(str(MODEL_ROOT))}
             FIT_SCRIPT={shlex.quote(str(FIT_SCRIPT))}
-            APPTAINER_IMAGE={shlex.quote(str(args.apptainer_image))}
             NUMBA_CACHE_DIR={shlex.quote(str(NUMBA_CACHE_DIR))}
 
             mkdir -p "$NUMBA_CACHE_DIR"
             export NUMBA_CACHE_DIR
-            export APPTAINERENV_NUMBA_CACHE_DIR="$NUMBA_CACHE_DIR"
+
+            ml load math
+            ml load {PYTORCH_MODULE} {TRITON_MODULE}
+            source "{VENV_DIR}/bin/activate"
 
             cd "$REPO_ROOT"
             nvidia-smi -L
@@ -185,7 +183,7 @@ def main():
                     fi
 
                     echo "Training $EXP_ID fold $FOLD with n_filters=$N_FILTERS_VALUE"
-                    {apptainer_cmd}
+                    {fit_cmd}
                 done
             done
         """)

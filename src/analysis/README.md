@@ -37,6 +37,57 @@ figures/count_correlation/
 Depending on options, outputs include observed count matrices, predicted count
 matrices, and clustermap PNGs.
 
+## BPNet vs. Cherimoya Comparison
+
+Compares BPNet and Cherimoya genome-wide benchmark metrics across experiments
+benchmarked for both models, producing a scatterplot (with a Wilcoxon
+signed-rank test) and a delta histogram for each shared metric.
+
+```bash
+python src/analysis/compare_bpnet_cherimoya.py
+python src/analysis/compare_bpnet_cherimoya.py --metrics profile_jsd
+python src/analysis/compare_bpnet_cherimoya.py --min-reads 10000000
+```
+
+Outputs:
+
+```text
+plots/bpnet_vs_cherimoya/bpnet_vs_cherimoya_{metric}.pdf
+```
+
+Reads the consolidated TSVs at `performance_metrics/{bpnet,cherimoya}/procap-atlas_performance_metrics.tsv`
+(see [`src/cherimoya/benchmark/consolidate_metrics.py`](../cherimoya/benchmark/consolidate_metrics.py))
+and inner-joins on experiment, so only experiments benchmarked for both models
+are compared. Currently `profile_jsd` and `log_counts_pearson` are the only
+metrics present in both TSVs.
+
+## Cherimoya Version Comparison
+
+Compares Cherimoya benchmark metrics across the archived model versions under
+`performance_metrics/cherimoya/{version}/` (plus the current run at the top
+level of that directory) — see
+[`src/cherimoya/README.md`](../cherimoya/README.md)'s Historical Notes for
+what each version is. Produces the same scatterplot + delta histogram as the
+BPNet comparison above, for every pair of versions.
+
+```bash
+python src/analysis/compare_cherimoya_versions.py
+python src/analysis/compare_cherimoya_versions.py --metrics profile_jsd
+python src/analysis/compare_cherimoya_versions.py --min-reads 10000000
+```
+
+Outputs:
+
+```text
+plots/cherimoya_versions/{version_a}_vs_{version_b}_{metric}.pdf
+```
+
+Unlike the BPNet comparison, all four Cherimoya benchmark metrics
+(`profile_pearson`, `profile_jsd`, `log_counts_pearson`, `counts_spearman`)
+are compared by default, since they're present in every archived version's
+TSV. `compare_bpnet_cherimoya.py` and `compare_cherimoya_versions.py` share
+their plotting logic via `_metric_comparison_plots.py`.
+
 ## Warning Flags
 
 Generates read-depth, perturbation, uncapped-library, and manual warning flags
