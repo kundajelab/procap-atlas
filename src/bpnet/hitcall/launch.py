@@ -57,7 +57,7 @@ def main():
     )
     parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
-    parser.add_argument("--mem", type=str, default="32G")
+    parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="12:00:00")
     parser.add_argument(
         "--min-reads",

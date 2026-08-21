@@ -334,6 +334,13 @@ row order aligned with the saved arrays. Default settings (`--region-width
 2114`, i.e. the model's full input window rather than Fi-NeMo's own 1000bp
 default; `--global-lambda 0.7`; `--cwm-trim-threshold 0.3`) follow [Kelly
 Cochran's ProCapNet run_finemo.py](https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attributions_genomewide/run_finemo.py).
+Kelly's `--batch-size` default (2000) does not carry over: it was tuned
+against a single experiment's MoDISco motif set (tens of motifs), while the
+atlas-wide MotifCompendium cluster-average set has far more, so GPU memory
+per batch is much higher here and 2000 reliably OOMs even on a 44GB GPU.
+`call_hits_bpnet.py` defaults `--batch-size` to 500 instead; lower it further
+via `--call-hits-args '--batch-size 200'` (through `launch.py`) if a run still
+OOMs on a smaller or shared GPU.
 
 Use `--modisco-h5` to call hits against a specific experiment's own
 `modisco/bpnet/{experiment}_{head}.modisco.h5` instead of the shared

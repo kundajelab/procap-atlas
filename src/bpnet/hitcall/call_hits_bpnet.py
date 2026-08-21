@@ -189,7 +189,19 @@ def main():
             "trimming entirely for those motifs."
         ),
     )
-    parser.add_argument("--batch-size", type=int, default=2000)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=500,
+        help=(
+            "Fi-NeMo region batch size (default: 500). Kelly Cochran's "
+            "ProCapNet run used 2000 against a per-experiment MoDISco motif "
+            "set (tens of motifs); the atlas-wide MotifCompendium cluster-"
+            "average set has far more motifs, so GPU memory per batch is "
+            "much higher here and 2000 reliably OOMs on a 44GB GPU. Lower "
+            "this further if hit calling still OOMs on a smaller/shared GPU."
+        ),
+    )
     parser.add_argument(
         "--compile",
         action="store_true",
