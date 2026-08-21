@@ -40,7 +40,7 @@ real `torch>=2.9.0`/`triton>=3.5.1`:
 ```bash
 uv sync --extra sherlock # BPNet / preprocessing (torch==2.6.0)
 uv sync --extra cherimoya # native Cherimoya, non-Sherlock Linux hardware only
-uv sync --extra hub # huggingface upload
+uv sync --extra hf # huggingface upload
 ```
 
 **`uv run` flags (`--extra`, `--frozen`, `--project`) must come *before* the

@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-hub = ["huggingface-hub"]
+hf = ["huggingface-hub"]
 # torch is not a base dependency: Sherlock's pip/uv can only resolve wheels up
 # to torch==2.6.0, while Cherimoya needs its real torch>=2.9.0/triton>=3.5.1.
 # These can't be satisfied by one resolution, so each lives in its own extra

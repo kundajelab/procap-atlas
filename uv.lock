@@ -1815,7 +1815,7 @@ dependencies = [
 cherimoya = [
     { name = "cherimoya", marker = "sys_platform == 'linux'" },
 ]
-hub = [
+hf = [
     { name = "huggingface-hub" },
 ]
 sherlock = [
@@ -1838,7 +1838,7 @@ requires-dist = [
     { name = "bpnet-lite", specifier = ">=1.0.0" },
     { name = "cherimoya", marker = "sys_platform == 'linux' and extra == 'cherimoya'", git = "https://github.com/jmschrei/cherimoya.git?rev=8e4283fe56db4a29418c1d8119da3240d7c709ba" },
     { name = "finemo", marker = "sys_platform == 'linux'" },
-    { name = "huggingface-hub", marker = "extra == 'hub'" },
+    { name = "huggingface-hub", marker = "extra == 'hf'" },
     { name = "joblib" },
     { name = "jupyter-client" },
     { name = "leidenalg", specifier = "==0.10.2" },
@@ -1856,7 +1856,7 @@ requires-dist = [
     { name = "torch", marker = "sys_platform != 'linux' and extra == 'sherlock'" },
     { name = "tqdm" },
 ]
-provides-extras = ["hub", "sherlock", "cherimoya"]
+provides-extras = ["hf", "sherlock", "cherimoya"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest" }]
