@@ -41,13 +41,33 @@ python src/cherimoya/fit/fit_cherimoya.py -e ENCSR882DWM --fold 0 --n-filters 19
 
 The training script uses `torch.optim.Muon` for 2D weight matrices and AdamW for
 the remaining parameters, with warmup plus cosine learning-rate schedules.
-`--decay-epochs N` decouples the cosine decay's length from `--max-epochs`
-(default: decay across the whole run past warmup, so it finishes exactly
-when training ends). Setting it shorter anneals the LR to its floor early
-and then holds flat for the rest of training, instead of stretching the
-decay across the full epoch budget -- e.g. `--max-epochs 50 --decay-epochs
-18` decays as fast as the historical `max_epochs=20` config did, while still
-giving the model 50 epochs total.
+`--warmup-epochs` controls the linear warmup's length (default: 5; the
+historical `max_epochs=20` config used 2). `--decay-epochs N` decouples the
+cosine decay's length from `--max-epochs` (default: decay across the whole
+run past warmup, so it finishes exactly when training ends). Setting it
+shorter anneals the LR to its floor early and then holds flat for the rest
+of training, instead of stretching the decay across the full epoch budget --
+e.g. `--max-epochs 50 --decay-epochs 18` decays as fast as the historical
+`max_epochs=20` config did, while still giving the model 50 epochs total.
+`--early-stopping N` stops training after `N` consecutive epochs without a
+new best `valid_count_corr` (default: disabled, training the full
+`--max-epochs` budget).
+
+`max_epochs=50` with early stopping disabled (the current defaults) is the
+best config found so far across a round of comparisons against
+`max_epochs=100`, early stopping re-enabled (paired with both the default
+and a shortened decay), and a `max_epochs=20`/`warmup_epochs=2` config
+matching a historical default from before Cherimoya v0.2.0. Re-enabling
+early stopping consistently made benchmark metrics worse, including profile
+metrics, not just a profile/count tradeoff -- see
+`src/cherimoya/fit/fit_cherimoya.py`'s `--early-stopping` help text for
+specifics. None of these comparisons control for random initialization:
+`fit_cherimoya.py`'s `--random-state` only makes negative sampling and
+data-loader batch order reproducible, not the model's own weight
+initialization, dropout, or Muon/AdamW stochasticity (no `torch.manual_seed`
+is set anywhere in the script). Treat any of these as suggestive rather than
+conclusive; a seed-controlled repeat would be needed to separate a real
+hyperparameter effect from run-to-run noise.
 Background sampling accepts the same repeatable `--background NAME:RATIO`
 pattern as BPNet.
 
@@ -183,8 +203,9 @@ python src/cherimoya/n_filters/consolidate_metrics.py
 Outputs:
 
 ```text
-models/cherimoya_n_filters/
-performance_metrics/cherimoya_n_filters/
+models/cherimoya_n_filters/{experiment}_nf{n_filters}/
+performance_metrics/cherimoya/{experiment}_nf{n_filters}.json  # raw per-model metrics, written by launch_benchmark.py alongside regular (non-sweep) benchmark JSONs
+performance_metrics/cherimoya_n_filters/                        # consolidate_metrics.py's aggregated TSV and plots/
 ```
 
 ## Historical Notes
@@ -198,9 +219,14 @@ of models were trained using `c0cbabe26cabfb5012f4fc5328af832e32f9ed04`.
 
 ```bash
 python src/cherimoya/inspect_loss_weights.py
-python src/cherimoya/inspect_loss_weights.py --configs current _20_5_2
+python src/cherimoya/inspect_loss_weights.py --configs "" _100_None_5
 python src/cherimoya/inspect_loss_weights.py --model-dir-root /scratch/users/ayhe/procap-atlas/models/cherimoya
 ```
+
+`--configs` names subdirectories of `--model-dir-root`, oldest to newest;
+`""` means `--model-dir-root` itself (the current default config, i.e.
+`models/cherimoya/`), which is one of the three configs checked by default
+(`_20_5_2`, `_100_None_5`, `""`).
 
 `Cherimoya.fit()` learns a Kendall uncertainty weighting between profile and
 count loss (`lw0`/`lw1`), which freezes once its gradient drops below a fixed
