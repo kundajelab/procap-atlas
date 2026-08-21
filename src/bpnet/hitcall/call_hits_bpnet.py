@@ -5,7 +5,7 @@ converts them to Fi-NeMo's region format, and runs Fi-NeMo hit calling against
 the atlas-wide MotifCompendium clustered motif set, so hits are directly
 comparable across experiments (a hit's `motif_name`, e.g. `pos_patterns.42`,
 is the same MotifCompendium cluster ID everywhere it is called). Requires
-`src/bpnet/motifcompendium/cluster_motifs_all.py` to have already been run for
+`src/bpnet/motifcompendium/cluster_motifs.py` to have already been run for
 the requested head, which exports a modisco-lite-format h5 of cluster-average
 CWMs designed to be fed directly into Fi-NeMo.
 
@@ -134,7 +134,7 @@ def main():
         help=(
             "override the modisco-lite-format h5 of motif CWMs to call hits "
             "against; default is the shared MotifCompendium cluster-average "
-            "file for --head, motifcompendium/bpnet_all_motifs/"
+            "file for --head, motifcompendium/bpnet/"
             "motifcompendium_{head}_cluster_averages.h5. Pass this experiment's "
             "own modisco/bpnet/{experiment}_{head}.modisco.h5 to call hits "
             "against per-model (non-atlas-comparable) motifs instead."
@@ -227,7 +227,7 @@ def main():
         modisco_h5 = (
             REPO_ROOT
             / "motifcompendium"
-            / "bpnet_all_motifs"
+            / "bpnet"
             / f"motifcompendium_{args.head}_cluster_averages.h5"
         )
 

@@ -7,7 +7,7 @@ against the shared MotifCompendium cluster-average motif set for each head.
 
 Jobs are skipped if the output hits.tsv already exists or if the required
 OHE/attribution files or the MotifCompendium cluster-average h5 are missing
-(run attribute/launch.py and motifcompendium/cluster_motifs_all.py first).
+(run attribute/launch.py and motifcompendium/cluster_motifs.py first).
 
 Usage:
     python src/bpnet/hitcall/launch.py                    # submit all experiments, profile head
@@ -87,14 +87,33 @@ def main():
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
-    mc_dir = REPO_ROOT / "motifcompendium" / "bpnet_all_motifs"
+    mc_dir = REPO_ROOT / "motifcompendium" / "bpnet"
     out_dir = REPO_ROOT / "hitcalls" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall"
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    # The motif h5 is shared across every experiment for a given head, so check
+    # it once up front rather than per experiment -- if it's missing, every
+    # experiment for that head fails identically, which used to show up as an
+    # undifferentiated "skipped ... missing attributions/MotifCompendium
+    # outputs" count with no way to tell which prerequisite was actually absent.
+    motif_h5_by_head = {}
+    for head in heads:
+        motif_h5 = mc_dir / f"motifcompendium_{head}_cluster_averages.h5"
+        motif_h5_by_head[head] = motif_h5
+        if not motif_h5.exists():
+            print(
+                f"WARNING: {motif_h5} not found -- run "
+                f"src/bpnet/motifcompendium/cluster_motifs.py --head {head} "
+                f"first. Skipping all experiments for head={head}.",
+                file=sys.stderr,
+            )
+
     submitted = 0
     skipped_done = 0
-    skipped_missing = 0
+    skipped_no_motif_h5 = 0
+    skipped_no_ohe = 0
+    skipped_no_attr = 0
     skipped_reads = 0
     for exp_id in experiments:
         # Skip experiments with too few reads
@@ -107,10 +126,17 @@ def main():
         ohe_path = attr_dir / f"{exp_id}_ohe.npz"
 
         for head in heads:
+            if not motif_h5_by_head[head].exists():
+                skipped_no_motif_h5 += 1
+                continue
+
+            if not ohe_path.exists():
+                skipped_no_ohe += 1
+                continue
+
             attr_path = attr_dir / f"{model_dir_name}_{head}.npz"
-            motif_h5 = mc_dir / f"motifcompendium_{head}_cluster_averages.h5"
-            if not (ohe_path.exists() and attr_path.exists() and motif_h5.exists()):
-                skipped_missing += 1
+            if not attr_path.exists():
+                skipped_no_attr += 1
                 continue
 
             hits_path = out_dir / f"{model_dir_name}_{head}" / "hits.tsv"
@@ -169,9 +195,10 @@ def main():
     total = len(experiments) * len(heads)
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
-        f"with <{args.min_reads:,} reads, skipped {skipped_missing} missing "
-        f"attributions/MotifCompendium outputs, skipped {skipped_done} already "
-        f"called ({total} total)"
+        f"with <{args.min_reads:,} reads, skipped {skipped_no_motif_h5} missing "
+        f"the MotifCompendium cluster-average h5, skipped {skipped_no_ohe} "
+        f"missing OHE sequences, skipped {skipped_no_attr} missing "
+        f"attributions, skipped {skipped_done} already called ({total} total)"
     )
 
 

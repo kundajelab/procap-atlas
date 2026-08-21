@@ -22,7 +22,7 @@ Usage:
     python src/bpnet/hitcall/compute_trim_floor.py --head profile
     python src/bpnet/hitcall/compute_trim_floor.py --head count --min-len 8
     python src/bpnet/hitcall/compute_trim_floor.py --modisco-h5 modisco/bpnet/ENCSR882DWM_profile.modisco.h5 --head profile
-    python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet_all_motifs/motifcompendium_profile_trim_coords_min6bp.tsv
+    python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet/motifcompendium_profile_trim_coords_min6bp.tsv
 """
 
 import argparse
@@ -70,7 +70,7 @@ def main():
         help=(
             "override the modisco-lite-format h5 of motif CWMs to inspect; "
             "default is the shared MotifCompendium cluster-average file for "
-            "--head, motifcompendium/bpnet_all_motifs/"
+            "--head, motifcompendium/bpnet/"
             "motifcompendium_{head}_cluster_averages.h5"
         ),
     )
@@ -107,7 +107,7 @@ def main():
         modisco_h5 = (
             REPO_ROOT
             / "motifcompendium"
-            / "bpnet_all_motifs"
+            / "bpnet"
             / f"motifcompendium_{args.head}_cluster_averages.h5"
         )
     if not modisco_h5.exists():

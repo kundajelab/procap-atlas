@@ -136,7 +136,7 @@ def main():
         help=(
             "motif CWMs the hits were called against; must match what "
             "call_hits_bpnet.py used. Default is the shared MotifCompendium "
-            "cluster-average file for --head, motifcompendium/bpnet_all_motifs/"
+            "cluster-average file for --head, motifcompendium/bpnet/"
             "motifcompendium_{head}_cluster_averages.h5"
         ),
     )
@@ -173,7 +173,7 @@ def main():
         modisco_h5 = (
             REPO_ROOT
             / "motifcompendium"
-            / "bpnet_all_motifs"
+            / "bpnet"
             / f"motifcompendium_{args.head}_cluster_averages.h5"
         )
 
