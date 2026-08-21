@@ -9,6 +9,9 @@ description = "Local Python environment for PRO-cap atlas scripts"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "bpnet-lite>=1.0.0",
+    # finemo's pyBigWig dependency ships Linux-only wheels and fails to build
+    # cleanly from sdist on macOS; Fi-NeMo hit calling is a Sherlock/Linux step.
+    "finemo; sys_platform == 'linux'",
     "joblib",
     "jupyter-client",
     "leidenalg==0.10.2",
