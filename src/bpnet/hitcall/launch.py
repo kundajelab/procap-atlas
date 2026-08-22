@@ -7,7 +7,9 @@ against the shared MotifCompendium cluster-average motif set for each head.
 
 Jobs are skipped if the output hits.tsv already exists or if the required
 OHE/attribution files or the MotifCompendium cluster-average h5 are missing
-(run attribute/launch.py and motifcompendium/cluster_motifs.py first).
+(run attribute/launch.py and motifcompendium/cluster_motifs.py first). If
+--min-trim-len is set, jobs are also skipped when the corresponding
+compute_trim_floor.py output is missing for that head.
 
 Usage:
     python src/bpnet/hitcall/launch.py                    # submit all experiments, profile head
@@ -16,6 +18,7 @@ Usage:
     python src/bpnet/hitcall/launch.py --head profile --head count  # both heads
     python src/bpnet/hitcall/launch.py --time 12:00:00 --mem 32G
     python src/bpnet/hitcall/launch.py --min-reads 20000000  # only well-covered experiments
+    python src/bpnet/hitcall/launch.py --min-trim-len 6  # apply compute_trim_floor.py's floor
 """
 
 import argparse
@@ -58,7 +61,7 @@ def main():
     parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="12:00:00")
+    parser.add_argument("--time", type=str, default="24:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -70,6 +73,20 @@ def main():
         type=str,
         default="",
         help="extra arguments forwarded to call_hits_bpnet.py (e.g. '--global-lambda 0.6')",
+    )
+    parser.add_argument(
+        "--min-trim-len",
+        type=int,
+        default=None,
+        metavar="BP",
+        help=(
+            "apply compute_trim_floor.py's minimum motif-trim-length floor by "
+            "passing its --cwm-trim-coords output "
+            "(motifcompendium_{head}_trim_coords_min{BP}bp.tsv) to every job "
+            "for that head. Requires compute_trim_floor.py --head {head} "
+            "--min-len {BP} to have already been run; disabled by default "
+            "(Fi-NeMo's plain threshold-based trimming with no floor)."
+        ),
     )
     args = parser.parse_args()
 
@@ -109,9 +126,30 @@ def main():
                 file=sys.stderr,
             )
 
+    # Same reasoning as motif_h5_by_head above: the trim-coords floor file is
+    # shared across every experiment for a given head, so resolve/validate it
+    # once up front rather than per experiment.
+    trim_coords_by_head = {}
+    if args.min_trim_len is not None:
+        for head in heads:
+            trim_coords = (
+                mc_dir
+                / f"motifcompendium_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
+            )
+            trim_coords_by_head[head] = trim_coords
+            if not trim_coords.exists():
+                print(
+                    f"WARNING: {trim_coords} not found -- run "
+                    f"src/bpnet/hitcall/compute_trim_floor.py --head {head} "
+                    f"--min-len {args.min_trim_len} first. Skipping all "
+                    f"experiments for head={head}.",
+                    file=sys.stderr,
+                )
+
     submitted = 0
     skipped_done = 0
     skipped_no_motif_h5 = 0
+    skipped_no_trim_floor = 0
     skipped_no_ohe = 0
     skipped_no_attr = 0
     skipped_reads = 0
@@ -128,6 +166,12 @@ def main():
         for head in heads:
             if not motif_h5_by_head[head].exists():
                 skipped_no_motif_h5 += 1
+                continue
+
+            if args.min_trim_len is not None and not trim_coords_by_head[
+                head
+            ].exists():
+                skipped_no_trim_floor += 1
                 continue
 
             if not ohe_path.exists():
@@ -147,8 +191,13 @@ def main():
             job_name = f"bpnet_hitcall_{exp_id}_{head}"
             call_hits_cmd = (
                 f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {CALL_HITS_SCRIPT} "
-                f"-e {exp_id} --head {head} -v {args.call_hits_args}"
+                f"-e {exp_id} --head {head} -v"
             )
+            if args.min_trim_len is not None:
+                call_hits_cmd += (
+                    f" --cwm-trim-coords {trim_coords_by_head[head]}"
+                )
+            call_hits_cmd += f" {args.call_hits_args}"
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l
@@ -196,7 +245,8 @@ def main():
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
         f"with <{args.min_reads:,} reads, skipped {skipped_no_motif_h5} missing "
-        f"the MotifCompendium cluster-average h5, skipped {skipped_no_ohe} "
+        f"the MotifCompendium cluster-average h5, skipped {skipped_no_trim_floor} "
+        f"missing the trim-coords floor file, skipped {skipped_no_ohe} "
         f"missing OHE sequences, skipped {skipped_no_attr} missing "
         f"attributions, skipped {skipped_done} already called ({total} total)"
     )

@@ -309,6 +309,7 @@ python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --modisco-h5 modisco/
 python src/bpnet/hitcall/launch.py --dry-run
 python src/bpnet/hitcall/launch.py --head profile --head count
 python src/bpnet/hitcall/launch.py --min-reads 20000000
+python src/bpnet/hitcall/launch.py --min-trim-len 6  # apply compute_trim_floor.py's floor
 ```
 
 Outputs:
@@ -364,6 +365,13 @@ python src/bpnet/hitcall/compute_trim_floor.py --head profile
 python src/bpnet/hitcall/compute_trim_floor.py --head count --min-len 8
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet/motifcompendium_profile_trim_coords_min6bp.tsv
 ```
+
+`launch.py --min-trim-len BP` wires this in atlas-wide: for each `--head`, it
+looks up `compute_trim_floor.py`'s output for that `BP` under
+`motifcompendium/bpnet/` and passes it as every job's `--cwm-trim-coords`,
+skipping (and counting separately) any head whose floor file hasn't been
+generated yet. Run `compute_trim_floor.py --head {head} --min-len {BP}` first
+for every head you plan to launch.
 
 After `call_hits_bpnet.py`, run `report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
