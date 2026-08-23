@@ -256,11 +256,18 @@ logs/bpnet_modisco/
 
 ## Motif Clustering
 
-[MotifCompendium](https://github.com/kundajelab/MotifCompendium) uses a
-separate external research environment and is intentionally not part of the root
-`uv` project. Run its scripts with plain `python` after activating its conda
-environment below — not through `uv run`, which has no visibility into that
-environment:
+[MotifCompendium](https://github.com/kundajelab/MotifCompendium) collapses the
+per-experiment MoDISco motifs produced above into one atlas-wide, deduplicated
+motif set, so a motif discovered in many experiments is represented once
+rather than once per experiment. That shared set (`cluster_motifs.py`'s
+`motifcompendium_{head}_cluster_averages.h5`) is what Hit Calling below runs
+Fi-NeMo against, which is what makes a hit's `motif_name` comparable across
+every experiment it is called in.
+
+MotifCompendium uses a separate external research environment and is
+intentionally not part of the root `uv` project. Run its scripts with plain
+`python` after activating its conda environment below — not through `uv run`,
+which has no visibility into that environment:
 
 ```bash
 git clone https://github.com/kundajelab/MotifCompendium.git
@@ -270,24 +277,78 @@ conda activate motifcompendium-gpu
 pip install -e .
 ```
 
-Run clustering from the PRO-cap atlas repo after MoDISco outputs are available:
+Run clustering from the PRO-cap atlas repo after MoDISco outputs are available
+for the experiments you want included:
 
 ```bash
 python src/bpnet/motifcompendium/cluster_motifs.py
+python src/bpnet/motifcompendium/cluster_motifs.py --head profile
+python src/bpnet/motifcompendium/cluster_motifs.py --min-reads 20000000 --blacklist ENCSR973QQI ENCSR882DWM
+python src/bpnet/motifcompendium/cluster_motifs.py --across-threshold 0.85 --logo-report-top-n 0
 ```
 
 `cluster_motifs_filtered.py` is unused/exploration-only (its entropy-based
-filter killed too many real motifs) and kept for reference; `cluster_motifs.py`
-is the pipeline in active use, and its output feeds Hit Calling below.
+motif-quality filter killed too many real motifs) and kept for reference only;
+`cluster_motifs.py` is the pipeline in active use, and its output feeds Hit
+Calling below.
 
-Outputs include similarity distributions and clustered motif reports under
-`motifcompendium/bpnet/`. The pipeline writes a full TSV plus a lightweight
-summary HTML for every cluster, with links to exported forward/reverse SVG logo
-files for every cluster. To keep embedded-logo HTML files manageable, the main
-logo report is capped to the top 500 clusters by `total_seqlets` by default; use
-`--logo-report-top-n 0` to include all cluster logos. Per-cluster motif
-collection HTML files are disabled by default; use `--per-cluster-html` to write
-them. SVG logo export is enabled by default; use `--skip-svg-logos` to disable it.
+`cluster_motifs.py` runs one head (`count`/`profile`, both by default) at a
+time:
+
+1. Selects experiments from `configs/experiment_config.yaml`, dropping
+   `--blacklist` IDs (default: `ENCSR973QQI`), any experiment whose
+   `library_construction` metadata contains "uncapped", and any experiment
+   below `--min-reads` total reads (default: 10M, read from
+   `configs/n_reads.txt`).
+2. Loads every surviving experiment's `modisco/bpnet/{experiment}_{head}.modisco.h5`
+   into one `MotifCompendium` via `build_from_modisco` — this is also where
+   MotifCompendium collapses each source pattern down to a single averaged CWM,
+   discarding the individual seqlets underlying it (why hit-quality filtering
+   in Hit Calling below falls back to a seqlet-free metric).
+3. Clusters motifs in two passes: first `--within-threshold` (default 0.95)
+   within each experiment, to collapse near-duplicate MoDISco patterns from the
+   same model; then `--across-threshold` (default 0.90) across experiments,
+   weighted by `num_seqlets`, to merge the same motif found in different
+   experiments into one final cluster. Both thresholds are MotifCompendium
+   pattern-similarity cutoffs, not sequence identity.
+4. Exports the final per-cluster average CWMs as a real modisco-lite-format h5
+   (`motifcompendium_{head}_cluster_averages.h5`), explicitly designed by
+   MotifCompendium to be fed directly into Fi-NeMo, plus a MEME-format version
+   and cluster metadata/reports.
+
+JASPAR annotation (`JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt`
+under `data/`) is applied opportunistically for human-readable labels in the
+reports; clustering itself does not depend on it, and it's silently skipped
+if the file isn't present. `--no-gpu`/`--max-cpus`/`--max-chunk` forward to
+`MotifCompendium.set_compute_options` for machines without a GPU or with
+tighter resource limits.
+
+Outputs, all under `motifcompendium/bpnet/`:
+
+```text
+motifcompendium_{head}_all_raw.mc                       # MotifCompendium save file, pre-clustering
+motifcompendium_{head}_similarity_distribution.html      # pairwise motif similarity histogram
+motifcompendium_{head}_all_clustered.mc                  # MotifCompendium save file, post-clustering
+motifcompendium_{head}_cluster_averages.h5               # modisco-lite-format CWMs fed into Hit Calling
+motifcompendium_{head}_cluster_averages.meme             # MEME-format version of the same clusters
+motifcompendium_{head}_cluster_metadata.tsv              # per-cluster n_motifs/total_seqlets/experiments/JASPAR label
+motifcompendium_{head}_cluster_report.html               # MotifCompendium's own logo-heavy summary table
+motifcompendium_{head}_cluster_summary.html              # lightweight all-clusters table, links to SVG logos
+motifcompendium_{head}_cluster_logos/{fwd,rev}/*.svg      # per-cluster forward/reverse logos
+motifcompendium_{head}_cluster_logo_paths.tsv            # cluster_final -> logo SVG path mapping
+motifcompendium_{head}_clusters/{pos,neg}_cluster_NNNN.html  # per-cluster motif collection (opt-in)
+```
+
+The pipeline writes a full TSV plus a lightweight summary HTML for every
+cluster, with links to exported forward/reverse SVG logo files for every
+cluster — no motifs are dropped in `cluster_motifs.py`. To keep the
+embedded-logo HTML report manageable, `motifcompendium_{head}_cluster_report.html`
+is capped to the top 500 clusters by `total_seqlets` by default; use
+`--logo-report-top-n 0` to include all cluster logos there (the plain
+`_cluster_summary.html` table always includes every cluster). Per-cluster
+motif collection HTML files are disabled by default; use `--per-cluster-html`
+to write them. SVG logo export is enabled by default; use `--skip-svg-logos`
+to disable it, or `--svg-logo-batch-size` to tune rendering batch size.
 
 ## Hit Calling
 
