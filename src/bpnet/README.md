@@ -387,6 +387,25 @@ hitcalls/bpnet/{model_dir_name}_{head}/motif_cwms.npy
 hitcalls/bpnet/{model_dir_name}_{head}/parameters.json
 ```
 
+`peaks.narrowPeak`/`regions.npz` depend only on the experiment/head/
+`--region-width`, not on trimming, so they're cached directly in
+`{model_dir_name}_{head}/` and reused across every trim configuration for
+that (experiment, head) rather than being regenerated per trim setting.
+`finemo call-hits`'s own output (everything else above) does depend on
+trimming, so it moves into a trim-suffixed subdirectory whenever hit calling
+used non-default trimming, so a rerun with different trim settings doesn't
+silently overwrite a previous run's hits: `{model_dir_name}_{head}/trim{threshold}/`
+for a non-default `--cwm-trim-threshold`, `.../trimthresh-{file_stem}/` for
+`--cwm-trim-thresholds`, and/or `.../trimcoords-{file_stem}/` for
+`--cwm-trim-coords` (e.g. `--min-trim-len 6` through `launch.py` writes hits
+to `{model_dir_name}_{head}/trimcoords-motifcompendium_{head}_trim_coords_min6bp/`,
+while still reusing that experiment's existing `regions.npz`). Default
+trimming keeps the plain flat layout above (`call-hits` output stays directly
+in `{model_dir_name}_{head}/`, unchanged). `report_bpnet.py`/`launch_report.py`
+take the same `--cwm-trim-threshold`/`--cwm-trim-thresholds`/
+`--cwm-trim-coords`/`--min-trim-len` values purely to resolve this same
+directory layout, not to re-derive trimming themselves.
+
 `call_hits_bpnet.py` first rebuilds the peak coordinates behind the saved
 `{experiment}_ohe.npz`/attribution arrays: `extract_loci` (used by
 `save_ohe.py`/`attribute_bpnet.py`) silently drops peaks that fall off a
@@ -399,10 +418,11 @@ Cochran's ProCapNet run_finemo.py](https://github.com/kellycochran/procapnet_all
 Kelly's `--batch-size` default (2000) does not carry over: it was tuned
 against a single experiment's MoDISco motif set (tens of motifs), while the
 atlas-wide MotifCompendium cluster-average set has far more, so GPU memory
-per batch is much higher here and 2000 reliably OOMs even on a 44GB GPU.
-`call_hits_bpnet.py` defaults `--batch-size` to 500 instead; lower it further
-via `--call-hits-args '--batch-size 200'` (through `launch.py`) if a run still
-OOMs on a smaller or shared GPU.
+per batch is much higher here. 2000 reliably OOMs even on a 44GB GPU, and so
+did 500 and 64 against the profile head, so `call_hits_bpnet.py` defaults
+`--batch-size` to 16 instead; lower it further via `--call-hits-args
+'--batch-size 8'` (through `launch.py`) if a run still OOMs on a smaller/
+shared GPU or a head with even more motifs.
 
 Use `--modisco-h5` to call hits against a specific experiment's own
 `modisco/bpnet/{experiment}_{head}.modisco.h5` instead of the shared
@@ -471,6 +491,11 @@ hitcalls/bpnet/{model_dir_name}_{head}/hits_filtered.tsv                # hits w
 hitcalls/bpnet/{model_dir_name}_{head}/comparison/pre_filter/            # hit-stat/peak-distribution/co-occurrence plots on the pre-filter hits
 hitcalls/bpnet/{model_dir_name}_{head}/comparison/post_filter/           # same plots on hits_filtered.tsv, for a direct before/after comparison
 ```
+
+As above, `{head}` gains a trim-suffixed subdirectory (e.g.
+`.../trimcoords-{file_stem}/report/...`) whenever hit calling used
+non-default trimming; `report_bpnet.py` writes these outputs alongside
+whichever `hits_unique.tsv` it read.
 
 `finemo report`'s own `report.html` only visualizes the pre-filter hit set
 (`hits_unique.tsv`); there's no built-in visualization of the post-filter

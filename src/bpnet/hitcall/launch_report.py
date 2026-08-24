@@ -8,7 +8,9 @@ sbatch job per (experiment, head) pair via report_bpnet.py, which runs
 Jobs are skipped if hits_filtered.tsv already exists or if hits_unique.tsv is
 missing (run call_hits_bpnet.py/hitcall/launch.py first). This step does not
 use a GPU, unlike hit calling itself, so it runs as a separate, cheaper
-launcher -- mirroring modisco/launch.py vs modisco/launch_report.py.
+launcher -- mirroring modisco/launch.py vs modisco/launch_report.py. If
+hitcall/launch.py was run with --min-trim-len, pass the same value here so
+this launcher looks in the matching trim-coords output directory.
 
 Usage:
     python src/bpnet/hitcall/launch_report.py                    # submit all experiments, profile head
@@ -17,6 +19,7 @@ Usage:
     python src/bpnet/hitcall/launch_report.py --head profile --head count  # both heads
     python src/bpnet/hitcall/launch_report.py --min-reads 20000000
     python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.85'
+    python src/bpnet/hitcall/launch_report.py --min-trim-len 6  # match hitcall/launch.py's floor
 """
 
 import argparse
@@ -27,6 +30,8 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+
+from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -52,8 +57,8 @@ def main():
     )
     # SLURM resource flags
     parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
-    parser.add_argument("--cpus-per-task", type=int, default=1)
-    parser.add_argument("--mem", type=str, default="16G")
+    parser.add_argument("--cpus-per-task", type=int, default=4)
+    parser.add_argument("--mem", type=str, default="64G")
     parser.add_argument("--time", type=str, default="2:00:00")
     parser.add_argument(
         "--min-reads",
@@ -66,6 +71,17 @@ def main():
         type=str,
         default="",
         help="extra arguments forwarded to report_bpnet.py (e.g. '--cwm-similarity-threshold 0.85')",
+    )
+    parser.add_argument(
+        "--min-trim-len",
+        type=int,
+        default=None,
+        metavar="BP",
+        help=(
+            "must match the value hitcall/launch.py was run with, if any -- "
+            "resolves the same trim-coords-suffixed output directory rather "
+            "than the plain {model_dir_name}_{head}/ one."
+        ),
     )
     args = parser.parse_args()
 
@@ -81,8 +97,17 @@ def main():
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     hitcalls_dir = REPO_ROOT / "hitcalls" / "bpnet"
+    mc_dir = REPO_ROOT / "motifcompendium" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_report"
     log_dir.mkdir(parents=True, exist_ok=True)
+
+    trim_coords_by_head = {}
+    if args.min_trim_len is not None:
+        for head in heads:
+            trim_coords_by_head[head] = (
+                mc_dir
+                / f"motifcompendium_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
+            )
 
     submitted = 0
     skipped_done = 0
@@ -97,7 +122,12 @@ def main():
         model_dir_name = exp_id
 
         for head in heads:
-            hits_dir = hitcalls_dir / f"{model_dir_name}_{head}"
+            cwm_trim_coords = (
+                trim_coords_by_head[head] if args.min_trim_len is not None else None
+            )
+            suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, cwm_trim_coords)
+            exp_dir = hitcalls_dir / f"{model_dir_name}_{head}"
+            hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
             hits_tsv = hits_dir / "hits_unique.tsv"
             if not hits_tsv.exists():
                 skipped_missing += 1
@@ -111,8 +141,11 @@ def main():
             job_name = f"bpnet_hitcall_report_{exp_id}_{head}"
             report_cmd = (
                 f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {REPORT_SCRIPT} "
-                f"-e {exp_id} --head {head} -v {args.report_args}"
+                f"-e {exp_id} --head {head} -v"
             )
+            if cwm_trim_coords is not None:
+                report_cmd += f" --cwm-trim-coords {cwm_trim_coords}"
+            report_cmd += f" {args.report_args}"
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l

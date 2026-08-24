@@ -30,6 +30,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
@@ -61,7 +63,7 @@ def main():
     parser.add_argument("--partition", type=str, default="akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="24:00:00")
+    parser.add_argument("--time", type=str, default="48:00:00")
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -168,9 +170,7 @@ def main():
                 skipped_no_motif_h5 += 1
                 continue
 
-            if args.min_trim_len is not None and not trim_coords_by_head[
-                head
-            ].exists():
+            if args.min_trim_len is not None and not trim_coords_by_head[head].exists():
                 skipped_no_trim_floor += 1
                 continue
 
@@ -183,7 +183,19 @@ def main():
                 skipped_no_attr += 1
                 continue
 
-            hits_path = out_dir / f"{model_dir_name}_{head}" / "hits.tsv"
+            # Mirrors call_hits_bpnet.py's trim_suffix() so the skip check
+            # looks in the same directory that job will actually write to.
+            # --call-hits-args isn't a structured flag, so a
+            # --cwm-trim-threshold/--cwm-trim-thresholds override passed
+            # through it won't be reflected here -- only --min-trim-len is.
+            suffix = trim_suffix(
+                DEFAULT_CWM_TRIM_THRESHOLD,
+                None,
+                trim_coords_by_head[head] if args.min_trim_len is not None else None,
+            )
+            exp_out_dir = out_dir / f"{model_dir_name}_{head}"
+            call_hits_dir = exp_out_dir / suffix.lstrip("_") if suffix else exp_out_dir
+            hits_path = call_hits_dir / "hits.tsv"
             if hits_path.exists():
                 skipped_done += 1
                 continue
@@ -194,9 +206,7 @@ def main():
                 f"-e {exp_id} --head {head} -v"
             )
             if args.min_trim_len is not None:
-                call_hits_cmd += (
-                    f" --cwm-trim-coords {trim_coords_by_head[head]}"
-                )
+                call_hits_cmd += f" --cwm-trim-coords {trim_coords_by_head[head]}"
             call_hits_cmd += f" {args.call_hits_args}"
 
             sbatch_script = textwrap.dedent(f"""\
