@@ -13,6 +13,15 @@ Default settings (region width, global lambda, CWM trim threshold) follow
 Kelly Cochran's ProCapNet run_finemo.py:
 https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attributions_genomewide/run_finemo.py
 
+peaks.narrowPeak/regions.npz (trim-independent) are cached in
+hitcalls/bpnet/{model_dir_name}_{head}/ and reused across trim
+configurations. Non-default trimming (--cwm-trim-threshold,
+--cwm-trim-thresholds, --cwm-trim-coords) instead moves finemo call-hits's
+own output into a trim-suffixed subdirectory of that same directory (e.g.
+{model_dir_name}_{head}/trimcoords-{file_stem}/) so rerunning with a
+different trim configuration doesn't silently overwrite a previous run's
+hits, and so launch.py's "already called" skip check can tell them apart.
+
 Usage:
     python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM
     python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --head count
@@ -38,6 +47,27 @@ CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 IN_WINDOW = 2114
+DEFAULT_CWM_TRIM_THRESHOLD = 0.3
+
+
+def trim_suffix(cwm_trim_threshold, cwm_trim_thresholds, cwm_trim_coords):
+    """Build an output-dir suffix that distinguishes non-default trimming.
+
+    Without this, every trim setting (--cwm-trim-threshold,
+    --cwm-trim-thresholds, --cwm-trim-coords) wrote to the same
+    hitcalls/bpnet/{model_dir_name}_{head}/ directory, so rerunning with a
+    different trim configuration (e.g. compute_trim_floor.py's
+    --cwm-trim-coords floor) silently overwrote the previous run's hits, and
+    launch.py's "already called" skip check couldn't tell the two apart.
+    """
+    parts = []
+    if cwm_trim_threshold != DEFAULT_CWM_TRIM_THRESHOLD:
+        parts.append(f"trim{cwm_trim_threshold}")
+    if cwm_trim_thresholds:
+        parts.append(f"trimthresh-{Path(cwm_trim_thresholds).stem}")
+    if cwm_trim_coords:
+        parts.append(f"trimcoords-{Path(cwm_trim_coords).stem}")
+    return ("_" + "_".join(parts)) if parts else ""
 
 
 def build_peaks_narrowpeak(peaks_path, chrom_splits, out_path):
@@ -161,7 +191,7 @@ def main():
     parser.add_argument(
         "--cwm-trim-threshold",
         type=float,
-        default=0.3,
+        default=DEFAULT_CWM_TRIM_THRESHOLD,
         help="default motif trimming threshold (default: 0.3, Fi-NeMo/ProCapNet default)",
     )
     parser.add_argument(
@@ -192,14 +222,16 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=500,
+        default=16,
         help=(
-            "Fi-NeMo region batch size (default: 500). Kelly Cochran's "
+            "Fi-NeMo region batch size (default: 16). Kelly Cochran's "
             "ProCapNet run used 2000 against a per-experiment MoDISco motif "
             "set (tens of motifs); the atlas-wide MotifCompendium cluster-"
             "average set has far more motifs, so GPU memory per batch is "
-            "much higher here and 2000 reliably OOMs on a 44GB GPU. Lower "
-            "this further if hit calling still OOMs on a smaller/shared GPU."
+            "much higher here. 2000 reliably OOMs on a 44GB GPU, and so did "
+            "500 and 64 on the profile head, hence the much smaller default. "
+            "Lower this further if hit calling still OOMs on a smaller/"
+            "shared GPU or a head with even more motifs."
         ),
     )
     parser.add_argument(
@@ -255,31 +287,48 @@ def main():
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
+    # peaks.narrowPeak/regions.npz depend only on the experiment/head/
+    # region-width, not on trimming, so they live in the plain
+    # {model_dir_name}_{head}/ directory and are reused across every trim
+    # configuration for that (experiment, head) rather than being
+    # regenerated (and duplicated) per trim setting. Only finemo call-hits's
+    # own output -- which does depend on trimming -- moves into a
+    # trim-suffixed subdirectory.
     out_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     peaks_narrowpeak = out_dir / "peaks.narrowPeak"
-    n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
-    print(f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}")
-
     regions_npz = out_dir / "regions.npz"
-    run(
-        [
-            "finemo",
-            "extract-regions-modisco-fmt",
-            "-s",
-            str(ohe_path),
-            "-a",
-            str(attr_path),
-            "-p",
-            str(peaks_narrowpeak),
-            "-o",
-            str(regions_npz),
-            "-w",
-            str(args.region_width),
-        ],
-        args.verbose,
+    if regions_npz.exists():
+        print(f"Reusing existing {regions_npz}")
+    else:
+        n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
+        print(
+            f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}"
+        )
+        run(
+            [
+                "finemo",
+                "extract-regions-modisco-fmt",
+                "-s",
+                str(ohe_path),
+                "-a",
+                str(attr_path),
+                "-p",
+                str(peaks_narrowpeak),
+                "-o",
+                str(regions_npz),
+                "-w",
+                str(args.region_width),
+            ],
+            args.verbose,
+        )
+
+    suffix = trim_suffix(
+        args.cwm_trim_threshold, args.cwm_trim_thresholds, args.cwm_trim_coords
     )
+    call_hits_dir = out_dir / suffix.lstrip("_") if suffix else out_dir
+    call_hits_dir.mkdir(parents=True, exist_ok=True)
 
     call_hits_cmd = [
         "finemo",
@@ -289,7 +338,7 @@ def main():
         "-m",
         str(modisco_h5),
         "-o",
-        str(out_dir),
+        str(call_hits_dir),
         "-t",
         str(args.cwm_trim_threshold),
         "-l",
@@ -305,7 +354,7 @@ def main():
         call_hits_cmd.append("-J")
     run(call_hits_cmd, args.verbose)
 
-    print(f"\nFi-NeMo hits saved to {out_dir}")
+    print(f"\nFi-NeMo hits saved to {call_hits_dir}")
 
 
 if __name__ == "__main__":

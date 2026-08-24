@@ -63,6 +63,8 @@ from finemo.visualization import (
     plot_peak_motif_indicator_heatmap,
 )
 
+from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
@@ -143,10 +145,32 @@ def main():
     parser.add_argument(
         "--cwm-trim-threshold",
         type=float,
-        default=0.3,
+        default=DEFAULT_CWM_TRIM_THRESHOLD,
         help=(
             "motif trim threshold; should match call_hits_bpnet.py's "
             "--cwm-trim-threshold (default: 0.3)"
+        ),
+    )
+    parser.add_argument(
+        "--cwm-trim-thresholds",
+        type=str,
+        default=None,
+        help=(
+            "path to the same -T/--cwm-trim-thresholds file call_hits_bpnet.py "
+            "was run with, if any -- needed only to locate that run's output "
+            "directory (encoded into the dir name via trim_suffix()); finemo "
+            "report itself has no per-motif threshold override, so it can't "
+            "exactly reproduce this trimming (see module docstring)"
+        ),
+    )
+    parser.add_argument(
+        "--cwm-trim-coords",
+        type=str,
+        default=None,
+        help=(
+            "path to the same -R/--cwm-trim-coords file call_hits_bpnet.py "
+            "was run with, if any -- needed only to locate that run's output "
+            "directory (encoded into the dir name via trim_suffix())"
         ),
     )
     parser.add_argument(
@@ -163,8 +187,15 @@ def main():
     args = parser.parse_args()
 
     model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-    hits_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    regions_npz = hits_dir / "regions.npz"
+    suffix = trim_suffix(
+        args.cwm_trim_threshold, args.cwm_trim_thresholds, args.cwm_trim_coords
+    )
+    # regions.npz is trim-independent and lives in the plain
+    # {model_dir_name}_{head}/ cache dir; hits themselves live in that dir's
+    # trim-suffixed subdirectory (see call_hits_bpnet.py).
+    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
+    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
+    regions_npz = exp_dir / "regions.npz"
     hits_tsv = hits_dir / "hits_unique.tsv"
 
     if args.modisco_h5:
