@@ -200,7 +200,7 @@ def main():
                 skipped_done += 1
                 continue
 
-            job_name = f"bpnet_hitcall_{exp_id}_{head}"
+            job_name = f"bpnet_hitcall_{exp_id}_{head}{suffix}"
             call_hits_cmd = (
                 f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {CALL_HITS_SCRIPT} "
                 f"-e {exp_id} --head {head} -v"
