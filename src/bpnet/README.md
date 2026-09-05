@@ -462,14 +462,23 @@ compute against the atlas-wide compendium instead, for use with
 python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head profile
 python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head count --min-len 8
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords modisco/bpnet/ENCSR882DWM_profile_trim_coords_min6bp.tsv
+
+python src/bpnet/hitcall/launch_trim_floor.py --dry-run
+python src/bpnet/hitcall/launch_trim_floor.py --head profile --head count
+python src/bpnet/hitcall/launch_trim_floor.py --min-len 8
 ```
+
+`launch_trim_floor.py` submits one cheap CPU-only job per (experiment, head)
+to generate these atlas-wide, skipping any experiment/head whose per-experiment
+modisco.h5 is missing or whose floor TSV already exists at that `--min-len`.
+Run it (or `compute_trim_floor.py -e` per experiment manually) before using
+`--min-trim-len` below.
 
 `launch.py --min-trim-len BP` wires this in per experiment: for each
 (experiment, head), it looks up `compute_trim_floor.py -e`'s output for that
 `BP` under `modisco/bpnet/` and passes it as that job's `--cwm-trim-coords`,
 skipping (and counting separately) any experiment/head whose floor file
-hasn't been generated yet. Run `compute_trim_floor.py -e {experiment} --head
-{head} --min-len {BP}` first for every experiment/head you plan to launch.
+hasn't been generated yet.
 
 After `call_hits_bpnet.py`, run `report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
