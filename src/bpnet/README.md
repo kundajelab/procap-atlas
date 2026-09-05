@@ -259,10 +259,16 @@ logs/bpnet_modisco/
 [MotifCompendium](https://github.com/kundajelab/MotifCompendium) collapses the
 per-experiment MoDISco motifs produced above into one atlas-wide, deduplicated
 motif set, so a motif discovered in many experiments is represented once
-rather than once per experiment. That shared set (`cluster_motifs.py`'s
-`motifcompendium_{head}_cluster_averages.h5`) is what Hit Calling below runs
-Fi-NeMo against, which is what makes a hit's `motif_name` comparable across
-every experiment it is called in.
+rather than once per experiment. Hit Calling below runs Fi-NeMo per experiment
+against that experiment's own MoDISco motifs, not this shared set directly
+(much faster, and avoids Fi-NeMo's joint sparse regression competitively
+reconstructing against cell-type-specific motifs an experiment never
+expresses) -- instead, `cluster_motifs.py` also exports a mapping from every
+experiment's own motifs to the atlas-wide cluster they were assigned to
+(`motifcompendium_{head}_pattern_to_cluster.tsv`), which
+`link_hits_to_compendium.py` uses after hit calling to relabel each
+experiment's hits with the shared, cross-experiment-comparable cluster
+identity.
 
 MotifCompendium uses a separate external research environment and is
 intentionally not part of the root `uv` project. Run its scripts with plain
@@ -289,8 +295,8 @@ python src/bpnet/motifcompendium/cluster_motifs.py --across-threshold 0.85 --log
 
 `cluster_motifs_filtered.py` is unused/exploration-only (its entropy-based
 motif-quality filter killed too many real motifs) and kept for reference only;
-`cluster_motifs.py` is the pipeline in active use, and its output feeds Hit
-Calling below.
+`cluster_motifs.py` is the pipeline in active use, and its pattern-to-cluster
+mapping output feeds `link_hits_to_compendium.py` in Hit Calling below.
 
 `cluster_motifs.py` runs one head (`count`/`profile`, both by default) at a
 time:
@@ -312,9 +318,13 @@ time:
    experiments into one final cluster. Both thresholds are MotifCompendium
    pattern-similarity cutoffs, not sequence identity.
 4. Exports the final per-cluster average CWMs as a real modisco-lite-format h5
-   (`motifcompendium_{head}_cluster_averages.h5`), explicitly designed by
-   MotifCompendium to be fed directly into Fi-NeMo, plus a MEME-format version
-   and cluster metadata/reports.
+   (`motifcompendium_{head}_cluster_averages.h5`, useful for calling hits
+   atlas-wide by passing it to `call_hits_bpnet.py --modisco-h5` directly, but
+   not required for the default per-experiment hit-calling flow below), plus
+   a MEME-format version, cluster metadata/reports, and a per-experiment
+   pattern-to-cluster mapping TSV (`motifcompendium_{head}_pattern_to_cluster.tsv`)
+   that `link_hits_to_compendium.py` uses to relabel per-experiment hits with
+   their atlas-wide cluster identity after the fact.
 
 JASPAR annotation (`JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt`
 under `data/`) is applied opportunistically for human-readable labels in the
@@ -329,8 +339,9 @@ Outputs, all under `motifcompendium/bpnet/`:
 motifcompendium_{head}_all_raw.mc                       # MotifCompendium save file, pre-clustering
 motifcompendium_{head}_similarity_distribution.html      # pairwise motif similarity histogram
 motifcompendium_{head}_all_clustered.mc                  # MotifCompendium save file, post-clustering
-motifcompendium_{head}_cluster_averages.h5               # modisco-lite-format CWMs fed into Hit Calling
+motifcompendium_{head}_cluster_averages.h5               # modisco-lite-format cluster-average CWMs (optional atlas-wide hit calling)
 motifcompendium_{head}_cluster_averages.meme             # MEME-format version of the same clusters
+motifcompendium_{head}_pattern_to_cluster.tsv            # experiment/local_motif_name -> compendium_motif_name, for link_hits_to_compendium.py
 motifcompendium_{head}_cluster_metadata.tsv              # per-cluster n_motifs/total_seqlets/experiments/JASPAR label
 motifcompendium_{head}_cluster_report.html               # MotifCompendium's own logo-heavy summary table
 motifcompendium_{head}_cluster_summary.html              # lightweight all-clusters table, links to SVG logos
@@ -353,19 +364,27 @@ to disable it, or `--svg-logo-batch-size` to tune rendering batch size.
 ## Hit Calling
 
 [Fi-NeMo](https://github.com/kundajelab/Fi-NeMo) calls individual motif
-instances from attributions using the atlas-wide MotifCompendium clustered
-motif set (`motifcompendium_{head}_cluster_averages.h5` from Motif Clustering
-above), so a hit's `motif_name` (e.g. `pos_patterns.42`) is the same cluster
-identity for every experiment it is called in. `finemo` is a regular `uv`
-project dependency (Linux only; its `pyBigWig` dependency has no macOS wheel).
-Run after Motif Clustering has produced the cluster-averages `.h5` for the
-desired head:
+instances from attributions. By default it runs per experiment against that
+experiment's own `modisco/bpnet/{experiment}_{head}.modisco.h5` (the same
+scale of motif set — tens of motifs — [Kelly Cochran's ProCapNet
+run_finemo.py](https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attributions_genomewide/run_finemo.py)
+used), not the atlas-wide MotifCompendium compendium: Fi-NeMo's joint sparse
+regression makes every motif in the h5 compete for the same residual, so
+throwing in every experiment's motifs at once is both far slower and prone to
+competitively reconstructing with cell-type-specific motifs a given
+experiment never actually expresses. A hit's `motif_name` here (e.g.
+`pos_patterns.pattern_3`) is therefore only meaningful within that one
+experiment — run `link_hits_to_compendium.py` at the end of this section to
+relabel hits with the atlas-wide MotifCompendium cluster identity for
+cross-experiment comparability. `finemo` is a regular `uv` project dependency
+(Linux only; its `pyBigWig` dependency has no macOS wheel). Run after MoDISco
+has produced per-experiment motifs for the desired head:
 
 ```bash
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --head count
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_gc0.1
-python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --modisco-h5 modisco/bpnet/ENCSR882DWM_profile.modisco.h5
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --modisco-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5
 
 python src/bpnet/hitcall/launch.py --dry-run
 python src/bpnet/hitcall/launch.py --head profile --head count
@@ -413,46 +432,44 @@ chromosome end or overlap the blacklist, so `peaks.narrowPeak` is regenerated
 from the same filtering rather than reusing `filtered_peaks` directly, keeping
 row order aligned with the saved arrays. Default settings (`--region-width
 2114`, i.e. the model's full input window rather than Fi-NeMo's own 1000bp
-default; `--global-lambda 0.7`; `--cwm-trim-threshold 0.3`) follow [Kelly
-Cochran's ProCapNet run_finemo.py](https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attributions_genomewide/run_finemo.py).
-Kelly's `--batch-size` default (2000) does not carry over: it was tuned
-against a single experiment's MoDISco motif set (tens of motifs), while the
-atlas-wide MotifCompendium cluster-average set has far more, so GPU memory
-per batch is much higher here. 2000 reliably OOMs even on a 44GB GPU, and so
-did 500 and 64 against the profile head, so `call_hits_bpnet.py` defaults
-`--batch-size` to 16 instead; lower it further via `--call-hits-args
-'--batch-size 8'` (through `launch.py`) if a run still OOMs on a smaller/
-shared GPU or a head with even more motifs.
+default; `--global-lambda 0.7`; `--cwm-trim-threshold 0.3`; `--batch-size 2000`)
+all follow [Kelly Cochran's ProCapNet
+run_finemo.py](https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attributions_genomewide/run_finemo.py),
+since the default motif source is now the same per-experiment scale her run
+used. If you override `--modisco-h5` to point at the atlas-wide
+MotifCompendium compendium instead, lower `--batch-size` a lot (e.g. `16`) —
+that much larger motif set makes GPU memory per batch far higher, and
+2000/500/64 all reliably OOM'd on a 44GB GPU against it.
 
-Use `--modisco-h5` to call hits against a specific experiment's own
-`modisco/bpnet/{experiment}_{head}.modisco.h5` instead of the shared
-compendium file (per-model motifs, not atlas-comparable). Use
-`--cwm-trim-thresholds`/`--cwm-trim-coords` (Fi-NeMo's `-T`/`-R`) to override
-trimming for specific motifs if any come out over-trimmed by the default
-threshold — short core-promoter motifs (e.g. Initiator elements) are
+Use `--cwm-trim-thresholds`/`--cwm-trim-coords` (Fi-NeMo's `-T`/`-R`) to
+override trimming for specific motifs if any come out over-trimmed by the
+default threshold — short core-promoter motifs (e.g. Initiator elements) are
 particularly at risk, which is why Kelly Cochran's ProCapNet run patched
 Fi-NeMo's trimming with a minimum-length floor that the current Fi-NeMo
 release does not have built in.
 
 Generate a ready-to-use `--cwm-trim-coords` floor file with
-`compute_trim_floor.py`: it replicates Fi-NeMo's own `trim_motif` against the
-MotifCompendium cluster-average CWMs, symmetrically widens (clamped to the
-untrimmed motif width) any motif trimmed below `--min-len` bp, and writes only
-the widened motifs to the output TSV — everything else keeps Fi-NeMo's
-default trimming.
+`compute_trim_floor.py`: it replicates Fi-NeMo's own `trim_motif` against a
+motif h5, symmetrically widens (clamped to the untrimmed motif width) any
+motif trimmed below `--min-len` bp, and writes only the widened motifs to the
+output TSV — everything else keeps Fi-NeMo's default trimming. Pass
+`-e/--experiment` to compute it against that experiment's own per-experiment
+motif set, matching `call_hits_bpnet.py`'s default motif source (omit it to
+compute against the atlas-wide compendium instead, for use with
+`--modisco-h5` overrides):
 
 ```bash
-python src/bpnet/hitcall/compute_trim_floor.py --head profile
-python src/bpnet/hitcall/compute_trim_floor.py --head count --min-len 8
-python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet/motifcompendium_profile_trim_coords_min6bp.tsv
+python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head profile
+python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head count --min-len 8
+python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords modisco/bpnet/ENCSR882DWM_profile_trim_coords_min6bp.tsv
 ```
 
-`launch.py --min-trim-len BP` wires this in atlas-wide: for each `--head`, it
-looks up `compute_trim_floor.py`'s output for that `BP` under
-`motifcompendium/bpnet/` and passes it as every job's `--cwm-trim-coords`,
-skipping (and counting separately) any head whose floor file hasn't been
-generated yet. Run `compute_trim_floor.py --head {head} --min-len {BP}` first
-for every head you plan to launch.
+`launch.py --min-trim-len BP` wires this in per experiment: for each
+(experiment, head), it looks up `compute_trim_floor.py -e`'s output for that
+`BP` under `modisco/bpnet/` and passes it as that job's `--cwm-trim-coords`,
+skipping (and counting separately) any experiment/head whose floor file
+hasn't been generated yet. Run `compute_trim_floor.py -e {experiment} --head
+{head} --min-len {BP}` first for every experiment/head you plan to launch.
 
 After `call_hits_bpnet.py`, run `report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
@@ -460,11 +477,13 @@ Development Multiomic Atlas fetal-atlas
 paper](https://github.com/GreenleafLab/HDMA/blob/main/code/03-chrombpnet/02-compendium/06b-reconcile_hits.py):
 drop all hits for any motif whose hit-derived CWM correlates poorly with the
 reference motif CWM (a real, data-driven quality signal for spurious/noisy
-compendium clusters, computed from the hits actually called rather than the
-motif's shape at discovery time). This runs `finemo report --no-recall`
-(seqlet-recall metrics require TF-MoDISco seqlets, which the lightweight
-MotifCompendium cluster-average h5 doesn't retain) and drops hits for any
-motif at or below `--cwm-similarity-threshold` (default 0.9, matching HDMA):
+motifs, computed from the hits actually called rather than the motif's shape
+at discovery time). This runs `finemo report --no-recall` for consistency
+between both motif sources it can run against — the default per-experiment
+modisco.h5 does retain TF-MoDISco seqlets, but the atlas-wide MotifCompendium
+cluster-average h5 (`--modisco-h5` override) doesn't, so seqlet-recall isn't
+always available — and drops hits for any motif at or below
+`--cwm-similarity-threshold` (default 0.9, matching HDMA):
 
 ```bash
 python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM
@@ -512,6 +531,42 @@ If `call_hits_bpnet.py` was run with `--cwm-trim-thresholds`/
 overrides from `compute_trim_floor.py` can't be exactly reproduced at report
 time, and `cwm_similarity` for those specific motifs may be computed against
 a slightly different template width than was actually used to call hits.
+
+Finally, run `link_hits_to_compendium.py` to relabel each experiment's
+per-experiment hits with the atlas-wide MotifCompendium cluster identity they
+belong to (`motifcompendium_{head}_pattern_to_cluster.tsv` from Motif
+Clustering above), so `hits_linked.tsv` is directly comparable across
+experiments the way calling hits against the shared compendium directly used
+to be — without paying the cost/pathologies of calling hits against every
+experiment's motifs at once:
+
+```bash
+python src/bpnet/hitcall/link_hits_to_compendium.py -e ENCSR882DWM
+python src/bpnet/hitcall/link_hits_to_compendium.py -e ENCSR882DWM --head count
+python src/bpnet/hitcall/link_hits_to_compendium.py -e ENCSR882DWM --min-trim-len 6
+
+python src/bpnet/hitcall/launch_link.py --dry-run
+python src/bpnet/hitcall/launch_link.py --head profile --head count
+python src/bpnet/hitcall/launch_link.py --min-trim-len 6
+```
+
+It prefers `hits_filtered.tsv` (post `report_bpnet.py` QC) if present, falling
+back to `hits_unique.tsv` otherwise, and adds a `compendium_motif_name` column
+(e.g. `pos_patterns.42`) alongside the original per-experiment `motif_name`
+(e.g. `pos_patterns.pattern_3`) rather than replacing it, so both identities
+stay available:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/hits_linked.tsv
+```
+
+Requires `cluster_motifs.py` to have already been run for the requested head
+(it builds the mapping from every experiment's own motifs, so needs rerunning
+whenever new experiments are added) and `call_hits_bpnet.py` to have been run
+for this experiment/head with the default per-experiment motif source, not
+`--modisco-h5` pointed at the compendium. `launch_link.py` mirrors
+`launch_report.py`: no GPU needed, so it runs as its own cheap CPU-only SLURM
+job.
 
 ## Notes
 
