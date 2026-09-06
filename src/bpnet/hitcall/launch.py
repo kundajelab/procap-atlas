@@ -3,13 +3,16 @@
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
 sbatch job per (experiment, head) pair via call_hits_bpnet.py, calling hits
-against the shared MotifCompendium cluster-average motif set for each head.
+against that experiment's own per-experiment MoDISco motif set (matching
+call_hits_bpnet.py's default). Run link_hits_to_compendium.py afterward to
+relabel each experiment's hits with the atlas-wide MotifCompendium cluster
+ID they belong to.
 
 Jobs are skipped if the output hits.tsv already exists or if the required
-OHE/attribution files or the MotifCompendium cluster-average h5 are missing
-(run attribute/launch.py and motifcompendium/cluster_motifs.py first). If
---min-trim-len is set, jobs are also skipped when the corresponding
-compute_trim_floor.py output is missing for that head.
+OHE/attribution/per-experiment MoDISco files are missing (run
+attribute/launch.py and modisco/launch.py first). If --min-trim-len is set,
+jobs are also skipped when the corresponding compute_trim_floor.py -e output
+is missing for that experiment/head.
 
 Usage:
     python src/bpnet/hitcall/launch.py                    # submit all experiments, profile head
@@ -84,10 +87,11 @@ def main():
         help=(
             "apply compute_trim_floor.py's minimum motif-trim-length floor by "
             "passing its --cwm-trim-coords output "
-            "(motifcompendium_{head}_trim_coords_min{BP}bp.tsv) to every job "
-            "for that head. Requires compute_trim_floor.py --head {head} "
-            "--min-len {BP} to have already been run; disabled by default "
-            "(Fi-NeMo's plain threshold-based trimming with no floor)."
+            "(modisco/bpnet/{experiment}_{head}_trim_coords_min{BP}bp.tsv) to "
+            "each job. Requires compute_trim_floor.py -e {experiment} --head "
+            "{head} --min-len {BP} to have already been run for every "
+            "experiment/head being launched; disabled by default (Fi-NeMo's "
+            "plain threshold-based trimming with no floor)."
         ),
     )
     args = parser.parse_args()
@@ -106,51 +110,14 @@ def main():
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
-    mc_dir = REPO_ROOT / "motifcompendium" / "bpnet"
+    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
     out_dir = REPO_ROOT / "hitcalls" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # The motif h5 is shared across every experiment for a given head, so check
-    # it once up front rather than per experiment -- if it's missing, every
-    # experiment for that head fails identically, which used to show up as an
-    # undifferentiated "skipped ... missing attributions/MotifCompendium
-    # outputs" count with no way to tell which prerequisite was actually absent.
-    motif_h5_by_head = {}
-    for head in heads:
-        motif_h5 = mc_dir / f"motifcompendium_{head}_cluster_averages.h5"
-        motif_h5_by_head[head] = motif_h5
-        if not motif_h5.exists():
-            print(
-                f"WARNING: {motif_h5} not found -- run "
-                f"src/bpnet/motifcompendium/cluster_motifs.py --head {head} "
-                f"first. Skipping all experiments for head={head}.",
-                file=sys.stderr,
-            )
-
-    # Same reasoning as motif_h5_by_head above: the trim-coords floor file is
-    # shared across every experiment for a given head, so resolve/validate it
-    # once up front rather than per experiment.
-    trim_coords_by_head = {}
-    if args.min_trim_len is not None:
-        for head in heads:
-            trim_coords = (
-                mc_dir
-                / f"motifcompendium_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
-            )
-            trim_coords_by_head[head] = trim_coords
-            if not trim_coords.exists():
-                print(
-                    f"WARNING: {trim_coords} not found -- run "
-                    f"src/bpnet/hitcall/compute_trim_floor.py --head {head} "
-                    f"--min-len {args.min_trim_len} first. Skipping all "
-                    f"experiments for head={head}.",
-                    file=sys.stderr,
-                )
-
     submitted = 0
     skipped_done = 0
-    skipped_no_motif_h5 = 0
+    skipped_no_modisco_h5 = 0
     skipped_no_trim_floor = 0
     skipped_no_ohe = 0
     skipped_no_attr = 0
@@ -166,11 +133,22 @@ def main():
         ohe_path = attr_dir / f"{exp_id}_ohe.npz"
 
         for head in heads:
-            if not motif_h5_by_head[head].exists():
-                skipped_no_motif_h5 += 1
+            # Unlike the shared atlas-wide MotifCompendium h5 this used to
+            # check once per head, the default motif source is now this
+            # experiment's own per-experiment MoDISco h5, so it has to be
+            # checked per (experiment, head) instead.
+            modisco_h5 = modisco_dir / f"{exp_id}_{head}.modisco.h5"
+            if not modisco_h5.exists():
+                skipped_no_modisco_h5 += 1
                 continue
 
-            if args.min_trim_len is not None and not trim_coords_by_head[head].exists():
+            trim_coords = (
+                modisco_dir
+                / f"{exp_id}_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
+                if args.min_trim_len is not None
+                else None
+            )
+            if trim_coords is not None and not trim_coords.exists():
                 skipped_no_trim_floor += 1
                 continue
 
@@ -188,11 +166,7 @@ def main():
             # --call-hits-args isn't a structured flag, so a
             # --cwm-trim-threshold/--cwm-trim-thresholds override passed
             # through it won't be reflected here -- only --min-trim-len is.
-            suffix = trim_suffix(
-                DEFAULT_CWM_TRIM_THRESHOLD,
-                None,
-                trim_coords_by_head[head] if args.min_trim_len is not None else None,
-            )
+            suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
             exp_out_dir = out_dir / f"{model_dir_name}_{head}"
             call_hits_dir = exp_out_dir / suffix.lstrip("_") if suffix else exp_out_dir
             hits_path = call_hits_dir / "hits.tsv"
@@ -205,8 +179,8 @@ def main():
                 f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {CALL_HITS_SCRIPT} "
                 f"-e {exp_id} --head {head} -v"
             )
-            if args.min_trim_len is not None:
-                call_hits_cmd += f" --cwm-trim-coords {trim_coords_by_head[head]}"
+            if trim_coords is not None:
+                call_hits_cmd += f" --cwm-trim-coords {trim_coords}"
             call_hits_cmd += f" {args.call_hits_args}"
 
             sbatch_script = textwrap.dedent(f"""\
@@ -254,8 +228,8 @@ def main():
     total = len(experiments) * len(heads)
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
-        f"with <{args.min_reads:,} reads, skipped {skipped_no_motif_h5} missing "
-        f"the MotifCompendium cluster-average h5, skipped {skipped_no_trim_floor} "
+        f"with <{args.min_reads:,} reads, skipped {skipped_no_modisco_h5} missing "
+        f"the per-experiment MoDISco h5, skipped {skipped_no_trim_floor} "
         f"missing the trim-coords floor file, skipped {skipped_no_ohe} "
         f"missing OHE sequences, skipped {skipped_no_attr} missing "
         f"attributions, skipped {skipped_done} already called ({total} total)"

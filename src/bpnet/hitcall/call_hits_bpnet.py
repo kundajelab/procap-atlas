@@ -2,12 +2,21 @@
 
 Builds a peak coordinate file aligned with the saved OHE/attribution arrays,
 converts them to Fi-NeMo's region format, and runs Fi-NeMo hit calling against
-the atlas-wide MotifCompendium clustered motif set, so hits are directly
-comparable across experiments (a hit's `motif_name`, e.g. `pos_patterns.42`,
-is the same MotifCompendium cluster ID everywhere it is called). Requires
-`src/bpnet/motifcompendium/cluster_motifs.py` to have already been run for
-the requested head, which exports a modisco-lite-format h5 of cluster-average
-CWMs designed to be fed directly into Fi-NeMo.
+this experiment's own per-experiment MoDISco motif set
+(modisco/bpnet/{experiment}_{head}.modisco.h5) -- the same scale of motif set
+Kelly Cochran's ProCapNet run_finemo.py used, and much smaller than the
+atlas-wide MotifCompendium compendium. Hits are therefore fast and free of
+competitive-reconstruction pathologies from cell-type-specific motifs that
+were never even discovered in this experiment's own attributions (Fi-NeMo's
+joint sparse regression makes every motif in the h5 compete for the same
+residual, so including atlas-wide motifs this experiment doesn't express just
+adds noise and GPU cost). A hit's `motif_name` here (e.g. `pos_patterns.pattern_3`)
+is only meaningful within this experiment; run
+`src/bpnet/hitcall/link_hits_to_compendium.py` afterward to relabel hits with
+the atlas-wide MotifCompendium cluster ID they belong to, for cross-experiment
+comparability. Pass `--modisco-h5` explicitly to call hits against the shared
+compendium h5 instead (`src/bpnet/motifcompendium/cluster_motifs.py` output),
+reproducing the old atlas-wide-hit-calling behavior.
 
 Default settings (region width, global lambda, CWM trim threshold) follow
 Kelly Cochran's ProCapNet run_finemo.py:
@@ -163,11 +172,15 @@ def main():
         default=None,
         help=(
             "override the modisco-lite-format h5 of motif CWMs to call hits "
-            "against; default is the shared MotifCompendium cluster-average "
-            "file for --head, motifcompendium/bpnet/"
-            "motifcompendium_{head}_cluster_averages.h5. Pass this experiment's "
-            "own modisco/bpnet/{experiment}_{head}.modisco.h5 to call hits "
-            "against per-model (non-atlas-comparable) motifs instead."
+            "against; default is this experiment's own "
+            "modisco/bpnet/{experiment}_{head}.modisco.h5. Pass the shared "
+            "MotifCompendium cluster-average file instead "
+            "(motifcompendium/bpnet/motifcompendium_{head}_cluster_averages.h5) "
+            "to call hits atlas-wide against every experiment's motifs at "
+            "once (slower, and prone to competing against motifs this "
+            "experiment never expresses); prefer running "
+            "link_hits_to_compendium.py after the default per-experiment run "
+            "instead."
         ),
     )
     parser.add_argument(
@@ -222,16 +235,15 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=2000,
         help=(
-            "Fi-NeMo region batch size (default: 16). Kelly Cochran's "
-            "ProCapNet run used 2000 against a per-experiment MoDISco motif "
-            "set (tens of motifs); the atlas-wide MotifCompendium cluster-"
-            "average set has far more motifs, so GPU memory per batch is "
-            "much higher here. 2000 reliably OOMs on a 44GB GPU, and so did "
-            "500 and 64 on the profile head, hence the much smaller default. "
-            "Lower this further if hit calling still OOMs on a smaller/"
-            "shared GPU or a head with even more motifs."
+            "Fi-NeMo region batch size (default: 2000, Kelly Cochran's "
+            "ProCapNet default, sized for a per-experiment MoDISco motif set "
+            "of tens of motifs). If you override --modisco-h5 to point at "
+            "the atlas-wide MotifCompendium compendium instead, lower this a "
+            "lot (e.g. --batch-size 16) -- that much larger motif set makes "
+            "GPU memory per batch far higher, and 2000/500/64 all reliably "
+            "OOM'd on a 44GB GPU against it."
         ),
     )
     parser.add_argument(
@@ -270,9 +282,9 @@ def main():
     else:
         modisco_h5 = (
             REPO_ROOT
-            / "motifcompendium"
+            / "modisco"
             / "bpnet"
-            / f"motifcompendium_{args.head}_cluster_averages.h5"
+            / f"{args.experiment}_{args.head}.modisco.h5"
         )
 
     for path, label in [

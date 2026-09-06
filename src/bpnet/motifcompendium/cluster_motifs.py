@@ -78,6 +78,46 @@ def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on, weight_
     mc.cluster(**cluster_kwargs)
 
 
+def export_pattern_to_cluster_mapping(mc, head):
+    """Map each experiment's own per-pattern Fi-NeMo motif_name (from calling
+    hits directly against that experiment's own modisco.h5, the default
+    hitcall/call_hits_bpnet.py source) to the atlas-wide MotifCompendium
+    cluster it was assigned to, for link_hits_to_compendium.py.
+
+    mc.metadata's "name" column is built by MotifCompendium.build_from_modisco
+    as f"{model}-{posneg}.{pattern}" (posneg="pos"/"neg", pattern=the literal
+    modisco.h5 pattern key e.g. "pattern_3") -- see
+    MotifCompendium.MotifCompendium.build_from_modisco and
+    MotifCompendium.utils.loader.load_modisco(s). Stripping the known
+    f"{model}-{posneg}." prefix recovers "pattern", which combined with
+    posneg reconstructs the exact motif_name Fi-NeMo assigns when it calls
+    hits against that experiment's own modisco.h5 directly
+    (f"{posneg}_patterns.{pattern}", e.g. "pos_patterns.pattern_3") --
+    MotifCompendium uses "pos"/"neg", but modisco-lite h5s (and Fi-NeMo's own
+    motif_name convention) use "pos_patterns"/"neg_patterns".
+    """
+    df = mc.metadata[["name", "model", "posneg", "cluster_final"]]
+    prefixes = df["model"].astype(str) + "-" + df["posneg"].astype(str) + "."
+    patterns = [
+        name[len(prefix) :] for name, prefix in zip(df["name"], prefixes)
+    ]
+    mapping = pd.DataFrame(
+        {
+            "experiment": df["model"],
+            "local_motif_name": df["posneg"].astype(str)
+            + "_patterns."
+            + pd.Series(patterns, index=df.index),
+            "compendium_motif_name": df["posneg"].astype(str)
+            + "_patterns."
+            + df["cluster_final"].astype(int).astype(str),
+        }
+    )
+    mapping_path = MC_DIR / f"motifcompendium_{head}_pattern_to_cluster.tsv"
+    mapping.to_csv(mapping_path, sep="\t", index=False)
+    print(f"{head}: pattern->cluster mapping saved to {mapping_path}")
+    return mapping_path
+
+
 def write_cluster_metadata(mc, head, logo_paths=None):
     agg = (
         mc.metadata.groupby("cluster_final")
@@ -317,6 +357,8 @@ def process_head(
         f"{head}: {n_final} final clusters "
         f"(within_threshold={within_threshold}, across_threshold={across_threshold})"
     )
+
+    export_pattern_to_cluster_mapping(mc, head)
 
     utils_analysis.export_compendium_clustered_modisco(
         mc,

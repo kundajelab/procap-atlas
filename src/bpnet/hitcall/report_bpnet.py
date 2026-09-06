@@ -12,18 +12,17 @@ the equivalent metric in the older Fi-NeMo release they used).
 
 `cwm_similarity` is computed from `regions.npz` + `hits.tsv` + the motif h5's
 own CWMs, independent of TF-MoDISco seqlets, so `--no-recall` is always used
-here: the shared MotifCompendium cluster-average motif h5
-(`motifcompendium_{head}_cluster_averages.h5`) only stores averaged
-`contrib_scores` per cluster, not seqlets -- unlike HDMA's own merged motif
-h5, which is a real TF-MoDISco-lite pattern collapse (via
-`modiscolite.aggregator.SimilarPatternsCollapser`) that keeps seqlets -- so
-seqlet-recall metrics aren't available to us here. Even if MotifCompendium's
-data model retained seqlets (it discards them on load, keeping only an
-averaged CWM per source pattern), pooling seqlets across experiments into one
-shared cluster would make per-experiment recall structurally biased low for
-any motif mostly discovered in other experiments' peaks. cwm_similarity has
-no such issue, since it only compares against this experiment's own called
-hits.
+here for consistency between both motif sources this can run against: the
+default per-experiment `modisco/bpnet/{experiment}_{head}.modisco.h5` is a
+real TF-MoDISco-lite output and does retain seqlets, but the atlas-wide
+MotifCompendium cluster-average h5 (`--modisco-h5` override,
+`motifcompendium_{head}_cluster_averages.h5`) only stores averaged
+`contrib_scores` per cluster, not seqlets, so seqlet-recall isn't available
+in that mode. Even setting that aside, pooling seqlets across experiments
+into one shared compendium cluster would make per-experiment recall
+structurally biased low for any motif mostly discovered in other
+experiments' peaks. cwm_similarity has no such issue, since it only compares
+against this experiment's own called hits, in either mode.
 
 Note: if call_hits_bpnet.py was run with --cwm-trim-thresholds/
 --cwm-trim-coords overrides (e.g. from compute_trim_floor.py), `finemo
@@ -137,9 +136,8 @@ def main():
         default=None,
         help=(
             "motif CWMs the hits were called against; must match what "
-            "call_hits_bpnet.py used. Default is the shared MotifCompendium "
-            "cluster-average file for --head, motifcompendium/bpnet/"
-            "motifcompendium_{head}_cluster_averages.h5"
+            "call_hits_bpnet.py used. Default is this experiment's own "
+            "modisco/bpnet/{experiment}_{head}.modisco.h5."
         ),
     )
     parser.add_argument(
@@ -203,9 +201,9 @@ def main():
     else:
         modisco_h5 = (
             REPO_ROOT
-            / "motifcompendium"
+            / "modisco"
             / "bpnet"
-            / f"motifcompendium_{args.head}_cluster_averages.h5"
+            / f"{args.experiment}_{args.head}.modisco.h5"
         )
 
     for path, label in [

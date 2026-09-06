@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
-"""Submit SLURM jobs to run report_bpnet.py on completed Fi-NeMo hit calls.
+"""Submit SLURM jobs to relabel per-experiment Fi-NeMo hits with their
+atlas-wide MotifCompendium cluster identity.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
-sbatch job per (experiment, head) pair via report_bpnet.py, which runs
-`finemo report --no-recall` and filters hits by per-motif cwm_similarity.
+sbatch job per (experiment, head) pair via link_hits_to_compendium.py.
 
-Jobs are skipped if hits_filtered.tsv already exists or if hits_unique.tsv is
-missing (run call_hits_bpnet.py/hitcall/launch.py first). This step does not
-use a GPU, unlike hit calling itself, so it runs as a separate, cheaper
-launcher -- mirroring modisco/launch.py vs modisco/launch_report.py. If
-hitcall/launch.py was run with --min-trim-len, pass the same value here so
-this launcher looks in the matching trim-coords output directory.
+Jobs are skipped if hits_linked.tsv already exists or if neither
+hits_filtered.tsv nor hits_unique.tsv exists yet (run
+call_hits_bpnet.py/hitcall/launch.py, and optionally
+report_bpnet.py/hitcall/launch_report.py, first). This step does not use a
+GPU, so it runs as its own cheap CPU-only launcher, like launch_report.py.
 
 Usage:
-    python src/bpnet/hitcall/launch_report.py                    # submit all experiments, profile head
-    python src/bpnet/hitcall/launch_report.py --dry-run           # print sbatch scripts without submitting
-    python src/bpnet/hitcall/launch_report.py --head count        # count head only
-    python src/bpnet/hitcall/launch_report.py --head profile --head count  # both heads
-    python src/bpnet/hitcall/launch_report.py --min-reads 20000000
-    python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.85'
-    python src/bpnet/hitcall/launch_report.py --min-trim-len 6  # match hitcall/launch.py's floor
+    python src/bpnet/hitcall/launch_link.py                    # submit all experiments, profile head
+    python src/bpnet/hitcall/launch_link.py --dry-run           # print sbatch scripts without submitting
+    python src/bpnet/hitcall/launch_link.py --head profile --head count
+    python src/bpnet/hitcall/launch_link.py --min-reads 20000000
+    python src/bpnet/hitcall/launch_link.py --min-trim-len 6  # match hitcall/launch.py's floor
 """
 
 import argparse
@@ -36,7 +33,7 @@ from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
-REPORT_SCRIPT = REPO_ROOT / "src" / "bpnet" / "hitcall" / "report_bpnet.py"
+LINK_SCRIPT = REPO_ROOT / "src" / "bpnet" / "hitcall" / "link_hits_to_compendium.py"
 
 
 def main():
@@ -53,13 +50,13 @@ def main():
         choices=["profile", "count"],
         default=None,
         metavar="HEAD",
-        help="attribution/motif head(s) to report on; repeatable (default: profile)",
+        help="attribution/motif head(s) to link; repeatable (default: profile)",
     )
     # SLURM resource flags
     parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
-    parser.add_argument("--cpus-per-task", type=int, default=4)
-    parser.add_argument("--mem", type=str, default="64G")
-    parser.add_argument("--time", type=str, default="2:00:00")
+    parser.add_argument("--cpus-per-task", type=int, default=1)
+    parser.add_argument("--mem", type=str, default="16G")
+    parser.add_argument("--time", type=str, default="30:00")
     parser.add_argument(
         "--min-reads",
         type=int,
@@ -67,10 +64,10 @@ def main():
         help="skip experiments with fewer total reads than this (default: 0, disabled)",
     )
     parser.add_argument(
-        "--report-args",
+        "--link-args",
         type=str,
         default="",
-        help="extra arguments forwarded to report_bpnet.py (e.g. '--cwm-similarity-threshold 0.85')",
+        help="extra arguments forwarded to link_hits_to_compendium.py",
     )
     parser.add_argument(
         "--min-trim-len",
@@ -98,7 +95,7 @@ def main():
 
     hitcalls_dir = REPO_ROOT / "hitcalls" / "bpnet"
     modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_report"
+    log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_link"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     submitted = 0
@@ -123,24 +120,26 @@ def main():
             suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, cwm_trim_coords)
             exp_dir = hitcalls_dir / f"{model_dir_name}_{head}"
             hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
-            hits_tsv = hits_dir / "hits_unique.tsv"
-            if not hits_tsv.exists():
+
+            hits_filtered = hits_dir / "hits_filtered.tsv"
+            hits_unique = hits_dir / "hits_unique.tsv"
+            if not hits_filtered.exists() and not hits_unique.exists():
                 skipped_missing += 1
                 continue
 
-            hits_filtered = hits_dir / "hits_filtered.tsv"
-            if hits_filtered.exists():
+            hits_linked = hits_dir / "hits_linked.tsv"
+            if hits_linked.exists():
                 skipped_done += 1
                 continue
 
-            job_name = f"bpnet_hitcall_report_{exp_id}_{head}{suffix}"
-            report_cmd = (
-                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {REPORT_SCRIPT} "
+            job_name = f"bpnet_hitcall_link_{exp_id}_{head}{suffix}"
+            link_cmd = (
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {LINK_SCRIPT} "
                 f"-e {exp_id} --head {head} -v"
             )
-            if cwm_trim_coords is not None:
-                report_cmd += f" --cwm-trim-coords {cwm_trim_coords}"
-            report_cmd += f" {args.report_args}"
+            if args.min_trim_len is not None:
+                link_cmd += f" --min-trim-len {args.min_trim_len}"
+            link_cmd += f" {args.link_args}"
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l
@@ -160,7 +159,7 @@ def main():
                 ml htslib
 
                 mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
-                {report_cmd}
+                {link_cmd}
             """)
 
             if args.dry_run:
@@ -186,7 +185,8 @@ def main():
     print(
         f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
         f"with <{args.min_reads:,} reads, skipped {skipped_missing} missing "
-        f"hits_unique.tsv, skipped {skipped_done} already reported ({total} total)"
+        f"hits_filtered.tsv/hits_unique.tsv, skipped {skipped_done} already "
+        f"linked ({total} total)"
     )
 
 

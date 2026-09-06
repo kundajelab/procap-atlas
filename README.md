@@ -32,7 +32,10 @@ uv sync --group dev
 uv run pytest
 ```
 
-`pybigtools` is pinned to 0.2.5 for Sherlock compatibility. Torch is not a base
+`pybigtools` is pinned to 0.2.5 for Sherlock compatibility, and `hdf5plugin`
+builds with `HDF5PLUGIN_NATIVE=False` (set in `pyproject.toml`) because it has
+no wheel for Sherlock's glibc tier and its default `-march=native` build fails
+there. Torch is not a base
 dependency — it lives in two mutually exclusive extras, because Sherlock's
 pip/uv can only resolve wheels up to `torch==2.6.0`, while Cherimoya needs its
 real `torch>=2.9.0`/`triton>=3.5.1`:

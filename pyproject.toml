@@ -71,6 +71,14 @@ notebook = [
 # bpnet-lite and cherimoya both declare MACS3, but this repository never
 # calls it; skipping it avoids slow source builds during environment setup.
 exclude-dependencies = ["macs3"]
+# hdf5plugin (pulled in by finemo and modisco) publishes no manylinux_2_17
+# wheel -- Sherlock's glibc tier -- so it always builds from source there. Its
+# build script probes the host and adds -march=native, which makes GCC
+# auto-vectorize the popcount loops in the bundled SPERR sources into
+# AVX512-VPOPCNTDQ instructions that Sherlock's assembler cannot assemble.
+# Disabling native also keeps the login node's ISA out of filter plugins that
+# jobs load on older compute nodes.
+extra-build-variables = { hdf5plugin = { HDF5PLUGIN_NATIVE = "False" } }
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]

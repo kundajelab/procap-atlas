@@ -11,18 +11,24 @@ https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attri
 
 This script replicates Fi-NeMo's own `trim_motif` (imported directly from the
 installed `finemo` package, so it always matches whatever trimming algorithm
-`finemo call-hits` actually runs) on the MotifCompendium cluster-average
-motif set, widens -- symmetrically, clamped to the untrimmed motif width --
-any motif trimmed below `--min-len`, and writes a
+`finemo call-hits` actually runs), widens -- symmetrically, clamped to the
+untrimmed motif width -- any motif trimmed below `--min-len`, and writes a
 `-R/--cwm-trim-coords`-compatible TSV containing only the motifs that needed
 widening. Everything else is left out of the file, so it keeps using
 Fi-NeMo's own default threshold-based trimming.
 
+Pass `-e/--experiment` to compute the floor against that experiment's own
+`modisco/bpnet/{experiment}_{head}.modisco.h5` (matching call_hits_bpnet.py's
+default per-experiment motif source); without it, defaults to the shared
+atlas-wide MotifCompendium cluster-average set instead (for use with
+`--modisco-h5` overrides pointed at the compendium).
+
 Usage:
-    python src/bpnet/hitcall/compute_trim_floor.py --head profile
-    python src/bpnet/hitcall/compute_trim_floor.py --head count --min-len 8
+    python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head profile
+    python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head count --min-len 8
+    python src/bpnet/hitcall/compute_trim_floor.py --head profile  # atlas-wide MotifCompendium set instead
     python src/bpnet/hitcall/compute_trim_floor.py --modisco-h5 modisco/bpnet/ENCSR882DWM_profile.modisco.h5 --head profile
-    python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords motifcompendium/bpnet/motifcompendium_profile_trim_coords_min6bp.tsv
+    python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords modisco/bpnet/ENCSR882DWM_profile_trim_coords_min6bp.tsv
 """
 
 import argparse
@@ -57,6 +63,19 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
+        "-e",
+        "--experiment",
+        type=str,
+        default=None,
+        help=(
+            "compute the floor against this experiment's own "
+            "modisco/bpnet/{experiment}_{head}.modisco.h5, matching "
+            "call_hits_bpnet.py's default per-experiment motif source. "
+            "Without this, defaults to the shared atlas-wide MotifCompendium "
+            "cluster-average set instead."
+        ),
+    )
+    parser.add_argument(
         "--head",
         type=str,
         default="profile",
@@ -68,10 +87,8 @@ def main():
         type=str,
         default=None,
         help=(
-            "override the modisco-lite-format h5 of motif CWMs to inspect; "
-            "default is the shared MotifCompendium cluster-average file for "
-            "--head, motifcompendium/bpnet/"
-            "motifcompendium_{head}_cluster_averages.h5"
+            "override the modisco-lite-format h5 of motif CWMs to inspect "
+            "directly, taking precedence over --experiment"
         ),
     )
     parser.add_argument(
@@ -96,13 +113,24 @@ def main():
         help=(
             "output TSV path for the -R/--cwm-trim-coords override; default "
             "is alongside the input h5, "
-            "motifcompendium_{head}_trim_coords_min{min_len}bp.tsv"
+            "{experiment}_{head}_trim_coords_min{min_len}bp.tsv (per-experiment "
+            "mode) or motifcompendium_{head}_trim_coords_min{min_len}bp.tsv "
+            "(atlas-wide mode)"
         ),
     )
     args = parser.parse_args()
 
     if args.modisco_h5:
         modisco_h5 = Path(args.modisco_h5)
+        name_stem = f"{args.head}"
+    elif args.experiment:
+        modisco_h5 = (
+            REPO_ROOT
+            / "modisco"
+            / "bpnet"
+            / f"{args.experiment}_{args.head}.modisco.h5"
+        )
+        name_stem = f"{args.experiment}_{args.head}"
     else:
         modisco_h5 = (
             REPO_ROOT
@@ -110,6 +138,7 @@ def main():
             / "bpnet"
             / f"motifcompendium_{args.head}_cluster_averages.h5"
         )
+        name_stem = f"motifcompendium_{args.head}"
     if not modisco_h5.exists():
         print(f"Error: motif CWMs not found: {modisco_h5}", file=sys.stderr)
         sys.exit(1)
@@ -118,8 +147,7 @@ def main():
         out_path = Path(args.out_path)
     else:
         out_path = (
-            modisco_h5.parent
-            / f"motifcompendium_{args.head}_trim_coords_min{args.min_len}bp.tsv"
+            modisco_h5.parent / f"{name_stem}_trim_coords_min{args.min_len}bp.tsv"
         )
 
     widened = []
