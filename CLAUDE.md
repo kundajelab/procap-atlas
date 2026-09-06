@@ -55,6 +55,11 @@ by `uv run`, so no extra actually gets selected and torch silently resolves
 unpinned.
 `pybigtools` is pinned to 0.2.5 because newer releases can require source builds
 that fail on Sherlock's older assembler/toolchain.
+For the same reason, `tool.uv.extra-build-variables` forces
+`HDF5PLUGIN_NATIVE=False`: `hdf5plugin` (a Fi-NeMo/MoDISco dependency) has no
+wheel for Sherlock's glibc tier and always builds from source there, and its
+default `-march=native` emits AVX512 instructions Sherlock's assembler rejects.
+Keep that setting unless Sherlock support is being dropped.
 
 ```bash
 uv sync --group dev
