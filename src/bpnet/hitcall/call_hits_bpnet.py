@@ -24,7 +24,10 @@ https://github.com/kellycochran/procapnet_allscripts/blob/main/GENCODE/src/attri
 
 peaks.narrowPeak/regions.npz (trim-independent) are cached in
 hitcalls/bpnet/{model_dir_name}_{head}/ and reused across trim
-configurations. Non-default trimming (--cwm-trim-threshold,
+configurations -- regions.npz is written atomically (temp file + rename) and
+its zip validity is checked before reuse, so a job killed mid-write (SLURM
+pre-emption/OOM/walltime) can't leave a corrupt cache file for a later run to
+silently pick up. Non-default trimming (--cwm-trim-threshold,
 --cwm-trim-thresholds, --cwm-trim-coords) instead moves finemo call-hits's
 own output into a trim-suffixed subdirectory of that same directory (e.g.
 {model_dir_name}_{head}/trimcoords-{file_stem}/) so rerunning with a
@@ -43,6 +46,7 @@ Usage:
 import argparse
 import subprocess
 import sys
+import zipfile
 from itertools import chain
 from pathlib import Path
 
@@ -311,13 +315,25 @@ def main():
 
     peaks_narrowpeak = out_dir / "peaks.narrowPeak"
     regions_npz = out_dir / "regions.npz"
-    if regions_npz.exists():
+    if regions_npz.exists() and zipfile.is_zipfile(regions_npz):
         print(f"Reusing existing {regions_npz}")
     else:
+        if regions_npz.exists():
+            print(
+                f"WARNING: existing {regions_npz} is not a valid .npz file "
+                "(likely left behind by an interrupted run, e.g. a "
+                "pre-empted/OOM-killed SLURM job) -- regenerating it.",
+                file=sys.stderr,
+            )
         n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
         print(
             f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}"
         )
+        # Write to a temporary path and rename into place only once finemo
+        # finishes successfully, so a job killed mid-write (pre-emption, OOM,
+        # walltime) can never leave a truncated/corrupt regions.npz at the
+        # canonical cache path for a later run to silently "reuse".
+        tmp_regions_npz = out_dir / "regions.tmp.npz"
         run(
             [
                 "finemo",
@@ -329,12 +345,13 @@ def main():
                 "-p",
                 str(peaks_narrowpeak),
                 "-o",
-                str(regions_npz),
+                str(tmp_regions_npz),
                 "-w",
                 str(args.region_width),
             ],
             args.verbose,
         )
+        tmp_regions_npz.rename(regions_npz)
 
     suffix = trim_suffix(
         args.cwm_trim_threshold, args.cwm_trim_thresholds, args.cwm_trim_coords
