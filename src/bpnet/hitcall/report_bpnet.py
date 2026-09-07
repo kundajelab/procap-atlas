@@ -24,12 +24,13 @@ structurally biased low for any motif mostly discovered in other
 experiments' peaks. cwm_similarity has no such issue, since it only compares
 against this experiment's own called hits, in either mode.
 
-If filter_repeat_density.py has been run for this experiment/head
-(hits_dedensified.tsv exists), this reads that instead of hits_unique.tsv --
-finemo report's own hits-directory mode always reads hits.tsv regardless of
-filtering, so a dedensified hits file is passed directly as -H instead
-(deprecated-but-functional Fi-NeMo behavior) to get cwm_similarity
-recomputed against the cleaned-up hit set.
+If filter_repeat_density.py and/or filter_low_confidence_hits.py have been
+run for this experiment/head, this reads their output
+(hits_confidence_filtered.tsv, else hits_dedensified.tsv) instead of
+hits_unique.tsv -- finemo report's own hits-directory mode always reads
+hits.tsv regardless of filtering, so the filtered file is passed directly as
+-H instead (deprecated-but-functional Fi-NeMo behavior) to get
+cwm_similarity recomputed against the cleaned-up hit set.
 
 Note: if call_hits_bpnet.py was run with --cwm-trim-thresholds/
 --cwm-trim-coords overrides (e.g. from compute_trim_floor.py), `finemo
@@ -201,16 +202,21 @@ def main():
     exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
     hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
     regions_npz = exp_dir / "regions.npz"
-    # Prefer filter_repeat_density.py's output if it's been run: dropping
-    # dense same-motif repeat clusters before computing cwm_similarity lets
-    # a motif dragged down by repeat noise (e.g. TATA/TA-Inr) clear the QC
-    # threshold on its remaining real hits, instead of losing every hit for
-    # that motif wholesale.
+    # Prefer the most-processed pre-QC hits available: dropping dense
+    # same-motif repeat clusters (filter_repeat_density.py) and/or a motif's
+    # low-confidence hit mode (filter_low_confidence_hits.py) before
+    # computing cwm_similarity lets a motif dragged down by that noise
+    # (e.g. TATA/GATA) clear the QC threshold on its remaining real hits,
+    # instead of losing every hit for that motif wholesale.
     hits_unique_tsv = hits_dir / "hits_unique.tsv"
     hits_dedensified_tsv = hits_dir / "hits_dedensified.tsv"
-    hits_tsv = (
-        hits_dedensified_tsv if hits_dedensified_tsv.exists() else hits_unique_tsv
-    )
+    hits_confidence_filtered_tsv = hits_dir / "hits_confidence_filtered.tsv"
+    if hits_confidence_filtered_tsv.exists():
+        hits_tsv = hits_confidence_filtered_tsv
+    elif hits_dedensified_tsv.exists():
+        hits_tsv = hits_dedensified_tsv
+    else:
+        hits_tsv = hits_unique_tsv
 
     if args.modisco_h5:
         modisco_h5 = Path(args.modisco_h5)
@@ -238,10 +244,10 @@ def main():
     # finemo report's own (non-deprecated) directory mode always reads
     # hits.tsv from -H, ignoring any filtering; passing a direct .tsv path
     # instead (deprecated but functional Fi-NeMo behavior) is the only way
-    # to have it recompute cwm_similarity against filter_repeat_density.py's
-    # cleaned-up hits, so only take that path when a dedensified file
-    # actually exists.
-    hits_arg = str(hits_tsv) if hits_dedensified_tsv.exists() else str(hits_dir)
+    # to have it recompute cwm_similarity against filter_repeat_density.py's/
+    # filter_low_confidence_hits.py's cleaned-up hits, so only take that path
+    # when one of those has actually been run.
+    hits_arg = str(hits_tsv) if hits_tsv != hits_unique_tsv else str(hits_dir)
     run(
         [
             "finemo",
