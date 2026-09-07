@@ -50,6 +50,17 @@ import zipfile
 from itertools import chain
 from pathlib import Path
 
+# Names of every stage of post-call-hits filtering, most- to least-processed.
+# Shared by report_bpnet.py, filter_low_confidence_hits.py, and
+# link_hits_to_compendium.py so they all resolve "the most-processed hits
+# available" the same way.
+HITS_FILE_STAGES = [
+    "hits_filtered.tsv",
+    "hits_confidence_filtered.tsv",
+    "hits_dedensified.tsv",
+    "hits_unique.tsv",
+]
+
 import pandas as pd
 import yaml
 from tangermeme.io import extract_loci
@@ -81,6 +92,39 @@ def trim_suffix(cwm_trim_threshold, cwm_trim_thresholds, cwm_trim_coords):
     if cwm_trim_coords:
         parts.append(f"trimcoords-{Path(cwm_trim_coords).stem}")
     return ("_" + "_".join(parts)) if parts else ""
+
+
+def resolve_hits_path(hits_dir, stages=HITS_FILE_STAGES, verbose=False):
+    """Find the most-processed hits file in `stages` (most- to
+    least-processed order) that actually exists in `hits_dir`, treating a
+    candidate as stale -- and falling through to the next, less-processed
+    one -- if it's older than any less-processed file behind it.
+
+    Without this, rerunning an earlier stage (e.g. filter_repeat_density.py
+    with a different --cluster-window) after a later stage already ran
+    (e.g. filter_low_confidence_hits.py) silently overwrites the earlier
+    file in place, but the later, now-stale file still exists and still
+    looks preferable by name alone -- report_bpnet.py and friends would keep
+    reading it and never see the rerun's effect at all.
+    """
+    paths = [hits_dir / name for name in stages]
+    for i, path in enumerate(paths):
+        if not path.exists():
+            continue
+        stale_against = next(
+            (later for later in paths[i + 1 :] if later.exists() and later.stat().st_mtime > path.stat().st_mtime),
+            None,
+        )
+        if stale_against is not None:
+            if verbose:
+                print(
+                    f"WARNING: {path.name} is older than {stale_against.name} -- "
+                    "treating it as stale and preferring an earlier-stage file instead.",
+                    file=sys.stderr,
+                )
+            continue
+        return path
+    return None
 
 
 def build_peaks_narrowpeak(peaks_path, chrom_splits, out_path):

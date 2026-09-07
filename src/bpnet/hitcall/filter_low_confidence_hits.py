@@ -41,7 +41,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_SCORE_COLUMN = "hit_correlation"
@@ -202,13 +202,13 @@ def main():
     exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
     hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
-    hits_dedensified_path = hits_dir / "hits_dedensified.tsv"
-    hits_unique_path = hits_dir / "hits_unique.tsv"
-    hits_path = (
-        hits_dedensified_path if hits_dedensified_path.exists() else hits_unique_path
+    hits_path = resolve_hits_path(
+        hits_dir,
+        stages=["hits_dedensified.tsv", "hits_unique.tsv"],
+        verbose=args.verbose,
     )
-    if not hits_path.exists():
-        print(f"Error: hits not found: {hits_path}", file=sys.stderr)
+    if hits_path is None:
+        print(f"Error: no hits found in {hits_dir}", file=sys.stderr)
         print("Run call_hits_bpnet.py first.", file=sys.stderr)
         sys.exit(1)
 

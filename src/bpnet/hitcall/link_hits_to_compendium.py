@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -102,19 +102,10 @@ def main():
     # (report_bpnet.py, which itself already reads hits_confidence_filtered.tsv/
     # hits_dedensified.tsv when present) > confidence-filtered
     # (filter_low_confidence_hits.py) > repeat-density-filtered
-    # (filter_repeat_density.py) > raw deduplicated hits.
-    hits_filtered_path = hits_dir / "hits_filtered.tsv"
-    hits_confidence_filtered_path = hits_dir / "hits_confidence_filtered.tsv"
-    hits_dedensified_path = hits_dir / "hits_dedensified.tsv"
-    hits_unique_path = hits_dir / "hits_unique.tsv"
-    if hits_filtered_path.exists():
-        hits_path = hits_filtered_path
-    elif hits_confidence_filtered_path.exists():
-        hits_path = hits_confidence_filtered_path
-    elif hits_dedensified_path.exists():
-        hits_path = hits_dedensified_path
-    else:
-        hits_path = hits_unique_path
+    # (filter_repeat_density.py) > raw deduplicated hits. Staleness-aware: a
+    # rerun of an earlier stage with different settings makes a later
+    # stage's file stale, so it's skipped in favor of the rerun's output.
+    hits_path = resolve_hits_path(hits_dir, verbose=args.verbose)
 
     if args.mapping_tsv:
         mapping_path = Path(args.mapping_tsv)
@@ -126,17 +117,14 @@ def main():
             / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
         )
 
-    for path, label in [(hits_path, "hits"), (mapping_path, "pattern-to-cluster mapping")]:
-        if not path.exists():
-            print(f"Error: {label} not found: {path}", file=sys.stderr)
-            if label == "hits":
-                print("Run call_hits_bpnet.py first.", file=sys.stderr)
-            else:
-                print(
-                    "Run src/bpnet/motifcompendium/cluster_motifs.py first.",
-                    file=sys.stderr,
-                )
-            sys.exit(1)
+    if hits_path is None:
+        print(f"Error: no hits found in {hits_dir}", file=sys.stderr)
+        print("Run call_hits_bpnet.py first.", file=sys.stderr)
+        sys.exit(1)
+    if not mapping_path.exists():
+        print(f"Error: pattern-to-cluster mapping not found: {mapping_path}", file=sys.stderr)
+        print("Run src/bpnet/motifcompendium/cluster_motifs.py first.", file=sys.stderr)
+        sys.exit(1)
 
     if args.verbose:
         print(f"Reading hits from {hits_path}")
