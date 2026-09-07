@@ -99,14 +99,18 @@ def main():
     hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     # Prefer the most-processed hits available: cwm_similarity-filtered
-    # (report_bpnet.py, which itself already reads hits_dedensified.tsv
-    # when present) > repeat-density-filtered but not yet cwm_similarity-QC'd
+    # (report_bpnet.py, which itself already reads hits_confidence_filtered.tsv/
+    # hits_dedensified.tsv when present) > confidence-filtered
+    # (filter_low_confidence_hits.py) > repeat-density-filtered
     # (filter_repeat_density.py) > raw deduplicated hits.
     hits_filtered_path = hits_dir / "hits_filtered.tsv"
+    hits_confidence_filtered_path = hits_dir / "hits_confidence_filtered.tsv"
     hits_dedensified_path = hits_dir / "hits_dedensified.tsv"
     hits_unique_path = hits_dir / "hits_unique.tsv"
     if hits_filtered_path.exists():
         hits_path = hits_filtered_path
+    elif hits_confidence_filtered_path.exists():
+        hits_path = hits_confidence_filtered_path
     elif hits_dedensified_path.exists():
         hits_path = hits_dedensified_path
     else:

@@ -522,7 +522,52 @@ whose aggregate `cwm_similarity` is dragged down by repeat noise clear the
 QC threshold on its remaining real hits, instead of every hit for that motif
 being dropped wholesale by the `cwm_similarity` filter below.
 
-After `call_hits_bpnet.py` (and `filter_repeat_density.py`, if used), run
+Repeat density isn't the only reason a motif's aggregate `cwm_similarity`
+can stay low even after that filter. Reviewed real per-hit `hit_correlation`
+distributions for the same K562 (ENCSR220XSM) run: a GATA motif showed a
+clear bimodal split — a large bulk of ambiguous hits plus a distinct,
+separable population of very high-confidence hits (correlation rising again
+past a trough near the top of the range) — while a TA-Initiator motif in the
+same run showed no such split at all, just a smooth, monotonically decaying
+distribution. A motif can be dragged down by a low-confidence tail even when
+a real, legitimate high-confidence subset exists under the same
+`motif_name`, but per-hit filtering only helps where that split actually
+exists to find — forcing a cutoff on a motif like the TA-Inr above would
+just be an arbitrary top-K cut with no data behind it. Run
+`filter_low_confidence_hits.py` after `filter_repeat_density.py` (reads its
+output if present, else `hits_unique.tsv`) and before `report_bpnet.py`: for
+each motif, it builds a histogram of `--score-column` (default
+`hit_correlation`), and drops hits below a detected low-confidence mode only
+when scipy's prominence-based peak finder confirms one exists (a real second
+mode past a real trough, both large enough to trust over histogram noise —
+see the module docstring for why prominence, not first/global local
+extrema, is the robust choice here). Motifs with a smooth/unimodal
+distribution are left untouched entirely:
+
+```bash
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --head count
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_similarity
+
+python src/bpnet/hitcall/launch_low_confidence_hits.py --dry-run
+python src/bpnet/hitcall/launch_low_confidence_hits.py --head profile --head count
+python src/bpnet/hitcall/launch_low_confidence_hits.py --min-trim-len 6
+```
+
+Output:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/hits_confidence_filtered.tsv
+```
+
+`report_bpnet.py` prefers this over `hits_dedensified.tsv` (which it prefers
+over raw `hits_unique.tsv`) the same way and for the same reason described
+above: passing it directly as `finemo report`'s `-H` argument gets
+`cwm_similarity` recomputed against the further-cleaned hits.
+
+After `call_hits_bpnet.py` (and `filter_repeat_density.py`/
+`filter_low_confidence_hits.py`, if used), run
 `report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
 Development Multiomic Atlas fetal-atlas
@@ -603,8 +648,9 @@ python src/bpnet/hitcall/launch_link.py --min-trim-len 6
 ```
 
 It prefers the most-processed hits available: `hits_filtered.tsv` (post
-`report_bpnet.py` QC) if present, else `hits_dedensified.tsv` (post
-`filter_repeat_density.py` but not yet QC'd), else raw `hits_unique.tsv`. It
+`report_bpnet.py` QC) if present, else `hits_confidence_filtered.tsv` (post
+`filter_low_confidence_hits.py`), else `hits_dedensified.tsv` (post
+`filter_repeat_density.py`), else raw `hits_unique.tsv`. It
 adds a `compendium_motif_name` column
 (e.g. `pos_patterns.42`) alongside the original per-experiment `motif_name`
 (e.g. `pos_patterns.pattern_3`) rather than replacing it, so both identities
