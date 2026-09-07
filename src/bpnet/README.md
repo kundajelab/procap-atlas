@@ -480,7 +480,50 @@ Run it (or `compute_trim_floor.py -e` per experiment manually) before using
 skipping (and counting separately) any experiment/head whose floor file
 hasn't been generated yet.
 
-After `call_hits_bpnet.py`, run `report_bpnet.py` to QC and filter hits by
+Some motifs get called far more than a real per-peak binding site count
+would suggest — a normal Fi-NeMo run already produces roughly 1-2 orders of
+magnitude more hits than TF-MoDISco seqlets, but some motifs go 2-3+ orders
+of magnitude beyond that, always concentrated as dozens to 100+ hits of the
+*same* motif inside one ~2kb peak: a repeat-artifact signature, not real
+biology. Reviewed directly in a K562 (ENCSR220XSM) profile-head run: a clean
+`TATAAA` motif and a `TA`-Initiator both showed this, always in degenerate
+poly-A/T repeat context, and it's profile-head-specific (the count head
+didn't show it). Run `filter_repeat_density.py` before `report_bpnet.py`
+below to drop these hits, identity-agnostically (no hardcoded motif
+names/consensus — a motif's identity varies by experiment, and JASPAR
+doesn't cover core-promoter elements like Inr/TATA anyway): it drops all
+hits of a motif within any `--cluster-window` bp span containing
+`--min-cluster-hits` or more same-motif hits in the same peak, following
+Kelly Cochran's ProCapNet TATA-repeat filter (5+ hits within 80bp):
+
+```bash
+python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM
+python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM --head count
+python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM --min-trim-len 6
+python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM --min-cluster-hits 5 --cluster-window 80
+
+python src/bpnet/hitcall/launch_filter_repeat_density.py --dry-run
+python src/bpnet/hitcall/launch_filter_repeat_density.py --head profile --head count
+python src/bpnet/hitcall/launch_filter_repeat_density.py --min-trim-len 6
+```
+
+Output:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/hits_dedensified.tsv
+```
+
+Running this before `report_bpnet.py` matters, not just after: `finemo
+report`'s own hits-directory mode always reads `hits.tsv` and ignores any
+filtering, so `report_bpnet.py` instead passes `hits_dedensified.tsv`
+directly as `-H` when it exists (a deprecated-but-functional Fi-NeMo mode)
+to recompute `cwm_similarity` against the cleaned-up hits. That lets a motif
+whose aggregate `cwm_similarity` is dragged down by repeat noise clear the
+QC threshold on its remaining real hits, instead of every hit for that motif
+being dropped wholesale by the `cwm_similarity` filter below.
+
+After `call_hits_bpnet.py` (and `filter_repeat_density.py`, if used), run
+`report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
 Development Multiomic Atlas fetal-atlas
 paper](https://github.com/GreenleafLab/HDMA/blob/main/code/03-chrombpnet/02-compendium/06b-reconcile_hits.py):
@@ -559,8 +602,10 @@ python src/bpnet/hitcall/launch_link.py --head profile --head count
 python src/bpnet/hitcall/launch_link.py --min-trim-len 6
 ```
 
-It prefers `hits_filtered.tsv` (post `report_bpnet.py` QC) if present, falling
-back to `hits_unique.tsv` otherwise, and adds a `compendium_motif_name` column
+It prefers the most-processed hits available: `hits_filtered.tsv` (post
+`report_bpnet.py` QC) if present, else `hits_dedensified.tsv` (post
+`filter_repeat_density.py` but not yet QC'd), else raw `hits_unique.tsv`. It
+adds a `compendium_motif_name` column
 (e.g. `pos_patterns.42`) alongside the original per-experiment `motif_name`
 (e.g. `pos_patterns.pattern_3`) rather than replacing it, so both identities
 stay available:
