@@ -549,11 +549,26 @@ python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM
 python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --head count
 python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6
 python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_similarity
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_importance --log-scale --min-bin-frac 0.001
 
 python src/bpnet/hitcall/launch_low_confidence_hits.py --dry-run
 python src/bpnet/hitcall/launch_low_confidence_hits.py --head profile --head count
 python src/bpnet/hitcall/launch_low_confidence_hits.py --min-trim-len 6
 ```
+
+`--score-column` is deliberately not fixed to `hit_correlation`: that column
+is a scale-invariant *shape* match to the motif template, which a
+coincidentally motif-shaped stretch of degenerate sequence can satisfy just
+as well as a real site. `hit_importance` instead measures actual
+attribution magnitude -- how much the model's own output genuinely depends
+on that position -- which a real, functionally-used site should show and a
+spurious shape-only match usually shouldn't, independent of how well it
+correlates. `hit_importance` is heavy right-skewed and effectively
+unbounded (unlike the roughly-bounded `hit_correlation`/`hit_similarity`),
+so use `--log-scale` with it -- and expect to need a much smaller
+`--min-bin-frac` than the default, since a secondary mode spread across more
+bins in log-space dilutes per-bin height much faster than a narrow one with
+the same total mass (see `--min-bin-frac`'s help text).
 
 Output:
 
@@ -572,8 +587,62 @@ stage already ran, the later stage's file is now older than the one it was
 built from, so it gets skipped in favor of the rerun's output rather than
 silently reporting on out-of-date hits.
 
+Neither of the above fixes every motif: some show no internal bimodal
+structure at all by `hit_correlation`/`hit_similarity` (e.g. TATA in the
+same K562 run stayed at ~50% implausible peak prevalence through both
+filters), so there's nothing for `filter_low_confidence_hits.py` to find.
+`filter_by_seqlet_importance.py` anchors to a different, external reference
+instead: the TF-MoDISco discovery seqlets that built the motif's CWM in the
+first place. Any hit scoring below what even the weakest ~1% of those real
+discovery examples showed is hard to defend as a real site, independent of
+whether the hit population itself shows any visible structure. This is the
+same idea as Kelly Cochran's ProCapNet notebook (filters per-hit on
+`hit_importance`/`hit_score_combo = hit_correlation * hit_importance`
+against fixed constants, `0.01`/`0.015` for Inr, chosen by eyeballing
+histograms) made data-driven: derive the floor from each motif's own
+seqlets instead of a hand-picked constant. `hit_importance` (Fi-NeMo's own
+per-hit column) is exactly `sum(|contribution|)` over the hit's trimmed
+span, with no coefficient scaling -- directly and exactly reproducible for
+seqlets too from `regions.npz`'s raw contribution track and
+`report/seqlets.tsv`'s own trimmed coordinates (already written by
+`report_bpnet.py`'s `finemo report` call as a side effect, independent of
+hit-calling settings). Before trusting any of this, it self-checks by
+recomputing `hit_importance` for the *existing* hits from `regions.npz` and
+comparing against Fi-NeMo's own recorded value, refusing to proceed if they
+don't match closely:
+
+```bash
+python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM
+python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM --min-trim-len 6
+python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM --percentile 1 --percentile-multiplier 0.5
+python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM --score-column hit_score_combo
+
+python src/bpnet/hitcall/launch_seqlet_importance.py --dry-run
+python src/bpnet/hitcall/launch_seqlet_importance.py --head profile --head count
+python src/bpnet/hitcall/launch_seqlet_importance.py --min-trim-len 6
+```
+
+Requires `report_bpnet.py` to have already been run at least once for this
+experiment/head (for `report/seqlets.tsv`). `--score-column hit_score_combo`
+approximates each seqlet's own correlation as ~1.0 rather than computing it
+-- unlike `hit_importance`, `hit_correlation` depends on `importance_scale`,
+a per-window normalization Fi-NeMo computes inside its iterative optimizer
+with no closed form outside it, so it isn't reproducible for positions (like
+seqlets) that were never part of that fit. The script says this explicitly
+at runtime; it isn't a silent assumption.
+
+Output:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/hits_seqlet_filtered.tsv
+```
+
+`report_bpnet.py` prefers this over `hits_confidence_filtered.tsv` (which it
+prefers over `hits_dedensified.tsv`, over raw `hits_unique.tsv`) the same
+staleness-aware way described above.
+
 After `call_hits_bpnet.py` (and `filter_repeat_density.py`/
-`filter_low_confidence_hits.py`, if used), run
+`filter_low_confidence_hits.py`/`filter_by_seqlet_importance.py`, if used), run
 `report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
 Development Multiomic Atlas fetal-atlas
@@ -655,8 +724,9 @@ python src/bpnet/hitcall/launch_link.py --min-trim-len 6
 
 It prefers the most-processed hits available (same staleness-aware
 resolution as `report_bpnet.py` above): `hits_filtered.tsv` (post
-`report_bpnet.py` QC) if present and not stale, else `hits_confidence_filtered.tsv` (post
-`filter_low_confidence_hits.py`), else `hits_dedensified.tsv` (post
+`report_bpnet.py` QC) if present and not stale, else `hits_seqlet_filtered.tsv`
+(post `filter_by_seqlet_importance.py`), else `hits_confidence_filtered.tsv`
+(post `filter_low_confidence_hits.py`), else `hits_dedensified.tsv` (post
 `filter_repeat_density.py`), else raw `hits_unique.tsv`. It
 adds a `compendium_motif_name` column
 (e.g. `pos_patterns.42`) alongside the original per-experiment `motif_name`

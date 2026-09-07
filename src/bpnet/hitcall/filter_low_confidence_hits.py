@@ -31,6 +31,7 @@ Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --head count
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_similarity
+    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_importance --log-scale
 """
 
 import argparse
@@ -59,6 +60,7 @@ def detect_low_confidence_cutoff(
     min_rise_frac=DEFAULT_MIN_RISE_FRAC,
     min_bin_frac=DEFAULT_MIN_BIN_FRAC,
     min_total_hits=DEFAULT_MIN_TOTAL_HITS,
+    log_scale=False,
 ):
     """Look for a genuine secondary (higher-score) mode past a trough
     following the primary mode of `scores`'s histogram.
@@ -73,12 +75,33 @@ def detect_low_confidence_cutoff(
     that edge can look like an even deeper "trough" than the real one
     between two modes. Prominence (how much a peak stands out above its
     surrounding valleys, not just its raw height) is robust to both.
+
+    log_scale bins in log10-space instead of linear -- needed for a heavy
+    right-skewed, effectively-unbounded column like hit_importance (e.g.
+    median ~0.07 but max in the double digits): linear bins over that full
+    range would compress nearly the entire real distribution into a handful
+    of bins near zero, both hiding a genuine secondary mode and making any
+    "peak" found in the sparse, spread-out tail untrustworthy. Non-positive
+    scores can't be log-transformed and are excluded from detection (but
+    would still end up below any cutoff found, since a cutoff is always
+    positive here).
     """
     n = len(scores)
     if n < min_total_hits:
         return None
 
-    counts, edges = np.histogram(scores, bins=n_bins)
+    if log_scale:
+        transformed = scores[scores > 0]
+        if len(transformed) < min_total_hits:
+            return None
+        transformed = np.log10(transformed)
+    else:
+        transformed = scores
+
+    def from_log(x):
+        return float(10**x) if log_scale else float(x)
+
+    counts, edges = np.histogram(transformed, bins=n_bins)
     counts = counts.astype(float)
     if smoothing_window > 1:
         kernel = np.ones(smoothing_window) / smoothing_window
@@ -105,10 +128,10 @@ def detect_low_confidence_cutoff(
         return None  # not a large enough rise to trust over histogram noise
 
     return dict(
-        cutoff=float(edges[trough_idx + 1]),
-        primary_mode=float(edges[primary_idx]),
-        trough=float(edges[trough_idx]),
-        secondary_mode=float(edges[peak_idx]),
+        cutoff=from_log(edges[trough_idx + 1]),
+        primary_mode=from_log(edges[primary_idx]),
+        trough=from_log(edges[trough_idx]),
+        secondary_mode=from_log(edges[peak_idx]),
         trough_count=float(counts[trough_idx]),
         secondary_count=float(peak_count),
     )
@@ -156,6 +179,16 @@ def main():
         default=DEFAULT_SCORE_COLUMN,
         help=f"per-hit Fi-NeMo score column to check for bimodality (default: {DEFAULT_SCORE_COLUMN})",
     )
+    parser.add_argument(
+        "--log-scale",
+        action="store_true",
+        help=(
+            "bin --score-column in log10-space instead of linear -- use for "
+            "heavy right-skewed, effectively-unbounded columns like "
+            "hit_importance (bounded columns like hit_correlation/"
+            "hit_similarity don't need this)"
+        ),
+    )
     parser.add_argument("--n-bins", type=int, default=DEFAULT_N_BINS)
     parser.add_argument("--smoothing-window", type=int, default=DEFAULT_SMOOTHING_WINDOW)
     parser.add_argument(
@@ -173,7 +206,12 @@ def main():
         default=DEFAULT_MIN_BIN_FRAC,
         help=(
             "minimum secondary-mode bin count, as a fraction of the motif's "
-            f"total hit count, to trust it (default: {DEFAULT_MIN_BIN_FRAC})"
+            f"total hit count, to trust it (default: {DEFAULT_MIN_BIN_FRAC}). "
+            "This is a *single bin's* height, so a secondary mode spread "
+            "across more bins (e.g. --log-scale on a wide/diffuse tail) "
+            "dilutes below this much faster than a narrow one with the same "
+            "total mass -- lower this (e.g. 0.001) if --log-scale finds "
+            "nothing despite a visibly obvious secondary mode"
         ),
     )
     parser.add_argument(
@@ -236,6 +274,7 @@ def main():
             min_rise_frac=args.min_rise_frac,
             min_bin_frac=args.min_bin_frac,
             min_total_hits=args.min_total_hits,
+            log_scale=args.log_scale,
         )
         if result is None:
             unfiltered_motifs.append(motif_name)
