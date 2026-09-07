@@ -30,7 +30,12 @@ run for this experiment/head, this reads their output
 hits_unique.tsv -- finemo report's own hits-directory mode always reads
 hits.tsv regardless of filtering, so the filtered file is passed directly as
 -H instead (deprecated-but-functional Fi-NeMo behavior) to get
-cwm_similarity recomputed against the cleaned-up hit set.
+cwm_similarity recomputed against the cleaned-up hit set. Picking which file
+to use is staleness-aware (call_hits_bpnet.py's resolve_hits_path): if an
+earlier stage was rerun with different settings (e.g. filter_repeat_density.py
+with a new --cluster-window) after a later stage already ran, the later
+stage's file is now stale and gets skipped in favor of the rerun's output,
+rather than silently reporting on out-of-date hits.
 
 Note: if call_hits_bpnet.py was run with --cwm-trim-thresholds/
 --cwm-trim-coords overrides (e.g. from compute_trim_floor.py), `finemo
@@ -70,7 +75,7 @@ from finemo.visualization import (
     plot_peak_motif_indicator_heatmap,
 )
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -207,16 +212,18 @@ def main():
     # low-confidence hit mode (filter_low_confidence_hits.py) before
     # computing cwm_similarity lets a motif dragged down by that noise
     # (e.g. TATA/GATA) clear the QC threshold on its remaining real hits,
-    # instead of losing every hit for that motif wholesale.
-    hits_unique_tsv = hits_dir / "hits_unique.tsv"
-    hits_dedensified_tsv = hits_dir / "hits_dedensified.tsv"
-    hits_confidence_filtered_tsv = hits_dir / "hits_confidence_filtered.tsv"
-    if hits_confidence_filtered_tsv.exists():
-        hits_tsv = hits_confidence_filtered_tsv
-    elif hits_dedensified_tsv.exists():
-        hits_tsv = hits_dedensified_tsv
-    else:
-        hits_tsv = hits_unique_tsv
+    # instead of losing every hit for that motif wholesale. Staleness-aware:
+    # a rerun of an earlier stage with different settings makes a later
+    # stage's file stale, so it's skipped in favor of the rerun's output.
+    hits_tsv = resolve_hits_path(
+        hits_dir,
+        stages=["hits_confidence_filtered.tsv", "hits_dedensified.tsv", "hits_unique.tsv"],
+        verbose=args.verbose,
+    )
+    if hits_tsv is None:
+        print(f"Error: no hits found in {hits_dir}", file=sys.stderr)
+        print("Run call_hits_bpnet.py first.", file=sys.stderr)
+        sys.exit(1)
 
     if args.modisco_h5:
         modisco_h5 = Path(args.modisco_h5)
@@ -247,7 +254,7 @@ def main():
     # to have it recompute cwm_similarity against filter_repeat_density.py's/
     # filter_low_confidence_hits.py's cleaned-up hits, so only take that path
     # when one of those has actually been run.
-    hits_arg = str(hits_tsv) if hits_tsv != hits_unique_tsv else str(hits_dir)
+    hits_arg = str(hits_tsv) if hits_tsv.name != "hits_unique.tsv" else str(hits_dir)
     run(
         [
             "finemo",

@@ -564,7 +564,13 @@ hitcalls/bpnet/{model_dir_name}_{head}/hits_confidence_filtered.tsv
 `report_bpnet.py` prefers this over `hits_dedensified.tsv` (which it prefers
 over raw `hits_unique.tsv`) the same way and for the same reason described
 above: passing it directly as `finemo report`'s `-H` argument gets
-`cwm_similarity` recomputed against the further-cleaned hits.
+`cwm_similarity` recomputed against the further-cleaned hits. This
+preference is staleness-aware (`call_hits_bpnet.py`'s `resolve_hits_path`):
+if you rerun an earlier stage with different settings (e.g.
+`filter_repeat_density.py` with a new `--cluster-window`) after a later
+stage already ran, the later stage's file is now older than the one it was
+built from, so it gets skipped in favor of the rerun's output rather than
+silently reporting on out-of-date hits.
 
 After `call_hits_bpnet.py` (and `filter_repeat_density.py`/
 `filter_low_confidence_hits.py`, if used), run
@@ -647,8 +653,9 @@ python src/bpnet/hitcall/launch_link.py --head profile --head count
 python src/bpnet/hitcall/launch_link.py --min-trim-len 6
 ```
 
-It prefers the most-processed hits available: `hits_filtered.tsv` (post
-`report_bpnet.py` QC) if present, else `hits_confidence_filtered.tsv` (post
+It prefers the most-processed hits available (same staleness-aware
+resolution as `report_bpnet.py` above): `hits_filtered.tsv` (post
+`report_bpnet.py` QC) if present and not stale, else `hits_confidence_filtered.tsv` (post
 `filter_low_confidence_hits.py`), else `hits_dedensified.tsv` (post
 `filter_repeat_density.py`), else raw `hits_unique.tsv`. It
 adds a `compendium_motif_name` column
