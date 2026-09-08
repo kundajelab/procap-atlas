@@ -209,17 +209,20 @@ def main():
     regions_npz = exp_dir / "regions.npz"
     # Prefer the most-processed pre-QC hits available: dropping dense
     # same-motif repeat clusters (filter_repeat_density.py), a motif's
-    # low-confidence hit mode (filter_low_confidence_hits.py), and/or hits
-    # below what its own discovery seqlets would support
-    # (filter_by_seqlet_importance.py) before computing cwm_similarity lets
-    # a motif dragged down by that noise (e.g. TATA/GATA) clear the QC
-    # threshold on its remaining real hits, instead of losing every hit for
-    # that motif wholesale. Staleness-aware: a rerun of an earlier stage
-    # with different settings makes a later stage's file stale, so it's
-    # skipped in favor of the rerun's output.
+    # low-confidence hit mode (filter_low_confidence_hits.py), hits below
+    # what its own discovery seqlets would support
+    # (filter_by_seqlet_importance.py), and/or hits whose flanking sequence
+    # context doesn't match the motif's full CWM even though the trimmed
+    # core does (filter_by_flank_consistency.py) before computing
+    # cwm_similarity lets a motif dragged down by that noise (e.g.
+    # TATA/GATA) clear the QC threshold on its remaining real hits, instead
+    # of losing every hit for that motif wholesale. Staleness-aware: a
+    # rerun of an earlier stage with different settings makes a later
+    # stage's file stale, so it's skipped in favor of the rerun's output.
     hits_tsv = resolve_hits_path(
         hits_dir,
         stages=[
+            "hits_flank_filtered.tsv",
             "hits_seqlet_filtered.tsv",
             "hits_confidence_filtered.tsv",
             "hits_dedensified.tsv",
