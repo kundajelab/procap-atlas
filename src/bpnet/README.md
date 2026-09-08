@@ -641,8 +641,76 @@ hitcalls/bpnet/{model_dir_name}_{head}/hits_seqlet_filtered.tsv
 prefers over `hits_dedensified.tsv`, over raw `hits_unique.tsv`) the same
 staleness-aware way described above.
 
+None of the above touch a real, distinct failure mode: a hit's trimmed core
+(the ~6bp window `--min-trim-len`/`--cwm-trim-threshold` actually fits
+against) can match the motif template almost perfectly while the ~44bp of
+flanking sequence outside that core is generic AT-repeat content that
+actively *disagrees* with the motif's real flanking pattern. Direct review
+of the real CWM comparison data (`report/CWMs/{motif}/hits_fc.txt` vs.
+`modisco_fc.txt`) for TATA/GATA/TA-Inr in K562 ENCSR220XSM showed exactly
+this: per-position cosine similarity 0.85-1.0 at the trimmed core, down to
+-0.92 in the flanks. `hit_correlation`/`hit_importance`/`hit_similarity`
+(and the seqlet-importance floor above) are all computed only over that
+same trimmed core, so no threshold on any of them can ever see this --
+there's no per-hit signal that looks at the flanks at all. Forcing a wider
+fitting window at call-hits time (raising `--min-trim-len`/
+`--cwm-trim-threshold` globally) was considered and rejected: CWM magnitude
+decays gradually and similarly across nearly every motif, so there's no
+single threshold that widens only the broken motifs without widening (and
+adding fitting collinearity risk to) every motif in every experiment.
+
+`filter_by_flank_consistency.py` adds the missing signal as a separate,
+motif-identity-agnostic post-hoc check instead: for each hit, extend out to
+the *full* (untrimmed) CWM window -- hits already carry
+`start_untrimmed`/`end_untrimmed` for exactly this span -- and compute
+cosine similarity between the hit's own observed contribution track and
+the motif's full CWM, loaded directly from the `.modisco.h5` via
+`finemo.data_io.load_modisco_motifs` (`motif_type="cwm"`, matching the
+`"pp"` hit-calling mode this pipeline uses by default: both sides are the
+*projected*, true-base-only contribution, not the hypothetical one). This
+is the per-instance analog of what aggregates into `hits_fc.txt`/
+`cwm_similarity`, so it directly measures the thing `cwm_similarity` fails
+on. The floor is anchored to each motif's own seqlets the same way as
+`filter_by_seqlet_importance.py` (seqlets carry the same
+`start_untrimmed`/`end_untrimmed`/`strand` schema, so the identical score
+is computable for them). Because this score is a cosine similarity bounded
+at 1.0 and real seqlets cluster close to it (unlike `hit_importance`'s
+unbounded magnitude), the floor is a *distance-from-a-perfect-match*
+scaling rather than a plain multiplier: `floor = 1 - (1 - percentile_value)
+/ percentile_multiplier` -- smaller `--percentile-multiplier` is still more
+lenient, just applied to the gap from 1.0 instead of to the raw value:
+
+```bash
+python src/bpnet/hitcall/filter_by_flank_consistency.py -e ENCSR220XSM
+python src/bpnet/hitcall/filter_by_flank_consistency.py -e ENCSR220XSM --min-trim-len 6 -v
+python src/bpnet/hitcall/filter_by_flank_consistency.py -e ENCSR220XSM --percentile 1 --percentile-multiplier 0.5
+
+python src/bpnet/hitcall/launch_flank_consistency.py --dry-run
+python src/bpnet/hitcall/launch_flank_consistency.py --head profile --head count
+python src/bpnet/hitcall/launch_flank_consistency.py --min-trim-len 6
+```
+
+Requires `report_bpnet.py` to have already been run at least once for this
+experiment/head (for `report/seqlets.tsv`) and the `.modisco.h5` to still be
+present. Unlike `hit_importance`, this new full-window similarity score has
+no exact Fi-NeMo-computed ground truth to validate against, so there's no
+hard pass/fail self-check gate -- `-v` instead prints a soft sanity table
+comparing each motif's mean hit-level score against its already-known
+`cwm_similarity` from `report/motif_report.tsv`, if present.
+
+Output:
+
+```text
+hitcalls/bpnet/{model_dir_name}_{head}/hits_flank_filtered.tsv
+```
+
+`report_bpnet.py` prefers this over `hits_seqlet_filtered.tsv` (which it
+prefers over `hits_confidence_filtered.tsv`, over `hits_dedensified.tsv`,
+over raw `hits_unique.tsv`) the same staleness-aware way described above.
+
 After `call_hits_bpnet.py` (and `filter_repeat_density.py`/
-`filter_low_confidence_hits.py`/`filter_by_seqlet_importance.py`, if used), run
+`filter_low_confidence_hits.py`/`filter_by_seqlet_importance.py`/
+`filter_by_flank_consistency.py`, if used), run
 `report_bpnet.py` to QC and filter hits by
 per-motif CWM similarity, following the same principle as the [Human
 Development Multiomic Atlas fetal-atlas
@@ -724,7 +792,8 @@ python src/bpnet/hitcall/launch_link.py --min-trim-len 6
 
 It prefers the most-processed hits available (same staleness-aware
 resolution as `report_bpnet.py` above): `hits_filtered.tsv` (post
-`report_bpnet.py` QC) if present and not stale, else `hits_seqlet_filtered.tsv`
+`report_bpnet.py` QC) if present and not stale, else `hits_flank_filtered.tsv`
+(post `filter_by_flank_consistency.py`), else `hits_seqlet_filtered.tsv`
 (post `filter_by_seqlet_importance.py`), else `hits_confidence_filtered.tsv`
 (post `filter_low_confidence_hits.py`), else `hits_dedensified.tsv` (post
 `filter_repeat_density.py`), else raw `hits_unique.tsv`. It
