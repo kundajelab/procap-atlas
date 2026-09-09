@@ -79,8 +79,13 @@ experiment and adjust --time if needed before running atlas-wide.
 
 Jobs are skipped if hits_filtered.tsv already exists (fully done -- the
 final report_bpnet.py pass's own output) or if hits_unique.tsv is missing
-(run call_hits_bpnet.py/hitcall/launch.py first). Unlike the per-stage
-launchers, there's no per-stage skip logic inside the job itself -- each
+(run call_hits_bpnet.py/hitcall/launch.py first) -- unless --force is
+given, which resubmits already-complete experiments too (e.g. after
+changing --low-confidence-args/--report-args or the underlying scripts
+and wanting to reprocess the whole atlas with the new settings; missing
+hits_unique.tsv is still skipped even with --force, since there's nothing
+to reprocess). Unlike the per-stage launchers, there's no per-stage skip
+logic inside the job itself -- each
 underlying script is safe to rerun and overwrites its own output
 unconditionally, and the stages are fast enough that redundant
 recomputation within an already-partially-done experiment isn't worth the
@@ -94,6 +99,7 @@ Usage:
     python src/bpnet/hitcall/launch_post_hoc_pipeline.py --min-trim-len 6  # match hitcall/launch.py's floor
     python src/bpnet/hitcall/launch_post_hoc_pipeline.py --low-confidence-args '--score-column hit_seqlet_confidence --seqlet-low-similarity-only --seqlet-similarity-threshold 0.85'
     python src/bpnet/hitcall/launch_post_hoc_pipeline.py --report-args '--cwm-similarity-threshold 0.85'
+    python src/bpnet/hitcall/launch_post_hoc_pipeline.py --force  # reprocess every experiment, even already-complete ones
 """
 
 import argparse
@@ -147,6 +153,18 @@ def main():
         type=int,
         default=0,
         help="skip experiments with fewer total reads than this (default: 0, disabled)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "resubmit every experiment even if it already looks fully "
+            "complete (e.g. after changing --low-confidence-args/"
+            "--report-args/the underlying scripts themselves and wanting "
+            "to reprocess the whole atlas with the new settings). Still "
+            "skips experiments missing hits_unique.tsv -- there's nothing "
+            "to reprocess for those regardless."
+        ),
     )
     parser.add_argument(
         "--repeat-density-args",
@@ -247,7 +265,7 @@ def main():
                 and hits_confidence_filtered.exists()
                 and hits_filtered.stat().st_mtime >= hits_confidence_filtered.stat().st_mtime
             )
-            if already_done:
+            if already_done and not args.force:
                 skipped_done += 1
                 continue
 
