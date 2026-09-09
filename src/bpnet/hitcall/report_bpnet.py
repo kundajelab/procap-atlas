@@ -10,6 +10,22 @@ which drops all hits for any motif whose hit-derived CWM correlates poorly
 with the reference CWM (they used a 0.9 threshold on their `cwm_correlation`,
 the equivalent metric in the older Fi-NeMo release they used).
 
+--cwm-similarity-threshold's default is 0.8, not HDMA's 0.9: extensive
+investigation into K562 ENCSR220XSM's TATA box/TA-Inr/GATA overcalling
+(see filter_low_confidence_hits.py's module docstring for the full
+writeup -- seven score axes tried, most native to hits.tsv, before finding
+one that worked) found that filter_low_confidence_hits.py's
+hit_seqlet_confidence corroboration filter (scoped to already-failing
+motifs via --seqlet-low-similarity-only) substantially improves but doesn't
+fully resolve these motifs past 0.9 (e.g. TATA: 0.765 -> 0.853). Every
+further lever tried (looser/stricter recursive_seqlets thresholds,
+additional_flanks, layering CLIPNET's own importance-floor second stage)
+either made things worse or was a no-op. Rather than drop these
+substantially-improved motifs' hits wholesale at the stricter 0.9 cutoff,
+0.8 retains them while still dropping motifs that remain clearly broken
+(e.g. K562 ENCSR220XSM's pos_patterns.pattern_38 at 0.538, neg_patterns.
+pattern_30 at 0.599 -- both far below either threshold).
+
 `cwm_similarity` is computed from `regions.npz` + `hits.tsv` + the motif h5's
 own CWMs, independent of TF-MoDISco seqlets, so `--no-recall` is always used
 here for consistency between both motif sources this can run against: the
@@ -187,11 +203,17 @@ def main():
     parser.add_argument(
         "--cwm-similarity-threshold",
         type=float,
-        default=0.9,
+        default=0.8,
         help=(
             "drop all hits for motifs with cwm_similarity at or below this "
-            "value (default: 0.9, from the HDMA fetal atlas paper's "
-            "cwm_correlation filter)"
+            "value (default: 0.8; the HDMA fetal atlas paper's own "
+            "cwm_correlation filter uses 0.9, but K562 ENCSR220XSM's TATA "
+            "box and other core-promoter motifs plateau around 0.85-0.9 "
+            "even after filter_low_confidence_hits.py's hit_seqlet_confidence "
+            "corroboration filter -- see that script's module docstring for "
+            "the full investigation. Lowered to retain those motifs' "
+            "substantially-improved-but-still-sub-0.9 hits instead of "
+            "dropping them wholesale; motifs below 0.8 are still dropped)"
         ),
     )
     parser.add_argument("-v", "--verbose", action="store_true")
