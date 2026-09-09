@@ -11,6 +11,13 @@ call_hits_bpnet.py/hitcall/launch.py, and optionally
 report_bpnet.py/hitcall/launch_report.py, first). This step does not use a
 GPU, so it runs as its own cheap CPU-only launcher, like launch_report.py.
 
+Jobs are submitted with --requeue, matching launch_post_hoc_pipeline.py's
+reasoning: the default --partition includes `owners`, which is preemptible
+(`normal`/`akundaje`/`gpu` are not), and without --requeue a preempted job
+just dies with no automatic resubmission. A requeued job reruns
+link_hits_to_compendium.py from scratch, which is safe -- it deterministically
+overwrites its own hits_linked.tsv from the same inputs every time.
+
 Usage:
     python src/bpnet/hitcall/launch_link.py                    # submit all experiments, profile head
     python src/bpnet/hitcall/launch_link.py --dry-run           # print sbatch scripts without submitting
@@ -154,6 +161,7 @@ def main():
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
                 #SBATCH -C NO_GPU
+                #SBATCH --requeue
 
                 ml biology
                 ml htslib
