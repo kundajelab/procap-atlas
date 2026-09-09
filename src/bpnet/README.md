@@ -708,6 +708,65 @@ hitcalls/bpnet/{model_dir_name}_{head}/hits_flank_filtered.tsv
 prefers over `hits_confidence_filtered.tsv`, over `hits_dedensified.tsv`,
 over raw `hits_unique.tsv`) the same staleness-aware way described above.
 
+None of the above actually resolved TATA/TA-Inr on real K562 ENCSR220XSM
+data: `filter_by_flank_consistency.py`'s seqlet-anchored floor turned out
+null there (real seqlets score systematically *lower* than hits on
+full-window similarity for every motif checked -- MoDISco seqlets are an
+intentionally diverse cluster of variant instances, while Fi-NeMo's sparse
+regression explicitly searches for the single best-fitting window, so
+seqlets are the wrong reference population for this particular score). The
+actual distinguishing property, found by direct visual review of real hit
+logo plots: real core-promoter hits sit on a genuine local spike in the
+attribution track, while spurious same-shape hits sit in generally
+noisy/repeat-dense regions with no local prominence at all -- and both
+types occur at every distance from the real PRO-cap TSS summit, which is
+why every position-based and magnitude-based score above ends up averaging
+the signal away. Fi-NeMo's own optimizer has no mechanism that checks this
+(sparsity comes only from a global per-motif L1 penalty and a global
+correlation floor, confirmed directly from source, never a comparison to a
+hit's own local neighborhood).
+
+`--score-column hit_seqlet_confidence` tests local prominence directly via
+`tangermeme.seqlet.recursive_seqlets`, an independent seqlet caller whose
+"recursive" property requires every internal sub-span to also
+independently pass a p-value threshold. This matches the CLIPNET paper's
+own published, validated approach for calling these exact motifs ("High
+importance profile motifs such as the TATA box and initiator elements were
+called using the recursive_seqlets approach" at `threshold=0.05`, not
+tangermeme's own stricter default of `0.01`, which calls essentially
+nothing on real data due to the compounding recursive requirement).
+`hit_seqlet_confidence` is `-log10(p)` of the best call overlapping a hit's
+trimmed span, or exactly `0.0` if none overlaps -- a real, meaningful
+negative signal, not missing data. Its magnitude carries almost no
+information (corroborated hits cluster tightly near the threshold
+regardless of position); all the signal is in whether a call exists at
+all, so this bypasses `detect_low_confidence_cutoff`'s bimodality search
+(built for a dip-then-rise shape, not this score's spike-then-decay shape)
+and applies a direct `hit_seqlet_confidence > 0` floor instead.
+
+Applying that floor identity-agnostically to every motif is too blunt: on
+real data it touched 28/45 motifs at 0%-89% drop rates, including motifs
+with no known contamination problem, and pushed at least one borderline
+motif under QC as a side effect. `--seqlet-low-similarity-only` scopes the
+floor to only motifs already failing `cwm_similarity` QC (reads
+`report/motif_report.tsv` from a prior `report_bpnet.py` run against hits
+*before* this filter), leaving everything else untouched:
+
+```bash
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR220XSM --score-column hit_seqlet_confidence --seqlet-low-similarity-only
+python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR220XSM --score-column hit_seqlet_confidence --seqlet-low-similarity-only --seqlet-similarity-threshold 0.85
+```
+
+This substantially improves but doesn't fully resolve these motifs past
+`cwm_similarity` 0.9 (K562 ENCSR220XSM TATA: 0.765 -> 0.853;
+`neg_patterns.pattern_8`: 0.869 -> 0.895). Looser/stricter
+`--seqlet-threshold`, `--seqlet-additional-flanks`, and layering
+`filter_by_seqlet_importance.py`'s floor on top were all tried and either
+made things worse or were a no-op -- see `filter_low_confidence_hits.py`'s
+module docstring for the full comparison. `report_bpnet.py`'s
+`--cwm-similarity-threshold` default below was lowered to retain these
+substantially-improved motifs instead of dropping them wholesale at 0.9.
+
 After `call_hits_bpnet.py` (and `filter_repeat_density.py`/
 `filter_low_confidence_hits.py`/`filter_by_seqlet_importance.py`/
 `filter_by_flank_consistency.py`, if used), run
@@ -723,16 +782,19 @@ between both motif sources it can run against — the default per-experiment
 modisco.h5 does retain TF-MoDISco seqlets, but the atlas-wide MotifCompendium
 cluster-average h5 (`--modisco-h5` override) doesn't, so seqlet-recall isn't
 always available — and drops hits for any motif at or below
-`--cwm-similarity-threshold` (default 0.9, matching HDMA):
+`--cwm-similarity-threshold` (default 0.8, not HDMA's 0.9 -- see above:
+K562 ENCSR220XSM's TATA box and other core-promoter motifs plateau around
+0.85-0.9 even after `hit_seqlet_confidence`, so 0.9 would drop them
+wholesale despite the substantial improvement):
 
 ```bash
 python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM
 python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --head count
-python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --cwm-similarity-threshold 0.85
+python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --cwm-similarity-threshold 0.9
 
 python src/bpnet/hitcall/launch_report.py --dry-run
 python src/bpnet/hitcall/launch_report.py --head profile --head count
-python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.85'
+python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.9'
 ```
 
 `launch_report.py` is a separate launcher from `hitcall/launch.py`, mirroring
