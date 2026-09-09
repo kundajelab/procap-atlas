@@ -850,8 +850,9 @@ python src/bpnet/hitcall/launch_post_hoc_pipeline.py --min-trim-len 6
 python src/bpnet/hitcall/launch_post_hoc_pipeline.py --low-confidence-args '--score-column hit_seqlet_confidence --seqlet-low-similarity-only --seqlet-similarity-threshold 0.85'
 ```
 
-Jobs are submitted with `--requeue` (the default `--partition` includes two
-preemptible partitions), which is safe here since there's no per-stage
+Jobs are submitted with `--requeue` (the default `--partition` includes
+`owners`, which is preemptible -- `normal`/`akundaje`/`gpu` are not), which
+is safe here since there's no per-stage
 skip logic inside the job itself -- a requeued job just reruns all four
 stages from scratch, and each one overwrites its own output
 deterministically, so redoing an already-succeeded stage can't corrupt

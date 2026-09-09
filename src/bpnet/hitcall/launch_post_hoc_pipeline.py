@@ -51,9 +51,10 @@ input (e.g. running the corroboration filter's --seqlet-low-similarity-only
 against a baseline report that never actually ran).
 
 Jobs are submitted with --requeue, matching src/bpnet/fit/launch.py's
-reasoning: the default --partition includes two preemptible partitions
-(akundaje/owners), and without --requeue a preempted job just dies with no
-automatic resubmission. A requeued job re-runs this whole script from
+reasoning: the default --partition includes `owners`, which is preemptible
+(`normal`/`akundaje`/`gpu` are not), and without --requeue a preempted job
+just dies with no automatic resubmission. A requeued job re-runs this whole
+script from
 scratch rather than resuming mid-chain -- there's no per-stage skip logic
 inside the job itself (see below), so this is safe: every stage overwrites
 its own output deterministically from the same inputs, so redoing an
