@@ -159,6 +159,34 @@ Run after filter_repeat_density.py (reads hits_dedensified.tsv if present,
 else hits_unique.tsv) and before report_bpnet.py, which prefers this script's
 output (hits_confidence_filtered.tsv) when present.
 
+--seqlet-compendium-clusters, a second scoping mechanism (2026, B-cell/
+neuron/liver CA-Inr): --seqlet-low-similarity-only assumes cwm_similarity
+drops for a genuinely-contaminated motif the way it did for TATA, but
+CA-Inr's trimmed core is only ~4bp -- short enough that almost any hit
+containing it scores well against a near-zero-flank archetype regardless of
+real background contamination, so its cwm_similarity stays >0.9 no matter
+how bad the problem gets and --seqlet-low-similarity-only never brings it
+into scope at any threshold. Checked directly (diagnose_seqlet_confidence_
+by_group.py) whether CA-Inr has the same corroboration-rate gap TATA did
+rather than assuming it: real per-hit data (ENCSR342WAR/neuron) showed
+normal (1 hit/peak) vs. excess (2-4 hits/peak) corroboration rates of 41.1%
+vs. 24.4-28.6% -- the same shape and magnitude as TATA's own 58-59% vs.
+20-29% "not a clean separator" gap above, not meaningfully worse. Per-hit
+hit_correlation/hit_coefficient/hit_importance, hit position relative to
+peak midpoint, and strand-majority-within-peak all failed to separate excess
+from normal hits (see diagnose_hit_signal_metaplot.py/diagnose_hit_summit_
+distance.py); splitting excess hits by same- vs. mixed-strand (candidate
+divergent-promoter pairs) didn't cleanly track corroboration rate either
+(28.6% vs. 24.4%, opposite the predicted direction) and was dropped as a
+refinement. A per-peak hit-count cap was considered and rejected outright:
+most human promoters are divergent, so 2+ genuine Inr calls per peak is
+expected biology, not an artifact to cap away. Given the corroboration gap
+is real and TATA-comparable, --seqlet-compendium-clusters resolves this
+experiment's local motif name(s) for a given MotifCompendium cluster (e.g.
+CA-Inr's cluster, identified once via its consistent atlas-wide identity
+rather than per-experiment pattern numbering) and unions them into scope
+alongside whatever --seqlet-low-similarity-only already selected.
+
 Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --head count
@@ -169,6 +197,8 @@ Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_summit_proximity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seq_complexity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence
+    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence \\
+        --seqlet-low-similarity-only --seqlet-compendium-clusters pos_patterns.42
 """
 
 import argparse
@@ -575,6 +605,42 @@ def main():
         ),
     )
     parser.add_argument(
+        "--seqlet-compendium-clusters",
+        type=str,
+        action="append",
+        default=None,
+        metavar="COMPENDIUM_MOTIF_NAME",
+        help=(
+            "additionally apply the hit_seqlet_confidence corroboration "
+            "floor to whichever of this experiment's local motifs map to "
+            "these MotifCompendium cluster(s) (e.g. 'pos_patterns.42'), "
+            "resolved via motifcompendium/bpnet/motifcompendium_{head}_"
+            "pattern_to_cluster.tsv; repeatable. For motifs like CA-Inr, "
+            "whose trimmed core is short enough that cwm_similarity stays "
+            "high (>0.9) regardless of real background contamination -- "
+            "see this module's docstring -- --seqlet-low-similarity-only's "
+            "scoping never fires no matter the threshold, so this is a "
+            "second, independent way to scope the floor by verified motif "
+            "identity instead. Combines with --seqlet-low-similarity-only "
+            "(union of both motif sets) rather than replacing it -- "
+            "TATA-shaped problems (cwm_similarity actually drops) and "
+            "Inr-shaped problems (cwm_similarity structurally blind) need "
+            "different scoping mechanisms, not one or the other atlas-wide. "
+            "Only used when --score-column " + SEQLET_CONFIDENCE_COLUMN
+        ),
+    )
+    parser.add_argument(
+        "--compendium-mapping-tsv",
+        type=str,
+        default=None,
+        help=(
+            "override path to the pattern-to-cluster mapping table used by "
+            "--seqlet-compendium-clusters (default: motifcompendium/bpnet/"
+            "motifcompendium_{head}_pattern_to_cluster.tsv, same file "
+            "link_hits_to_compendium.py uses)"
+        ),
+    )
+    parser.add_argument(
         "--seqlet-low-similarity-only",
         action="store_true",
         help=(
@@ -901,6 +967,51 @@ def main():
                     f"{sorted(restricted_motifs)}"
                 )
 
+        # A second, independent scoping mechanism: motifs like CA-Inr have a
+        # trimmed core short enough that cwm_similarity stays >0.9 regardless
+        # of real background contamination (see module docstring), so
+        # --seqlet-low-similarity-only's threshold never brings them into
+        # scope no matter how low it's set. Resolve this experiment's local
+        # motif names for the given compendium cluster(s) instead, and union
+        # them into restricted_motifs -- verified motif identity standing in
+        # for a cwm_similarity signal that's structurally blind here.
+        if args.seqlet_compendium_clusters:
+            mapping_path = (
+                Path(args.compendium_mapping_tsv)
+                if args.compendium_mapping_tsv
+                else REPO_ROOT / "motifcompendium" / "bpnet" / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
+            )
+            if not mapping_path.exists():
+                print(
+                    f"Error: --seqlet-compendium-clusters needs {mapping_path} "
+                    "(run src/bpnet/motifcompendium/cluster_motifs.py first)",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            mapping = pd.read_csv(mapping_path, sep="\t")
+            mapping = mapping[mapping["experiment"] == args.experiment]
+            compendium_motifs = set(
+                mapping.loc[
+                    mapping["compendium_motif_name"].isin(args.seqlet_compendium_clusters),
+                    "local_motif_name",
+                ]
+            )
+            if args.verbose:
+                print(
+                    f"Resolved compendium cluster(s) {args.seqlet_compendium_clusters} to "
+                    f"{len(compendium_motifs)} local motif(s) for {args.experiment} "
+                    f"(from {mapping_path}): {sorted(compendium_motifs)}"
+                )
+            elif not compendium_motifs:
+                print(
+                    f"WARNING: none of {args.experiment}'s local motifs map to compendium "
+                    f"cluster(s) {args.seqlet_compendium_clusters} (from {mapping_path})",
+                    file=sys.stderr,
+                )
+            restricted_motifs = (
+                compendium_motifs if restricted_motifs is None else restricted_motifs | compendium_motifs
+            )
+
         out_of_scope_motifs = []
         for motif_name, group in hits.groupby("motif_name", sort=False):
             if restricted_motifs is not None and motif_name not in restricted_motifs:
@@ -918,8 +1029,8 @@ def main():
         if args.verbose and out_of_scope_motifs:
             print(
                 f"\n{len(out_of_scope_motifs)} motif(s) left completely untouched "
-                f"(cwm_similarity above {args.seqlet_similarity_threshold}, out of "
-                f"scope for --seqlet-low-similarity-only): {out_of_scope_motifs}"
+                f"(not selected by --seqlet-low-similarity-only or "
+                f"--seqlet-compendium-clusters): {out_of_scope_motifs}"
             )
     else:
         for motif_name, group in hits.groupby("motif_name", sort=False):
