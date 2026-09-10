@@ -448,8 +448,8 @@ def main():
     parser.add_argument(
         "--min-reads",
         type=int,
-        default=10_000_000,
-        help="Minimum total reads to include an experiment (default: 10M)",
+        default=0,
+        help="Minimum total reads to include an experiment (default: 0, disabled)",
     )
     parser.add_argument(
         "--blacklist",
