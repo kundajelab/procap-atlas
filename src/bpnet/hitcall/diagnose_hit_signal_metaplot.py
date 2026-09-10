@@ -102,6 +102,19 @@ def main():
         f"capped by default to the typical bulk case, not the rare extreme "
         f"tail already caught by filter_repeat_density.py (default: {DEFAULT_EXCESS_MAX_COUNT})",
     )
+    parser.add_argument(
+        "--split-excess-by-strand-mix", action="store_true",
+        help=(
+            "split the 'excess' group into peaks where its hits fall on both "
+            "strands ('mixed-strand', consistent with genuine divergent-"
+            "promoter biology -- one Inr per direction) vs. all on the same "
+            "strand ('same-strand', not explained by divergent transcription). "
+            "Motivated by same-motif hit_correlation/hit_coefficient/"
+            "hit_importance being unable to tell excess hits apart from normal "
+            "ones -- checks whether real observed signal can, and whether "
+            "that split lines up with the divergent-promoter explanation."
+        ),
+    )
     parser.add_argument("--window", type=int, default=DEFAULT_WINDOW, metavar="BP")
     parser.add_argument("--bin-size", type=int, default=DEFAULT_BIN_SIZE, metavar="BP")
     parser.add_argument(
@@ -156,10 +169,20 @@ def main():
 
     groups = {
         f"normal (n={args.normal_count} hit/peak)": hits[hits["peak_id"].isin(normal_peaks)],
-        f"excess ({args.excess_min_count}-{args.excess_max_count} hits/peak)": hits[
-            hits["peak_id"].isin(excess_peaks)
-        ],
     }
+    excess_hits = hits[hits["peak_id"].isin(excess_peaks)]
+    if args.split_excess_by_strand_mix:
+        strand_nunique = excess_hits.groupby("peak_id")["strand"].nunique()
+        mixed_strand_peaks = strand_nunique[strand_nunique > 1].index
+        same_strand_peaks = strand_nunique[strand_nunique == 1].index
+        groups[f"excess mixed-strand ({args.excess_min_count}-{args.excess_max_count}/peak)"] = (
+            excess_hits[excess_hits["peak_id"].isin(mixed_strand_peaks)]
+        )
+        groups[f"excess same-strand ({args.excess_min_count}-{args.excess_max_count}/peak)"] = (
+            excess_hits[excess_hits["peak_id"].isin(same_strand_peaks)]
+        )
+    else:
+        groups[f"excess ({args.excess_min_count}-{args.excess_max_count} hits/peak)"] = excess_hits
 
     results = {}
     for label, group_hits in groups.items():
@@ -180,14 +203,35 @@ def main():
         print("Error: no windows extracted for either group", file=sys.stderr)
         sys.exit(1)
 
+    # Fi-NeMo's hit `strand` reflects which orientation of this experiment's
+    # own, independently-discovered MoDISco pattern matched -- unlike
+    # GENCODE gene strand, that has no guaranteed relationship to real
+    # transcription direction (a motif can be discovered/labeled "+" in one
+    # experiment and get the RC labeled "+" in another). Detect this by
+    # checking which of sense/antisense actually peaks at the hit center in
+    # the least ambiguous group (the first one, "normal"), and swap both
+    # groups' sense/antisense if it's inverted, rather than trusting
+    # hit-strand as a real sense/antisense proxy.
+    center = len(next(iter(results.values()))[0]) // 2
+    ref_sense, ref_antisense, _ = next(iter(results.values()))
+    if ref_antisense[center] > ref_sense[center]:
+        print("Note: hit-strand looks RC'ed relative to real transcription direction "
+              "(antisense > sense at center in the reference group) -- swapping sense/antisense.")
+        results = {label: (a, s, n) for label, (s, a, n) in results.items()}
+
     args.out_dir.mkdir(parents=True, exist_ok=True)
     n_bins = (2 * args.window) // args.bin_size
     positions = np.linspace(-args.window, args.window, n_bins, endpoint=False) + args.bin_size / 2
 
     fig, ax = plt.subplots(figsize=(7, 4))
-    colors = {"normal": "tab:green", "excess": "tab:red"}
+    color_by_prefix = {
+        "normal": "tab:green",
+        "excess mixed-strand": "tab:orange",
+        "excess same-strand": "tab:red",
+        "excess": "tab:red",
+    }
     for label, (sense, antisense, n) in results.items():
-        color = colors["normal"] if label.startswith("normal") else colors["excess"]
+        color = next(c for prefix, c in color_by_prefix.items() if label.startswith(prefix))
         ax.plot(positions, sense, color=color, linewidth=1.5, label=f"{label} sense (n={n:,})")
         ax.plot(positions, -antisense, color=color, linewidth=1.5, linestyle=":", alpha=0.7)
 
@@ -195,10 +239,19 @@ def main():
     ax.axhline(0, color="black", linewidth=0.6)
     ax.set_xlabel("Position relative to hit center (bp)")
     ax.set_ylabel("Mean signal (RPM)")
-    ax.set_title(f"{args.experiment} {args.head}: {args.motif_name}\nobserved PRO-cap signal, normal vs. excess hits")
+    subtitle = (
+        "observed PRO-cap signal, normal vs. excess (mixed- vs. same-strand)"
+        if args.split_excess_by_strand_mix
+        else "observed PRO-cap signal, normal vs. excess hits"
+    )
+    ax.set_title(f"{args.experiment} {args.head}: {args.motif_name}\n{subtitle}")
     ax.legend(frameon=False, loc="upper right", fontsize=8)
 
-    out_path = args.out_dir / f"{args.experiment}_{args.head}_{args.motif_name.replace('.', '_')}_normal_vs_excess.png"
+    suffix = "_strand_split" if args.split_excess_by_strand_mix else ""
+    out_path = (
+        args.out_dir
+        / f"{args.experiment}_{args.head}_{args.motif_name.replace('.', '_')}_normal_vs_excess{suffix}.png"
+    )
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
