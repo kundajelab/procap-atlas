@@ -187,6 +187,15 @@ CA-Inr's cluster, identified once via its consistent atlas-wide identity
 rather than per-experiment pattern numbering) and unions them into scope
 alongside whatever --seqlet-low-similarity-only already selected.
 
+--seqlet-background-excess-only is a third scoping mechanism, fully general
+and identity-agnostic (no compendium cluster ID or cwm_similarity threshold
+needed): it calls diagnose_background_energy_ratio.py's detect_elbow_count
+directly on this experiment's own regions.npz/hits/modisco h5, unioning in
+whichever motifs it flags as having unusually elevated background
+attribution energy outside their trimmed core. Validated against the same
+two hand-labeled real experiments above, both recovering exactly their 3
+confirmed motifs -- see that script's module docstring for the metric.
+
 Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --head count
@@ -199,6 +208,8 @@ Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence \\
         --seqlet-low-similarity-only --seqlet-compendium-clusters pos_patterns.42
+    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6 \\
+        --score-column hit_seqlet_confidence --seqlet-background-excess-only
 """
 
 import argparse
@@ -213,6 +224,7 @@ from scipy.signal import find_peaks
 from tangermeme.seqlet import recursive_seqlets
 
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+from diagnose_background_energy_ratio import detect_elbow_count, load_and_compute_background_excess
 from diagnose_hit_summit_distance import (
     build_summit_lookup,
     compute_distances,
@@ -641,6 +653,48 @@ def main():
         ),
     )
     parser.add_argument(
+        "--seqlet-background-excess-only",
+        action="store_true",
+        help=(
+            "a third, fully general/identity-agnostic scoping mechanism: "
+            "additionally apply the hit_seqlet_confidence corroboration "
+            "floor to whichever motifs diagnose_background_energy_ratio.py's "
+            "detect_elbow_count flags as having unusually elevated background "
+            "attribution energy outside their trimmed core (relative to the "
+            "MoDISco discovery archetype's own background level), computed "
+            "fresh here. Doesn't need a MotifCompendium cluster ID or a "
+            "cwm_similarity threshold -- validated against two hand-labeled "
+            "real experiments (K562 profile: TATA/GC-rich-SP-KLF-repeat/"
+            "TA-Inr; ENCSR342WAR/neuron profile: CA-Inr + 2 other hand-"
+            "confirmed-noisy motifs), both correctly recovering exactly the "
+            "3 confirmed motifs. Unions into scope alongside whatever "
+            "--seqlet-low-similarity-only/--seqlet-compendium-clusters "
+            "already selected. Only used when --score-column " + SEQLET_CONFIDENCE_COLUMN
+        ),
+    )
+    parser.add_argument(
+        "--seqlet-modisco-h5",
+        type=str,
+        default=None,
+        help=(
+            "override path to the MoDISco h5 used by "
+            "--seqlet-background-excess-only (default: modisco/bpnet/"
+            "{experiment}_{head}.modisco.h5)"
+        ),
+    )
+    parser.add_argument(
+        "--seqlet-background-min-gap-ratio",
+        type=float,
+        default=None,
+        help="override detect_elbow_count's min_gap_ratio for --seqlet-background-excess-only (default: its own default)",
+    )
+    parser.add_argument(
+        "--seqlet-background-min-top-excess",
+        type=float,
+        default=None,
+        help="override detect_elbow_count's min_top_excess for --seqlet-background-excess-only (default: its own default)",
+    )
+    parser.add_argument(
         "--seqlet-low-similarity-only",
         action="store_true",
         help=(
@@ -1012,6 +1066,40 @@ def main():
                 compendium_motifs if restricted_motifs is None else restricted_motifs | compendium_motifs
             )
 
+        # A third, fully general/identity-agnostic scoping mechanism: no
+        # MotifCompendium cluster ID or cwm_similarity threshold needed,
+        # just this experiment's own regions.npz/hits/modisco h5 (same
+        # inputs report_bpnet.py already uses). See diagnose_background_
+        # energy_ratio.py's module docstring for the metric and
+        # detect_elbow_count's docstring for the elbow-detection logic and
+        # its real-data validation (K562/neuron, both recovering exactly
+        # their 3 hand-confirmed motifs).
+        if args.seqlet_background_excess_only:
+            excess_kwargs = {}
+            if args.seqlet_background_min_gap_ratio is not None:
+                excess_kwargs["min_gap_ratio"] = args.seqlet_background_min_gap_ratio
+            if args.seqlet_background_min_top_excess is not None:
+                excess_kwargs["min_top_excess"] = args.seqlet_background_min_top_excess
+
+            excess_rows = load_and_compute_background_excess(
+                args.experiment, args.head, min_trim_len=args.min_trim_len,
+                model_dir=args.model_dir, modisco_h5_override=args.seqlet_modisco_h5,
+                verbose=args.verbose,
+            )
+            excess_rows.sort(key=lambda r: -r["excess"])
+            n_in_scope = detect_elbow_count([r["excess"] for r in excess_rows], **excess_kwargs)
+            background_excess_motifs = {r["motif_name"] for r in excess_rows[:n_in_scope]}
+
+            if args.verbose:
+                print(
+                    f"--seqlet-background-excess-only flagged {len(background_excess_motifs)} "
+                    f"motif(s) via detect_elbow_count: {sorted(background_excess_motifs)}"
+                )
+            restricted_motifs = (
+                background_excess_motifs if restricted_motifs is None
+                else restricted_motifs | background_excess_motifs
+            )
+
         out_of_scope_motifs = []
         for motif_name, group in hits.groupby("motif_name", sort=False):
             if restricted_motifs is not None and motif_name not in restricted_motifs:
@@ -1029,8 +1117,9 @@ def main():
         if args.verbose and out_of_scope_motifs:
             print(
                 f"\n{len(out_of_scope_motifs)} motif(s) left completely untouched "
-                f"(not selected by --seqlet-low-similarity-only or "
-                f"--seqlet-compendium-clusters): {out_of_scope_motifs}"
+                f"(not selected by --seqlet-low-similarity-only, "
+                f"--seqlet-compendium-clusters, or --seqlet-background-excess-only): "
+                f"{out_of_scope_motifs}"
             )
     else:
         for motif_name, group in hits.groupby("motif_name", sort=False):
