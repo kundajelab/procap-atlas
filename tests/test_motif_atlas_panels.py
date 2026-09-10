@@ -966,3 +966,74 @@ def test_concentration_cli_warns_on_min_cluster_experiments_one(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "carry no information for this test" in result.stderr
+
+
+def test_concentration_records_which_groups_not_just_how_many():
+    """A restricted cluster is uninterpretable without knowing which lineage it
+    is restricted to, and the depth-confound check needs it too."""
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(6) for i in range(4)}
+    n_total = len(group_map)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": {"g0_e0", "g0_e1"}, "prevalence": 2},
+            {"exp_set": {"g1_e0", "g2_e0"}, "prevalence": 2},
+        ]
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    assert annotated.loc[0, "sole_group"] == "g0"
+    assert annotated.loc[0, "groups"] == "g0"
+    assert annotated.loc[1, "sole_group"] == ""  # spans two groups
+    assert annotated.loc[1, "groups"] == "g1,g2"
+
+
+def test_concentration_cli_reports_restricted_group_landing(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps, "SP1", 30 * 900) for _ in range(3)]
+    rows += [("pos", exps[:2], None, 2 * 100) for _ in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    per_cluster = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    assert "sole_group" in per_cluster.columns
+    assert "groups" in per_cluster.columns
+    assert "of restricted," in result.stderr
+
+
+def test_enrichment_flagged_unreliable_when_expectation_is_tiny():
+    """At high --min-cluster-experiments on fine groups the expected count
+    falls below 1, where the ratio is uninterpretable (0 observed against 0.004
+    reads as "0x") even though the exact p-value stays valid."""
+    group_map = {f"b{i}": f"b{i}" for i in range(60)}  # every group size 1
+    n_total = len(group_map)
+    meta = pd.DataFrame(
+        [{"exp_set": {f"b{i}", f"b{i+1}", f"b{i+2}"}, "prevalence": 3} for i in range(0, 30, 3)]
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    annotated["motif_class"] = "spread"
+    summary = mgc.summarize(annotated, ["motif_class"])
+    # no group is large enough to hold 3 experiments, so expectation is 0
+    assert summary.loc[0, "expected_single_group"] == pytest.approx(0.0)
+    assert not summary.loc[0, "enrichment_reliable"]
+    assert summary.loc[0, "single_group_p"] == pytest.approx(1.0)
+
+
+def test_enrichment_reliable_when_expectation_is_adequate():
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(4) for i in range(10)}
+    n_total = len(group_map)
+    meta = pd.concat(
+        [build_concentration_meta(group_map, [True] * 10, prevalence=2)],
+        ignore_index=True,
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    annotated["motif_class"] = "conc"
+    summary = mgc.summarize(annotated, ["motif_class"])
+    assert summary.loc[0, "expected_single_group"] >= 1.0
+    assert summary.loc[0, "enrichment_reliable"]

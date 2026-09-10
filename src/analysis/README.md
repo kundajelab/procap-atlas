@@ -397,11 +397,43 @@ At biosample level the single-group test is underpowered by construction —
 most biosamples appear once, so `P[n_groups = 1]` is tiny for `p > 1` — which
 is why `pooled_concentration` is the statistic to read there.
 
-`--min-cluster-experiments 3` is the check for whether a result rests on
-clusters sitting at the reproducibility floor, which matters for the unmatched
-class specifically: it is dominated by prevalence-2 clusters (22 of 37), of
-which 9 have both experiments in one tissue group against 2.13 expected
-(4.2×, exact `p = 1.1e-4`).
+`--min-cluster-experiments 3` checks whether a result rests on clusters sitting
+at the reproducibility floor. It does not — the effect strengthens sharply once
+prevalence-2 clusters are dropped (239 clusters remain of 343):
+
+```text
+tissue level, prevalence >= 3
+motif_class   n    pooled_conc  median_conc  n_single  expected  enrichment  p
+TF-matched    224  0.829        0.864        16        0.57      28x         2.2e-19
+unmatched      15  0.729        0.624         5        0.06      82x         4.7e-10
+```
+
+`pooled_concentration` barely moves (0.832 → 0.829 and 0.767 → 0.729) while the
+single-group enrichment rises an order of magnitude, because the expectation
+collapses much faster than the observed count. At this prevalence
+`median_concentration` finally becomes informative too, and it shows the
+unmatched class is the more concentrated of the two (0.624 vs 0.864).
+
+Two things to watch when raising the floor. `expected_single_group` can fall
+below 1, at which point `single_group_enrichment` is uninterpretable — 2
+observed against 0.02 expected reads as "90×" and 0 against 0.004 reads as
+"0×", when both mean the test had almost nothing to detect. The summary carries
+an `enrichment_reliable` flag and the run warns about affected rows; read
+`single_group_p` (still exact) and `pooled_concentration` there instead. And at
+biosample level with a raised floor, the single-group test is unpowered by
+construction, so only `pooled_concentration` is usable.
+
+#### The read-depth confound
+
+The null treats all retained experiments as exchangeable. If library size or
+peak count clusters by biosample group, a motif's discovery would concentrate
+in the deep groups for reasons unrelated to lineage, and this test would report
+it as tissue restriction. `--min-reads` only sets a floor; it does not equalize
+depth across groups. Check before relying on the result: compare median reads
+across groups, and check whether the `sole_group` values of restricted clusters
+are the deepest groups rather than a spread. The run prints where restricted
+clusters land alongside each group's share of experiments for exactly this
+comparison.
 
 `--jaspar-score-threshold` matters because the default `motif_class` proxy is
 JASPAR *name presence* with no score floor, which admits matches as weak as

@@ -152,6 +152,17 @@ def annotate_concentration(
     for p in sorted(set(out["prevalence"])):
         cache_e[p] = expected_n_groups(int(p), sizes, n_total)
         cache_s[p] = prob_single_group(int(p), sizes, n_total)
+    # Which groups, not just how many: needed to interpret a restricted
+    # cluster biologically ("confined to liver_biliary") and to check whether
+    # restricted clusters pile into the deepest-sequenced groups, which would
+    # make apparent concentration a read-depth artifact rather than lineage
+    # restriction -- the null treats all experiments as exchangeable.
+    out["groups"] = out["exp_set"].map(
+        lambda s: ",".join(sorted({group_map[e] for e in s if e in group_map}))
+    )
+    out["sole_group"] = np.where(
+        out["n_groups"] == 1, out["groups"], ""
+    )
     out["expected_n_groups"] = out["prevalence"].map(cache_e)
     out["concentration"] = out["n_groups"] / out["expected_n_groups"]
     out["p_single_expected"] = out["prevalence"].map(cache_s)
@@ -188,6 +199,12 @@ def summarize(annotated: pd.DataFrame, split_cols: list[str]) -> pd.DataFrame:
                 "single_group_enrichment": (
                     round(observed_single / probs.sum(), 2) if probs.sum() > 0 else np.nan
                 ),
+                # A ratio against a sub-1 expectation is not interpretable:
+                # 2 observed against 0.02 expected reads as "90x" and 0
+                # against 0.004 reads as "0x", when both really mean the test
+                # had almost nothing to detect. The exact p-value stays valid
+                # either way, so that is what to read when this is False.
+                "enrichment_reliable": bool(probs.sum() >= 1.0),
                 "single_group_p": poisson_binomial_sf(probs, observed_single),
             }
         )
@@ -391,7 +408,7 @@ def main():
             "cluster_final", "posneg", "jaspar_name", "jaspar_score", "motif_class",
             "abundance_band", "n_motifs", "total_seqlets", "seqlets_per_motif",
             "prevalence", "n_groups", "expected_n_groups", "concentration",
-            "p_single_expected", "is_single_group",
+            "p_single_expected", "is_single_group", "sole_group", "groups",
         ) if c in annotated.columns
     ]
     annotated[keep_cols].to_csv(stem.with_suffix(".tsv"), sep="\t", index=False)
@@ -409,12 +426,43 @@ def main():
     with pd.option_context("display.width", 200, "display.max_columns", 30):
         print(f"\n{args.group_level}-level concentration:", file=sys.stderr)
         print(summary.to_string(index=False), file=sys.stderr)
+
+    unreliable = summary[~summary["enrichment_reliable"]]
+    if not unreliable.empty:
+        labels = ", ".join(str(v) for v in unreliable[split_cols[0]])
+        print(
+            f"\nWARNING: expected_single_group < 1 for: {labels}. "
+            "single_group_enrichment is not interpretable there (a ratio "
+            "against a sub-1 expectation); read single_group_p and "
+            "pooled_concentration instead.",
+            file=sys.stderr,
+        )
     print(
         "\nconcentration ~1 = spread like a random draw of experiments; "
         "<<1 = concentrated.\nsingle_group_p is the exact Poisson-binomial "
         "P[X >= observed] for one-group clusters.",
         file=sys.stderr,
     )
+
+    single = annotated[annotated["is_single_group"]]
+    if not single.empty:
+        # If restricted clusters pile into a few groups, check those groups
+        # are not simply the deepest-sequenced ones before reading the
+        # concentration as lineage restriction.
+        counts = single["sole_group"].value_counts()
+        group_n = pd.Series(group_map).value_counts()
+        print(
+            f"\nWhere the {len(single)} single-group clusters land "
+            f"(vs. that group's share of experiments):",
+            file=sys.stderr,
+        )
+        for grp, n in counts.items():
+            share = group_n.get(grp, 0) / n_total
+            print(
+                f"  {grp:<24}{n:>4}  ({n/len(single):5.1%} of restricted, "
+                f"{share:5.1%} of experiments)",
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":
