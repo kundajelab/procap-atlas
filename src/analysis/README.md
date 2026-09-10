@@ -187,11 +187,17 @@ clusters, which is exactly backwards for this panel.
 `--min-seqlets-per-motif` uses the normalized ratio `total_seqlets /
 n_motifs` instead, but that is only *partly* decoupled — measured
 `r = 0.40` against prevalence on the real count-head compendium. So it
-defaults to 0 and should stay there. Raising it makes the surviving lexicon
-more ubiquitous, so a small experiment sample recovers a larger fraction of
-it; on real count-head data the k=5 fraction rises monotonically 20.7% → 44.8%
-from no floor to ≥1000 seqlets/motif. That rise is the confound operating, not
-evidence about noise, and it means no single threshold is defensible.
+defaults to 0, **and on the real data it should stay there** (see below).
+Raising it makes the surviving lexicon more ubiquitous, so a small experiment
+sample recovers a larger fraction of it; on real count-head data the k=5
+fraction rises monotonically 20.7% → 44.8% from no floor to ≥1000
+seqlets/motif.
+
+Note what that rise does *not* establish. Two hypotheses predict it
+identically: low-abundance clusters may be real but tissue-restricted (hence
+low-prevalence), or they may be spurious (and spurious clusters also appear in
+few experiments). The sweep cannot distinguish them, so do not read the rise
+as evidence either way.
 
 `--sweep` reports that sensitivity instead of hiding it:
 
@@ -228,14 +234,83 @@ add Monte-Carlo noise to a comparison that is exact without it. It requires
 `cluster_metadata.tsv`; the pattern-to-cluster fallback carries no seqlet
 counts and the sweep refuses rather than silently sweeping nothing.
 
-Two caveats. The ratio is computed over all motifs the compendium assigned to
-a cluster, including any from experiments dropped by `--min-reads`, since
-`cluster_metadata.tsv` carries only aggregates — it is an abundance proxy, not
-an exact count over the retained subset. And abundance filtering does nothing
-about *redundancy*: one real motif split across two clusters inflates every
-count here, biasing in the flattering direction. Bound that separately with a
-tomtom self-comparison of `motifcompendium_{head}_cluster_averages.meme`, or
-by re-running `cluster_motifs.py --across-threshold 0.85`.
+#### What discriminates real from spurious clusters
+
+Abundance does not; group concentration does. A real tissue-restricted motif
+found in 8 liver experiments has `n_groups = 1`, while a spurious cluster in 8
+arbitrary experiments has `n_groups ≈ 7`. The null expectation uses the same
+closed form as the rarefaction: for group *g* of size *n_g*,
+`E[n_groups | p] = Σ_g [1 - C(N-n_g, p)/C(N, p)]`. The ratio
+`n_groups / E[n_groups]` is ~1 when a cluster's experiments are spread like a
+random draw and ≪1 when they concentrate in specific tissues.
+
+Measured on the real count-head compendium, by `seqlets_per_motif` band:
+
+```text
+band       n   median_prevalence  concentration  jaspar_rate  median_jaspar_score
+<25       20                 2.0           1.05         0.80                0.840
+25-50    105                 3.0           0.96         0.91                0.870
+50-100    46                 4.0           0.96         0.91                0.873
+100-500   99                 6.0           0.86         0.83                0.862
+>=500     73                15.0           0.82         0.96                0.959
+```
+
+Two conclusions. First, **no band is strongly tissue-concentrated** — even the
+most abundant is only 0.82 — so tissue structure in *discovery* is weak.
+Second, the low-abundance clusters carry solid JASPAR matches (median
+0.84–0.87; the lower means reflect the ~20% with no match at all, not weak
+matches), so they are real motifs that happen to be under-discovered rather
+than noise. That is why no abundance floor is applied: it would delete real
+biology without removing anything spurious.
+
+Caveat on power: at median prevalence 2–4 the concentration statistic is
+coarse. With `p = 2`, expected is 1.90 and observed can only be 1 or 2, so the
+ratio is either 0.53 or 1.05 with nothing between.
+
+#### What none of this addresses
+
+Cluster **redundancy**. One real motif split across two clusters inflates every
+count in this section, and it biases in the flattering direction. Bound it
+separately with a tomtom self-comparison of
+`motifcompendium_{head}_cluster_averages.meme`, or by re-running
+`cluster_motifs.py --across-threshold 0.85`.
+
+Also note the abundance ratio is computed over all motifs the compendium
+assigned to a cluster, including any from experiments dropped by
+`--min-reads`, since `cluster_metadata.tsv` carries only aggregates — it is an
+abundance proxy, not an exact count over the retained subset.
+
+#### Interpreting the sampling schemes on real data
+
+Measured on the real count-head compendium (343 clusters, 198 experiments):
+
+```text
+k     diverse  redundant  uniform
+10      113.2       96.7    109.5
+25      190.1      159.2    180.9
+50      254.4      220.8    246.7
+```
+
+`uniform` sits close to `diverse` because a random draw from 198 experiments
+spanning 19 tissue groups is already tissue-diverse. The informative contrast
+is `redundant` against the others: a study confined to one tissue recovers
+~15–19% fewer motifs at matched experiment count. Experiment count, not tissue
+diversity, is the primary driver — state the diversity effect at that size and
+do not overclaim it.
+
+The unmatched (non-JASPAR) class is the exception, and by a wide margin: 37
+clusters, with diverse 18.0 vs uniform 13.3 vs redundant 10.9 at k=25 (+65%
+diverse over redundant). The motifs most requiring tissue diversity to
+discover are the ones absent from JASPAR. Before relying on that, inspect
+those clusters' logos — `cluster_motifs.py` groups core promoter elements,
+repeats and unannotated motifs together in this class, and a tissue-structured
+repeat family would produce the same signal artifactually.
+
+This panel measures where motifs are **discovered**, not where they are
+**used**. Tissue-specificity claims belong to the hit-density panel below;
+weak discovery-level tissue structure does not bound usage-level specificity,
+since a motif can be discovered in two arbitrary experiments and still be used
+in only one lineage.
 
 `--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
 stratified curves. Without it the script falls back to a JASPAR-match proxy
