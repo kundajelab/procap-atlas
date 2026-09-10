@@ -450,10 +450,40 @@ concentrated beyond what per-experiment discovery propensity can explain.
 
 On a matrix with no group structure the swap null lands on the same value as
 the closed-form uniform expectation (verified in the tests), so the two nulls
-diverge only when the column margins genuinely carry information — which is
-exactly the case the swap null is there to handle. **Quote `swap_concentration`
-and `swap_mean_p` rather than the uniform-null numbers**, since the uniform
-null's exchangeability assumption is known to be violated here.
+diverge only when the column margins genuinely carry information.
+
+Measured on the real count-head compendium, they barely diverge — the depth
+confound is detectable in the depth distribution but has almost no effect on
+the estimate:
+
+```text
+                       swap_conc  pooled_conc (uniform)  obs_single  null_mean  swap_p
+tissue     TF-matched   0.827     0.832                  45          7.87       <0.001
+           unmatched    0.762     0.767                  14          2.08       <0.001
+biosample  TF-matched   0.919     0.928                   8          0.95       <0.001
+           unmatched    0.865     0.872                   1          0.27       <0.001 (mean stat)
+```
+
+Concentration estimates move by under 0.01, and the swap null's expected
+single-group counts come out slightly *lower* than the analytic ones
+(7.87 vs 8.50; 2.08 vs 2.19), so conditioning on per-experiment productivity
+makes the enrichment marginally stronger, not weaker (45/7.87 = 5.7×). The
+finding is robust to the confound.
+
+Quote `swap_concentration` and `swap_mean_p`, since the uniform null's
+exchangeability assumption is known to be violated. Two reporting notes:
+permutation p-values floor at `1/(n+1)` — every real cell hits 0.000999 at
+n=1000, so report `p < 0.001` and cite the analytic p separately if a
+smaller number is wanted. And for the unmatched class at biosample level the
+single-group test is underpowered (1 observed, 0.27 expected, p = 0.23); the
+mean-`n_groups` statistic is significant there and is the one to use.
+
+**Redundancy caveat.** Duplicate clusters inflate the *counts* (45, 59, 343)
+without much biasing the *ratio*: split a real motif into three clusters and
+all three carry the same experiment set, so each is equally restricted under
+both observed and null. What it does inflate is confidence, since those three
+are not independent observations. Treat the counts as clusters rather than
+distinct motifs, and see the tomtom cross-check noted above.
 
 The run also prints where restricted clusters land alongside each group's share
 of experiments, and `sole_group` in the per-cluster TSV names the lineage, so a
