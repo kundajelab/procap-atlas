@@ -1339,9 +1339,13 @@ def test_sweep_is_monotone_in_threshold(tmp_path):
     names, pwms = mr.load_motifs(meme, mr.NAME_RE)
     res = mr.self_compare(pwms, n_jobs=1)
     summary = mr.sweep(names, pwms, res, [1e-12, 1e-6, 1e-2, 1.0], 0.7)
-    assert summary["excess_clusters"].is_monotonic_increasing
-    assert (summary["n_components"] <= summary["n_clusters"]).all()
-    assert (summary["excess_clusters"] >= 0).all()
+    for criterion in mr.MERGERS:
+        assert summary[f"excess_{criterion}"].is_monotonic_increasing, criterion
+        assert (summary[f"n_components_{criterion}"] <= summary["n_clusters"]).all()
+        assert (summary[f"excess_{criterion}"] >= 0).all()
+    # single linkage can only merge at least as much as complete or mutual
+    assert (summary["excess_single"] >= summary["excess_complete"]).all()
+    assert (summary["excess_complete"] >= summary["excess_mutual"]).all()
 
 
 def test_redundancy_cli_end_to_end(tmp_path):
@@ -1374,6 +1378,7 @@ def test_redundancy_cli_end_to_end(tmp_path):
     out = tmp_path / "out"
     summary = pd.read_csv(out / "motif_redundancy_count_summary.tsv", sep="\t")
     assert (summary["n_clusters"] == n_total).all()
+    assert "excess_complete" in summary.columns and "excess_mutual" in summary.columns
     comps = pd.read_csv(out / "motif_redundancy_count_components.tsv", sep="\t")
     dup_comp = comps[comps.motif.isin(["pos_patterns.0", dup_name])]
     assert dup_comp["component"].nunique() == 1  # duplicates merged
@@ -1394,3 +1399,167 @@ def test_redundancy_cli_errors_without_meme(tmp_path):
     )
     assert result.returncode == 1
     assert "MEME file not found" in result.stderr
+
+
+def test_information_content_bounds():
+    uniform = np.full((4, 5), 0.25)
+    assert mr.information_content(uniform) == pytest.approx(np.zeros(5), abs=1e-9)
+    determined = np.zeros((4, 3)); determined[0] = 1.0
+    assert mr.information_content(determined) == pytest.approx(np.full(3, 2.0), abs=1e-6)
+
+
+def test_trim_pwm_finds_the_informative_core():
+    """Uniform flanks carry no information and must be trimmed away."""
+    pwm = np.full((4, 30), 0.25)
+    pwm[:, 12:20] = 0.0
+    pwm[0, 12:20] = 1.0          # 8bp determined core at 12:20
+    start, end = mr.trim_pwm(pwm, threshold=0.3, min_len=6)
+    assert (start, end) == (12, 20)
+
+
+def test_trim_pwm_respects_min_len_floor():
+    """A 2bp core must be widened, or no comparison can use it -- the same
+    reason Fi-NeMo hit calling needed a min-length floor."""
+    pwm = np.full((4, 30), 0.25)
+    pwm[:, 14:16] = 0.0
+    pwm[0, 14:16] = 1.0
+    start, end = mr.trim_pwm(pwm, threshold=0.3, min_len=6)
+    assert end - start >= 6
+    assert start <= 14 and end >= 16
+
+
+def test_trim_pwm_clamps_to_motif_width():
+    pwm = np.full((4, 4), 0.25); pwm[0] = 1.0; pwm[1:] = 0.0
+    start, end = mr.trim_pwm(pwm, threshold=0.3, min_len=20)
+    assert (start, end) == (0, 4)
+
+
+def test_trim_pwm_handles_a_fully_uniform_motif():
+    pwm = np.full((4, 10), 0.25)
+    assert mr.trim_pwm(pwm) == (0, 10)
+
+
+def test_trimming_shrinks_fixed_width_windows(tmp_path):
+    """The real failure mode: 50bp windows with a small informative core."""
+    pwms = []
+    for seed in range(6):
+        m = np.full((4, 50), 0.25)
+        core = realistic_pwm(10, seed, conc=20.0).T
+        m[:, 20:30] = core
+        pwms.append(m)
+    trimmed, widths = mr.trim_motifs(pwms, 0.3, 6)
+    assert (widths == 50).all()
+    assert all(t.shape[-1] < 50 for t in trimmed)
+    assert all(t.shape[-1] >= 6 for t in trimmed)
+
+
+def test_mutual_best_cannot_chain():
+    """A~B~C with A far from C: single linkage merges all three, mutual best
+    merges at most one pair. This is the property that makes single linkage
+    unusable on the real compendium."""
+    names = ["a", "b", "c"]
+    p = np.array([[0.0, 1e-9, 0.9], [1e-9, 0.0, 1e-9], [0.9, 1e-9, 0.0]])
+    single = mr.connected_components(
+        names, pd.DataFrame({"motif_a": ["a", "b"], "motif_b": ["b", "c"]})
+    )
+    assert len(set(single.values())) == 1  # all chained together
+    mutual = mr.merge_mutual_best(names, p, 1e-6)
+    assert len(set(mutual.values())) >= 2  # chaining prevented
+
+
+def test_complete_linkage_requires_all_pairs():
+    names = ["a", "b", "c"]
+    # a~b tight, but c is far from both
+    p = np.array([[0.0, 1e-12, 0.5], [1e-12, 0.0, 0.5], [0.5, 0.5, 0.0]])
+    comps = mr.merge_complete(names, p, 1e-6)
+    assert comps["a"] == comps["b"]
+    assert comps["c"] != comps["a"]
+
+
+def test_complete_linkage_merges_a_true_clique():
+    names = ["a", "b", "c"]
+    p = np.full((3, 3), 1e-12); np.fill_diagonal(p, 0.0)
+    comps = mr.merge_complete(names, p, 1e-6)
+    assert len(set(comps.values())) == 1
+
+
+def test_symmetric_p_takes_the_conservative_side():
+    pwms = [np.full((4, 10), 0.25) for _ in range(2)]
+    res = {
+        "p": np.array([[0.0, 1e-9], [1e-3, 0.0]]),
+        "overlaps": np.full((2, 2), 10.0),
+        "scores": np.zeros((2, 2)), "offsets": np.zeros((2, 2)),
+        "strands": np.zeros((2, 2)),
+    }
+    p_sym = mr.symmetric_p(pwms, res, 0.7)
+    assert p_sym[0, 1] == pytest.approx(1e-3)  # larger of the two
+    assert p_sym[1, 0] == pytest.approx(1e-3)
+
+
+def test_symmetric_p_rejects_failing_overlap():
+    pwms = [np.full((4, 10), 0.25), np.full((4, 10), 0.25)]
+    res = {
+        "p": np.full((2, 2), 1e-12),
+        "overlaps": np.full((2, 2), 3.0),   # 3/10 = 0.3 < 0.7
+        "scores": np.zeros((2, 2)), "offsets": np.zeros((2, 2)),
+        "strands": np.zeros((2, 2)),
+    }
+    p_sym = mr.symmetric_p(pwms, res, 0.7)
+    assert p_sym[0, 1] == 1.0
+
+
+def test_load_subset_from_plain_list(tmp_path):
+    f = tmp_path / "s.txt"
+    f.write_text("pos_patterns.1\npos_patterns.2\n\n")
+    assert mr.load_subset(f) == {"pos_patterns.1", "pos_patterns.2"}
+
+
+def test_load_subset_from_tsv_column(tmp_path):
+    f = tmp_path / "s.tsv"
+    f.write_text("motif\twidth\npos_patterns.5\t12\npos_patterns.9\t14\n")
+    assert mr.load_subset(f) == {"pos_patterns.5", "pos_patterns.9"}
+
+
+def test_load_subset_from_concentration_output(tmp_path):
+    f = tmp_path / "s.tsv"
+    f.write_text("compendium_motif_name\tx\npos_patterns.3\t1\n")
+    assert mr.load_subset(f) == {"pos_patterns.3"}
+
+
+def test_redundancy_cli_subset_restricts(tmp_path):
+    meme, dup_name = build_redundancy_meme(tmp_path / "m.meme", n=20, seed=3)
+    sub = tmp_path / "sub.txt"
+    sub.write_text("\n".join(["pos_patterns.0", "pos_patterns.1", dup_name]))
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(meme), "--subset", str(sub),
+            "--out-dir", str(tmp_path / "out"), "--n-jobs", "1",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "restricted to 3 clusters" in result.stderr
+    summary = pd.read_csv(
+        tmp_path / "out" / "motif_redundancy_count_summary.tsv", sep="\t"
+    )
+    assert (summary["n_clusters"] == 3).all()
+
+
+def test_no_trim_flag_reports_untrimmed(tmp_path):
+    pwms = {}
+    for i in range(8):
+        m = np.full((50, 4), 0.25)
+        m[20:30] = realistic_pwm(10, i, conc=20.0)
+        pwms[f"pos_patterns.{i}"] = m
+    meme = write_meme(tmp_path / "m.meme", pwms)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(meme), "--no-trim", "--out-dir", str(tmp_path / "out"),
+            "--n-jobs", "1",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "UNTRIMMED" in result.stderr

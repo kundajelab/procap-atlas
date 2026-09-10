@@ -344,15 +344,51 @@ shell command. Self-compares `motifcompendium_{head}_cluster_averages.meme`
 with the diagonal masked, symmetrizing each pair on the larger of the two
 p-values since TOMTOM is asymmetric (the query sets the background scale).
 
-Redundancy is reported as **excess clusters**: join every pair passing the
-filters, take connected components, and report `n_clusters - n_components` —
-the number of clusters that would disappear if each near-duplicate group
-collapsed to one motif. As with the abundance floor, no single p-value
-threshold is defensible (significance scales with motif length and information
-content, and family members are genuinely similar without being duplicates), so
-the output is a sweep. Read the shape: flat across orders of magnitude means
-redundancy is well determined; steadily climbing means lexicon size is
-threshold-dependent and should be quoted as a range.
+Redundancy is reported as **excess clusters** — how many clusters would
+disappear if each near-duplicate group collapsed to one motif. Two properties
+of the real data make the computation delicate, and the first run got both
+wrong:
+
+**Motifs must be trimmed.** MotifCompendium exports fixed-width CWM windows —
+all 944 count-head clusters are exactly 50bp — while the informative core is
+typically 6–15bp. Untrimmed, TOMTOM largely aligns low-information flanks,
+which resemble background and so resemble each other, and `--min-overlap-frac`
+goes inert (35bp of a 50-vs-50 comparison is satisfied at nearly any offset).
+The untrimmed run reported 77.6% excess at `p ≤ 1e-6`; that is flank
+similarity, not redundancy. Motifs are now trimmed by information content
+(`--trim-threshold`, default 0.3, with `--min-trim-len 6`), mirroring the shape
+of Fi-NeMo's CWM trim rule. `--no-trim` reproduces the old behaviour.
+
+**Single linkage chains.** Connected components merge A~B~C even when A and C
+are unrelated. On the untrimmed run one component held 142 clusters at
+`p ≤ 1e-12` and 919 of 944 at `p ≤ 1e-2` — the sweep cannot fix that. Three
+criteria are now reported side by side:
+
+| criterion | behaviour |
+|---|---|
+| `mutual` | only mutual best hits merge; cannot chain — a lower bound |
+| `complete` | complete linkage: a group merges only if *every* pair passes — the usable middle estimate |
+| `single` | connected components; chaining-prone upper bound, kept for contrast |
+
+A large `single` − `complete` gap means the threshold is too loose for this
+data, not that redundancy is high; the run warns when it exceeds 20% of the
+lexicon. `--linkage` picks which criterion's components get written out
+(default `complete`).
+
+No single p-value threshold is defensible either — significance scales with
+motif length and information content, and family members are genuinely similar
+without being duplicates — so the output stays a sweep. Flat across orders of
+magnitude means redundancy is well determined; steadily climbing means lexicon
+size is threshold-dependent and should be quoted as a range.
+
+**Measure over the clusters a claim rests on, not all 944.** `--subset` takes a
+name list or any TSV with a `motif`/`compendium_motif_name` column, so the
+prevalence-filtered set (343) or the tissue-restricted set (59) can be tested
+directly. That is both the number actually at risk of inflation and far less
+prone to chaining, since chaining scales with how many motifs are in play. The
+59 restricted clusters already show 6 excess by JASPAR name alone (RELA ×3,
+SP2 ×2, ATF1 ×2, POU2F3 ×2, POU2F1::SOX2 ×2), which is the figure to check
+against.
 
 Why this needs measuring rather than eyeballing: on the real count-head
 compendium 306 clusters carry only **112 distinct JASPAR names** (SP9 claimed
