@@ -236,14 +236,8 @@ counts and the sweep refuses rather than silently sweeping nothing.
 
 #### What discriminates real from spurious clusters
 
-Abundance does not; group concentration does. A real tissue-restricted motif
-found in 8 liver experiments has `n_groups = 1`, while a spurious cluster in 8
-arbitrary experiments has `n_groups ≈ 7`. The null expectation uses the same
-closed form as the rarefaction: for group *g* of size *n_g*,
-`E[n_groups | p] = Σ_g [1 - C(N-n_g, p)/C(N, p)]`. The ratio
-`n_groups / E[n_groups]` is ~1 when a cluster's experiments are spread like a
-random draw and ≪1 when they concentrate in specific tissues.
-
+Abundance does not; group concentration does — see
+[Discovery Concentration](#discovery-concentration) below for the script.
 Measured on the real count-head compendium, by `seqlets_per_motif` band:
 
 ```text
@@ -265,7 +259,9 @@ biology without removing anything spurious.
 
 Caveat on power: at median prevalence 2–4 the concentration statistic is
 coarse. With `p = 2`, expected is 1.90 and observed can only be 1 or 2, so the
-ratio is either 0.53 or 1.05 with nothing between.
+ratio is either 0.53 or 1.05 with nothing between. **Pooling by abundance band
+as above also dilutes the signal** — split by `motif_class` instead, which is
+what `motif_group_concentration.py` does by default.
 
 #### What none of this addresses
 
@@ -317,6 +313,81 @@ stratified curves. Without it the script falls back to a JASPAR-match proxy
 (matched vs. unmatched), which is only a proxy: JASPAR2026 has essentially no
 coverage of core promoter elements, which is why `cluster_motifs.py`'s reports
 annotate Inr/TATA and repeats by hand.
+
+### Discovery Concentration
+
+Tests whether the experiments a cluster was discovered in come from fewer
+biosample groups than chance allows. This is the discriminating test that
+abundance thresholds cannot provide: a lineage-restricted motif in 8 liver
+experiments has `n_groups = 1`, while a cluster spread over 8 arbitrary
+experiments sits near the random expectation, and the two can have identical
+seqlet counts.
+
+```bash
+python src/analysis/motif_group_concentration.py --head count
+python src/analysis/motif_group_concentration.py --head count --group-level biosample
+python src/analysis/motif_group_concentration.py --head count --min-cluster-experiments 3
+python src/analysis/motif_group_concentration.py --head count --jaspar-score-threshold 0.85
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_concentration_{head}_{level}.tsv          # per-cluster observed/expected/ratio
+figures/motif_atlas/motif_concentration_{head}_{level}_summary.tsv  # per-split aggregate + enrichment test
+figures/motif_atlas/motif_concentration_{head}_{level}.{png,pdf}    # n_groups vs prevalence against expectation
+```
+
+Two exact statistics, for a cluster of prevalence *p* over *N* experiments in
+groups of size *n_g*:
+
+```text
+E[n_groups | p]   = Σ_g [1 - C(N - n_g, p) / C(N, p)]
+P[n_groups = 1|p] = Σ_g C(n_g, p) / C(N, p)
+```
+
+`concentration = n_groups / E[n_groups]` is ~1 for a random spread and ≪1 when
+concentrated. At low prevalence it has almost no dynamic range, so the
+single-group count is the sharper test; it is compared against its **exact
+Poisson-binomial** distribution (by DP, not a Poisson or normal approximation —
+the per-cluster probabilities are small and very unequal, which is where those
+approximations fail). Read `pooled_concentration` and `single_group_p` rather
+than `median_concentration`, which is granular enough to jump between adjacent
+values.
+
+**Run both `--group-level` values.** They answer different questions, and a
+conclusion holding at both is not a grouping artifact:
+
+- `tissue` — the keyword grouping in `_biosample_groups.py`. Asks whether a
+  motif is *lineage-restricted*. Coarse: on the real atlas three groups hold
+  45% of experiments, and `blood_immune` alone spans erythroid, T/NK, B,
+  myeloid and lymphoid-tissue biosamples, so it cannot see restriction
+  *within* those groups. Coarse grouping also lowers `E[n_groups]`, which
+  inflates the ratio and biases toward "not concentrated".
+- `biosample` — the raw ENCODE biosample string (112 groups over the 198
+  retained experiments). Asks whether discovery is *replicate-driven*
+  (HCT116 ×16, brain metastases ×10, PBMC ×8, K562 ×7). Assumption-free and
+  higher resolution, but most biosamples appear once, so `P[n_groups = 1]` is
+  near zero for `p > 1` and the single-group test loses power.
+
+`--min-cluster-experiments 3` is the check for whether a result rests on
+clusters sitting at the reproducibility floor. On the real count head the
+non-JASPAR class is dominated by prevalence-2 clusters (22 of 37), so this
+matters: 9 of those 22 have both experiments in one tissue group against 2.13
+expected (`P = 0.0967` per the closed form), a 4.2× enrichment at exact
+`p = 1.1e-4`. That is where the atlas's discovery-level tissue structure lives
+— the JASPAR-matched majority is spread near-randomly and dilutes it away when
+pooled.
+
+`--jaspar-score-threshold` matters because the default `motif_class` proxy is
+JASPAR *name presence* with no score floor, which admits matches as weak as
+~0.82. Raising the floor moves those clusters into the unmatched class and
+changes both the class sizes and any per-class result.
+
+Note this measures where motifs are **discovered**. Usage-level tissue
+specificity is the hit-density panel below, and weak discovery-level structure
+does not bound it — a motif can be discovered in two arbitrary experiments and
+still be used in only one lineage.
 
 ### Motif Hit Density
 

@@ -724,3 +724,198 @@ def test_min_seqlets_per_motif_rejected_without_metadata(tmp_path):
     )
     assert result.returncode == 1
     assert "needs total_seqlets and n_motifs" in result.stderr
+
+
+# --------------------------------------------------------------------------
+# group concentration
+# --------------------------------------------------------------------------
+
+import motif_group_concentration as mgc  # noqa: E402
+
+
+def test_expected_n_groups_matches_monte_carlo():
+    rng = np.random.default_rng(0)
+    sizes = np.array([40, 25, 20, 10, 5, 5, 3, 2])
+    n_total = int(sizes.sum())
+    labels = np.repeat(np.arange(len(sizes)), sizes)
+    for p in (2, 5, 20):
+        exact = mgc.expected_n_groups(p, sizes, n_total)
+        draws = [
+            len(set(rng.choice(labels, size=p, replace=False))) for _ in range(4000)
+        ]
+        assert exact == pytest.approx(np.mean(draws), abs=0.08), p
+
+
+def test_prob_single_group_matches_closed_form_at_p2():
+    """At p=2 the probability reduces to sum n_g(n_g-1) / N(N-1), which is the
+    hand calculation used to check the real data."""
+    sizes = np.array([41, 28, 21, 18, 15, 11, 8, 8, 8, 7, 7, 6, 5, 4, 3, 3, 2, 2, 1])
+    n_total = int(sizes.sum())
+    expected = (sizes * (sizes - 1)).sum() / (n_total * (n_total - 1))
+    assert mgc.prob_single_group(2, sizes, n_total) == pytest.approx(expected)
+
+
+def test_prob_single_group_zero_when_no_group_is_large_enough():
+    sizes = np.array([3, 3, 3])
+    assert mgc.prob_single_group(4, sizes, 9) == pytest.approx(0.0)
+
+
+def test_poisson_binomial_is_exact_not_approximate():
+    probs = np.array([0.1, 0.5, 0.9])
+    # P[X >= 0] = 1; P[X >= 3] = product
+    assert mgc.poisson_binomial_sf(probs, 0) == pytest.approx(1.0)
+    assert mgc.poisson_binomial_sf(probs, 3) == pytest.approx(0.1 * 0.5 * 0.9)
+    # P[X >= 1] = 1 - product of complements
+    assert mgc.poisson_binomial_sf(probs, 1) == pytest.approx(
+        1 - (0.9 * 0.5 * 0.1)
+    )
+
+
+def test_poisson_binomial_mean_matches_sum_of_probs():
+    rng = np.random.default_rng(4)
+    probs = rng.uniform(0, 0.3, 40)
+    dist = np.array(
+        [
+            mgc.poisson_binomial_sf(probs, k) - mgc.poisson_binomial_sf(probs, k + 1)
+            for k in range(len(probs) + 1)
+        ]
+    )
+    assert dist.sum() == pytest.approx(1.0)
+    mean = (dist * np.arange(len(probs) + 1)).sum()
+    assert mean == pytest.approx(probs.sum())
+
+
+def build_concentration_meta(group_map, concentrated, prevalence):
+    """One cluster per entry in `concentrated`; True = all experiments drawn
+    from a single group, False = drawn across groups."""
+    by_group = {}
+    for e, g in group_map.items():
+        by_group.setdefault(g, []).append(e)
+    groups = sorted(by_group)
+    rows = []
+    for i, conc in enumerate(concentrated):
+        if conc:
+            pool = by_group[groups[i % len(groups)]]
+            members = set(pool[:prevalence])
+        else:
+            members = {by_group[groups[(i + j) % len(groups)]][0] for j in range(prevalence)}
+        rows.append({"exp_set": members, "prevalence": len(members)})
+    return pd.DataFrame(rows)
+
+
+def test_concentration_is_one_for_random_spread_and_low_for_concentrated():
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(5)}
+    n_total = len(group_map)
+    spread = build_concentration_meta(group_map, [False] * 8, prevalence=4)
+    conc = build_concentration_meta(group_map, [True] * 8, prevalence=4)
+
+    a_spread = mgc.annotate_concentration(spread, group_map, n_total)
+    a_conc = mgc.annotate_concentration(conc, group_map, n_total)
+
+    # spread clusters hit one group per experiment -> at or above expectation
+    assert a_spread["concentration"].median() > 1.0
+    assert (a_spread["n_groups"] == 4).all()
+    # concentrated clusters sit in exactly one group -> well below
+    assert (a_conc["n_groups"] == 1).all()
+    assert a_conc["concentration"].median() < 0.4
+    assert a_conc["is_single_group"].all()
+
+
+def test_summary_reports_single_group_enrichment():
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(5)}
+    n_total = len(group_map)
+    meta = pd.concat(
+        [
+            build_concentration_meta(group_map, [True] * 6, prevalence=3),
+            build_concentration_meta(group_map, [False] * 6, prevalence=3),
+        ],
+        ignore_index=True,
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    annotated["motif_class"] = ["conc"] * 6 + ["spread"] * 6
+    summary = mgc.summarize(annotated, ["motif_class"]).set_index("motif_class")
+
+    assert summary.loc["conc", "n_single_group"] == 6
+    assert summary.loc["spread", "n_single_group"] == 0
+    assert summary.loc["conc", "single_group_p"] < 1e-6
+    assert summary.loc["conc", "single_group_enrichment"] > 5
+    assert summary.loc["spread", "single_group_p"] == pytest.approx(1.0)
+
+
+def test_group_level_changes_the_expectation():
+    """Coarse grouping lowers E[n_groups], which is why a conclusion must hold
+    at both levels before it can be trusted."""
+    sizes_coarse = np.array([40, 30, 30])
+    sizes_fine = np.array([10] * 10)
+    n_total = 100
+    assert mgc.expected_n_groups(5, sizes_coarse, n_total) < mgc.expected_n_groups(
+        5, sizes_fine, n_total
+    )
+
+
+def test_concentration_cli_runs_at_both_levels(tmp_path):
+    exps = real_experiments(40)
+    rows = [("pos", exps, "SP1", 40 * 900) for _ in range(4)]
+    rows += [("pos", exps[:6], "GATA1", 6 * 400) for _ in range(4)]
+    rows += [("pos", exps[i : i + 3], None, 3 * 60) for i in range(0, 24, 3)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    for level in ("tissue", "biosample"):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+                "--cluster-metadata", str(meta), "--group-level", level,
+                "--out-dir", str(tmp_path / "out"),
+            ],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        out = tmp_path / "out"
+        per_cluster = pd.read_csv(
+            out / f"motif_concentration_profile_{level}.tsv", sep="\t"
+        )
+        assert {"n_groups", "expected_n_groups", "concentration"} <= set(
+            per_cluster.columns
+        )
+        assert (per_cluster["expected_n_groups"] > 0).all()
+        summary = pd.read_csv(
+            out / f"motif_concentration_profile_{level}_summary.tsv", sep="\t"
+        )
+        assert "single_group_p" in summary.columns
+        assert (out / f"motif_concentration_profile_{level}.png").exists()
+
+
+def test_concentration_cli_rejects_mapping_input(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(tmp_path / "nope.tsv"),
+            "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 1
+    assert "pattern-to-cluster mapping is not sufficient" in result.stderr
+
+
+def test_jaspar_score_threshold_reclassifies(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps, "WEAK", 20 * 500) for _ in range(6)]
+    rows += [("pos", exps[:5], "STRONG", 5 * 500) for _ in range(6)]
+    meta_path = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    m = pd.read_csv(meta_path, sep="\t")
+    m.loc[m.jaspar_name == "WEAK", "jaspar_score"] = 0.80
+    m.loc[m.jaspar_name == "STRONG", "jaspar_score"] = 0.95
+    m.to_csv(meta_path, sep="\t", index=False)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta_path), "--out-dir", str(tmp_path / "out"),
+            "--jaspar-score-threshold", "0.85",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "moved 6 clusters into the unmatched class" in result.stderr
