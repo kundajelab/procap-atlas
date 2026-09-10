@@ -322,6 +322,23 @@ def main():
 
     meta, universe = load_presence(metadata_path, keep_experiments=keep)
     meta = meta[meta["prevalence"] >= args.min_cluster_experiments].reset_index(drop=True)
+    if args.min_cluster_experiments < 2:
+        # Singletons are structurally uninformative here, not merely noisy:
+        # at p=1, n_groups is always 1, E[n_groups|1] = sum_g n_g/N = 1 exactly,
+        # and P[n_groups=1|1] = 1 exactly. So every singleton has
+        # concentration == 1 identically and contributes one observed
+        # single-group cluster matched by one expected one. Including them
+        # leaves single_group_p untouched (deterministic terms add no variance)
+        # but collapses single_group_enrichment toward 1 -- on the real count
+        # head, 4.2x becomes 1.03x -- which reads as "no structure" when the
+        # test simply has nothing to say about those clusters.
+        print(
+            "WARNING: --min-cluster-experiments < 2 includes prevalence-1 "
+            "clusters, which carry no information for this test "
+            "(concentration == 1 by construction) and will dilute "
+            "single_group_enrichment toward 1. Use >= 2.",
+            file=sys.stderr,
+        )
     if meta.empty:
         print("ERROR: no clusters survived filtering", file=sys.stderr)
         sys.exit(1)

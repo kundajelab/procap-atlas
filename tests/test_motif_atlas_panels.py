@@ -919,3 +919,50 @@ def test_jaspar_score_threshold_reclassifies(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "moved 6 clusters into the unmatched class" in result.stderr
+
+
+def test_prevalence_one_clusters_are_uninformative_for_concentration():
+    """At p=1 the statistics are degenerate: n_groups is always 1, and both
+    E[n_groups] and P[n_groups=1] are exactly 1. Singletons therefore cannot
+    provide evidence either way, which is why the script warns about them."""
+    sizes = np.array([41, 28, 21, 18, 15, 11, 8, 8, 8, 7, 7, 6, 5, 4, 3, 3, 2, 2, 1])
+    n_total = int(sizes.sum())
+    assert mgc.expected_n_groups(1, sizes, n_total) == pytest.approx(1.0)
+    assert mgc.prob_single_group(1, sizes, n_total) == pytest.approx(1.0)
+
+
+def test_singletons_dilute_enrichment_but_not_the_pvalue():
+    """Deterministic (q=1) terms shift observed and expected equally and add no
+    variance, so the tail probability is unchanged while the effect-size ratio
+    collapses -- the reason the warning targets the ratio specifically."""
+    sizes = np.array([41, 28, 21, 18, 15, 11, 8, 8, 8, 7, 7, 6, 5, 4, 3, 3, 2, 2, 1])
+    n_total = int(sizes.sum())
+    q = mgc.prob_single_group(2, sizes, n_total)
+    base = np.full(22, q)
+    with_singletons = np.concatenate([base, np.ones(235)])
+
+    p_base = mgc.poisson_binomial_sf(base, 9)
+    p_diluted = mgc.poisson_binomial_sf(with_singletons, 9 + 235)
+    assert p_diluted == pytest.approx(p_base, rel=1e-6)
+
+    enrich_base = 9 / base.sum()
+    enrich_diluted = (9 + 235) / with_singletons.sum()
+    assert enrich_base > 4.0
+    assert enrich_diluted < 1.1
+
+
+def test_concentration_cli_warns_on_min_cluster_experiments_one(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps[:4], "TF", 4 * 100) for _ in range(6)]
+    rows += [("pos", [exps[i]], None, 100) for i in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--min-cluster-experiments", "1",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "carry no information for this test" in result.stderr
