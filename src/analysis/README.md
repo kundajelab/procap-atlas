@@ -88,6 +88,163 @@ are compared by default, since they're present in every archived version's
 TSV. `compare_bpnet_cherimoya.py` and `compare_cherimoya_versions.py` share
 their plotting logic via `_metric_comparison_plots.py`.
 
+## Motif Atlas Panels
+
+Cross-experiment motif analyses behind the manuscript's motif-lexicon figure.
+Both scripts are atlas-scope (they read every experiment at once), unlike the
+per-experiment scripts under [`src/bpnet/hitcall/`](../bpnet/hitcall/README.md),
+and both share the biosample-to-tissue grouping in `_biosample_groups.py`.
+
+That grouping is keyword-based curation, not computation. Write it out, edit
+it, and pass it back so the groups are explicit rather than implicit:
+
+```bash
+python src/analysis/motif_hit_density.py --write-group-tsv configs/biosample_groups.tsv
+python src/analysis/motif_hit_density.py --biosample-groups configs/biosample_groups.tsv
+```
+
+Biosamples matching no rule land in `other` and are always reported to stderr.
+Metastatic biosamples are matched before any organ rule, since they are named
+for the organ they spread *to* (e.g. "Metastatic Breast Carcinoma in the
+Brain" is not a neural sample).
+
+### Motif Lexicon Rarefaction
+
+How the size of the deduplicated MotifCompendium lexicon grows as experiments
+are added, and whether that growth is driven by experiment count or by
+biosample diversity. Reads only
+`motifcompendium/bpnet/motifcompendium_{head}_cluster_metadata.tsv`, whose
+`experiments` column is already a cluster x experiment presence matrix — no
+attributions or hit calls needed.
+
+```bash
+python src/analysis/plot_motif_rarefaction.py
+python src/analysis/plot_motif_rarefaction.py --head count
+python src/analysis/plot_motif_rarefaction.py --min-cluster-experiments 2
+python src/analysis/plot_motif_rarefaction.py --annotation-tsv configs/motif_classes.tsv
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_rarefaction_{head}.tsv        # long-form curves (k, scheme, motif_class, mean, lo, hi)
+figures/motif_atlas/motif_rarefaction_{head}.{png,pdf}
+figures/motif_atlas/motif_prevalence_{head}.tsv         # per-cluster prevalence and group breadth
+```
+
+Three sampling schemes are compared at each subset size: `uniform` (random
+experiments), `diverse` (round-robin across biosample groups), and `redundant`
+(one biosample group exhausted before starting the next). `diverse` above
+`redundant` is the panel's claim — that tissue diversity, not experiment
+count, is what recovers the lexicon.
+
+The `uniform` mean is computed in closed form, not sampled: a cluster present
+in `p` of `N` experiments is detected by a random size-`k` subset with
+probability `1 - C(N-p, k)/C(N, k)`. That closed form is also why the script
+deliberately has **no permutation null**. The obvious one — hold each cluster's
+prevalence fixed but randomize which experiments it appears in — is provably
+vacuous, since the expectation depends only on `p` and never on which
+experiments, so it reproduces the observed `uniform` curve exactly. Only a
+structured sampling scheme can see structure here; do not re-add a
+uniform-subsampling null.
+
+If `cluster_metadata.tsv` does not exist yet, the script falls back to
+`motifcompendium_{head}_pattern_to_cluster.tsv` automatically (or pass
+`--pattern-to-cluster` explicitly). `cluster_motifs.py` writes the mapping at
+line 361, right after clustering, but the metadata only at line 386 — after
+the cluster-average h5 export, JASPAR annotation of the averages,
+forward/reverse logo generation, MEME export and per-cluster SVG logo
+rendering, which it waits on solely to merge the logo paths in. On a full
+atlas run those stages take hours, and this panel needs none of them:
+grouping the mapping's `experiment` column by `compendium_motif_name`
+recovers exactly the same presence sets (tested against the metadata loader
+in `tests/test_motif_atlas_panels.py`). Only `total_seqlets`, `n_motifs` and
+`jaspar_name` are lost, so stratified curves collapse to a single class
+unless `--annotation-tsv` is supplied.
+
+To skip those stages on future runs, `cluster_motifs.py` takes
+`--skip-svg-logos` and `--logo-report-top-n 0`.
+
+Two things to set deliberately:
+
+- `--min-reads` (default 10M, matching `cluster_motifs.py`) holds discovery
+  power roughly fixed. Motif discovery scales with library size, so a curve
+  over all experiments partly measures read depth rather than biology.
+- `--min-cluster-experiments 2` drops single-experiment clusters. Singletons
+  are both the least reproducible clusters and, being numerous, the dominant
+  contribution to the all-motifs curve's slope — they make the lexicon look
+  unsaturated on their own. Prefer this setting for the figure.
+
+`--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
+stratified curves. Without it the script falls back to a JASPAR-match proxy
+(matched vs. unmatched), which is only a proxy: JASPAR2026 has essentially no
+coverage of core promoter elements, which is why `cluster_motifs.py`'s reports
+annotate Inr/TATA and repeats by hand.
+
+### Motif Hit Density
+
+Motif x experiment hit-density matrix and tissue-specificity scores, rendered
+as a clustered heatmap with biosample-group and read-depth column strips.
+Reads each experiment's `hits_linked.tsv` (from
+[`link_hits_to_compendium.py`](../bpnet/hitcall/README.md)), whose
+`compendium_motif_name` column is the only cross-experiment-comparable motif
+identity available — hits are called per experiment against that experiment's
+own MoDISco motifs, so the raw `motif_name` means a different motif in every
+experiment.
+
+```bash
+python src/analysis/motif_hit_density.py
+python src/analysis/motif_hit_density.py --head count --min-trim-len 6
+python src/analysis/motif_hit_density.py --mask-undiscovered
+python src/analysis/motif_hit_density.py --top-n 60 --sort-by specificity
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_hit_density_{head}.tsv          # cluster x experiment hits/peak, unfiltered
+figures/motif_atlas/motif_hit_density_{head}_status.tsv   # per-cell discovered/undiscovered mask
+figures/motif_atlas/motif_hit_density_{head}_columns.tsv  # per-experiment peak counts, depth, biosample group
+figures/motif_atlas/motif_specificity_{head}.tsv          # per-cluster specificity, breadth, top group
+figures/motif_atlas/motif_hit_density_{head}.{png,pdf}
+```
+
+`--min-trim-len` must match whatever `hitcall/launch.py` was run with, since it
+resolves the same trim-coords-suffixed hits directory. Peak counts come from
+`peaks.narrowPeak` (cached at the `{experiment}_{head}/` level, outside any
+trim suffix); if it is missing, the count falls back to `max(peak_id) + 1`,
+which underestimates whenever trailing peaks got no hits, so the
+`peak_count_source` column in `_columns.tsv` records which was used.
+
+Two confounds are reported rather than hidden:
+
+- **Discovery power.** A cluster can only receive hits in an experiment whose
+  own MoDISco run discovered a motif assigned to it, so a zero is ambiguous:
+  unused, or never discovered at that depth. The `_status.tsv` mask separates
+  the two from the compendium's own `experiments` lists, the run prints what
+  fraction of cells are structurally zero, and `--mask-undiscovered` leaves
+  those cells blank instead of drawing them as true zeros.
+- **Read depth.** Hits are normalized per peak, and a depth strip is drawn
+  next to the biosample-group strip so depth-driven column structure is
+  visible rather than being read as tissue structure.
+
+Specificity is scored over biosample *groups*, not experiments: per-group mean
+hits/peak is normalized to a distribution `q` over the groups where the cluster
+was detected, and specificity is `1 - H(q)/log(G)` (0 = ubiquitous, 1 = one
+group only). Averaging within group first is what keeps heavily replicated
+biosamples (HCT116 n=16, Metastatic Breast Carcinoma in the Brain n=10, PBMC
+n=8) from dominating the score.
+
+`--sort-by balanced` (the default) splits the drawn rows between the most-used
+clusters and the most tissue-restricted ones. Ranking purely by total hits
+fills every row with ubiquitous motifs and crowds out the lineage motifs the
+panel exists to show; ranking purely by specificity fills it with
+low-abundance noise. The tissue-restricted half is gated on
+`mean_hits_per_peak_detected` (density among experiments where the motif was
+actually called) rather than summed density, which shrinks in direct
+proportion to how few tissues a motif is restricted to and so would exclude
+exactly those motifs.
+
 ## Warning Flags
 
 Generates read-depth, perturbation, uncapped-library, and manual warning flags
