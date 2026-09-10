@@ -315,6 +315,65 @@ stratified curves. Without it the script falls back to a JASPAR-match proxy
 coverage of core promoter elements, which is why `cluster_motifs.py`'s reports
 annotate Inr/TATA and repeats by hand.
 
+### Compendium Redundancy
+
+Measures how much of the lexicon is the same motif counted twice. Every count
+derived from the compendium — lexicon size, rarefaction curves, the number of
+tissue-restricted clusters — is inflated when `cluster_motifs.py
+--across-threshold` fails to merge variants of one motif, and unlike the other
+caveats in this directory redundancy biases in the **flattering** direction.
+
+```bash
+python src/analysis/motif_redundancy.py --head count
+python src/analysis/motif_redundancy.py --head count --report-threshold 1e-6
+python src/analysis/motif_redundancy.py --head count --min-overlap-frac 0.8     --cluster-metadata motifcompendium/bpnet/motifcompendium_count_cluster_metadata.tsv
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_redundancy_{head}_pairs.tsv       # passing pairs, loosest threshold
+figures/motif_atlas/motif_redundancy_{head}_summary.tsv     # excess clusters per threshold
+figures/motif_atlas/motif_redundancy_{head}_components.tsv  # cluster -> merged component
+figures/motif_atlas/motif_redundancy_{head}.{png,pdf}
+```
+
+Uses TOMTOM from `memelite` (the "tomtom-lite" reimplementation), which is a
+Python API with **no command-line entry point** — hence a script rather than a
+shell command. Self-compares `motifcompendium_{head}_cluster_averages.meme`
+with the diagonal masked, symmetrizing each pair on the larger of the two
+p-values since TOMTOM is asymmetric (the query sets the background scale).
+
+Redundancy is reported as **excess clusters**: join every pair passing the
+filters, take connected components, and report `n_clusters - n_components` —
+the number of clusters that would disappear if each near-duplicate group
+collapsed to one motif. As with the abundance floor, no single p-value
+threshold is defensible (significance scales with motif length and information
+content, and family members are genuinely similar without being duplicates), so
+the output is a sweep. Read the shape: flat across orders of magnitude means
+redundancy is well determined; steadily climbing means lexicon size is
+threshold-dependent and should be quoted as a range.
+
+Why this needs measuring rather than eyeballing: on the real count-head
+compendium 306 clusters carry only **112 distinct JASPAR names** (SP9 claimed
+by 31 clusters, TBP by 15, NFYA by 14), which looks like ~57% redundancy. But
+JASPAR annotation is a nearest-neighbour lookup, so a bare GC-box and a GC-box
+with an ETS half-site can both best-match SP9 while being genuinely distinct.
+Passing `--cluster-metadata` reports how often merged components agree on
+JASPAR name, which distinguishes the two readings: high agreement means the
+name collisions really were redundancy, low agreement means TOMTOM is merging
+distinct family members and the threshold is too loose.
+
+`--min-overlap-frac` (default 0.7) requires the best alignment to cover that
+fraction of the shorter motif, suppressing significant-but-spurious
+short-inside-long matches.
+
+Footgun: TOMTOM estimates its column background from the target set, so
+near-deterministic PWMs make it degenerate — two *identical* one-hot motifs can
+come back at p = 1.0. Cluster-average CWMs are soft enough that this does not
+arise on real data, but synthetic one-hot fixtures cannot test the p-value path
+(the tests use Dirichlet-drawn PWMs for this reason).
+
 ### Discovery Concentration
 
 Tests whether the experiments a cluster was discovered in come from fewer

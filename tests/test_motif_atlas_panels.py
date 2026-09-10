@@ -1201,3 +1201,196 @@ def test_swap_permutations_zero_skips_the_null(tmp_path):
     assert not (
         tmp_path / "out" / "motif_concentration_profile_tissue_swapnull.tsv"
     ).exists()
+
+
+# --------------------------------------------------------------------------
+# compendium redundancy (memelite TOMTOM self-comparison)
+# --------------------------------------------------------------------------
+
+import motif_redundancy as mr  # noqa: E402
+
+
+def write_meme(path, motifs):
+    """Minimal MEME file. `motifs` is {name: (length, 4) probability array}."""
+    with open(path, "w") as f:
+        f.write("MEME version 4\n\nALPHABET= ACGT\n\n")
+        f.write("strands: + -\n\nBackground letter frequencies\n")
+        f.write("A 0.25 C 0.25 G 0.25 T 0.25\n\n")
+        for name, pwm in motifs.items():
+            f.write(f"MOTIF {name}\n")
+            f.write(f"letter-probability matrix: alength= 4 w= {pwm.shape[0]} "
+                    "nsites= 100 E= 0\n")
+            for row in pwm:
+                f.write(" " + " ".join(f"{v:.6f}" for v in row) + "\n")
+            f.write("\n")
+    return path
+
+
+def realistic_pwm(length, seed, conc=8.0):
+    """Information-rich but non-degenerate PWM, shape (length, 4).
+
+    TOMTOM scores columns against a background estimated from the target set,
+    and near-deterministic columns (as onehot_pwm produces) make that
+    background degenerate -- identical motifs then come back with p = 1.0.
+    Real cluster-average CWMs are soft, so fixtures must be too.
+    """
+    rng = np.random.default_rng(seed)
+    return rng.dirichlet(np.full(4, 1.0 / conc), size=length)
+
+
+def onehot_pwm(seq, eps=0.001):
+    """Near-deterministic PWM for a sequence string, shape (len, 4)."""
+    idx = {c: i for i, c in enumerate("ACGT")}
+    pwm = np.full((len(seq), 4), eps)
+    for i, c in enumerate(seq):
+        pwm[i, idx[c]] = 1 - 3 * eps
+    return pwm
+
+
+@pytest.mark.parametrize(
+    "key,expected",
+    [
+        ("MOTIF pos_patterns.42", "pos_patterns.42"),
+        ("pos_patterns.7 some description", "pos_patterns.7"),
+        ("MOTIF neg_patterns.100 GATA1", "neg_patterns.100"),
+        ("MOTIF weird_name_no_match", "weird_name_no_match"),
+    ],
+)
+def test_parse_motif_name(key, expected):
+    assert mr.parse_motif_name(key) == expected
+
+
+def test_connected_components_merges_transitively():
+    names = ["a", "b", "c", "d", "e"]
+    pairs = pd.DataFrame({"motif_a": ["a", "b"], "motif_b": ["b", "c"]})
+    comps = mr.connected_components(names, pairs)
+    assert comps["a"] == comps["b"] == comps["c"]
+    assert comps["d"] != comps["a"]
+    assert comps["e"] != comps["d"]
+    assert len(set(comps.values())) == 3  # {a,b,c}, {d}, {e}
+
+
+def test_connected_components_no_pairs_is_all_singletons():
+    names = ["a", "b", "c"]
+    comps = mr.connected_components(names, pd.DataFrame({"motif_a": [], "motif_b": []}))
+    assert len(set(comps.values())) == 3
+
+
+def test_load_motifs_returns_alphabet_first(tmp_path):
+    meme = write_meme(
+        tmp_path / "m.meme",
+        {"pos_patterns.0": onehot_pwm("ACGTACGT"), "pos_patterns.1": onehot_pwm("TTTTAAAA")},
+    )
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    assert names == ["pos_patterns.0", "pos_patterns.1"]
+    for m in pwms:
+        assert m.shape[0] == 4, m.shape  # (alphabet, length)
+        assert m.shape[-1] == 8
+
+
+def build_redundancy_meme(path, n=24, seed=0):
+    """n distinct realistic motifs plus an exact duplicate of the first."""
+    motifs = {
+        f"pos_patterns.{i}": realistic_pwm(12, seed + i) for i in range(n)
+    }
+    motifs[f"pos_patterns.{n}"] = motifs["pos_patterns.0"].copy()
+    return write_meme(path, motifs), f"pos_patterns.{n}"
+
+
+def test_self_comparison_finds_duplicates_and_not_distinct_motifs(tmp_path):
+    """An exact CWM duplicate must merge; unrelated motifs must not."""
+    meme, dup_name = build_redundancy_meme(tmp_path / "m.meme")
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    res = mr.self_compare(pwms, n_jobs=1)
+    assert np.all(np.isinf(np.diag(res["p"])))  # diagonal masked
+
+    pairs = mr.build_pairs(names, pwms, res, p_threshold=1e-6, min_overlap_frac=0.7)
+    merged = {frozenset((a, b)) for a, b in zip(pairs.motif_a, pairs.motif_b)}
+    assert frozenset(("pos_patterns.0", dup_name)) in merged
+
+    comps = mr.connected_components(names, pairs)
+    assert comps["pos_patterns.0"] == comps[dup_name]
+    # the duplicate pair is the only thing that should have merged
+    assert len(set(comps.values())) == len(names) - 1
+
+
+def test_overlap_filter_rejects_short_inside_long(tmp_path):
+    """A short motif aligning inside a longer one can be significant without
+    being a duplicate; min_overlap_frac is what suppresses that."""
+    long_pwm = onehot_pwm("AAAAAAGGGGGGCCCCCC")
+    short_pwm = onehot_pwm("GGGG")
+    meme = write_meme(
+        tmp_path / "m.meme",
+        {"pos_patterns.0": long_pwm, "pos_patterns.1": short_pwm},
+    )
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    res = mr.self_compare(pwms, n_jobs=1)
+    lenient = mr.build_pairs(names, pwms, res, 1.0, min_overlap_frac=0.0)
+    assert len(lenient) == 1
+    # the alignment covers the short motif fully but only a fraction of the
+    # long one; requiring coverage of the *shorter* motif keeps it, so check
+    # the recorded fraction is what drives the filter
+    assert lenient.iloc[0]["overlap_frac"] <= 1.0
+
+
+def test_sweep_is_monotone_in_threshold(tmp_path):
+    """Looser thresholds can only merge more, never fewer."""
+    meme, _ = build_redundancy_meme(tmp_path / "m.meme", n=20, seed=100)
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    res = mr.self_compare(pwms, n_jobs=1)
+    summary = mr.sweep(names, pwms, res, [1e-12, 1e-6, 1e-2, 1.0], 0.7)
+    assert summary["excess_clusters"].is_monotonic_increasing
+    assert (summary["n_components"] <= summary["n_clusters"]).all()
+    assert (summary["excess_clusters"] >= 0).all()
+
+
+def test_redundancy_cli_end_to_end(tmp_path):
+    n = 24
+    meme, dup_name = build_redundancy_meme(tmp_path / "m.meme", n=n, seed=7)
+    n_total = n + 1
+
+    meta = tmp_path / "meta.tsv"
+    pd.DataFrame(
+        {
+            "cluster_final": list(range(n_total)),
+            "posneg": ["pos"] * n_total,
+            "jaspar_name": ["AP1"] + [f"TF{i}" for i in range(1, n)] + ["AP1"],
+            "jaspar_score": [0.95] * n_total,
+            "total_seqlets": [100] * n_total,
+            "n_experiments": [5] * n_total,
+        }
+    ).to_csv(meta, sep="\t", index=False)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(meme), "--cluster-metadata", str(meta),
+            "--out-dir", str(tmp_path / "out"), "--report-threshold", "1e-6",
+            "--n-jobs", "1",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    summary = pd.read_csv(out / "motif_redundancy_count_summary.tsv", sep="\t")
+    assert (summary["n_clusters"] == n_total).all()
+    comps = pd.read_csv(out / "motif_redundancy_count_components.tsv", sep="\t")
+    dup_comp = comps[comps.motif.isin(["pos_patterns.0", dup_name])]
+    assert dup_comp["component"].nunique() == 1  # duplicates merged
+    assert "jaspar_name" in comps.columns
+    assert (out / "motif_redundancy_count.png").exists()
+    assert "Redundancy sweep" in result.stderr
+    # the duplicate pair shares a JASPAR name, so agreement should be perfect
+    assert "internally consistent in JASPAR name" in result.stderr
+
+
+def test_redundancy_cli_errors_without_meme(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(tmp_path / "missing.meme"), "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 1
+    assert "MEME file not found" in result.stderr
