@@ -56,6 +56,8 @@ Usage:
     python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM
     python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --min-trim-len 6 -v
     python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --concentration-window 50
+    python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR342WAR --min-trim-len 6 \\
+        --plot-motifs pos_patterns.pattern_2
 """
 
 import argparse
@@ -63,6 +65,10 @@ import re
 import sys
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
@@ -253,6 +259,18 @@ def main():
         "--min-hits", type=int, default=DEFAULT_MIN_HITS,
         help=f"skip a motif entirely if it has fewer hits than this (default: {DEFAULT_MIN_HITS})",
     )
+    parser.add_argument(
+        "--plot-motifs", type=str, action="append", default=None, metavar="MOTIF_NAME",
+        help=(
+            "save a TSS-relative signed-distance histogram (PNG) for this "
+            "motif; repeatable. Skipped for motifs with no output dir yet -- "
+            "see --plot-dir. Default: no plots, print-only."
+        ),
+    )
+    parser.add_argument(
+        "--plot-dir", type=str, default=None,
+        help="directory to write --plot-motifs histograms into (default: hits_dir/summit_distance_plots)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -304,11 +322,31 @@ def main():
             "could not be matched to any peak with a real summit"
         )
 
+    plot_motifs = set(args.plot_motifs) if args.plot_motifs else set()
+    plot_dir = Path(args.plot_dir) if args.plot_dir else hits_dir / "summit_distance_plots"
+    if plot_motifs:
+        plot_dir.mkdir(parents=True, exist_ok=True)
+
     rows = []
     skipped = []
     for motif_name, group in hits.groupby("motif_name"):
         group_signed = signed[group.index.to_numpy()]
-        n_valid = int((~np.isnan(group_signed)).sum())
+        group_signed = group_signed[~np.isnan(group_signed)]
+
+        if motif_name in plot_motifs and len(group_signed):
+            plot_path = plot_dir / f"{motif_name.replace('.', '_')}_summit_distance.png"
+            fig, ax = plt.subplots(figsize=(6, 3))
+            ax.hist(group_signed, bins=100, color="tab:blue")
+            ax.axvline(0, color="black", linewidth=1, linestyle="--")
+            ax.set_xlabel("Hit-to-summit distance, bp (upstream negative)")
+            ax.set_ylabel("Hit count")
+            ax.set_title(f"{motif_name} (n={len(group_signed)})")
+            fig.tight_layout()
+            fig.savefig(plot_path, dpi=150)
+            plt.close(fig)
+            print(f"Wrote {plot_path}")
+
+        n_valid = len(group_signed)
         if n_valid < args.min_hits:
             skipped.append((motif_name, n_valid))
             continue
