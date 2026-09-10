@@ -568,3 +568,159 @@ def test_rarefaction_cli_accepts_pattern_to_cluster(tmp_path):
     ].sort_values("k")
     assert full["mean"].iloc[-1] == pytest.approx(len(rows))
     assert (tmp_path / "out" / "motif_rarefaction_profile.png").exists()
+
+
+# --------------------------------------------------------------------------
+# abundance-threshold sweep
+# --------------------------------------------------------------------------
+
+
+def write_cluster_metadata_with_seqlets(path, rows):
+    """Like write_cluster_metadata but with explicit per-cluster seqlet totals.
+
+    `rows` is (posneg, experiments, jaspar, total_seqlets).
+    """
+    records = []
+    for cluster_final, (posneg, exps, jaspar, total_seqlets) in enumerate(rows):
+        records.append(
+            {
+                "cluster_final": cluster_final,
+                "n_motifs": len(exps),
+                "total_seqlets": total_seqlets,
+                "n_experiments": len(exps),
+                "experiments": ",".join(sorted(exps)),
+                "posneg": posneg,
+                "jaspar_name": jaspar,
+                "jaspar_score": 0.9 if jaspar else np.nan,
+            }
+        )
+    pd.DataFrame(records).to_csv(path, sep="\t", index=False)
+    return path
+
+
+def test_load_presence_computes_seqlets_per_motif(tmp_path):
+    meta_path = write_cluster_metadata_with_seqlets(
+        tmp_path / "m.tsv",
+        [("pos", ["E1", "E2", "E3", "E4"], "SP1", 400), ("pos", ["E1", "E2"], None, 40)],
+    )
+    meta, _ = rare.load_presence(meta_path)
+    assert list(meta["seqlets_per_motif"]) == [100.0, 20.0]
+
+
+def test_sweep_requires_seqlet_columns(tmp_path):
+    """The pattern-to-cluster fallback carries no seqlet counts, so the sweep
+    must refuse rather than silently sweeping nothing."""
+    map_path = write_pattern_to_cluster(
+        tmp_path / "map.tsv", [("pos", ["E1", "E2"], None)]
+    )
+    meta, _ = rare.load_presence_from_mapping(map_path)
+    with pytest.raises(ValueError, match="cluster_metadata"):
+        rare.sweep_abundance(meta, 2, [0.0, 100.0], [1])
+
+
+def build_sweep_meta(n_total=100, n_broad=40, n_narrow=60):
+    """Clusters where abundance tracks prevalence, as on the real compendium.
+
+    Broad clusters are prevalent AND abundant; narrow ones are restricted AND
+    sparse. That coupling is what makes an abundance floor act as a prevalence
+    floor.
+    """
+    exps = [f"E{i}" for i in range(n_total)]
+    rng = np.random.default_rng(3)
+    rows = []
+    for _ in range(n_broad):
+        members = set(rng.choice(exps, size=80, replace=False))
+        rows.append({"exp_set": members, "prevalence": 80, "seqlets_per_motif": 900.0})
+    for _ in range(n_narrow):
+        members = set(rng.choice(exps, size=4, replace=False))
+        rows.append({"exp_set": members, "prevalence": 4, "seqlets_per_motif": 30.0})
+    return pd.DataFrame(rows), n_total
+
+
+def test_sweep_shrinks_lexicon_monotonically():
+    meta, n_total = build_sweep_meta()
+    _, summary = rare.sweep_abundance(meta, n_total, [0.0, 100.0, 1000.0], [5])
+    # the 1000 threshold drops everything, leaving <10 clusters -> skipped
+    assert list(summary["min_seqlets_per_motif"]) == [0.0, 100.0]
+    assert list(summary["n_clusters"]) == [100, 40]
+
+
+def test_sweep_fraction_reaches_one_at_full_atlas():
+    meta, n_total = build_sweep_meta()
+    curves, _ = rare.sweep_abundance(meta, n_total, [0.0, 100.0], [5])
+    for threshold, sub in curves.groupby("min_seqlets_per_motif"):
+        assert sub.sort_values("k")["fraction"].iloc[-1] == pytest.approx(1.0)
+
+
+def test_sweep_reproduces_the_confound_direction():
+    """The sweep's whole finding: because abundance tracks prevalence, raising
+    the floor raises the fraction a small sample recovers. If this ever
+    reverses, the interpretation in the docstring is wrong."""
+    meta, n_total = build_sweep_meta()
+    _, summary = rare.sweep_abundance(meta, n_total, [0.0, 100.0], [5])
+    low = summary.set_index("min_seqlets_per_motif").loc[0.0, "fraction_at_k5"]
+    high = summary.set_index("min_seqlets_per_motif").loc[100.0, "fraction_at_k5"]
+    assert high > low
+
+
+def test_sweep_cli_end_to_end(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps, "SP1", 30 * 900) for _ in range(8)]
+    rows += [("pos", exps[:20], f"BROAD{i}", 20 * 300) for i in range(8)]
+    rows += [("pos", exps[i : i + 3], f"TF{i}", 3 * 30) for i in range(0, 24, 3)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--n-reps", "10", "--sweep",
+            "--sweep-thresholds", "0", "100", "--sweep-marks", "1", "5",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    assert (out / "motif_rarefaction_sweep_profile.png").exists()
+    summary = pd.read_csv(
+        out / "motif_rarefaction_sweep_profile_summary.tsv", sep="\t"
+    )
+    assert list(summary["min_seqlets_per_motif"]) == [0.0, 100.0]
+    assert summary.loc[1, "n_clusters"] < summary.loc[0, "n_clusters"]
+    # the confound diagnostic and weakest-form claim are both reported
+    assert "prevalence vs seqlets/motif r =" in result.stderr
+    assert "Weakest-form claim" in result.stderr
+
+
+def test_min_seqlets_per_motif_filters_and_reports(tmp_path):
+    exps = real_experiments(12)
+    rows = [("pos", exps, "SP1", 12 * 900)] * 3
+    rows += [("pos", exps[:3], "TF", 3 * 20)] * 3
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--n-reps", "10", "--min-seqlets-per-motif", "100",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "kept 3/6 clusters" in result.stderr
+
+
+def test_min_seqlets_per_motif_rejected_without_metadata(tmp_path):
+    exps = real_experiments(6)
+    rows = [("pos", exps, None), ("pos", exps[:2], None)]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--pattern-to-cluster", str(map_path),
+            "--out-dir", str(tmp_path / "out"), "--min-seqlets-per-motif", "50",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 1
+    assert "needs total_seqlets and n_motifs" in result.stderr

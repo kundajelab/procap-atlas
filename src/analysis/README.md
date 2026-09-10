@@ -175,6 +175,68 @@ Two things to set deliberately:
   contribution to the all-motifs curve's slope — they make the lexicon look
   unsaturated on their own. Prefer this setting for the figure.
 
+#### Abundance thresholds and the sensitivity sweep
+
+The obvious noise filter — drop clusters with few seqlets — is prevalence
+confounded. `total_seqlets` is summed over a cluster's contributing motifs and
+`n_motifs` tracks prevalence closely (within-model clustering collapses each
+experiment to ~one motif per cluster), so `total_seqlets` is largely a
+prevalence proxy: thresholding it preferentially deletes tissue-restricted
+clusters, which is exactly backwards for this panel.
+
+`--min-seqlets-per-motif` uses the normalized ratio `total_seqlets /
+n_motifs` instead, but that is only *partly* decoupled — measured
+`r = 0.40` against prevalence on the real count-head compendium. So it
+defaults to 0 and should stay there. Raising it makes the surviving lexicon
+more ubiquitous, so a small experiment sample recovers a larger fraction of
+it; on real count-head data the k=5 fraction rises monotonically 20.7% → 44.8%
+from no floor to ≥1000 seqlets/motif. That rise is the confound operating, not
+evidence about noise, and it means no single threshold is defensible.
+
+`--sweep` reports that sensitivity instead of hiding it:
+
+```bash
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --sweep
+python src/analysis/plot_motif_rarefaction.py --sweep-thresholds 0 50 100 500 --sweep-mark 5
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_rarefaction_sweep_{head}.tsv          # long-form (threshold, k, mean, fraction, n_clusters)
+figures/motif_atlas/motif_rarefaction_sweep_{head}_summary.tsv  # fraction recovered at each --sweep-marks k
+figures/motif_atlas/motif_rarefaction_sweep_{head}.{png,pdf}
+```
+
+Both absolute counts and fractions are plotted, because neither is honest
+alone: absolute counts keep a fixed meaning across thresholds but each curve
+ends at a different total, while fractions read directly as "what a
+k-experiment study sees" but have a denominator that moves with the threshold.
+Fractions are therefore **not comparable across thresholds**, and no single row
+of the summary is "the" answer.
+
+What the sweep does support is the weakest-form claim, which the run prints:
+the largest fraction recovered at a given k over every threshold tested is an
+upper bound on what a k-experiment study can see. On real count-head data that
+is *at most 45% at k=5*, so at least 55% of the lexicon is missed by a
+five-experiment study regardless of abundance threshold. Quote that rather
+than any single-threshold number.
+
+The sweep uses the closed-form uniform expectation only — it is about
+abundance sensitivity, not sampling scheme, and the structured schemes would
+add Monte-Carlo noise to a comparison that is exact without it. It requires
+`cluster_metadata.tsv`; the pattern-to-cluster fallback carries no seqlet
+counts and the sweep refuses rather than silently sweeping nothing.
+
+Two caveats. The ratio is computed over all motifs the compendium assigned to
+a cluster, including any from experiments dropped by `--min-reads`, since
+`cluster_metadata.tsv` carries only aggregates — it is an abundance proxy, not
+an exact count over the retained subset. And abundance filtering does nothing
+about *redundancy*: one real motif split across two clusters inflates every
+count here, biasing in the flattering direction. Bound that separately with a
+tomtom self-comparison of `motifcompendium_{head}_cluster_averages.meme`, or
+by re-running `cluster_motifs.py --across-threshold 0.85`.
+
 `--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
 stratified curves. Without it the script falls back to a JASPAR-match proxy
 (matched vs. unmatched), which is only a proxy: JASPAR2026 has essentially no

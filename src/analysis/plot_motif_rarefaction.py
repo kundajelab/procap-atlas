@@ -68,6 +68,13 @@ CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 MC_DIR = REPO_ROOT / "motifcompendium" / "bpnet"
 
+# Abundance thresholds for the sensitivity sweep, in seqlets per contributing
+# motif. Deliberately spans two orders of magnitude rather than centring on a
+# chosen value: the whole point of the sweep is that no single threshold is
+# defensible (see sweep_abundance).
+DEFAULT_SWEEP_THRESHOLDS = (0.0, 25.0, 50.0, 100.0, 200.0, 500.0, 1000.0)
+DEFAULT_SWEEP_MARKS = (1, 5, 10, 25, 50, 100)
+
 SCHEME_STYLE = {
     "diverse": ("#1b7837", "-", "diverse (round-robin across tissues)"),
     "uniform": ("#404040", "-", "uniform random"),
@@ -115,6 +122,20 @@ def load_presence(
 
     meta["exp_set"] = meta["experiments"].map(parse)
     meta["prevalence"] = meta["exp_set"].map(len)
+    if {"total_seqlets", "n_motifs"} <= set(meta.columns):
+        # Prevalence-normalized abundance: a cluster's total_seqlets is summed
+        # over its contributing motifs, and n_motifs tracks prevalence closely
+        # (within-model clustering collapses each experiment to ~one motif per
+        # cluster), so total_seqlets alone is essentially a prevalence proxy.
+        #
+        # Note this ratio is computed over *all* motifs the compendium assigned
+        # to the cluster, including any from experiments dropped by
+        # --min-reads: cluster_metadata.tsv carries only the aggregates, not
+        # per-motif seqlet counts, so it cannot be recomputed over the
+        # retained subset. It is an abundance proxy, not an exact count.
+        meta["seqlets_per_motif"] = meta["total_seqlets"] / meta["n_motifs"].replace(
+            0, np.nan
+        )
     # A cluster whose every contributing experiment was filtered out is not
     # discoverable within this universe at any k, so it cannot be counted.
     meta = meta[meta["prevalence"] > 0].reset_index(drop=True)
@@ -191,6 +212,136 @@ def uniform_curve_exact(prevalences: np.ndarray, n_total: int) -> np.ndarray:
             miss[i] = 0.0 if k > n_miss else exp(log_comb(n_miss, k) - log_comb(n_total, k))
         out += 1.0 - miss
     return out
+
+
+def sweep_abundance(
+    meta: pd.DataFrame,
+    n_total: int,
+    thresholds: tuple[float, ...] | list[float],
+    marks: tuple[int, ...] | list[int],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Rarefaction under a range of abundance floors on seqlets_per_motif.
+
+    Reports the sensitivity of the panel's headline number to a filtering
+    choice that has no defensible single value. `seqlets_per_motif` is only
+    partly decoupled from prevalence (measured r ~ 0.4 on the real count-head
+    compendium), so raising the floor preferentially removes low-prevalence,
+    tissue-restricted clusters. The surviving lexicon is therefore more
+    ubiquitous, and a small experiment sample recovers a *larger* fraction of
+    it -- the fraction-recovered metric rises with the threshold as an
+    artifact of the confound, not as evidence about noise.
+
+    Because the denominator moves with the threshold, fractions are not
+    comparable across thresholds and no single row of this table is "the"
+    answer. What the sweep supports is the weakest-form claim: the largest
+    fraction recovered at a given k, over every threshold tested, is an upper
+    bound on what a k-experiment study can see.
+
+    Uses the closed-form uniform expectation only. The sweep is about
+    abundance sensitivity, not sampling scheme, and the structured schemes
+    would add Monte-Carlo noise to a comparison that is exact without it.
+
+    Returns (curves, summary): `curves` is long-form (threshold, k, mean,
+    fraction, n_clusters); `summary` is one row per threshold with the
+    fraction recovered at each k in `marks`.
+    """
+    if "seqlets_per_motif" not in meta.columns:
+        raise ValueError(
+            "abundance sweep needs total_seqlets and n_motifs, which only "
+            "cluster_metadata.tsv carries -- not the pattern-to-cluster "
+            "mapping. Rerun without --pattern-to-cluster once "
+            "cluster_metadata.tsv exists."
+        )
+
+    curve_rows, summary_rows = [], []
+    ks = np.arange(1, n_total + 1)
+    for threshold in thresholds:
+        kept = meta[meta["seqlets_per_motif"] >= threshold]
+        n_clusters = len(kept)
+        if n_clusters < 10:
+            print(
+                f"  skipping threshold {threshold:g}: only {n_clusters} clusters left",
+                file=sys.stderr,
+            )
+            continue
+        curve = uniform_curve_exact(kept["prevalence"].to_numpy(), n_total)
+        curve_rows.append(
+            pd.DataFrame(
+                {
+                    "min_seqlets_per_motif": threshold,
+                    "k": ks,
+                    "mean": curve,
+                    "fraction": curve / n_clusters,
+                    "n_clusters": n_clusters,
+                }
+            )
+        )
+        row = {"min_seqlets_per_motif": threshold, "n_clusters": n_clusters}
+        for k in marks:
+            if k <= n_total:
+                row[f"fraction_at_k{k}"] = curve[k - 1] / n_clusters
+                row[f"mean_at_k{k}"] = curve[k - 1]
+        summary_rows.append(row)
+
+    if not curve_rows:
+        raise ValueError("no abundance threshold retained enough clusters to sweep")
+    return pd.concat(curve_rows, ignore_index=True), pd.DataFrame(summary_rows)
+
+
+def plot_sweep(
+    curves: pd.DataFrame, head: str, out_stem: Path, mark: int, subtitle: str
+) -> None:
+    """Two-panel sweep figure: absolute lexicon size, and fraction recovered.
+
+    Both are shown because neither alone is honest. Absolute counts keep a
+    fixed meaning across thresholds but each curve ends at a different total;
+    fractions are directly readable as "what a k-experiment study sees" but
+    have a denominator that moves with the threshold.
+    """
+    thresholds = sorted(curves["min_seqlets_per_motif"].unique())
+    cmap = plt.get_cmap("viridis")
+    colors = {t: cmap(i / max(1, len(thresholds) - 1)) for i, t in enumerate(thresholds)}
+
+    fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.4))
+    for threshold in thresholds:
+        sub = curves[curves["min_seqlets_per_motif"] == threshold].sort_values("k")
+        n = int(sub["n_clusters"].iloc[0])
+        label = f"\u2265{threshold:g} (n={n})"
+        axes[0].plot(sub["k"], sub["mean"], color=colors[threshold], lw=1.5, label=label)
+        axes[1].plot(sub["k"], sub["fraction"], color=colors[threshold], lw=1.5, label=label)
+
+    axes[0].set_ylabel("Consensus motifs recovered")
+    axes[1].set_ylabel("Fraction of that threshold's lexicon")
+    for ax in axes:
+        ax.set_xlabel("Experiments included")
+        ax.spines[["top", "right"]].set_visible(False)
+
+    at_mark = curves[curves["k"] == mark]
+    if not at_mark.empty:
+        worst = at_mark["fraction"].max()
+        axes[1].axvline(mark, color="0.6", ls=":", lw=1)
+        axes[1].axhline(worst, color="#b2182b", ls="--", lw=1)
+        # Below the dashed line rather than above it: every curve sits above
+        # the bound past small k, so the space above is occupied.
+        axes[1].annotate(
+            f"k={mark}: \u2264{worst:.0%} at every threshold",
+            xy=(0.30 * float(curves["k"].max()), max(0.04, worst - 0.14)),
+            fontsize=7, color="#b2182b",
+        )
+    axes[1].set_ylim(0, 1.02)
+    axes[0].legend(
+        title="min seqlets/motif", frameon=False, fontsize=6, title_fontsize=7,
+        loc="lower right",
+    )
+    fig.suptitle(
+        f"Abundance-threshold sensitivity — {head} head\n{subtitle}", fontsize=9
+    )
+    fig.tight_layout()
+    for ext in ("png", "pdf"):
+        path = out_stem.with_suffix(f".{ext}")
+        fig.savefig(path, dpi=300, bbox_inches="tight")
+        print(f"Saved {path}", file=sys.stderr)
+    plt.close(fig)
 
 
 def _order_diverse(groups: dict[str, str], rng: np.random.Generator) -> list[str]:
@@ -376,6 +527,35 @@ def main():
              "singletons, the least reproducible clusters (default: 1)",
     )
     parser.add_argument(
+        "--min-seqlets-per-motif", type=float, default=0.0, metavar="N",
+        help="drop clusters below N seqlets per contributing motif "
+             "(total_seqlets / n_motifs). Deliberately defaults to 0: the "
+             "sweep below shows the recovered fraction rises monotonically "
+             "with this floor as an artifact of its residual correlation with "
+             "prevalence, so no single value is defensible. Requires "
+             "cluster_metadata.tsv, not the pattern-to-cluster mapping",
+    )
+    parser.add_argument(
+        "--sweep", action="store_true",
+        help="also emit the abundance-threshold sensitivity panel",
+    )
+    parser.add_argument(
+        "--sweep-thresholds", type=float, nargs="+", default=None, metavar="N",
+        help=f"seqlets-per-motif floors to sweep (default: "
+             f"{' '.join(f'{t:g}' for t in DEFAULT_SWEEP_THRESHOLDS)}); "
+             "implies --sweep",
+    )
+    parser.add_argument(
+        "--sweep-marks", type=int, nargs="+", default=list(DEFAULT_SWEEP_MARKS),
+        metavar="K", help="experiment counts to tabulate in the sweep summary "
+             f"(default: {' '.join(str(k) for k in DEFAULT_SWEEP_MARKS)})",
+    )
+    parser.add_argument(
+        "--sweep-mark", type=int, default=5, metavar="K",
+        help="experiment count annotated on the sweep panel; 5 is the scale of "
+             "a typical single-lab cell-line panel (default: 5)",
+    )
+    parser.add_argument(
         "--annotation-tsv", type=Path, default=None, metavar="PATH",
         help="curated cluster_final<TAB>class table for stratified curves "
              "(default: fall back to a JASPAR-match proxy)",
@@ -458,9 +638,37 @@ def main():
         meta = meta[meta["prevalence"] >= args.min_cluster_experiments].reset_index(
             drop=True
         )
+    if args.min_seqlets_per_motif > 0:
+        if "seqlets_per_motif" not in meta.columns:
+            print(
+                "ERROR: --min-seqlets-per-motif needs total_seqlets and "
+                "n_motifs, which only cluster_metadata.tsv carries",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        before = len(meta)
+        meta = meta[
+            meta["seqlets_per_motif"] >= args.min_seqlets_per_motif
+        ].reset_index(drop=True)
+        print(
+            f"{args.head}: abundance floor {args.min_seqlets_per_motif:g} "
+            f"seqlets/motif kept {len(meta)}/{before} clusters",
+            file=sys.stderr,
+        )
     if meta.empty or not universe:
         print("ERROR: no clusters survived filtering", file=sys.stderr)
         sys.exit(1)
+
+    if "seqlets_per_motif" in meta.columns and len(meta) > 2:
+        # The diagnostic that justifies not choosing a threshold: if abundance
+        # correlates with prevalence, any abundance floor is also a prevalence
+        # floor, and so biases against tissue-restricted clusters.
+        r = meta[["prevalence", "seqlets_per_motif"]].corr().iloc[0, 1]
+        print(
+            f"{args.head}: prevalence vs seqlets/motif r = {r:.2f} "
+            "(an abundance floor is partly a prevalence floor)",
+            file=sys.stderr,
+        )
 
     meta["motif_class"] = classify_clusters(meta, args.annotation_tsv)
     meta["n_groups"] = meta["exp_set"].map(lambda s: len({group_map[e] for e in s}))
@@ -512,6 +720,54 @@ def main():
         f"{len(meta):,} clusters"
     )
     plot_curves(curve_df, args.head, stem, subtitle)
+
+    if args.sweep or args.sweep_thresholds is not None:
+        thresholds = (
+            args.sweep_thresholds
+            if args.sweep_thresholds is not None
+            else list(DEFAULT_SWEEP_THRESHOLDS)
+        )
+        try:
+            sweep_curves, sweep_summary = sweep_abundance(
+                meta, n_total, thresholds, args.sweep_marks
+            )
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+        sweep_stem = args.out_dir / f"motif_rarefaction_sweep_{args.head}"
+        sweep_curves.to_csv(sweep_stem.with_suffix(".tsv"), sep="\t", index=False)
+        summary_path = args.out_dir / f"motif_rarefaction_sweep_{args.head}_summary.tsv"
+        sweep_summary.to_csv(summary_path, sep="\t", index=False)
+        print(f"Saved {sweep_stem.with_suffix('.tsv')}", file=sys.stderr)
+        print(f"Saved {summary_path}", file=sys.stderr)
+        plot_sweep(sweep_curves, args.head, sweep_stem, args.sweep_mark, subtitle)
+
+        print("\nAbundance-threshold sensitivity:", file=sys.stderr)
+        for _, row in sweep_summary.iterrows():
+            marks = "  ".join(
+                f"k={k}: {row[f'fraction_at_k{k}']:5.1%}"
+                for k in args.sweep_marks
+                if f"fraction_at_k{k}" in row
+            )
+            print(
+                f"  >={row['min_seqlets_per_motif']:>6.0f} seqlets/motif "
+                f"(n={int(row['n_clusters']):>4})  {marks}",
+                file=sys.stderr,
+            )
+        mark_col = f"fraction_at_k{args.sweep_mark}"
+        if mark_col in sweep_summary.columns:
+            worst = sweep_summary[mark_col].max()
+            argworst = sweep_summary.loc[sweep_summary[mark_col].idxmax()]
+            print(
+                f"\nWeakest-form claim: a {args.sweep_mark}-experiment study "
+                f"recovers at most {worst:.0%} of the {args.head}-head lexicon "
+                f"at any threshold tested\n  (upper bound set by "
+                f">={argworst['min_seqlets_per_motif']:g} seqlets/motif, "
+                f"n={int(argworst['n_clusters'])} clusters), so at least "
+                f"{1 - worst:.0%} is missed regardless.",
+                file=sys.stderr,
+            )
 
     overall = curve_df[
         (curve_df["scheme"] == "uniform") & (curve_df["motif_class"] == "__all__")
