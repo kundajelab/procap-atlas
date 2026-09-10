@@ -37,10 +37,16 @@ ratio can only take two values).
 
 Run both. A conclusion that holds at both levels is not a grouping artifact.
 
-Rows of the report are split by --split-by, and the default (motif_class) is
-the split that matters: pooling all clusters together dilutes the signal, since
-on real count-head data the JASPAR-matched majority is spread near-randomly
-while the unmatched minority is not.
+Rows of the report are split by --split-by. On real count-head data both the
+JASPAR-matched and unmatched classes are strongly tissue-concentrated
+(pooled concentration 0.83 and 0.77; single-group enrichment 5.3x at p=2e-22
+and 6.4x at p=2e-09), so the split is informative rather than load-bearing.
+
+Read pooled_concentration and single_group_p, not median_concentration. The
+median is near-useless at the prevalences this atlas has: with p=2 the ratio
+can only be 0.53 or 1.05, so a median near 1.0 is compatible with strong
+concentration. Reading the median is what previously led to the wrong
+conclusion that discovery-level tissue structure was weak.
 
 Outputs (in --out-dir):
   motif_concentration_{head}_{level}.tsv          per-cluster observed/expected/ratio

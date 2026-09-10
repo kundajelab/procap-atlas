@@ -249,19 +249,20 @@ band       n   median_prevalence  concentration  jaspar_rate  median_jaspar_scor
 >=500     73                15.0           0.82         0.96                0.959
 ```
 
-Two conclusions. First, **no band is strongly tissue-concentrated** — even the
-most abundant is only 0.82 — so tissue structure in *discovery* is weak.
-Second, the low-abundance clusters carry solid JASPAR matches (median
-0.84–0.87; the lower means reflect the ~20% with no match at all, not weak
-matches), so they are real motifs that happen to be under-discovered rather
-than noise. That is why no abundance floor is applied: it would delete real
-biology without removing anything spurious.
+The useful conclusion here is the second column: low-abundance clusters carry
+solid JASPAR matches (median 0.84–0.87; the lower means reflect the ~20% with
+no match at all, not weak matches), so they are real motifs that happen to be
+under-discovered rather than noise. That is why no abundance floor is applied —
+it would delete real biology without removing anything spurious.
 
-Caveat on power: at median prevalence 2–4 the concentration statistic is
-coarse. With `p = 2`, expected is 1.90 and observed can only be 1 or 2, so the
-ratio is either 0.53 or 1.05 with nothing between. **Pooling by abundance band
-as above also dilutes the signal** — split by `motif_class` instead, which is
-what `motif_group_concentration.py` does by default.
+**Do not read the `concentration` column above as evidence about tissue
+structure.** It is a per-band *median*, and the median is near-useless here: at
+prevalence 2–4 the ratio takes only a couple of distinct values (with `p = 2`,
+expected is 1.90 and observed can only be 1 or 2, so the ratio is 0.53 or
+1.05). Pooling classes together by abundance band dilutes it further. Measured
+properly — split by `motif_class`, using pooled concentration and the
+single-group test — discovery *is* strongly tissue-concentrated; see
+[Discovery Concentration](#discovery-concentration).
 
 #### What none of this addresses
 
@@ -370,14 +371,37 @@ conclusion holding at both is not a grouping artifact:
   higher resolution, but most biosamples appear once, so `P[n_groups = 1]` is
   near zero for `p > 1` and the single-group test loses power.
 
+Measured on the real count-head compendium, both classes are strongly
+tissue-concentrated, and the conclusion holds at both group levels:
+
+```text
+tissue level (19 groups)
+motif_class   n    pooled_conc  n_single  expected  enrichment  p
+TF-matched    306  0.832        45        8.50      5.3x        2.0e-22
+unmatched      37  0.767        14        2.19      6.4x        2.0e-09
+
+biosample level (112 groups)
+TF-matched    306  0.928         8        1.24      6.5x        3.6e-05
+unmatched      37  0.872         1        0.33      3.1x        0.28 (underpowered)
+```
+
+The sharpest result comes from comparing the two levels. Biosample groups nest
+inside tissue groups, so every biosample-confined cluster is necessarily
+tissue-confined: of the 59 clusters confined to one tissue group, only 9 are
+confined to a single biosample, so **50 span two or more distinct biosamples
+within one tissue**. That is lineage restriction rather than replicate
+redundancy from the heavily repeated biosamples (HCT116 ×16, brain metastases
+×10, PBMC ×8, K562 ×7).
+
+At biosample level the single-group test is underpowered by construction —
+most biosamples appear once, so `P[n_groups = 1]` is tiny for `p > 1` — which
+is why `pooled_concentration` is the statistic to read there.
+
 `--min-cluster-experiments 3` is the check for whether a result rests on
-clusters sitting at the reproducibility floor. On the real count head the
-non-JASPAR class is dominated by prevalence-2 clusters (22 of 37), so this
-matters: 9 of those 22 have both experiments in one tissue group against 2.13
-expected (`P = 0.0967` per the closed form), a 4.2× enrichment at exact
-`p = 1.1e-4`. That is where the atlas's discovery-level tissue structure lives
-— the JASPAR-matched majority is spread near-randomly and dilutes it away when
-pooled.
+clusters sitting at the reproducibility floor, which matters for the unmatched
+class specifically: it is dominated by prevalence-2 clusters (22 of 37), of
+which 9 have both experiments in one tissue group against 2.13 expected
+(4.2×, exact `p = 1.1e-4`).
 
 `--jaspar-score-threshold` matters because the default `motif_class` proxy is
 JASPAR *name presence* with no score floor, which admits matches as weak as
