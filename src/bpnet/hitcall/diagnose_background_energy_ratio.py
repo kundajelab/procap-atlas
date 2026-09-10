@@ -47,6 +47,10 @@ Usage:
     python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR342WAR --min-trim-len 6
     python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR342WAR --min-trim-len 6 \\
         --report-tsv hitcalls/bpnet/ENCSR342WAR_profile/trimcoords-ENCSR342WAR_profile_trim_coords_min6bp/report/motif_report.tsv
+    python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR342WAR --min-trim-len 6 --head profile \\
+        --out-tsv background_excess/ENCSR342WAR_profile.tsv
+    python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR342WAR --min-trim-len 6 --head count \\
+        --out-tsv background_excess/ENCSR342WAR_count.tsv
 """
 
 import argparse
@@ -300,6 +304,15 @@ def main():
             "see detect_elbow_count's docstring)"
         ),
     )
+    parser.add_argument(
+        "--out-tsv", type=str, default=None,
+        help=(
+            "also write the full per-motif table (including the in-scope "
+            "marker and rank) to this path, for reviewing cutoffs by hand "
+            "across many experiments/heads before trusting detect_elbow_"
+            "count's defaults atlas-wide"
+        ),
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -342,6 +355,17 @@ def main():
             line += f" {r['cwm_similarity']:>14.4f}"
         print(line)
     print(f"\n{n_in_scope} motif(s) marked '*' as in-scope by detect_elbow_count (min_gap_ratio={args.min_gap_ratio})")
+
+    if args.out_tsv:
+        out_df = pd.DataFrame(rows)
+        out_df.insert(0, "rank", range(1, len(out_df) + 1))
+        out_df["in_scope"] = out_df["rank"] <= n_in_scope
+        out_df["experiment"] = args.experiment
+        out_df["head"] = args.head
+        out_path = Path(args.out_tsv)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_df.to_csv(out_path, sep="\t", index=False)
+        print(f"Wrote {out_path}")
 
 
 if __name__ == "__main__":
