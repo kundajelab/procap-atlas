@@ -1037,3 +1037,167 @@ def test_enrichment_reliable_when_expectation_is_adequate():
     summary = mgc.summarize(annotated, ["motif_class"])
     assert summary.loc[0, "expected_single_group"] >= 1.0
     assert summary.loc[0, "enrichment_reliable"]
+
+
+# --------------------------------------------------------------------------
+# degree-preserving (curveball) null
+# --------------------------------------------------------------------------
+
+
+def _margins(sets, experiments):
+    rows = sorted(len(s) for s in sets)
+    cols = sorted(sum(e in s for s in sets) for e in experiments)
+    return rows, cols
+
+
+def test_curveball_preserves_both_margins_exactly():
+    """The whole point: cluster prevalence AND per-experiment motif count stay
+    fixed, so read depth cannot differ between observed and null."""
+    rng = np.random.default_rng(0)
+    experiments = [f"E{i}" for i in range(40)]
+    sets = [
+        set(rng.choice(experiments, size=int(p), replace=False))
+        for p in rng.integers(2, 15, 30)
+    ]
+    before = _margins(sets, experiments)
+    after = _margins(mcurve := mgc.curveball_randomize(sets, rng, n_trades=500), experiments)
+    assert before == after
+    assert [len(s) for s in sets] == [len(s) for s in mcurve]
+
+
+def test_curveball_actually_mixes():
+    rng = np.random.default_rng(1)
+    experiments = [f"E{i}" for i in range(30)]
+    sets = [set(experiments[i : i + 5]) for i in range(0, 25, 5)]
+    out = mgc.curveball_randomize(sets, rng, n_trades=2000)
+    assert any(a != b for a, b in zip(sets, out))
+
+
+def test_curveball_is_a_noop_on_a_single_cluster():
+    rng = np.random.default_rng(2)
+    sets = [{"E1", "E2"}]
+    assert mgc.curveball_randomize(sets, rng) == [{"E1", "E2"}]
+
+
+def test_swap_null_reproduces_the_analytic_uniform_expectation():
+    """Fixture-independent correctness check: on a matrix with no group
+    structure the degree-preserving null must land on the same expectation the
+    closed-form uniform null gives. The two nulls should only diverge when the
+    column margins actually carry information, which is the confound the swap
+    null exists to absorb."""
+    rng = np.random.default_rng(3)
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(6)}
+    experiments = list(group_map)
+    n_total = len(experiments)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": set(rng.choice(experiments, size=5, replace=False)), "prevalence": 5}
+            for _ in range(200)
+        ]
+    )
+    meta["motif_class"] = "spread"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 200, np.random.default_rng(4)
+    )
+    analytic = mgc.expected_n_groups(5, np.array([6] * 8), n_total)
+    assert swap.loc[0, "null_mean_n_groups"] == pytest.approx(analytic, abs=0.06)
+
+
+def test_swap_null_finds_no_concentration_when_there_is_none():
+    """A structureless matrix should sit at its own null. Uses many clusters so
+    the observed mean converges -- with only a few dozen, a single random draw
+    lands a couple of sd off the expectation and the p-value is meaningless."""
+    rng = np.random.default_rng(3)
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(6)}
+    experiments = list(group_map)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": set(rng.choice(experiments, size=5, replace=False)), "prevalence": 5}
+            for _ in range(300)
+        ]
+    )
+    meta["motif_class"] = "spread"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 200, np.random.default_rng(4)
+    )
+    assert swap.loc[0, "swap_concentration"] == pytest.approx(1.0, abs=0.04)
+    assert swap.loc[0, "swap_mean_p"] > 0.01
+
+
+def test_swap_null_detects_real_group_concentration():
+    """Clusters confined to one group must beat a null that already accounts
+    for per-experiment productivity."""
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(6)}
+    by_group = {}
+    for e, g in group_map.items():
+        by_group.setdefault(g, []).append(e)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": set(by_group[f"g{i % 8}"][:5]), "prevalence": 5}
+            for i in range(40)
+        ]
+    )
+    meta["motif_class"] = "conc"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 200, np.random.default_rng(5)
+    )
+    assert swap.loc[0, "swap_concentration"] < 0.5
+    assert swap.loc[0, "swap_mean_p"] < 0.01
+    assert swap.loc[0, "obs_single_group"] == 40
+    assert swap.loc[0, "null_single_group_mean"] < 5
+
+
+def test_swap_null_pvalues_are_add_one_bounded():
+    """An empirical p-value must never be exactly 0 -- (#{>=obs}+1)/(n+1)."""
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(6) for i in range(5)}
+    by_group = {}
+    for e, g in group_map.items():
+        by_group.setdefault(g, []).append(e)
+    meta = pd.DataFrame(
+        [{"exp_set": set(by_group[f"g{i % 6}"][:4]), "prevalence": 4} for i in range(24)]
+    )
+    meta["motif_class"] = "conc"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 50, np.random.default_rng(6)
+    )
+    assert swap.loc[0, "swap_mean_p"] >= 1 / 51
+    assert swap.loc[0, "swap_single_group_p"] >= 1 / 51
+
+
+def test_swap_null_cli_writes_output(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps, "SP1", 30 * 900) for _ in range(4)]
+    rows += [("pos", exps[:4], "GATA1", 4 * 300) for _ in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--swap-permutations", "50",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    swap = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue_swapnull.tsv", sep="\t"
+    )
+    assert {"swap_concentration", "swap_mean_p", "obs_single_group"} <= set(swap.columns)
+    assert "Degree-preserving null" in result.stderr
+
+
+def test_swap_permutations_zero_skips_the_null(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps[:5], "TF", 5 * 200) for _ in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--swap-permutations", "0",
+        ],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert not (
+        tmp_path / "out" / "motif_concentration_profile_tissue_swapnull.tsv"
+    ).exists()

@@ -423,17 +423,41 @@ an `enrichment_reliable` flag and the run warns about affected rows; read
 biosample level with a raised floor, the single-group test is unpowered by
 construction, so only `pooled_concentration` is usable.
 
-#### The read-depth confound
+#### The read-depth confound, and the null that fixes it
 
-The null treats all retained experiments as exchangeable. If library size or
-peak count clusters by biosample group, a motif's discovery would concentrate
-in the deep groups for reasons unrelated to lineage, and this test would report
-it as tissue restriction. `--min-reads` only sets a floor; it does not equalize
-depth across groups. Check before relying on the result: compare median reads
-across groups, and check whether the `sole_group` values of restricted clusters
-are the deepest groups rather than a spread. The run prints where restricted
-clusters land alongside each group's share of experiments for exactly this
-comparison.
+The uniform null treats all retained experiments as exchangeable. **On the real
+atlas they are not**: library size differs across biosample groups
+(Kruskal–Wallis `p = 1.2e-4`, group medians from 19.5M for
+`metastatic_carcinoma` to 41.6M for `reproductive`), and deeper experiments
+contribute more discovered motifs for reasons unrelated to lineage. A motif
+restricted to a deep group would look tissue-concentrated under a uniform null.
+`--min-reads` only sets a floor; it does not equalize depth.
+
+`--swap-permutations` (default 1000) is the fix, and it is on by default. It
+randomizes the cluster × experiment presence matrix with the curveball trade
+(Strona et al. 2014), preserving **both** margins exactly: each cluster's
+prevalence and each experiment's total discovered-motif count. Holding the
+latter fixed absorbs read depth, peak count and model quality together, without
+having to model any of them — whatever made an experiment productive, it stays
+equally productive in the null. The only thing randomized is *which*
+experiments a cluster's motifs came from.
+
+Output (`..._swapnull.tsv`) reports observed vs null single-group counts and
+mean `n_groups`, with empirical one-sided p-values in add-one form
+`(#{null ≥ obs} + 1)/(n + 1)`, so a p-value is never reported as exactly zero.
+Read `swap_concentration` (observed mean `n_groups` / null mean): below 1 means
+concentrated beyond what per-experiment discovery propensity can explain.
+
+On a matrix with no group structure the swap null lands on the same value as
+the closed-form uniform expectation (verified in the tests), so the two nulls
+diverge only when the column margins genuinely carry information — which is
+exactly the case the swap null is there to handle. **Quote `swap_concentration`
+and `swap_mean_p` rather than the uniform-null numbers**, since the uniform
+null's exchangeability assumption is known to be violated here.
+
+The run also prints where restricted clusters land alongside each group's share
+of experiments, and `sole_group` in the per-cluster TSV names the lineage, so a
+pile-up in the deepest groups is still visible directly.
 
 `--jaspar-score-threshold` matters because the default `motif_class` proxy is
 JASPAR *name presence* with no score floor, which admits matches as weak as

@@ -133,6 +133,116 @@ def poisson_binomial_sf(probs: np.ndarray, observed: int) -> float:
     return float(dist[observed:].sum())
 
 
+def curveball_randomize(
+    exp_sets: list[set[str]],
+    rng: np.random.Generator,
+    n_trades: int | None = None,
+) -> list[set[str]]:
+    """Randomize a cluster x experiment presence matrix preserving BOTH margins.
+
+    The uniform null treats all experiments as exchangeable, which read depth
+    violates: on the real atlas library size differs across biosample groups
+    (Kruskal-Wallis p = 1.2e-4), and deeper experiments contribute more
+    discovered motifs for reasons unrelated to lineage. A cluster restricted to
+    a deep group would then look tissue-concentrated under a uniform null.
+
+    Holding each experiment's total motif count fixed removes that confound
+    without having to model depth, peak count or model quality separately --
+    whatever made an experiment productive, it stays equally productive in the
+    null. Each cluster's prevalence is held fixed too, so the only thing
+    randomized is *which* experiments a cluster's motifs came from.
+
+    Uses the curveball trade (Strona et al. 2014): pick two clusters, keep the
+    experiments they share, and randomly redeal the unshared ones between them
+    while preserving both set sizes. Repeated trades mix the matrix while
+    leaving every row and column sum exactly intact.
+    """
+    sets = [set(s) for s in exp_sets]
+    n = len(sets)
+    if n < 2:
+        return sets
+    if n_trades is None:
+        n_trades = 5 * n
+    for _ in range(n_trades):
+        i, j = rng.integers(0, n, size=2)
+        if i == j:
+            continue
+        a, b = sets[i], sets[j]
+        shared = a & b
+        only_a = a - shared
+        only_b = b - shared
+        pool = list(only_a | only_b)
+        if not pool:
+            continue
+        rng.shuffle(pool)
+        n_a = len(only_a)
+        sets[i] = shared | set(pool[:n_a])
+        sets[j] = shared | set(pool[n_a:])
+    return sets
+
+
+def swap_null_test(
+    annotated: pd.DataFrame,
+    group_map: dict[str, str],
+    split_cols: list[str],
+    n_permutations: int,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """Compare observed concentration against the degree-preserving null.
+
+    Reports, per split, the observed single-group count and mean n_groups
+    against their null distributions, plus an empirical one-sided p-value
+    (#{null >= observed} + 1) / (n_permutations + 1) -- the standard
+    add-one form, so a p-value is never reported as exactly zero.
+    """
+    exp_sets = list(annotated["exp_set"])
+    labels = annotated[split_cols].astype(str).agg("|".join, axis=1).to_numpy()
+
+    def stats(sets: list[set[str]]) -> dict[str, tuple[int, float]]:
+        n_groups = np.array(
+            [len({group_map[e] for e in s if e in group_map}) for s in sets]
+        )
+        out = {}
+        for label in np.unique(labels):
+            m = labels == label
+            out[label] = (int((n_groups[m] == 1).sum()), float(n_groups[m].mean()))
+        return out
+
+    observed = stats(exp_sets)
+    null_single: dict[str, list[int]] = {k: [] for k in observed}
+    null_mean: dict[str, list[float]] = {k: [] for k in observed}
+    sets = exp_sets
+    for _ in range(n_permutations):
+        # Chain the trades: each permutation continues mixing from the last,
+        # which is the usual way curveball is used to draw a sequence of
+        # (approximately independent) matrices.
+        sets = curveball_randomize(sets, rng)
+        for label, (n_single, mean_g) in stats(sets).items():
+            null_single[label].append(n_single)
+            null_mean[label].append(mean_g)
+
+    rows = []
+    for label in observed:
+        obs_single, obs_mean = observed[label]
+        ns = np.array(null_single[label])
+        nm = np.array(null_mean[label])
+        rows.append(
+            {
+                **dict(zip(split_cols, label.split("|"))),
+                "obs_single_group": obs_single,
+                "null_single_group_mean": round(float(ns.mean()), 2),
+                "null_single_group_p95": float(np.percentile(ns, 95)),
+                "swap_single_group_p": (int((ns >= obs_single).sum()) + 1)
+                / (n_permutations + 1),
+                "obs_mean_n_groups": round(obs_mean, 3),
+                "null_mean_n_groups": round(float(nm.mean()), 3),
+                "swap_concentration": round(obs_mean / nm.mean(), 3),
+                "swap_mean_p": (int((nm <= obs_mean).sum()) + 1) / (n_permutations + 1),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def annotate_concentration(
     meta: pd.DataFrame, group_map: dict[str, str], n_total: int
 ) -> pd.DataFrame:
@@ -300,6 +410,16 @@ def main():
         help="curated cluster_final<TAB>class table, overriding the JASPAR proxy",
     )
     parser.add_argument(
+        "--swap-permutations", type=int, default=1000, metavar="N",
+        help="degree-preserving (curveball) permutations for the depth-robust "
+             "null, which holds each experiment's discovered-motif count fixed. "
+             "The uniform null assumes experiments are exchangeable, which read "
+             "depth violates. 0 skips it (default: 1000)",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="RNG seed (default: 0)",
+    )
+    parser.add_argument(
         "--split-by", nargs="+", default=["motif_class"],
         choices=["motif_class", "abundance_band", "posneg"],
         help="report rows to split by (default: motif_class)",
@@ -426,6 +546,28 @@ def main():
     with pd.option_context("display.width", 200, "display.max_columns", 30):
         print(f"\n{args.group_level}-level concentration:", file=sys.stderr)
         print(summary.to_string(index=False), file=sys.stderr)
+
+    if args.swap_permutations > 0:
+        swap = swap_null_test(
+            annotated, group_map, split_cols, args.swap_permutations,
+            np.random.default_rng(args.seed),
+        )
+        swap_path = stem.parent / f"{stem.name}_swapnull.tsv"
+        swap.to_csv(swap_path, sep="\t", index=False)
+        print(f"Saved {swap_path}", file=sys.stderr)
+        with pd.option_context("display.width", 200, "display.max_columns", 30):
+            print(
+                f"\nDegree-preserving null ({args.swap_permutations} curveball "
+                "permutations, experiment motif counts held fixed):",
+                file=sys.stderr,
+            )
+            print(swap.to_string(index=False), file=sys.stderr)
+        print(
+            "\nswap_concentration = observed mean n_groups / null mean; "
+            "<1 means concentrated beyond what\nper-experiment discovery "
+            "propensity (and hence read depth) can explain.",
+            file=sys.stderr,
+        )
 
     unreliable = summary[~summary["enrichment_reliable"]]
     if not unreliable.empty:
