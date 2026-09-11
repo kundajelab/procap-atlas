@@ -304,8 +304,15 @@ time:
 1. Selects experiments from `configs/experiment_config.yaml`, dropping
    `--blacklist` IDs (default: `ENCSR973QQI`), any experiment whose
    `library_construction` metadata contains "uncapped", and any experiment
-   below `--min-reads` total reads (default: 10M, read from
-   `configs/n_reads.txt`).
+   below `--min-reads` total reads (**default: 0, i.e. no depth filter**, read
+   from `configs/n_reads.txt`). The atlas compendium was therefore built over
+   all 219 QC-passing experiments; the >10M-read restriction to 198 is applied
+   by the downstream analyses in [`src/analysis/`](../analysis/README.md), not
+   here. Note also that this script has no `--out-dir`, so a rerun overwrites
+   the existing compendium in place and renumbers `cluster_final` -- back up
+   `motifcompendium/bpnet/` first, and expect to rerun
+   `hitcall/launch_link.py` atlas-wide afterwards, since every
+   `hits_linked.tsv` keys on those ids.
 2. Loads every surviving experiment's `modisco/bpnet/{experiment}_{head}.modisco.h5`
    into one `MotifCompendium` via `build_from_modisco` — this is also where
    MotifCompendium collapses each source pattern down to a single averaged CWM,
