@@ -2552,3 +2552,149 @@ def test_collapse_cli_rejects_mapping_input(tmp_path):
     )
     assert result.returncode == 1
     assert "jaspar_name" in result.stderr
+
+
+# --------------------------------------------------------------------------
+# annotation scaffold
+# --------------------------------------------------------------------------
+
+import make_annotation_scaffold as mas  # noqa: E402
+
+
+def scaffold_inputs(tmp_path, n_named=4, n_unnamed=3):
+    meta = tmp_path / "meta.tsv"
+    recs, logos = [], []
+    (tmp_path / "lg").mkdir(exist_ok=True)
+    for i in range(n_named + n_unnamed):
+        named = i < n_named
+        recs.append({
+            "cluster_final": i, "posneg": "pos", "n_motifs": 3,
+            "total_seqlets": 1000 - 10 * i, "n_experiments": 3,
+            "experiments": "E1,E2,E3",
+            "jaspar_name": f"TF{i}" if named else None,
+            "jaspar_score": 0.9 if named else None,
+        })
+        svg = tmp_path / "lg" / f"c{i}.svg"
+        svg.write_bytes(SVG_A)
+        logos.append({"cluster_final": i, "logo_fwd_svg": f"lg/c{i}.svg",
+                      "logo_rev_svg": f"lg/c{i}.svg"})
+    pd.DataFrame(recs).to_csv(meta, sep="\t", index=False)
+    lp = tmp_path / "logos.tsv"
+    pd.DataFrame(logos).to_csv(lp, sep="\t", index=False)
+    conc = tmp_path / "conc.tsv"
+    pd.DataFrame({
+        "cluster_final": list(range(n_named + n_unnamed)),
+        "prevalence": [5, 4, 3, 2, 6, 2, 1],
+        "n_groups": [4, 3, 2, 1, 1, 2, 1],
+        "sole_group": ["", "", "", "liver_biliary", "stem_ipsc", "", "gi_tract"],
+        "is_single_group": [False, False, False, True, True, False, True],
+    }).to_csv(conc, sep="\t", index=False)
+    return meta, conc, lp
+
+
+def test_scaffold_defaults_to_unnamed_clusters(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    out = mas.load_clusters(meta, conc, lp, tmp_path)
+    unnamed = out[out.jaspar_name.isna()]
+    assert len(unnamed) == 3
+    assert "prevalence" in out.columns and "sole_group" in out.columns
+    assert out["logo"].notna().all()
+    assert Path(out.loc[0, "logo"]).exists()
+
+
+def test_scaffold_computes_seqlets_per_motif(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    out = mas.load_clusters(meta, conc, lp, tmp_path)
+    assert out.loc[0, "seqlets_per_motif"] == pytest.approx(1000 / 3, abs=0.1)
+
+
+def test_scaffold_rejects_metadata_without_required_columns(tmp_path):
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame({"cluster_final": [0]}).to_csv(bad, sep="\t", index=False)
+    with pytest.raises(ValueError, match="posneg"):
+        mas.load_clusters(bad, None, None, tmp_path)
+
+
+def test_scaffold_cli_writes_fillable_tsv_and_html(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "3 with no JASPAR name" in result.stderr
+
+    tsv = tmp_path / "o" / "motif_annotation_count_scaffold.tsv"
+    d = pd.read_csv(tsv, sep="\t", comment="#")
+    assert len(d) == 3
+    assert list(d["class"].fillna("")) == ["", "", ""]   # blank, ready to fill
+    assert "notes" in d.columns
+    # sorted by seqlets descending, so the consequential ones come first
+    assert d["total_seqlets"].is_monotonic_decreasing
+    # the header comment documents the vocabulary
+    assert "Suggested classes" in tsv.read_text().splitlines()[1]
+
+    html = tmp_path / "o" / "motif_annotation_count_scaffold.html"
+    assert html.exists()
+    text = html.read_text()
+    assert text.count("data:image/svg+xml;base64,") == 3
+    assert "tandem_composite" in text
+
+
+def test_scaffold_completed_tsv_feeds_annotation_tsv(tmp_path):
+    """The scaffold's output must be directly consumable by the rarefaction
+    script's --annotation-tsv, or the annotation work doesn't connect."""
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o")],
+        capture_output=True, text=True, env=SUBPROC_ENV, check=True,
+    )
+    tsv = tmp_path / "o" / "motif_annotation_count_scaffold.tsv"
+    d = pd.read_csv(tsv, sep="\t", comment="#")
+    d["class"] = ["tandem_composite", "core_promoter", "repeat"]
+    d.to_csv(tsv, sep="\t", index=False)
+
+    presence = pd.DataFrame([
+        {"cluster_final": c, "exp_set": {"E1", "E2"}, "prevalence": 2}
+        for c in d.cluster_final
+    ])
+    classes = rare.classify_clusters(presence, tsv)
+    assert set(classes) == {"tandem_composite", "core_promoter", "repeat"}
+
+
+def test_scaffold_all_flag_includes_named_clusters(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o2"), "--all"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    d = pd.read_csv(tmp_path / "o2" / "motif_annotation_count_scaffold.tsv",
+                    sep="\t", comment="#")
+    assert len(d) == 7
+
+
+def test_scaffold_min_prevalence_filters(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o3"),
+         "--min-prevalence", "2"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "at prevalence >= 2" in result.stderr
+    d = pd.read_csv(tmp_path / "o3" / "motif_annotation_count_scaffold.tsv",
+                    sep="\t", comment="#")
+    assert len(d) == 2          # unnamed clusters 4 and 5 (prevalence 6 and 2)

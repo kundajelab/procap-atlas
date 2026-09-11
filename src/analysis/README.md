@@ -649,6 +649,46 @@ contribute to the background. This is also why synthetic one-hot fixtures
 cannot test the p-value path; the tests use Dirichlet-drawn PWMs and a
 verified-safe motif count and width.
 
+### Annotation Scaffold
+
+JASPAR misses whole categories that matter here — core promoter elements
+(Inr, TATA, DPE), repeats, and composite arrangements — so 37 of the 343
+reproducible count-head clusters carry no name. Reviewing those by eye showed
+the class is largely **tandem composites**: a double CCAAT box (cluster 150), a
+double GGAAT (cluster 329), whose cores *are* in JASPAR but not as repeats, so
+the nearest-neighbour lookup fails. Those need a human label, which the
+manuscript methods already commit to providing.
+
+```bash
+python src/analysis/make_annotation_scaffold.py --head count
+python src/analysis/make_annotation_scaffold.py --head count --min-prevalence 2
+python src/analysis/make_annotation_scaffold.py --head count --all
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_annotation_{head}_scaffold.tsv    # blank `class` column to fill
+figures/motif_atlas/motif_annotation_{head}_scaffold.html   # the same rows with logos embedded
+```
+
+Fill the TSV's `class` column while looking at the HTML; both are keyed on
+`cluster_final` and sorted by seqlet count so the consequential clusters come
+first. The completed TSV is exactly what `plot_motif_rarefaction.py
+--annotation-tsv` and `motif_group_concentration.py --annotation-tsv` consume,
+so stratified curves and per-class concentration follow with no further work.
+Suggested vocabulary (kept short, since stratified curves are only readable
+with a handful of classes): `core_promoter`, `tandem_composite`,
+`hetero_composite`, `repeat`, `tf_unannotated`, `unclear`.
+
+Why this matters beyond tidiness: the non-JASPAR class was where the strongest
+apparent tissue restriction sat (6.4× single-group enrichment), but that rests
+on 14 clusters, 12 of them at prevalence ≤4, and 7 from `stem_ipsc` — a group
+with only 4 experiments. If most turn out to be tandem composites, the
+restriction is a statement about promoter architecture rather than about
+lineage-specific TF motifs, and the class should not be described as novel
+motifs. Annotating it is what settles that.
+
 ### Discovery Concentration
 
 Tests whether the experiments a cluster was discovered in come from fewer
