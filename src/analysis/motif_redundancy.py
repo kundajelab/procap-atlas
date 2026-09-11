@@ -83,6 +83,7 @@ Usage:
 """
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -377,6 +378,27 @@ def trim_motifs(
     return out, widths
 
 
+def degenerate_pvalues(p: np.ndarray) -> tuple[bool, float, int]:
+    """Detect a collapsed TOMTOM p-value matrix.
+
+    memelite estimates a background from the target set's columns, and for some
+    input configurations that estimate degenerates and every off-diagonal
+    p-value comes back as exactly 0.0 or 1.0 -- including p = 1.0 for two
+    *identical* motifs. It is not a simple matter of having too few motifs:
+    41 motifs of 14bp behave correctly while 81 of 10bp and 81 of 20bp both
+    collapse. Nothing in the output reveals this unless it is checked, and
+    every downstream number would be meaningless, so it is checked.
+
+    Returns (is_degenerate, fraction_at_0_or_1, n_distinct_values).
+    """
+    off = p[np.isfinite(p)]
+    if off.size == 0:
+        return True, 1.0, 0
+    extreme = float(np.mean((off == 0.0) | (off == 1.0)))
+    distinct = int(np.unique(off).size)
+    return (extreme > 0.9 or distinct < 10), extreme, distinct
+
+
 def self_compare(pwms: list[np.ndarray], n_jobs: int) -> dict[str, np.ndarray]:
     """Run TOMTOM of every cluster against every other, diagonal masked out."""
     from memelite import tomtom
@@ -384,6 +406,21 @@ def self_compare(pwms: list[np.ndarray], n_jobs: int) -> dict[str, np.ndarray]:
     p, scores, offsets, overlaps, strands = tomtom(pwms, pwms, n_jobs=n_jobs)
     p = np.asarray(p, dtype=np.float64).copy()
     np.fill_diagonal(p, np.inf)  # a motif is not its own duplicate
+
+    bad, extreme, distinct = degenerate_pvalues(p)
+    if bad:
+        print(
+            "WARNING: TOMTOM p-values look degenerate "
+            f"({extreme:.0%} of off-diagonal values are exactly 0 or 1; "
+            f"{distinct} distinct values across {len(pwms)} motifs). memelite "
+            "estimates its background from the target columns and that "
+            "estimate can collapse for particular input configurations -- when "
+            "it does, identical motifs can score p = 1.0. Every redundancy "
+            "figure below would be meaningless. Try a different "
+            "--trim-threshold, or drop --subset so more motifs contribute to "
+            "the background.",
+            file=sys.stderr,
+        )
     return {
         "p": p,
         "scores": np.asarray(scores),
@@ -643,6 +680,164 @@ def jaspar_agreement(
     )
 
 
+def mutual_best_pairs(
+    names: list[str], p_sym: np.ndarray, threshold: float
+) -> pd.DataFrame:
+    """The mutual-best-hit pairs themselves, for review.
+
+    These are the pairs behind the `mutual` excess figure -- each cluster's
+    single closest match, reciprocated. They cannot chain, so every row is a
+    self-contained claim that two clusters are the same motif, which is what
+    makes them the right thing to eyeball.
+    """
+    masked = p_sym.copy()
+    np.fill_diagonal(masked, np.inf)
+    best = masked.argmin(axis=1)
+    rows = []
+    for i, j in enumerate(best):
+        if best[j] == i and i < j and masked[i, j] <= threshold:
+            rows.append({"motif_a": names[i], "motif_b": names[j],
+                         "p_value": float(masked[i, j])})
+    # Keep the schema when empty: pd.DataFrame([]) has no columns at all, which
+    # writes a zero-byte TSV that cannot be read back.
+    return pd.DataFrame(rows, columns=["motif_a", "motif_b", "p_value"])
+
+
+def annotate_pairs(
+    pairs: pd.DataFrame,
+    widths: dict[str, int],
+    cluster_metadata: Path | None,
+    logo_paths: Path | None,
+    out_dir: Path,
+) -> pd.DataFrame:
+    """Attach JASPAR names, seqlet counts and logo paths to each pair.
+
+    Ordered by the larger of the two clusters' seqlet counts, so the pairs that
+    most affect the lexicon size come first rather than being buried among rare
+    ones.
+    """
+    if pairs.empty:
+        return pairs
+
+    out = pairs.copy()
+    out["trimmed_len_a"] = out["motif_a"].map(widths)
+    out["trimmed_len_b"] = out["motif_b"].map(widths)
+
+    def cluster_id(motif: str) -> int | None:
+        tail = str(motif).rsplit(".", 1)[-1]
+        return int(tail) if tail.isdigit() else None
+
+    if cluster_metadata is not None and Path(cluster_metadata).exists():
+        meta = pd.read_csv(cluster_metadata, sep="\t")
+        if {"cluster_final", "posneg"} <= set(meta.columns):
+            key = (
+                meta["posneg"].astype(str) + "_patterns."
+                + meta["cluster_final"].astype(int).astype(str)
+            )
+            for col, newname in (
+                ("jaspar_name", "jaspar"), ("jaspar_score", "score"),
+                ("total_seqlets", "seqlets"), ("n_experiments", "n_exp"),
+            ):
+                if col in meta.columns:
+                    m = dict(zip(key, meta[col]))
+                    out[f"{newname}_a"] = out["motif_a"].map(m)
+                    out[f"{newname}_b"] = out["motif_b"].map(m)
+
+    if {"jaspar_a", "jaspar_b"} <= set(out.columns):
+        both = out["jaspar_a"].notna() & out["jaspar_b"].notna()
+        out["name_agree"] = np.where(
+            both, out["jaspar_a"].astype(str) == out["jaspar_b"].astype(str), None
+        )
+        out["family_agree"] = np.where(
+            both,
+            out["jaspar_a"].map(lambda v: jaspar_family(v) if isinstance(v, str) else v)
+            == out["jaspar_b"].map(lambda v: jaspar_family(v) if isinstance(v, str) else v),
+            None,
+        )
+
+    if logo_paths is not None and Path(logo_paths).exists():
+        lp = pd.read_csv(logo_paths, sep="\t")
+        if "cluster_final" in lp.columns and "logo_fwd_svg" in lp.columns:
+            logo = dict(zip(lp["cluster_final"], lp["logo_fwd_svg"]))
+
+            def resolve(motif: str) -> str | None:
+                cid = cluster_id(motif)
+                rel = logo.get(cid) if cid is not None else None
+                if rel is None:
+                    return None
+                abs_path = (MC_DIR / rel).resolve()
+                try:
+                    return os.path.relpath(abs_path, out_dir.resolve())
+                except ValueError:
+                    return str(abs_path)
+
+            out["logo_a"] = out["motif_a"].map(resolve)
+            out["logo_b"] = out["motif_b"].map(resolve)
+
+    if "seqlets_a" in out.columns:
+        out["max_seqlets"] = out[["seqlets_a", "seqlets_b"]].max(axis=1)
+        out = out.sort_values("max_seqlets", ascending=False)
+    else:
+        out = out.sort_values("p_value")
+    return out.reset_index(drop=True)
+
+
+def write_pairs_html(pairs: pd.DataFrame, path: Path, head: str, threshold: float) -> None:
+    """Side-by-side logo pairs, so a merge can be judged by eye in seconds.
+
+    Disagreeing pairs are listed first and highlighted: those are where
+    over-merging would show, and they are the ones worth the reviewer's time.
+    """
+    if pairs.empty or "logo_a" not in pairs.columns:
+        return
+    rows = pairs.copy()
+    if "name_agree" in rows.columns:
+        rows["_order"] = rows["name_agree"].map(
+            lambda v: 0 if v is False else (1 if v is None else 2)
+        )
+        rows = rows.sort_values(["_order", "max_seqlets"], ascending=[True, False])
+
+    html = [
+        "<html><head><meta charset='utf-8'><style>",
+        "body{font-family:system-ui,sans-serif;margin:18px;font-size:13px}",
+        "table{border-collapse:collapse}td,th{padding:5px 9px;",
+        "border-bottom:1px solid #ddd;vertical-align:middle}",
+        "img{height:58px}tr.dis{background:#fff3f3}tr.unk{background:#fafafa}",
+        "code{font-size:11px;color:#444}</style></head><body>",
+        f"<h2>Mutual-best-hit pairs — {head} head, p &le; {threshold:g}</h2>",
+        f"<p>{len(rows)} pairs. Each row is one cluster and its reciprocated "
+        "closest match, i.e. a self-contained claim that these two are the same "
+        "motif. Pink rows disagree on JASPAR name and are listed first — that "
+        "is where over-merging would be visible. A pair can still be a true "
+        "duplicate while disagreeing, since JASPAR contains near-identical "
+        "motifs (SP1/SP2/SP9).</p>",
+        "<table><tr><th>p</th><th>A</th><th>logo A</th><th>B</th>"
+        "<th>logo B</th><th>JASPAR</th><th>seqlets</th></tr>",
+    ]
+    for _, r in rows.iterrows():
+        agree = r.get("name_agree")
+        cls = "dis" if agree is False else ("unk" if agree is None else "")
+        fam = r.get("family_agree")
+        ja, jb = r.get("jaspar_a"), r.get("jaspar_b")
+        label = f"{ja} / {jb}"
+        if agree is True:
+            label += " &#10003;"
+        elif fam is True:
+            label += " (same family)"
+        sa, sb = r.get("seqlets_a"), r.get("seqlets_b")
+        html.append(
+            f"<tr class='{cls}'><td>{r['p_value']:.1e}</td>"
+            f"<td><code>{r['motif_a']}</code><br>{r.get('trimmed_len_a','?')}bp</td>"
+            f"<td>{'<img src=\'' + str(r['logo_a']) + '\'>' if r.get('logo_a') else '—'}</td>"
+            f"<td><code>{r['motif_b']}</code><br>{r.get('trimmed_len_b','?')}bp</td>"
+            f"<td>{'<img src=\'' + str(r['logo_b']) + '\'>' if r.get('logo_b') else '—'}</td>"
+            f"<td>{label}</td><td>{sa} / {sb}</td></tr>"
+        )
+    html.append("</table></body></html>")
+    path.write_text("\n".join(html))
+    print(f"Saved {path}", file=sys.stderr)
+
+
 def plot_sweep(summary: pd.DataFrame, head: str, out_stem: Path) -> None:
     fig, ax = plt.subplots(figsize=(5.0, 3.6))
     style = {"mutual": ("#1b7837", "o-"), "complete": ("#404040", "s-"),
@@ -695,6 +890,11 @@ def main():
         "--cluster-metadata", type=Path, default=None, metavar="PATH",
         help="join JASPAR names onto components, to test whether name "
              "collisions correspond to real CWM redundancy",
+    )
+    parser.add_argument(
+        "--logo-paths", type=Path, default=None, metavar="PATH",
+        help="motifcompendium_{head}_cluster_logo_paths.tsv, for embedding "
+             "logos in the review HTML (default: auto-detect)",
     )
     parser.add_argument(
         "--p-thresholds", type=float, nargs="+", default=list(DEFAULT_THRESHOLDS),
@@ -959,6 +1159,32 @@ def main():
     comp_df.to_csv(stem.parent / f"{stem.name}_components.tsv", sep="\t", index=False)
     for suffix in ("pairs", "summary", "components"):
         print(f"Saved {stem.parent / f'{stem.name}_{suffix}.tsv'}", file=sys.stderr)
+    logo_paths = args.logo_paths
+    if logo_paths is None:
+        candidate = MC_DIR / f"motifcompendium_{args.head}_cluster_logo_paths.tsv"
+        logo_paths = candidate if candidate.exists() else None
+
+    width_map = {n: int(w) for n, w in zip(names, widths)}
+    mutual = annotate_pairs(
+        mutual_best_pairs(names, p_sym, args.report_threshold),
+        width_map, args.cluster_metadata, logo_paths, args.out_dir,
+    )
+    mutual_path = stem.parent / f"{stem.name}_mutual_pairs.tsv"
+    mutual.to_csv(mutual_path, sep="\t", index=False)
+    print(f"Saved {mutual_path}  ({len(mutual)} pairs)", file=sys.stderr)
+    write_pairs_html(
+        mutual, stem.parent / f"{stem.name}_mutual_pairs.html",
+        args.head, args.report_threshold,
+    )
+    if "name_agree" in mutual.columns and len(mutual):
+        disagree = mutual[mutual["name_agree"] == False]  # noqa: E712
+        print(
+            f"  {len(disagree)} of {len(mutual)} pairs disagree on JASPAR name "
+            "and are listed first in the HTML -- review those to judge whether "
+            "the merges are real",
+            file=sys.stderr,
+        )
+
     plot_sweep(summary, args.head, stem)
 
     with pd.option_context("display.width", 200):

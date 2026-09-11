@@ -2068,3 +2068,192 @@ def test_sweep_records_chance_and_family_columns():
         for prefix in ("jaspar_agree", "jaspar_chance", "jaspar_enrich",
                        "family_agree", "family_enrich"):
             assert f"{prefix}_{criterion}" in summary.columns
+
+
+def test_mutual_best_pairs_are_reciprocated_only():
+    """A one-way best hit is not a mutual pair: b's closest is c, so a-b must
+    not appear even though b is a's closest."""
+    names = ["a", "b", "c"]
+    p = np.array([
+        [0.0,  1e-8, 0.5],
+        [1e-8, 0.0,  1e-12],
+        [0.5,  1e-12, 0.0],
+    ])
+    pairs = mr.mutual_best_pairs(names, p, 1e-6)
+    got = {frozenset((r.motif_a, r.motif_b)) for r in pairs.itertuples()}
+    assert got == {frozenset(("b", "c"))}
+
+
+def test_mutual_best_pairs_respects_threshold():
+    names = ["a", "b"]
+    p = np.array([[0.0, 1e-3], [1e-3, 0.0]])
+    assert mr.mutual_best_pairs(names, p, 1e-6).empty
+    assert len(mr.mutual_best_pairs(names, p, 1e-2)) == 1
+
+
+def test_annotate_pairs_flags_name_and_family_agreement(tmp_path):
+    pairs = pd.DataFrame({
+        "motif_a": ["pos_patterns.0", "pos_patterns.2", "pos_patterns.4"],
+        "motif_b": ["pos_patterns.1", "pos_patterns.3", "pos_patterns.5"],
+        "p_value": [1e-9, 1e-8, 1e-7],
+    })
+    meta = tmp_path / "meta.tsv"
+    pd.DataFrame({
+        "cluster_final": [0, 1, 2, 3, 4, 5],
+        "posneg": ["pos"] * 6,
+        "jaspar_name": ["AP1", "AP1", "SP1", "SP9", "GATA1", "TBP"],
+        "jaspar_score": [0.9] * 6,
+        "total_seqlets": [10, 20, 500, 400, 5, 6],
+        "n_experiments": [2] * 6,
+    }).to_csv(meta, sep="\t", index=False)
+
+    widths = {f"pos_patterns.{i}": 10 for i in range(6)}
+    out = mr.annotate_pairs(pairs, widths, meta, None, tmp_path)
+
+    row = out.set_index("motif_a")
+    assert row.loc["pos_patterns.0", "name_agree"]            # AP1 == AP1
+    assert not row.loc["pos_patterns.2", "name_agree"]        # SP1 != SP9
+    assert row.loc["pos_patterns.2", "family_agree"]          # ...but same family
+    assert not row.loc["pos_patterns.4", "family_agree"]      # GATA1 vs TBP
+    # highest-seqlet pair must sort first, since it matters most to the count
+    assert out.iloc[0]["motif_a"] == "pos_patterns.2"
+
+
+def test_annotate_pairs_resolves_logo_paths_relative_to_out_dir(tmp_path):
+    lp = tmp_path / "logos.tsv"
+    pd.DataFrame({
+        "cluster_final": [0, 1],
+        "logo_fwd_svg": ["logos/fwd/a.svg", "logos/fwd/b.svg"],
+        "logo_rev_svg": ["logos/rev/a.svg", "logos/rev/b.svg"],
+    }).to_csv(lp, sep="\t", index=False)
+    pairs = pd.DataFrame({
+        "motif_a": ["pos_patterns.0"], "motif_b": ["pos_patterns.1"],
+        "p_value": [1e-9],
+    })
+    out = mr.annotate_pairs(
+        pairs, {"pos_patterns.0": 8, "pos_patterns.1": 9}, None, lp, tmp_path
+    )
+    assert out.loc[0, "logo_a"].endswith("a.svg")
+    assert out.loc[0, "logo_b"].endswith("b.svg")
+    assert not Path(out.loc[0, "logo_a"]).is_absolute()
+
+
+def test_annotate_pairs_handles_empty_input():
+    assert mr.annotate_pairs(
+        pd.DataFrame({"motif_a": [], "motif_b": [], "p_value": []}),
+        {}, None, None, Path(".")
+    ).empty
+
+
+def test_pairs_html_puts_disagreements_first(tmp_path):
+    pairs = pd.DataFrame({
+        "motif_a": ["pos_patterns.0", "pos_patterns.2"],
+        "motif_b": ["pos_patterns.1", "pos_patterns.3"],
+        "p_value": [1e-9, 1e-8],
+        "jaspar_a": ["AP1", "GATA1"], "jaspar_b": ["AP1", "TBP"],
+        "seqlets_a": [100, 50], "seqlets_b": [90, 40],
+        "max_seqlets": [100, 50],
+        "name_agree": [True, False], "family_agree": [True, False],
+        "trimmed_len_a": [8, 9], "trimmed_len_b": [8, 9],
+        "logo_a": ["a.svg", "c.svg"], "logo_b": ["b.svg", "d.svg"],
+    })
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(pairs, out, "count", 1e-6)
+    text = out.read_text()
+    assert text.index("pos_patterns.2") < text.index("pos_patterns.0")
+    assert "c.svg" in text and "class='dis'" in text
+
+
+def test_pairs_html_skipped_without_logos(tmp_path):
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(
+        pd.DataFrame({"motif_a": ["a"], "motif_b": ["b"], "p_value": [1e-9]}),
+        out, "count", 1e-6,
+    )
+    assert not out.exists()
+
+
+# memelite's p-value background collapses for some input configurations, and
+# not monotonically in size: measured on the flanked_pair fixture after
+# trimming, 41 motifs x 14bp cores behave correctly (duplicate p = 7e-9) while
+# 21 x 14bp, 81 x 10bp and 81 x 20bp all return exactly 1.0 everywhere --
+# including for identical motifs. Fixtures that exercise the p-value path must
+# use a configuration verified to work; 14bp also matches Fi-NeMo's own median
+# trimmed width.
+PVALUE_SAFE_N = 40
+PVALUE_SAFE_CORE = 14
+
+
+def test_mutual_pairs_written_by_cli(tmp_path):
+    import h5py
+
+    n = PVALUE_SAFE_N
+    with h5py.File(tmp_path / "c.h5", "w") as f:
+        g0 = f.require_group("pos_patterns")
+        for i in range(n):
+            pfm, cwm, _, _ = flanked_pair(core_len=PVALUE_SAFE_CORE, seed=i)
+            g = g0.create_group(f"pattern_{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+        pfm, cwm, _, _ = flanked_pair(core_len=PVALUE_SAFE_CORE, seed=0)
+        g = g0.create_group(f"pattern_{n}")       # exact duplicate of pattern_0
+        g.create_dataset("sequence", data=pfm)
+        g.create_dataset("contrib_scores", data=cwm)
+
+    meta = tmp_path / "meta.tsv"
+    pd.DataFrame({
+        "cluster_final": list(range(n + 1)),
+        "posneg": ["pos"] * (n + 1),
+        "jaspar_name": ["AP1"] + [f"TF{i}" for i in range(1, n)] + ["AP1"],
+        "jaspar_score": [0.9] * (n + 1),
+        "total_seqlets": [1000] + [10] * (n - 1) + [900],
+        "n_experiments": [5] * (n + 1),
+    }).to_csv(meta, sep="\t", index=False)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(tmp_path / "c.h5"), "--cluster-metadata", str(meta),
+         "--out-dir", str(tmp_path / "o"), "--n-jobs", "1"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    mp = pd.read_csv(tmp_path / "o" / "motif_redundancy_count_mutual_pairs.tsv", sep="\t")
+    assert len(mp) >= 1
+    names = ["pos_patterns.0", f"pos_patterns.{PVALUE_SAFE_N}"]
+    dup = mp[mp.motif_a.isin(names) & mp.motif_b.isin(names)]
+    assert len(dup) == 1, mp.to_string()
+    assert bool(dup.iloc[0]["name_agree"]) is True
+    assert "mutual_pairs.tsv" in result.stderr
+
+
+def test_degenerate_pvalues_detects_a_collapsed_matrix():
+    """The guard that would have caught three separate fixture failures."""
+    collapsed = np.ones((6, 6)); np.fill_diagonal(collapsed, np.inf)
+    bad, extreme, distinct = mr.degenerate_pvalues(collapsed)
+    assert bad and extreme == pytest.approx(1.0) and distinct == 1
+
+    zeros = np.zeros((6, 6)); np.fill_diagonal(zeros, np.inf)
+    assert mr.degenerate_pvalues(zeros)[0]
+
+
+def test_degenerate_pvalues_accepts_a_healthy_matrix():
+    rng = np.random.default_rng(0)
+    p = 10 ** rng.uniform(-12, 0, (30, 30))
+    p = np.minimum(p, p.T)
+    np.fill_diagonal(p, np.inf)
+    bad, extreme, distinct = mr.degenerate_pvalues(p)
+    assert not bad
+    assert extreme < 0.01 and distinct > 100
+
+
+def test_degenerate_pvalues_flags_an_all_inf_matrix():
+    assert mr.degenerate_pvalues(np.full((3, 3), np.inf))[0]
+
+
+def test_mutual_best_pairs_keeps_schema_when_empty():
+    """An empty result must still be a readable TSV, not a zero-byte file."""
+    names = ["a", "b"]
+    p = np.array([[0.0, 0.9], [0.9, 0.0]])
+    empty = mr.mutual_best_pairs(names, p, 1e-9)
+    assert empty.empty
+    assert list(empty.columns) == ["motif_a", "motif_b", "p_value"]

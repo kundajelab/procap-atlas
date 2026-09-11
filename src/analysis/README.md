@@ -503,11 +503,46 @@ calibration available, since those show 6 excess by JASPAR name alone.
 fraction of the shorter motif, suppressing significant-but-spurious
 short-inside-long matches.
 
-Footgun: TOMTOM estimates its column background from the target set, so
-near-deterministic PWMs make it degenerate — two *identical* one-hot motifs can
-come back at p = 1.0. Cluster-average CWMs are soft enough that this does not
-arise on real data, but synthetic one-hot fixtures cannot test the p-value path
-(the tests use Dirichlet-drawn PWMs for this reason).
+#### Reviewing the merges by eye
+
+Statistics can only go so far here; the merges are checkable directly. Every
+run writes the **mutual-best-hit pairs** — each cluster's reciprocated closest
+match, so each row is a self-contained claim that two clusters are the same
+motif, with no chaining involved:
+
+```text
+figures/motif_atlas/motif_redundancy_{head}_mutual_pairs.tsv
+figures/motif_atlas/motif_redundancy_{head}_mutual_pairs.html
+```
+
+The TSV carries both clusters' JASPAR name and score, seqlet counts, trimmed
+widths, the p-value, and `name_agree`/`family_agree` flags. The HTML shows the
+two forward logos side by side (resolved from
+`motifcompendium_{head}_cluster_logo_paths.tsv`), **sorted to put disagreeing
+pairs first** — those are where over-merging would be visible, so they are what
+a reviewer should spend time on. Pairs are otherwise ordered by seqlet count,
+so the ones that most affect the lexicon size come first.
+
+A disagreeing pair is not automatically a bad merge: JASPAR contains
+near-identical motifs, so `family_agree` distinguishes SP1-vs-SP9 (benign) from
+SP1-vs-GATA1 (not).
+
+#### Footgun: degenerate p-values
+
+TOMTOM estimates its column background from the target set, and that estimate
+can collapse — returning p-values of exactly 0.0 or 1.0 for everything,
+including **p = 1.0 for two identical motifs**. It is not simply a matter of
+having too few motifs, and it is not monotone in size: measured on the test
+fixture after trimming, 41 motifs of 14bp behave correctly (duplicate
+p = 7e-9) while 21 of 14bp, 81 of 10bp and 81 of 20bp all collapse entirely.
+
+Nothing in the output reveals this, so the script checks for it and warns when
+more than 90% of off-diagonal p-values are exactly 0 or 1, or fewer than 10
+distinct values appear. If that fires, every redundancy figure in the run is
+meaningless — change `--trim-threshold`, or drop `--subset` so more motifs
+contribute to the background. This is also why synthetic one-hot fixtures
+cannot test the p-value path; the tests use Dirichlet-drawn PWMs and a
+verified-safe motif count and width.
 
 ### Discovery Concentration
 
