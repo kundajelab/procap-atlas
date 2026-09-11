@@ -75,6 +75,7 @@ from _biosample_groups import load_group_map, write_group_tsv  # noqa: E402
 from plot_motif_rarefaction import (  # noqa: E402
     MC_DIR,
     classify_clusters,
+    collapse_by_identity,
     load_presence,
     load_read_counts,
 )
@@ -400,6 +401,19 @@ def main():
              "floor (default: 2)",
     )
     parser.add_argument(
+        "--collapse-by", default="cluster",
+        choices=["cluster", "jaspar_name", "jaspar_family"],
+        help="what counts as one motif. 'cluster' (default) is the "
+             "MotifCompendium partition; the JASPAR levels merge clusters "
+             "sharing an identity, which tests whether concentration survives "
+             "when threshold-driven over-splitting is removed (default: cluster)",
+    )
+    parser.add_argument(
+        "--drop-unnamed", action="store_true",
+        help="with --collapse-by, exclude clusters JASPAR could not name "
+             "instead of keeping each as its own unit",
+    )
+    parser.add_argument(
         "--jaspar-score-threshold", type=float, default=None, metavar="X",
         help="treat a cluster as TF-matched only above this JASPAR score; by "
              "default any non-empty jaspar_name counts, which admits matches "
@@ -464,6 +478,19 @@ def main():
         sys.exit(1)
 
     meta, universe = load_presence(metadata_path, keep_experiments=keep)
+
+    if args.collapse_by != "cluster" or args.drop_unnamed:
+        n_before = len(meta)
+        # Collapse first, filter second: a unit's experiment set is the union
+        # over its members, so prevalence can only grow. Filtering first would
+        # discard clusters that would have lifted a unit over the threshold.
+        meta = collapse_by_identity(meta, args.collapse_by, args.drop_unnamed)
+        print(
+            f"{args.head}: --collapse-by {args.collapse_by} merged "
+            f"{n_before:,} clusters into {len(meta):,} units"
+            + (" (unnamed dropped)" if args.drop_unnamed else ""),
+            file=sys.stderr,
+        )
     meta = meta[meta["prevalence"] >= args.min_cluster_experiments].reset_index(drop=True)
     if args.min_cluster_experiments < 2:
         # Singletons are structurally uninformative here, not merely noisy:

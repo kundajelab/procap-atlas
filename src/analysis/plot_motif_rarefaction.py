@@ -150,8 +150,8 @@ def collapse_by_identity(
     """Merge clusters sharing a JASPAR identity into one lexicon unit.
 
     Cluster-level rarefaction counts a motif once per MotifCompendium cluster,
-    and ~10-18% of those clusters are near-duplicates of another (see
-    motif_redundancy.py), so it overstates the lexicon. Collapsing by JASPAR
+    and ~3-6% of those clusters are containment-free near-duplicates of another
+    (see motif_redundancy.py), so it slightly overstates the lexicon. Collapsing by JASPAR
     identity removes that by construction -- 31 clusters best-matching SP9
     become one unit -- with no threshold to defend.
 

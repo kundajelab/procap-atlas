@@ -2698,3 +2698,115 @@ def test_scaffold_min_prevalence_filters(tmp_path):
     d = pd.read_csv(tmp_path / "o3" / "motif_annotation_count_scaffold.tsv",
                     sep="\t", comment="#")
     assert len(d) == 2          # unnamed clusters 4 and 5 (prevalence 6 and 2)
+
+
+# --- concentration on identity-collapsed units -------------------------------
+#
+# The MotifCompendium --across-threshold default moved 0.85 -> 0.90 on
+# 2026-08-21, which splits motifs into more, narrower clusters. If any of that
+# splitting correlates with tissue, it would manufacture single-group clusters
+# and inflate the concentration result. Collapsing to JASPAR identity removes
+# the splitting, so the test can be repeated on units the threshold cannot
+# have created. On the real count head the enrichment survives and strengthens
+# (5.1x at cluster level, 7.3x at name and family level).
+
+
+def test_concentration_cli_collapses_before_filtering_prevalence(tmp_path):
+    exps = real_experiments(40)
+    # Three SP1 clusters, each in a single distinct experiment: every one is
+    # prevalence 1 and would be dropped by --min-cluster-experiments 2 at
+    # cluster level, but their union is prevalence 3 and must survive.
+    rows = [("pos", [exps[i]], "SP1", 300) for i in range(3)]
+    rows += [("pos", exps[:8], "GATA1", 4000)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--collapse-by", "jaspar_name",
+            "--min-cluster-experiments", "2", "--swap-permutations", "0",
+            "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    per_unit = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    names = set(per_unit["jaspar_name"])
+    assert "SP1" in names, "collapse must precede the prevalence filter"
+    assert (per_unit.loc[per_unit["jaspar_name"] == "SP1", "prevalence"] == 3).all()
+
+
+def test_concentration_cli_reports_the_collapse(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps[:6], "SP1", 600) for _ in range(4)]
+    rows += [("pos", exps[:8], "GATA1", 800) for _ in range(2)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--collapse-by", "jaspar_name",
+            "--swap-permutations", "0", "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "merged 6 clusters into 2 units" in result.stderr
+    per_unit = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    assert len(per_unit) == 2
+
+
+def test_concentration_cli_collapse_by_family_is_coarser(tmp_path):
+    exps = real_experiments(30)
+    # SP1/SP2/SP9 are one family, three names.
+    rows = [("pos", exps[:6], f"SP{n}", 600) for n in (1, 2, 9)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    counts = {}
+    for level in ("cluster", "jaspar_name", "jaspar_family"):
+        out = tmp_path / f"out_{level}"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+                "--cluster-metadata", str(meta), "--collapse-by", level,
+                "--swap-permutations", "0", "--out-dir", str(out),
+            ],
+            capture_output=True, text=True, env=SUBPROC_ENV,
+        )
+        assert result.returncode == 0, result.stderr
+        counts[level] = len(
+            pd.read_csv(out / "motif_concentration_profile_tissue.tsv", sep="\t")
+        )
+    assert counts["cluster"] == 3
+    assert counts["jaspar_name"] == 3
+    assert counts["jaspar_family"] == 1
+
+
+def test_concentration_cli_can_drop_unnamed_units(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps[:6], "SP1", 600), ("pos", exps[:6], None, 600)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--collapse-by", "jaspar_name",
+            "--drop-unnamed", "--swap-permutations", "0",
+            "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    per_unit = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    assert len(per_unit) == 1
+    assert set(per_unit["jaspar_name"]) == {"SP1"}

@@ -24,8 +24,9 @@ with an explicit --motifs subset for actual figures (paper-facing or
 otherwise) -- plotting literally every discovered motif in one figure
 produces a cluttered, unreadable plot for any experiment with more than a
 handful of motifs. For general/diagnostic all-motif viewing, prefer
-diagnose_hit_signal_metaplot.py's --all-motifs mode or
-plot_motif_pair_spacing.py instead, which are built for that.
+diagnose_hit_summit_distance.py, which prints a per-motif summary over
+every motif and writes individual histograms for a named subset
+(--plot-motifs).
 
 Usage:
     python src/bpnet/hitcall/plot_motif_spacing_syntax.py -e ENCSR220XSM \\
@@ -70,6 +71,12 @@ def main():
         "--head", type=str, default="profile", choices=["profile", "count"]
     )
     parser.add_argument("--min-trim-len", type=int, default=None, metavar="BP")
+    parser.add_argument(
+        "--motifs", type=str, action="append", default=None, metavar="MOTIF_NAME",
+        help="repeatable; restrict the plot to these motifs (default: every "
+             "motif clearing --min-hits, which is unreadable for any "
+             "experiment with more than a handful)",
+    )
     parser.add_argument(
         "--min-hits", type=int, default=DEFAULT_MIN_HITS,
         help=f"skip a motif entirely if it has fewer matched hits than this (default: {DEFAULT_MIN_HITS})",
@@ -124,8 +131,22 @@ def main():
 
     signed, matched = compute_distances(hits, summit_lookup)
 
+    if args.motifs:
+        present = set(hits["motif_name"].unique())
+        unknown = [m for m in args.motifs if m not in present]
+        if unknown:
+            print(
+                f"Error: not in {hits_path.name}: {', '.join(unknown)}",
+                file=sys.stderr,
+            )
+            print(f"Available: {', '.join(sorted(present))}", file=sys.stderr)
+            sys.exit(1)
+    wanted = set(args.motifs) if args.motifs else None
+
     rows = []
     for motif_name, group in hits.groupby("motif_name"):
+        if wanted is not None and motif_name not in wanted:
+            continue
         group_signed = signed[group.index.to_numpy()]
         group_signed = group_signed[~np.isnan(group_signed)]
         if len(group_signed) < args.min_hits:

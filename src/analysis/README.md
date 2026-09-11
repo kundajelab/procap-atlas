@@ -1038,6 +1038,50 @@ an `enrichment_reliable` flag and the run warns about affected rows; read
 biosample level with a raised floor, the single-group test is unpowered by
 construction, so only `pooled_concentration` is usable.
 
+#### Is the enrichment an artifact of cluster splitting?
+
+The MotifCompendium `--across-threshold` default moved 0.85 -> 0.90 on
+2026-08-21 (see [`src/bpnet/`](../bpnet/README.md#motif-clustering)). A
+stricter threshold splits one motif across several clusters with lower
+prevalence each, and if any of that splitting correlated with tissue -- subtle
+CWM shape differences between lineages -- it would manufacture single-group
+clusters. The swap null holds prevalence fixed but cannot see tissue-correlated
+splitting, so it does not address this.
+
+`--collapse-by {jaspar_name,jaspar_family}` tests it directly, by repeating the
+whole test on units the clustering threshold cannot have created. Collapse
+happens *before* the prevalence filter, since a unit's experiment set is the
+union over its members and prevalence can only grow:
+
+```bash
+python src/analysis/motif_group_concentration.py --head count --collapse-by jaspar_name
+python src/analysis/motif_group_concentration.py --head count --collapse-by jaspar_family
+```
+
+Measured on the real count head (198-build metadata, tissue level, TF-matched):
+
+```text
+level          units  pooled  swap   single-group  expected  enrichment  exact p
+cluster          340   0.836  0.830            45      8.84        5.1x  1.6e-21
+jaspar_name      121   0.853  0.844            15      2.05        7.3x  6.8e-11
+jaspar_family     81   0.833  0.828             9      1.23        7.3x  4.1e-07
+```
+
+The enrichment **survives and strengthens**: absolute counts fall because there
+are fewer units, but the ratio rises from 5.1x to 7.3x and is flat between the
+two identity levels. Concentration itself barely moves (0.830 -> 0.844 ->
+0.828). Had over-splitting been generating the signal, collapsing 340 clusters
+into 121 identity units would have erased it. So the threshold change is not a
+threat to this panel, and the result can be quoted at cluster level without
+apology.
+
+Two caveats on reading the collapsed rows. The swap p-values floor at
+`1/(permutations+1)`, so 0.0033 at 300 permutations means `p < 0.005`, not a
+weak result -- raise `--swap-permutations` if a smaller bound is wanted. And
+small tissue groups are structurally prone to single-group status: `stem_ipsc`
+holds 12 of 28 restricted units on 2% of experiments, which is the same
+small-group caveat that applies at cluster level.
+
 #### The read-depth confound, and the null that fixes it
 
 The uniform null treats all retained experiments as exchangeable. **On the real

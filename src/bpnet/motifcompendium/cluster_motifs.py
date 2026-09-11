@@ -1,6 +1,7 @@
 import argparse
 import html
 import inspect
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -10,6 +11,15 @@ import MotifCompendium.utils.motif as utils_motif
 import MotifCompendium.utils.plotting as utils_plotting
 import pandas as pd
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from run_params import (  # noqa: E402
+    build_run_params,
+    git_commit,
+    mark_completed,
+    params_path,
+    write_run_params,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -326,10 +336,19 @@ def process_head(
     export_svg_logos,
     svg_logo_batch_size,
     out_dir=MC_DIR,
+    run_params=None,
 ):
     if not h5_paths:
         print(f"{head}: no modisco h5 files found, skipping")
         return
+
+    # Written before the expensive stages, not after, so a build that dies
+    # partway through leaves a record saying completed=false rather than no
+    # record at all -- which would be indistinguishable from a build made
+    # before parameter recording existed.
+    if run_params is not None:
+        record_path = write_run_params(params_path(out_dir, head), run_params)
+        print(f"{head}: run parameters saved to {record_path}")
 
     print(f"{head}: building MotifCompendium from {len(h5_paths)} h5 files")
     mc = MotifCompendium.build_from_modisco(h5_paths)
@@ -559,8 +578,22 @@ def main():
     experiments = load_experiments(args.min_reads, set(args.blacklist))
     print(f"Using {len(experiments)} experiments after experiment-level filtering")
 
+    commit = git_commit(REPO_ROOT)
     for head in heads:
         h5_paths = collect_modisco_paths(experiments, head)
+        run_params = build_run_params(
+            head,
+            within_threshold=args.within_threshold,
+            across_threshold=args.across_threshold,
+            min_reads=args.min_reads,
+            blacklist=args.blacklist,
+            experiments_selected=experiments,
+            experiments_with_modisco=h5_paths.keys(),
+            out_dir=args.out_dir,
+            jaspar_path=JASPAR_PATH,
+            motifcompendium_version=getattr(MotifCompendium, "__version__", None),
+            commit=commit,
+        )
         process_head(
             head,
             h5_paths,
@@ -571,7 +604,14 @@ def main():
             not args.skip_svg_logos,
             args.svg_logo_batch_size,
             out_dir=args.out_dir,
+            run_params=run_params,
         )
+        # Marked here rather than at the end of process_head, which has two
+        # return points; reaching this line is what "the head finished" means.
+        if h5_paths:
+            write_run_params(
+                params_path(args.out_dir, head), mark_completed(run_params)
+            )
 
 
 if __name__ == "__main__":
