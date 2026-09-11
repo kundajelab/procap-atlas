@@ -157,7 +157,7 @@ derived in the section linked in the right-hand column.
 
 | Claim | Value | Where |
 | --- | --- | --- |
-| Lexicon size (prevalence ≥ 2) | 343 clusters of 869 | [Rarefaction](#motif-lexicon-rarefaction) |
+| Lexicon size (prevalence ≥ 2) | 343 clusters of the 869 seen in the 198-experiment analysis universe (945 in the raw 219-experiment build) | [Rarefaction](#motif-lexicon-rarefaction) |
 | Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.827 tissue / 0.919 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
 | Confinement is lineage, not replication | 45 single-group clusters vs 8.50 expected exactly (`p = 2.0e-22`) or 7.87 under the swap null (`p < 0.001`); 50 of 59 restricted clusters span ≥2 biosamples within one tissue | [Concentration](#discovery-concentration) |
 | Small studies miss most of the lexicon | 6.8% of the lexicon recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
@@ -437,29 +437,28 @@ python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experim
 Requires `cluster_metadata.tsv` (the pattern-to-cluster mapping carries no
 JASPAR names).
 
-Measured (198-only control build, 856 clusters; the canonical 219 build differs
-by 13 clusters so these move by at most one or two):
+Measured on the canonical build (945 clusters over 219 experiments; 869 of
+them present in the 198-experiment analysis universe):
 
 ```text
 prevalence  clusters  names  families  unnamed   name units  family units
->= 1             856    162       104      294          456           398
->= 2             340    114        77       36          150           113
->= 3             234     89        63       15          104            78
+>= 1             869    160       102      294          454           396
+>= 2             343    112        75       37          149           112
+>= 3             239     87        61       15          102            76
 ```
 
 "name units"/"family units" keep unnamed clusters as their own units, which is
-the default; `--drop-unnamed` gives the bare 114 names / 77 families at
+the default; `--drop-unnamed` gives the bare 112 names / 75 families at
 prevalence≥2.
 
-**Do not read 340 → 150 as 56% redundancy.** It is 2.3x, against a
+**Do not read 343 → 149 as 57% redundancy.** It is 2.3x, against a
 containment-free near-duplicate estimate of 3-6%, and the gap is JASPAR's
 resolution rather than the compendium's. The collapse is concentrated in a few
-labels — 31 clusters best-match SP9, 14 NFYA, 14 TBP, 13 Atf1; at family level
-SP alone absorbs 40 — and SP/KLF family members are near-identical GC-boxes
-that a nearest-neighbour lookup cannot separate. Cluster 34, a tandem SP/KLF
-composite, would merge into the same unit as a single GC-box. Quote the two
-levels as a bracket (343 upper, ~150 lower) and expect the truth nearer the
-upper end.
+labels — 31 clusters best-match SP9, and at family level SP alone absorbs ~40 —
+and SP/KLF family members are near-identical GC-boxes that a nearest-neighbour
+lookup cannot separate. Cluster 34, a tandem SP/KLF composite, would merge into
+the same unit as a single GC-box. Quote the two levels as a bracket (343 upper,
+~149 lower) and expect the truth nearer the upper end.
 
 `--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
 stratified curves. Without it the script falls back to a JASPAR-match proxy
@@ -699,6 +698,26 @@ p_threshold  excess_mutual  excess_complete  excess_single  largest_single
 absorbing family members rather than finding duplicates. Note there is no
 threshold at which all three agree, so the lexicon size should be quoted with
 this range attached rather than as a single corrected number.
+
+#### Reproducibility across MotifCompendium versions
+
+The canonical count build was rebuilt on a newer MotifCompendium (the library
+was updated mid-project), taking the raw cluster count from 869 to 945 over the
+same 219 experiments and unchanged MoDISco inputs. Every analysis number here
+is **unchanged** by that: the 343-cluster prevalence≥2 lexicon, all 343
+clusters' prevalence and `n_groups`, the 306/37 class split, 45 single-group vs
+8.50 expected, `p = 1.989652e-22`, and redundancy's 147 excess pairs (15.6%) all
+reproduce identically, cluster id for cluster id.
+
+The added clusters are therefore all prevalence-1 in the 198-experiment
+analysis universe -- low-prevalence splits that the prevalence≥2 filter removes
+anyway. That is a useful robustness fact rather than a coincidence: the
+prevalence filter absorbs exactly the kind of churn a library update produces.
+
+Note that 869 and 945 are both correct and describe different things, which is
+easy to confuse: 945 is the raw build over 219 experiments, 869 is how many of
+those clusters appear in at least one of the 198 experiments above 10M reads.
+The 76-cluster gap is clusters discovered only in the shallow libraries.
 
 #### Experiment universe: 224, 219, 198
 
@@ -1074,6 +1093,21 @@ two identity levels. Concentration itself barely moves (0.830 -> 0.844 ->
 into 121 identity units would have erased it. So the threshold change is not a
 threat to this panel, and the result can be quoted at cluster level without
 apology.
+
+#### Does one tiny tissue group carry the result?
+
+`stem_ipsc` is 4 of 198 experiments (2.0%) and a group that small is
+structurally prone to single-group status, so it is worth checking whether it
+supplies the enrichment. It does not. Of the 45 TF-matched single-group
+clusters, `stem_ipsc` accounts for 10; the largest contributor is
+`blood_immune` with 20, which is 41 experiments (20.7%) -- a large,
+well-sampled group, the opposite of the artifact signature.
+
+Discarding **every** `stem_ipsc`-restricted cluster while holding the
+expectation at 8.50 -- deliberately conservative, since removing the group
+would also lower the expectation -- leaves 35 vs 8.50 = 4.1x, exact
+`p = 1.0e-13` (against 45, 5.3x, `p = 2.0e-22`). The result does not depend on
+the smallest group.
 
 Two caveats on reading the collapsed rows. The swap p-values floor at
 `1/(permutations+1)`, so 0.0033 at 300 permutations means `p < 0.005`, not a
