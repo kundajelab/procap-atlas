@@ -349,15 +349,32 @@ disappear if each near-duplicate group collapsed to one motif. Two properties
 of the real data make the computation delicate, and the first run got both
 wrong:
 
-**Motifs must be trimmed.** MotifCompendium exports fixed-width CWM windows —
-all 944 count-head clusters are exactly 50bp — while the informative core is
-typically 6–15bp. Untrimmed, TOMTOM largely aligns low-information flanks,
-which resemble background and so resemble each other, and `--min-overlap-frac`
-goes inert (35bp of a 50-vs-50 comparison is satisfied at nearly any offset).
-The untrimmed run reported 77.6% excess at `p ≤ 1e-6`; that is flank
-similarity, not redundancy. Motifs are now trimmed by information content
-(`--trim-threshold`, default 0.3, with `--min-trim-len 6`), mirroring the shape
-of Fi-NeMo's CWM trim rule. `--no-trim` reproduces the old behaviour.
+**Use the h5, not the MEME export.** MotifCompendium exports fixed-width CWM
+windows — all 944 count-head clusters are exactly 50bp — while the informative
+core is typically 6–15bp. Untrimmed, TOMTOM largely aligns low-information
+flanks, which resemble background and so resemble each other, and
+`--min-overlap-frac` goes inert (35bp of a 50-vs-50 comparison is satisfied at
+nearly any offset). The untrimmed run reported 77.6% excess at `p ≤ 1e-6`, which
+is flank similarity, not redundancy.
+
+Information content on the MEME PFMs does **not** fix this, as the real data
+showed: trimming at `0.3 × max(IC)` went from 50bp to a median of 49bp, barely
+shrinking anything. Cluster-average PFMs are soft, so the core's IC is modest,
+while PRO-cap peaks are GC-rich enough that flanking columns carry real
+composition and clear the threshold. Contribution magnitude is the only signal
+that marks where a motif is — which is what Fi-NeMo's own `trim_motif` uses:
+
+```bash
+python src/analysis/motif_redundancy.py --head count --modisco-h5 auto
+```
+
+`--modisco-h5` reads `motifcompendium_{head}_cluster_averages.h5`, takes the
+trim span from each cluster's `contrib_scores`, and applies it to the
+`sequence` PFM for the TOMTOM comparison (TOMTOM needs probability-like
+columns, so the span comes from contributions while the comparison runs on
+probabilities). `--min-trim-len 6` mirrors Kelly Cochran's ProCapNet floor. The
+MEME route still works and warns when its trimming barely shrank anything;
+`--no-trim` reproduces the original behaviour.
 
 **Single linkage chains.** Connected components merge A~B~C even when A and C
 are unrelated. On the untrimmed run one component held 142 clusters at

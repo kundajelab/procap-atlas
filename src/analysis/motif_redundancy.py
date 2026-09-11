@@ -146,6 +146,97 @@ def load_motifs(meme_path: Path, name_regex: re.Pattern) -> tuple[list[str], lis
     return names, pwms
 
 
+def load_motifs_h5(
+    h5_path: Path,
+) -> tuple[list[str], list[np.ndarray], list[np.ndarray]]:
+    """Load (names, PFMs, CWMs) from a modisco-lite-format cluster-average h5.
+
+    Preferred over the MEME export because it retains contribution scores. A
+    MEME file has only probabilities, and information content cannot separate a
+    motif's core from its flanks on this data: PRO-cap peaks are GC-rich, so
+    flanking positions carry real compositional information (a 60% GC column is
+    ~0.2 bits) which clears any threshold relative to a soft cluster-average's
+    ~1-bit maximum. Trimming has to use contribution magnitude, as Fi-NeMo's
+    own `trim_motif` does.
+
+    Names follow the `{posneg}_patterns.{cluster}` convention that
+    link_hits_to_compendium.py writes into `compendium_motif_name`, with any
+    `pattern_` prefix stripped so both h5 naming styles resolve the same way.
+    """
+    import h5py
+
+    names, pfms, cwms = [], [], []
+    with h5py.File(h5_path, "r") as f:
+        for group in ("pos_patterns", "neg_patterns"):
+            if group not in f:
+                continue
+            for key in f[group]:
+                node = f[group][key]
+                cwm_key = next(
+                    (k for k in ("contrib_scores", "CWM", "cwm") if k in node), None
+                )
+                pfm_key = next(
+                    (k for k in ("sequence", "PFM", "pfm") if k in node), None
+                )
+                if cwm_key is None or pfm_key is None:
+                    continue
+                cwm = np.asarray(node[cwm_key][:], dtype=np.float64)
+                pfm = np.asarray(node[pfm_key][:], dtype=np.float64)
+                # modisco stores (length, 4); memelite wants (4, length)
+                if cwm.shape[0] != 4 and cwm.shape[-1] == 4:
+                    cwm = cwm.T
+                if pfm.shape[0] != 4 and pfm.shape[-1] == 4:
+                    pfm = pfm.T
+                suffix = key[len("pattern_"):] if key.startswith("pattern_") else key
+                names.append(f"{group}.{suffix}")
+                pfms.append(pfm)
+                cwms.append(cwm)
+    return names, pfms, cwms
+
+
+def trim_cwm(cwm: np.ndarray, threshold: float = 0.3, min_len: int = 6) -> tuple[int, int]:
+    """Fi-NeMo's trim rule on a CWM: per-position summed |contribution|.
+
+    Keeps the outermost positions clearing `threshold * max`, then widens
+    symmetrically to `min_len` -- the same shape as
+    `finemo.data_io.trim_motif` plus Kelly Cochran's ProCapNet min-length
+    floor, replicated here so this script does not need the Linux-only
+    `finemo` package.
+    """
+    mag = np.abs(np.asarray(cwm, dtype=np.float64)).sum(axis=0)
+    width = len(mag)
+    if width == 0 or mag.max() <= 0:
+        return 0, width
+    keep = np.flatnonzero(mag >= threshold * mag.max())
+    start, end = int(keep[0]), int(keep[-1]) + 1
+    while end - start < min_len and (start > 0 or end < width):
+        if start > 0:
+            start -= 1
+        if end - start < min_len and end < width:
+            end += 1
+    return start, end
+
+
+def trim_by_cwm(
+    pfms: list[np.ndarray],
+    cwms: list[np.ndarray],
+    threshold: float,
+    min_len: int,
+) -> tuple[list[np.ndarray], np.ndarray]:
+    """Trim spans from the CWMs, apply them to the PFMs.
+
+    TOMTOM needs probability-like columns, so the comparison runs on the PFM
+    while the *span* comes from the contribution scores -- which is the only
+    signal that actually marks where the motif is.
+    """
+    widths = np.array([m.shape[-1] for m in pfms])
+    out = []
+    for pfm, cwm in zip(pfms, cwms):
+        start, end = trim_cwm(cwm, threshold, min_len)
+        out.append(np.ascontiguousarray(pfm[:, start:end]))
+    return out, widths
+
+
 def information_content(pwm: np.ndarray) -> np.ndarray:
     """Per-position information content in bits, shape (length,).
 
@@ -421,6 +512,14 @@ def main():
         help="override motifcompendium_{head}_cluster_averages.meme",
     )
     parser.add_argument(
+        "--modisco-h5", type=Path, default=None, metavar="PATH",
+        help="use motifcompendium_{head}_cluster_averages.h5 instead of the "
+             "MEME export. Strongly preferred: it retains contribution scores, "
+             "and only those can locate a motif's core -- information content "
+             "on a PFM cannot, because GC-rich flanks carry real compositional "
+             "information. Pass 'auto' to use the default path",
+    )
+    parser.add_argument(
         "--cluster-metadata", type=Path, default=None, metavar="PATH",
         help="join JASPAR names onto components, to test whether name "
              "collisions correspond to real CWM redundancy",
@@ -481,17 +580,40 @@ def main():
     )
     args = parser.parse_args()
 
-    meme_path = args.meme or (MC_DIR / f"motifcompendium_{args.head}_cluster_averages.meme")
-    if not meme_path.exists():
-        print(f"ERROR: MEME file not found: {meme_path}", file=sys.stderr)
+    h5_path = args.modisco_h5
+    if h5_path is not None and str(h5_path) == "auto":
+        h5_path = MC_DIR / f"motifcompendium_{args.head}_cluster_averages.h5"
+
+    cwms = None
+    if h5_path is not None:
+        if not h5_path.exists():
+            print(f"ERROR: h5 not found: {h5_path}", file=sys.stderr)
+            sys.exit(1)
+        names, pwms, cwms = load_motifs_h5(h5_path)
         print(
-            "Run src/bpnet/motifcompendium/cluster_motifs.py --head "
-            f"{args.head} first.",
+            f"{args.head}: loaded {len(names)} clusters from {h5_path.name} "
+            f"(e.g. {names[:2]})",
             file=sys.stderr,
         )
-        sys.exit(1)
-
-    names, pwms = load_motifs(meme_path, re.compile(args.name_regex))
+    else:
+        meme_path = args.meme or (
+            MC_DIR / f"motifcompendium_{args.head}_cluster_averages.meme"
+        )
+        if not meme_path.exists():
+            print(f"ERROR: MEME file not found: {meme_path}", file=sys.stderr)
+            print(
+                "Run src/bpnet/motifcompendium/cluster_motifs.py --head "
+                f"{args.head} first.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        names, pwms = load_motifs(meme_path, re.compile(args.name_regex))
+        print(
+            "NOTE: comparing the MEME export. Information content cannot locate "
+            "a motif core on this data (GC-rich flanks clear any IC threshold), "
+            "so prefer --modisco-h5 auto, which trims on contribution scores.",
+            file=sys.stderr,
+        )
     if len(names) < 2:
         print(f"ERROR: only {len(names)} motif(s) in {meme_path}", file=sys.stderr)
         sys.exit(1)
@@ -511,6 +633,8 @@ def main():
             sys.exit(1)
         names = [names[i] for i in keep]
         pwms = [pwms[i] for i in keep]
+        if cwms is not None:
+            cwms = [cwms[i] for i in keep]
         print(f"{args.head}: restricted to {len(names)} clusters", file=sys.stderr)
 
     raw_widths = np.array([m.shape[-1] for m in pwms])
@@ -521,14 +645,30 @@ def main():
             file=sys.stderr,
         )
     else:
-        pwms, raw_widths = trim_motifs(pwms, args.trim_threshold, args.min_trim_len)
+        if cwms is not None:
+            pwms, raw_widths = trim_by_cwm(
+                pwms, cwms, args.trim_threshold, args.min_trim_len
+            )
+            how = "contribution"
+        else:
+            pwms, raw_widths = trim_motifs(pwms, args.trim_threshold, args.min_trim_len)
+            how = "information-content"
         widths = np.array([m.shape[-1] for m in pwms])
         print(
-            f"{args.head}: {len(names)} clusters, trimmed "
+            f"{args.head}: {len(names)} clusters, {how}-trimmed "
             f"{raw_widths.min()}-{raw_widths.max()}bp -> {widths.min()}-{widths.max()}bp "
             f"(median {int(np.median(widths))}) at threshold {args.trim_threshold:g}",
             file=sys.stderr,
         )
+        if how == "information-content" and np.median(widths) > 0.8 * np.median(raw_widths):
+            print(
+                "WARNING: information-content trimming barely shrank these "
+                f"motifs (median {int(np.median(widths))} of "
+                f"{int(np.median(raw_widths))}bp), so the comparison is still "
+                "dominated by flanks and redundancy will be overstated. Rerun "
+                "with --modisco-h5 auto.",
+                file=sys.stderr,
+            )
     widths = np.array([m.shape[-1] for m in pwms])
 
     res = self_compare(pwms, args.n_jobs)

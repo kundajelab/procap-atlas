@@ -1563,3 +1563,161 @@ def test_no_trim_flag_reports_untrimmed(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "UNTRIMMED" in result.stderr
+
+
+def write_cluster_h5(path, motifs):
+    """modisco-lite-shaped cluster-average h5. motifs is
+    {(group, key): (pfm (L,4), cwm (L,4))}."""
+    import h5py
+
+    with h5py.File(path, "w") as f:
+        for (group, key), (pfm, cwm) in motifs.items():
+            g = f.require_group(group).create_group(key)
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    return path
+
+
+def flanked_pair(core_len=10, width=50, seed=0, flank_gc=0.96, core_peak=0.6):
+    """A window whose PFM flanks are *more* informative than 0.3x its core max.
+
+    This reproduces the real pathology deterministically. Cluster-average PFMs
+    are soft, so the core's information content is modest (~1 bit here), while
+    GC-skewed flanks of a PRO-cap peak carry real composition. When flank IC
+    exceeds `trim_threshold * max(IC)`, information-content trimming keeps the
+    whole window -- which is why the real run came back at median 49 of 50bp.
+    The CWM has contribution only over the core, so contribution-based trimming
+    is unaffected.
+
+    `seed` shifts which base the core prefers, so distinct motifs differ.
+    """
+    pfm = np.zeros((width, 4))
+    pfm[:, [1, 2]] = flank_gc / 2
+    pfm[:, [0, 3]] = (1 - flank_gc) / 2
+    start = (width - core_len) // 2
+    rng = np.random.default_rng(seed)
+    for i in range(core_len):
+        col = np.full(4, (1 - core_peak) / 3)
+        col[rng.integers(0, 4)] = core_peak
+        pfm[start + i] = col
+    cwm = np.zeros((width, 4))
+    cwm[start:start + core_len] = pfm[start:start + core_len] - 0.25
+    return pfm, cwm, start, start + core_len
+
+
+def test_trim_cwm_finds_core_where_information_content_cannot():
+    """The real failure mode: informative flanks defeat IC trimming, while
+    contribution magnitude locates the core exactly."""
+    pfm, cwm, start, end = flanked_pair(seed=1)
+    ic = mr.information_content(pfm.T)
+    # the fixture's premise: flank IC clears the threshold set by the core
+    assert ic[0] > 0.3 * ic.max()
+
+    ic_start, ic_end = mr.trim_pwm(pfm.T, threshold=0.3, min_len=6)
+    cwm_start, cwm_end = mr.trim_cwm(cwm.T, threshold=0.3, min_len=6)
+    assert (cwm_start, cwm_end) == (start, end)
+    assert (ic_start, ic_end) == (0, pfm.shape[0])  # IC keeps the whole window
+
+
+def test_cwm_trim_is_insensitive_to_flank_composition():
+    """The property that matters: the contribution-derived span does not move
+    when the PFM's flanks get more or less informative, while the IC-derived
+    span does."""
+    spans_cwm, spans_ic = set(), set()
+    for flank_gc in (0.5, 0.7, 0.9, 0.99):
+        pfm, cwm, start, end = flanked_pair(seed=2, flank_gc=flank_gc)
+        spans_cwm.add(mr.trim_cwm(cwm.T, 0.3, 6))
+        spans_ic.add(mr.trim_pwm(pfm.T, 0.3, 6))
+    assert len(spans_cwm) == 1  # unchanged across all flank compositions
+    assert len(spans_ic) > 1    # IC trimming is at the mercy of the flanks
+
+
+def test_trim_cwm_respects_min_len():
+    cwm = np.zeros((4, 30))
+    cwm[0, 14:16] = 1.0
+    start, end = mr.trim_cwm(cwm, 0.3, min_len=6)
+    assert end - start >= 6
+
+
+def test_trim_cwm_handles_all_zero_contributions():
+    assert mr.trim_cwm(np.zeros((4, 12))) == (0, 12)
+
+
+def test_trim_by_cwm_applies_cwm_span_to_the_pfm():
+    pfms, cwms, spans = [], [], []
+    for seed in range(4):
+        pfm, cwm, s, e = flanked_pair(seed=seed)
+        pfms.append(pfm.T); cwms.append(cwm.T); spans.append(e - s)
+    trimmed, widths = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    assert (widths == 50).all()
+    assert [t.shape[-1] for t in trimmed] == spans
+    # the trimmed PFM must still be a probability matrix, not contributions
+    for t in trimmed:
+        assert (t >= 0).all()
+        assert t.sum(axis=0) == pytest.approx(np.ones(t.shape[-1]), abs=1e-6)
+
+
+def test_load_motifs_h5_roundtrip(tmp_path):
+    motifs = {}
+    for i in range(3):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        motifs[("pos_patterns", f"pattern_{i}")] = (pfm, cwm)
+    pfm, cwm, _, _ = flanked_pair(seed=9)
+    motifs[("neg_patterns", "7")] = (pfm, cwm)
+    h5 = write_cluster_h5(tmp_path / "c.h5", motifs)
+
+    names, pfms, cwms = mr.load_motifs_h5(h5)
+    assert set(names) == {
+        "pos_patterns.0", "pos_patterns.1", "pos_patterns.2", "neg_patterns.7"
+    }
+    for a, c in zip(pfms, cwms):
+        assert a.shape[0] == 4 and c.shape[0] == 4   # (alphabet, length)
+        assert a.shape[-1] == 50
+
+
+def test_h5_path_trims_far_more_than_meme_path(tmp_path):
+    """End-to-end: the h5 route must shrink the median width; the MEME route
+    must warn that it did not."""
+    motifs, meme_motifs = {}, {}
+    for i in range(12):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        motifs[("pos_patterns", f"pattern_{i}")] = (pfm, cwm)
+        meme_motifs[f"pos_patterns.{i}"] = pfm
+    h5 = write_cluster_h5(tmp_path / "c.h5", motifs)
+    meme = write_meme(tmp_path / "c.meme", meme_motifs)
+
+    h5_run = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(h5), "--out-dir", str(tmp_path / "o1"), "--n-jobs", "1"],
+        capture_output=True, text=True,
+    )
+    assert h5_run.returncode == 0, h5_run.stderr
+    assert "contribution-trimmed" in h5_run.stderr
+
+    meme_run = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--meme", str(meme), "--out-dir", str(tmp_path / "o2"), "--n-jobs", "1"],
+        capture_output=True, text=True,
+    )
+    assert meme_run.returncode == 0, meme_run.stderr
+    assert "information-content-trimmed" in meme_run.stderr
+    assert "barely shrank these" in meme_run.stderr
+    assert "prefer --modisco-h5" in meme_run.stderr
+
+
+def test_h5_subset_filters_cwms_too(tmp_path):
+    motifs = {}
+    for i in range(10):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        motifs[("pos_patterns", f"pattern_{i}")] = (pfm, cwm)
+    h5 = write_cluster_h5(tmp_path / "c.h5", motifs)
+    sub = tmp_path / "s.txt"
+    sub.write_text("pos_patterns.0\npos_patterns.1\npos_patterns.2\n")
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(h5), "--subset", str(sub),
+         "--out-dir", str(tmp_path / "o"), "--n-jobs", "1"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "restricted to 3 clusters" in result.stderr
