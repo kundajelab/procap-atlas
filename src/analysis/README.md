@@ -440,10 +440,36 @@ trim  median   n      mutual excess   complete excess   name agree (mutual)
 
 `mutual` is stable at **13–18%** across the whole range while `complete` halves,
 and at 0.7 the chaining warning stops firing entirely (largest complete-linkage
-group falls 11 → 6). Against a 2.6% chance baseline, 52% agreement is ~20×
-enrichment. So the defensible figure is that **roughly one in seven count-head
-clusters has a mutual-best duplicate**, and `complete`'s larger numbers are
-absorbing family members rather than finding duplicates.
+group falls 11 → 6).
+
+The criteria are separated decisively by how agreement behaves as the p-value
+threshold loosens (at `--trim-threshold 0.5`):
+
+```text
+p       mutual excess   mutual name   complete name   single name
+1e-08   101 (10.7%)     51% (26x)     62%             36%
+1e-06   147 (15.6%)     51% (26x)     44%             20%
+1e-04   171 (18.2%)     47% (24x)     23%              0%
+1e-02   172 (18.3%)     46% (23x)     15%              0%
+```
+
+`mutual` holds ~46–51% name agreement (57–62% at family level) over four orders
+of magnitude while its excess saturates at 172; `complete` degrades from 62% to
+15% and `single` collapses to 0%. Merges that stay equally well-supported as the
+threshold loosens are real; merges that get worse are absorbing noise. So
+**quote `mutual`: roughly one in six count-head clusters (15–18%) has a
+mutual-best duplicate**, putting 941 clusters at ~770–795 distinct motifs.
+`complete` and `single` are upper bounds only.
+
+Downstream, that scales the prevalence-filtered lexicon of 343 to ~285–290 and
+the 59 tissue-restricted clusters to ~50. The concentration *ratios* in
+[Discovery Concentration](#discovery-concentration) are unaffected: duplicates
+share an experiment set, so they are equally restricted under both observed and
+null. Only the counts move.
+
+The residual uncertainty is the ~41% of mutual pairs that disagree even at
+family level — either real cross-family over-merges or JASPAR mislabelling.
+That is what the visual review below resolves.
 
 `--trim-threshold 0.5` best matches Fi-NeMo's own per-motif median (16bp vs
 14bp); 0.7 matches its hit-weighted median (7bp vs 6bp) but over-trims relative
