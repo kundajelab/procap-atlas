@@ -93,6 +93,12 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 MC_DIR = REPO_ROOT / "motifcompendium" / "bpnet"
+# Fi-NeMo's median trimmed motif width on real per-experiment CWMs at
+# --cwm-trim-threshold 0.3, measured over 2.24M hits / 65 motifs of a real
+# profile-head run: 14bp across motifs, 6bp weighted by hits, out of a
+# 50bp window. The calibration target for trimming cluster averages.
+FINEMO_MEDIAN_TRIM_BP = 14
+
 DEFAULT_THRESHOLDS = (1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-6, 1e-4, 1e-2)
 NAME_RE = re.compile(r"((?:pos|neg)_patterns\.\d+)")
 
@@ -652,6 +658,14 @@ def main():
         help="widen any motif trimmed below this, symmetrically (default: 6)",
     )
     parser.add_argument(
+        "--drop-untrimmable", action="store_true",
+        help="exclude clusters whose contributions are so diffuse that trimming "
+             "does not shrink them at all. These have no locatable core, so any "
+             "comparison against them is meaningless and they act as chaining "
+             "hubs; in a real Fi-NeMo run the equivalent motifs received 1-140 "
+             "hits out of 2.2M",
+    )
+    parser.add_argument(
         "--no-trim", action="store_true",
         help="compare untrimmed windows. MotifCompendium exports fixed-width "
              "CWM windows (50bp on the real count head) whose informative core "
@@ -779,12 +793,28 @@ def main():
             pwms, raw_widths = trim_motifs(pwms, args.trim_threshold, args.min_trim_len)
             how = "information-content"
         widths = np.array([m.shape[-1] for m in pwms])
+        q = np.percentile(widths, [25, 50, 75])
+        n_full = int((widths >= raw_widths).sum())
         print(
             f"{args.head}: {len(names)} clusters, {how}-trimmed "
             f"{raw_widths.min()}-{raw_widths.max()}bp -> {widths.min()}-{widths.max()}bp "
-            f"(median {int(np.median(widths))}) at threshold {args.trim_threshold:g}",
+            f"at threshold {args.trim_threshold:g}\n"
+            f"  width quartiles {q[0]:.0f} / {q[1]:.0f} / {q[2]:.0f} bp; "
+            f"{n_full} cluster(s) did not shrink at all",
             file=sys.stderr,
         )
+        # Cluster averages smear contribution into the flanks -- averaging
+        # variably offset instances does that -- so the same relative threshold
+        # keeps a wider span here than Fi-NeMo achieves on per-experiment CWMs.
+        if q[1] > 2 * FINEMO_MEDIAN_TRIM_BP:
+            print(
+                f"  NOTE: median {q[1]:.0f}bp is well above the ~"
+                f"{FINEMO_MEDIAN_TRIM_BP}bp Fi-NeMo reaches on per-experiment "
+                "CWMs at this threshold, so these cores are still wide. Raise "
+                "--trim-threshold until the median is comparable, or spurious "
+                "merging will persist.",
+                file=sys.stderr,
+            )
         if how == "information-content" and trimming_ineffective(widths, raw_widths):
             print(
                 "WARNING: information-content trimming barely shrank these "
@@ -795,6 +825,26 @@ def main():
                 file=sys.stderr,
             )
     widths = np.array([m.shape[-1] for m in pwms])
+
+    if args.drop_untrimmable and not args.no_trim:
+        keep = [i for i in range(len(names)) if widths[i] < raw_widths[i]]
+        dropped = len(names) - len(keep)
+        if len(keep) < 2:
+            print(
+                f"ERROR: only {len(keep)} cluster(s) trimmed at all; "
+                "--drop-untrimmable would leave nothing to compare",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        names = [names[i] for i in keep]
+        pwms = [pwms[i] for i in keep]
+        raw_widths = raw_widths[keep]
+        widths = widths[keep]
+        print(
+            f"{args.head}: dropped {dropped} untrimmable cluster(s) with no "
+            f"locatable core, {len(names)} remain",
+            file=sys.stderr,
+        )
 
     jaspar_map: dict[str, str] = {}
     if args.cluster_metadata is not None and args.cluster_metadata.exists():

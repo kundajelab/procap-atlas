@@ -1908,3 +1908,87 @@ def test_sweep_reports_agreement_per_criterion():
     for criterion in mr.MERGERS:
         assert f"jaspar_agree_{criterion}" in summary.columns
         assert f"jaspar_groups_{criterion}" in summary.columns
+
+
+def test_drop_untrimmable_removes_coreless_clusters(tmp_path):
+    """Clusters whose contributions are diffuse across the whole window have no
+    locatable core; they chain everything together and, in real Fi-NeMo runs,
+    receive almost no hits. They must be droppable."""
+    import h5py
+
+    with h5py.File(tmp_path / "c.h5", "w") as f:
+        for i in range(8):                      # normal: 10bp core
+            pfm, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"good{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+        for i in range(3):                      # diffuse: contribution everywhere
+            pfm, _, _, _ = flanked_pair(seed=100 + i)
+            flat = np.full((50, 4), 0.2)
+            g = f.create_group(f"diffuse{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=flat)
+
+    # One subprocess per test: two back-to-back runs from a pytest process that
+    # has already loaded memelite's OpenMP runtime SIGABRT on macOS (see
+    # test_h5_route_trims_to_the_core).
+    dropped = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(tmp_path / "c.h5"), "--n-jobs", "1",
+         "--out-dir", str(tmp_path / "o2"), "--drop-untrimmable"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert dropped.returncode == 0, dropped.stderr
+    assert "3 cluster(s) did not shrink at all" in dropped.stderr
+    assert "dropped 3 untrimmable cluster(s)" in dropped.stderr
+    summary = pd.read_csv(
+        tmp_path / "o2" / "motif_redundancy_count_summary.tsv", sep="\t"
+    )
+    assert (summary["n_clusters"] == 8).all()
+
+
+def test_untrimmable_clusters_are_identifiable_in_process():
+    """The predicate behind --drop-untrimmable, without a subprocess."""
+    pfms, cwms = [], []
+    for i in range(5):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T); cwms.append(cwm.T)
+    for i in range(2):
+        pfm, _, _, _ = flanked_pair(seed=50 + i)
+        pfms.append(pfm.T); cwms.append(np.full((4, 50), 0.2))
+
+    trimmed, raw = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    widths = np.array([t.shape[-1] for t in trimmed])
+    untrimmable = widths >= raw
+    assert untrimmable.sum() == 2
+    assert (widths[~untrimmable] == 10).all()
+
+
+def test_width_report_flags_cores_wider_than_finemo():
+    """The calibration check: a median far above Fi-NeMo's ~14bp means the
+    threshold is too permissive for cluster averages."""
+    assert mr.FINEMO_MEDIAN_TRIM_BP == 14
+    # a median of 25bp (the real 0.3-threshold result) must trip the notice
+    assert 25 <= 2 * mr.FINEMO_MEDIAN_TRIM_BP
+    assert 30 > 2 * mr.FINEMO_MEDIAN_TRIM_BP
+
+
+def test_stricter_trim_threshold_narrows_cores():
+    """Raising --trim-threshold must monotonically narrow the trimmed span, so
+    it is a usable dial for matching Fi-NeMo's effective width."""
+    pfms, cwms = [], []
+    for i in range(10):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        # give the CWM a decaying tail, as real CWM magnitude has
+        cwm = cwm.copy()
+        for off in range(1, 10):
+            cwm[20 - off] = cwm[20] * (0.9 ** off)
+            cwm[30 + off - 1] = cwm[29] * (0.9 ** off)
+        pfms.append(pfm.T); cwms.append(cwm.T)
+
+    medians = []
+    for thresh in (0.1, 0.3, 0.5, 0.7):
+        trimmed, _ = mr.trim_by_cwm(pfms, cwms, thresh, 6)
+        medians.append(float(np.median([t.shape[-1] for t in trimmed])))
+    assert medians == sorted(medians, reverse=True), medians
+    assert medians[0] > medians[-1]

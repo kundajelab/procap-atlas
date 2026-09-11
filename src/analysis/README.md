@@ -441,13 +441,37 @@ absorbing family members rather than finding duplicates. Note there is no
 threshold at which all three agree, so the lexicon size should be quoted with
 this range attached rather than as a single corrected number.
 
-Two things to vary before settling on a figure. Contribution trimming at
-`--trim-threshold 0.3` still leaves a median 25bp of a 50bp window, and
-`src/bpnet/hitcall/`'s own notes record that CWM magnitude decays gradually
-across nearly every motif, so a stricter threshold (0.5, 0.7) isolates cores
-better and should reduce spurious merging. And `--subset` on the 59
-tissue-restricted clusters is the cleanest calibration available, since those
-show 6 excess by JASPAR name alone.
+#### Calibrating the trim threshold against Fi-NeMo
+
+Contribution trimming at `--trim-threshold 0.3` leaves a median of 25bp out of
+a 50bp window on the cluster averages. That is about twice as wide as Fi-NeMo
+achieves at the same threshold. Measured over a real profile-head run
+(ENCSR342WAR, 2.24M hits, 65 motifs, via `start`/`end` vs
+`start_untrimmed`/`end_untrimmed` in `hits_unique.tsv`):
+
+```text
+Fi-NeMo trimmed widths, 50bp windows, --cwm-trim-threshold 0.3
+  median across motifs        14 bp
+  median weighted by hits      6 bp   (the high-volume motifs are the narrow ones)
+  motifs at the 6bp floor      8 / 65
+  motifs never trimmed         7 / 65  (these received 1-140 hits out of 2.2M)
+```
+
+Cluster averages are wider at the same threshold because averaging variably
+offset instances smears contribution into the flanks. So `0.3` is not
+transferable from per-experiment CWMs to cluster averages: raise
+`--trim-threshold` until the reported median width approaches ~14bp. The run
+prints width quartiles and how many clusters failed to shrink, and warns when
+the median exceeds twice Fi-NeMo's.
+
+`--drop-untrimmable` removes clusters whose contributions are diffuse enough
+that trimming does not shrink them at all. These have no locatable core, so any
+comparison against them is meaningless, and they act as chaining hubs — the
+equivalent motifs in a real Fi-NeMo run received 1–140 hits out of 2.2M, so
+little is lost by excluding them.
+
+Finally, `--subset` on the 59 tissue-restricted clusters is the cleanest
+calibration available, since those show 6 excess by JASPAR name alone.
 
 `--min-overlap-frac` (default 0.7) requires the best alignment to cover that
 fraction of the shorter motif, suppressing significant-but-spurious
