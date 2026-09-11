@@ -466,6 +466,90 @@ stratified curves. Without it the script falls back to a JASPAR-match proxy
 coverage of core promoter elements, which is why `cluster_motifs.py`'s reports
 annotate Inr/TATA and repeats by hand.
 
+### Motif Exemplars
+
+Picks the lineage-restricted and ubiquitous motifs worth showing, and renders
+their logos for inspection. Reads the concentration script's per-cluster TSV,
+so it needs no compendium access of its own beyond the logo SVGs.
+
+```bash
+python src/analysis/select_motif_exemplars.py --head count \
+    --logo-paths motifcompendium/bpnet/motifcompendium_count_cluster_logo_paths.tsv
+python src/analysis/select_motif_exemplars.py --head count --min-seqlets 200
+python src/analysis/select_motif_exemplars.py --head count --sort-by seqlets
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_exemplars_{head}_restricted.tsv
+figures/motif_atlas/motif_exemplars_{head}_ubiquitous.tsv
+figures/motif_atlas/motif_exemplars_{head}.html   # logos embedded, three tables
+```
+
+**The trap this exists to avoid.** A low-abundance split of a ubiquitous motif
+is indistinguishable from a lineage motif in a sorted table. Cluster 192 is
+labelled NFYA, is confined to `blood_immune`, and reads as "blood-specific
+NFYA" — but cluster 1 is *also* NFYA, spans all 19 tissue groups and carries
+1.5M seqlets against cluster 192's 154. On the real count head 8 of the 45
+single-group TF-matched clusters are this: NFYA, SP9 (110 seqlets vs cluster
+0's 3.87M), Atf1 ×2, Nrf1, ELF2, ZNF131, TFEC. So a restricted cluster whose
+JASPAR name also labels a broad cluster (`--broad-groups`, default ≥15 groups)
+is flagged and excluded, but still printed and shown in the HTML so the
+exclusion is visible rather than silent.
+
+This matters for panel selection specifically: `heart` and
+`metastatic_carcinoma` have **no** single-group candidate better than a
+~150-seqlet Atf1 fragment, so a panel promising one motif per tissue cannot be
+built honestly. Only four groups have defensible exemplars.
+
+`--min-seqlets` (default 1000) does related work: it is what separates SPIB
+(1,689 seqlets over 11 blood experiments) from SPI1 (44 over 2), which carry
+equally suggestive names. `--sort-by prevalence` (the default) ranks by how
+many experiments of the lineage a motif recurs in rather than absolute depth,
+because recurrence across 11 experiments is the lineage claim while depth
+within 2 is consistent with one peculiar sample.
+
+Measured at `--min-seqlets 200`, the defensible set:
+
+```text
+group          motif           experiments  seqlets
+blood_immune   SPIB                     11    1,689
+blood_immune   POU2F3                    8   26,490
+blood_immune   RELA                      6   10,101
+gi_tract       BNC2                      6      253
+stem_ipsc      Pou5f1::Sox2              4   31,323
+stem_ipsc      SOX4                      4      942
+stem_ipsc      POU2F1::SOX2              3      213
+neural         NEUROG2                   3   22,570
+```
+
+Ubiquitous, by seqlets, one cluster per name: SP9 (3.87M), NFYA (1.51M), Atf1
+(1.03M), ELF2 (890k), Atf3 (760k), Nrf1 (663k), ZNF143 (354k), TFEC (168k),
+Banp (130k), ELK1::SREBF2 (126k). Name deduplication is on by default because
+ELF2 and Atf1 each otherwise appear twice in the top ten.
+
+**Planned: hit-based ranking.** Every criterion here is a *discovery*
+quantity — prevalence and seqlets describe where TF-MoDISco found a motif, not
+where it is used. Once `hits_linked.tsv` exists atlas-wide,
+`motif_hit_density.py` produces per-cluster `specificity` and
+`mean_hits_per_peak_detected` over the same biosample groups, and those are the
+better criteria: a discovery-restricted motif that turns out to receive hits in
+every tissue is a false exemplar, and the current filters cannot see that. Hit
+data would also subsume the `name_also_broad` heuristic, since a split of a
+ubiquitous motif carries the compendium-linked identity and so would show hits
+everywhere. Until then, treat the selection as candidates to be confirmed
+rather than confirmed exemplars.
+
+Two corrections to earlier notes, from running this on the canonical build:
+
+- **MEF2A is not heart-restricted.** The real MEF2A cluster (46) spans 2 tissue
+  groups with 130,013 seqlets over 17 experiments; the heart-only MEF2A (264)
+  is 92 seqlets over 2 experiments. Do not cite MEF2A as a lineage recovery.
+- **SPI1 and KLF1** are quotable only as prevalence-2 clusters with 44 and 66
+  seqlets. SPIB is the defensible myeloid recovery. HNF4A remains correctly
+  unrestricted (4 groups, 24 experiments, 157,498 seqlets).
+
 ### Compendium Redundancy
 
 Measures how much of the lexicon is the same motif counted twice. Every count

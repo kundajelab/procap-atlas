@@ -2810,3 +2810,211 @@ def test_concentration_cli_can_drop_unnamed_units(tmp_path):
     )
     assert len(per_unit) == 1
     assert set(per_unit["jaspar_name"]) == {"SP1"}
+
+
+# --- exemplar selection -----------------------------------------------------
+#
+# The failure mode this guards against is real and was caught on live data: a
+# low-abundance split of a ubiquitous motif looks exactly like a lineage motif
+# in a sorted table. Cluster 192 ("NFYA", blood_immune only, 154 seqlets) sits
+# next to cluster 1 ("NFYA", all 19 groups, 1.5M seqlets). Picking the former
+# for a figure would have been wrong in a way reviewers spot instantly.
+
+import select_motif_exemplars as exemplars  # noqa: E402
+
+
+def exemplar_frame():
+    return pd.DataFrame([
+        # ubiquitous, two clusters sharing one name
+        dict(cluster_final=0, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=3_867_685, sole_group=None),
+        dict(cluster_final=1, jaspar_name="NFYA", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=1_511_338, sole_group=None),
+        dict(cluster_final=8, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=76, n_groups=17, total_seqlets=450_623, sole_group=None),
+        # genuine lineage motifs
+        dict(cluster_final=179, jaspar_name="Pou5f1::Sox2", motif_class="TF-matched",
+             prevalence=4, n_groups=1, total_seqlets=31_323, sole_group="stem_ipsc"),
+        dict(cluster_final=88, jaspar_name="SPIB", motif_class="TF-matched",
+             prevalence=11, n_groups=1, total_seqlets=1_689, sole_group="blood_immune"),
+        dict(cluster_final=209, jaspar_name="GATA2", motif_class="TF-matched",
+             prevalence=2, n_groups=1, total_seqlets=9_501, sole_group="blood_immune"),
+        # split of a ubiquitous motif, masquerading as lineage-specific
+        dict(cluster_final=192, jaspar_name="NFYA", motif_class="TF-matched",
+             prevalence=4, n_groups=1, total_seqlets=154, sole_group="blood_immune"),
+        # named like a lineage factor but far too weak to show
+        dict(cluster_final=338, jaspar_name="SPI1", motif_class="TF-matched",
+             prevalence=2, n_groups=1, total_seqlets=44, sole_group="blood_immune"),
+    ])
+
+
+def test_broad_names_are_taken_from_broad_clusters():
+    d = exemplar_frame()
+    assert exemplars.broad_names(d) == {"SP9", "NFYA"}
+
+
+def test_split_of_a_ubiquitous_motif_is_flagged():
+    d = exemplars.annotate(exemplar_frame())
+    flagged = d.set_index("cluster_final")["name_also_broad"]
+    assert flagged[192], "blood-only NFYA shares its name with the 19-group NFYA"
+    assert not flagged[179], "Pou5f1::Sox2 has no broad namesake"
+    assert not flagged[88]
+
+
+def test_flagged_splits_are_excluded_by_default():
+    d = exemplars.annotate(exemplar_frame())
+    got = set(exemplars.select_restricted(d, min_seqlets=100)["cluster_final"])
+    assert 192 not in got
+    assert {179, 88, 209} <= got
+
+
+def test_flagged_splits_can_be_kept_on_request():
+    d = exemplars.annotate(exemplar_frame())
+    got = set(exemplars.select_restricted(
+        d, min_seqlets=100, keep_shared_name=True)["cluster_final"])
+    assert 192 in got
+
+
+def test_seqlet_floor_separates_spib_from_spi1():
+    d = exemplars.annotate(exemplar_frame())
+    got = set(exemplars.select_restricted(d, min_seqlets=1000)["cluster_final"])
+    assert 88 in got, "SPIB has 1,689 seqlets over 11 experiments"
+    assert 338 not in got, "SPI1 has 44 seqlets over 2"
+
+
+def test_sort_by_prevalence_prefers_recurrence_over_depth():
+    d = exemplars.annotate(exemplar_frame())
+    # blood has SPIB (11 experiments, 1.7k seqlets) and GATA2 (2, 9.5k).
+    by_prev = exemplars.select_restricted(
+        d, min_seqlets=100, per_group=1, sort_by="prevalence")
+    by_seq = exemplars.select_restricted(
+        d, min_seqlets=100, per_group=1, sort_by="seqlets")
+    blood_prev = by_prev[by_prev["sole_group"] == "blood_immune"]
+    blood_seq = by_seq[by_seq["sole_group"] == "blood_immune"]
+    assert blood_prev["jaspar_name"].iloc[0] == "SPIB"
+    assert blood_seq["jaspar_name"].iloc[0] == "GATA2"
+
+
+def test_per_group_caps_each_lineage():
+    d = exemplars.annotate(exemplar_frame())
+    got = exemplars.select_restricted(d, min_seqlets=100, per_group=1)
+    assert got.groupby("sole_group").size().max() == 1
+
+
+def test_ubiquitous_collapses_duplicate_names():
+    d = exemplars.annotate(exemplar_frame())
+    got = exemplars.select_ubiquitous(d)
+    assert len(got) == len(set(got["jaspar_name"]))
+    # keeps the better-supported SP9 of the two
+    assert got[got["jaspar_name"] == "SP9"]["cluster_final"].iloc[0] == 0
+
+
+def test_ubiquitous_can_keep_duplicate_names():
+    d = exemplars.annotate(exemplar_frame())
+    got = exemplars.select_ubiquitous(d, one_per_name=False)
+    assert list(got["jaspar_name"]).count("SP9") == 2
+
+
+def test_prevalence_one_clusters_are_excluded():
+    d = exemplars.annotate(pd.DataFrame([
+        dict(cluster_final=500, jaspar_name="FOO", motif_class="TF-matched",
+             prevalence=1, n_groups=1, total_seqlets=99_999, sole_group="heart"),
+    ]))
+    # prevalence-1 clusters are single-group by construction.
+    assert len(exemplars.select_restricted(d, min_seqlets=100)) == 0
+
+
+def test_load_concentration_rejects_the_wrong_table(tmp_path):
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame({"cluster_final": [0]}).to_csv(bad, sep="\t", index=False)
+    with pytest.raises(ValueError, match="motif_concentration"):
+        exemplars.load_concentration(bad)
+
+
+def test_embed_svg_returns_none_for_a_missing_file(tmp_path):
+    assert exemplars.embed_svg(tmp_path / "nope.svg") is None
+
+
+def test_embed_svg_round_trips(tmp_path):
+    svg = tmp_path / "a.svg"
+    svg.write_text("<svg/>")
+    uri = exemplars.embed_svg(svg)
+    assert uri.startswith("data:image/svg+xml;base64,")
+    import base64 as b64
+    assert b64.b64decode(uri.split(",", 1)[1]) == b"<svg/>"
+
+
+def test_resolve_logos_is_empty_without_a_paths_file(tmp_path):
+    assert exemplars.resolve_logos(exemplar_frame(), None, tmp_path) == {}
+    assert exemplars.resolve_logos(
+        exemplar_frame(), tmp_path / "nope.tsv", tmp_path) == {}
+
+
+def test_exemplar_cli_end_to_end(tmp_path):
+    conc = tmp_path / "motif_concentration_count_tissue.tsv"
+    exemplar_frame().to_csv(conc, sep="\t", index=False)
+    logos = tmp_path / "logos"
+    (logos / "fwd").mkdir(parents=True)
+    rows = []
+    for cid in exemplar_frame()["cluster_final"]:
+        rel = f"fwd/c{cid}.svg"
+        (logos / rel).write_text(f"<svg><!--{cid}--></svg>")
+        rows.append({"cluster_final": cid, "logo_fwd_svg": rel,
+                     "logo_rev_svg": rel})
+    lp = tmp_path / "logo_paths.tsv"
+    pd.DataFrame(rows).to_csv(lp, sep="\t", index=False)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+            "--head", "count", "--concentration-tsv", str(conc),
+            "--logo-paths", str(lp), "--logo-root", str(logos),
+            "--min-seqlets", "100", "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    restricted = pd.read_csv(out / "motif_exemplars_count_restricted.tsv", sep="\t")
+    assert 192 not in set(restricted["cluster_final"])
+    assert (out / "motif_exemplars_count_ubiquitous.tsv").exists()
+    page = (out / "motif_exemplars_count.html").read_text()
+    assert "data:image/svg+xml;base64," in page      # logos embedded, not linked
+    assert "NAME ALSO BROAD" in page                 # the flag is visible
+    assert "192" in page                             # excluded, but shown
+    # the exclusion is reported on stderr/stdout, not silent
+    assert "also labels a broad cluster" in result.stdout
+
+
+def test_exemplar_cli_errors_without_the_concentration_table(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+            "--head", "count", "--out-dir", str(tmp_path),
+            "--concentration-tsv", str(tmp_path / "nope.tsv"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "motif_group_concentration.py" in result.stderr
+
+
+def test_exemplar_cli_warns_when_no_logos_resolve(tmp_path):
+    conc = tmp_path / "c.tsv"
+    exemplar_frame().to_csv(conc, sep="\t", index=False)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+            "--head", "count", "--concentration-tsv", str(conc),
+            "--min-seqlets", "100", "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "no logos embedded" in result.stderr
+    assert "No logos could be read" in (
+        tmp_path / "out" / "motif_exemplars_count.html"
+    ).read_text()
