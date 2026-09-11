@@ -1757,3 +1757,108 @@ def test_h5_subset_filters_cwms_too(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "restricted to 3 clusters" in result.stderr
+
+
+def test_h5_loader_discovers_a_flat_layout(tmp_path):
+    """MotifCompendium's exporter need not use pos_patterns/pattern_N/, so the
+    loader walks the file rather than assuming a hierarchy. Zero motifs found
+    on the real file is what prompted this."""
+    import h5py
+
+    with h5py.File(tmp_path / "flat.h5", "w") as f:
+        for i in range(3):
+            pfm, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"cluster_{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    names, pfms, cwms = mr.load_motifs_h5(tmp_path / "flat.h5")
+    assert len(names) == 3
+    assert all(p.shape[0] == 4 for p in pfms)
+    assert all(c.shape[0] == 4 for c in cwms)
+
+
+def test_h5_loader_handles_nested_posneg_and_strips_pattern_prefix(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "n.h5", "w") as f:
+        for group, key in (("pos_patterns", "pattern_4"), ("neg_patterns", "11")):
+            pfm, cwm, _, _ = flanked_pair(seed=1)
+            g = f.require_group(group).create_group(key)
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    names, _, _ = mr.load_motifs_h5(tmp_path / "n.h5")
+    assert set(names) == {"pos_patterns.4", "neg_patterns.11"}
+
+
+def test_h5_loader_falls_back_to_normalized_contributions(tmp_path):
+    """A group with contributions but no probability matrix still yields a
+    comparison matrix, since TOMTOM needs probability-like columns."""
+    import h5py
+
+    with h5py.File(tmp_path / "c.h5", "w") as f:
+        for i in range(2):
+            _, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"m{i}")
+            g.create_dataset("contrib_scores", data=cwm)
+    names, pfms, cwms = mr.load_motifs_h5(tmp_path / "c.h5")
+    assert len(names) == 2
+    for p in pfms:
+        assert p.sum(axis=0) == pytest.approx(np.ones(p.shape[-1]), abs=1e-6)
+        assert (p >= 0).all()
+
+
+def test_h5_loader_accepts_alternate_dataset_names(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "alt.h5", "w") as f:
+        for i in range(2):
+            pfm, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"m{i}")
+            g.create_dataset("PFM", data=pfm)
+            g.create_dataset("CWM", data=cwm)
+    names, pfms, _ = mr.load_motifs_h5(tmp_path / "alt.h5")
+    assert len(names) == 2
+
+
+def test_h5_loader_ignores_non_motif_datasets(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "x.h5", "w") as f:
+        g = f.create_group("m0")
+        pfm, cwm, _, _ = flanked_pair(seed=0)
+        g.create_dataset("sequence", data=pfm)
+        g.create_dataset("contrib_scores", data=cwm)
+        g.create_dataset("seqlet_starts", data=np.arange(20))   # 1-D, ignored
+        f.create_dataset("metadata", data=np.zeros((7, 9)))     # not motif-shaped
+    names, _, _ = mr.load_motifs_h5(tmp_path / "x.h5")
+    assert names == ["m0"]
+
+
+def test_h5_tree_lists_datasets(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "t.h5", "w") as f:
+        f.create_group("a").create_dataset("b", data=np.zeros((4, 5)))
+    lines = mr.h5_tree(tmp_path / "t.h5")
+    assert any("a/b" in line and "(4, 5)" in line for line in lines)
+
+
+def test_unrecognized_h5_layout_errors_with_a_tree_dump(tmp_path):
+    """The failure mode that crashed with an UnboundLocalError: an h5 whose
+    layout yields no motifs must report what it actually contains."""
+    import h5py
+
+    with h5py.File(tmp_path / "bad.h5", "w") as f:
+        f.create_dataset("unexpected", data=np.zeros((10, 10)))
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(tmp_path / "bad.h5"),
+         "--out-dir", str(tmp_path / "o"), "--n-jobs", "1"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "layout is not what was expected" in result.stderr
+    assert "unexpected" in result.stderr          # tree dump
+    assert "UnboundLocalError" not in result.stderr
+    assert "Traceback" not in result.stderr

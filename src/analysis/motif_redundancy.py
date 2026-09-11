@@ -146,51 +146,115 @@ def load_motifs(meme_path: Path, name_regex: re.Pattern) -> tuple[list[str], lis
     return names, pwms
 
 
-def load_motifs_h5(
-    h5_path: Path,
-) -> tuple[list[str], list[np.ndarray], list[np.ndarray]]:
-    """Load (names, PFMs, CWMs) from a modisco-lite-format cluster-average h5.
+CWM_KEYS = (
+    "contrib_scores", "contrib", "contribution_scores", "CWM", "cwm",
+    "hypothetical_contribs",
+)
+PFM_KEYS = ("sequence", "PFM", "pfm", "ppm", "PPM", "probs")
+
+
+def _as_alphabet_first(arr) -> np.ndarray | None:
+    """Return (4, length) if `arr` looks like a motif matrix, else None."""
+    a = np.asarray(arr, dtype=np.float64)
+    if a.ndim != 2:
+        return None
+    if a.shape[0] == 4 and a.shape[1] != 4:
+        return a
+    if a.shape[1] == 4 and a.shape[0] != 4:
+        return a.T
+    if a.shape == (4, 4):
+        return a
+    return None
+
+
+def h5_tree(h5_path: Path, limit: int = 40) -> list[str]:
+    """Flat listing of datasets in an h5, for diagnosing an unexpected layout."""
+    import h5py
+
+    found: list[str] = []
+
+    def visit(name, obj):
+        if isinstance(obj, h5py.Dataset) and len(found) < limit:
+            found.append(f"{name}  shape={obj.shape} dtype={obj.dtype}")
+
+    with h5py.File(h5_path, "r") as f:
+        f.visititems(visit)
+    return found
+
+
+def _motif_name_from_path(path: str) -> str:
+    """Turn an h5 group path into the `{posneg}_patterns.{cluster}` convention.
+
+    Matches what link_hits_to_compendium.py writes into
+    `compendium_motif_name`, so subsets and metadata joins line up. Falls back
+    to a dotted version of the path so a motif is never silently dropped.
+    """
+    parts = [p for p in path.split("/") if p]
+    for i, part in enumerate(parts):
+        if part in ("pos_patterns", "neg_patterns"):
+            rest = parts[i + 1:]
+            if rest:
+                suffix = rest[-1]
+                if suffix.startswith("pattern_"):
+                    suffix = suffix[len("pattern_"):]
+                return f"{part}.{suffix}"
+            return part
+    return ".".join(parts)
+
+
+def load_motifs_h5(h5_path: Path):
+    """Load (names, PFMs, CWMs) from a cluster-average h5.
 
     Preferred over the MEME export because it retains contribution scores. A
     MEME file has only probabilities, and information content cannot separate a
     motif's core from its flanks on this data: PRO-cap peaks are GC-rich, so
-    flanking positions carry real compositional information (a 60% GC column is
-    ~0.2 bits) which clears any threshold relative to a soft cluster-average's
-    ~1-bit maximum. Trimming has to use contribution magnitude, as Fi-NeMo's
-    own `trim_motif` does.
+    flanking positions carry real compositional information which clears any
+    threshold relative to a soft cluster-average's modest maximum. Trimming has
+    to use contribution magnitude, as Fi-NeMo's own `trim_motif` does.
 
-    Names follow the `{posneg}_patterns.{cluster}` convention that
-    link_hits_to_compendium.py writes into `compendium_motif_name`, with any
-    `pattern_` prefix stripped so both h5 naming styles resolve the same way.
+    The layout is discovered, not assumed. MotifCompendium's exporter does not
+    necessarily write the `pos_patterns/pattern_N/` hierarchy tfmodisco-lite
+    does -- assuming it found zero motifs on the real file -- so this walks the
+    whole h5 and treats any group holding a motif-shaped ((4, L) or (L, 4))
+    dataset as a motif, matching dataset names against CWM_KEYS and PFM_KEYS.
+
+    A group with contributions but no probability matrix falls back to
+    row-normalized |contributions| as the comparison matrix: approximate, since
+    TOMTOM needs probability-like columns, but the trim span is unaffected.
     """
     import h5py
 
-    names, pfms, cwms = [], [], []
+    groups: dict[str, dict[str, np.ndarray]] = {}
     with h5py.File(h5_path, "r") as f:
-        for group in ("pos_patterns", "neg_patterns"):
-            if group not in f:
-                continue
-            for key in f[group]:
-                node = f[group][key]
-                cwm_key = next(
-                    (k for k in ("contrib_scores", "CWM", "cwm") if k in node), None
-                )
-                pfm_key = next(
-                    (k for k in ("sequence", "PFM", "pfm") if k in node), None
-                )
-                if cwm_key is None or pfm_key is None:
-                    continue
-                cwm = np.asarray(node[cwm_key][:], dtype=np.float64)
-                pfm = np.asarray(node[pfm_key][:], dtype=np.float64)
-                # modisco stores (length, 4); memelite wants (4, length)
-                if cwm.shape[0] != 4 and cwm.shape[-1] == 4:
-                    cwm = cwm.T
-                if pfm.shape[0] != 4 and pfm.shape[-1] == 4:
-                    pfm = pfm.T
-                suffix = key[len("pattern_"):] if key.startswith("pattern_") else key
-                names.append(f"{group}.{suffix}")
-                pfms.append(pfm)
-                cwms.append(cwm)
+
+        def visit(name, obj):
+            if not isinstance(obj, h5py.Dataset):
+                return
+            leaf = name.split("/")[-1]
+            if leaf not in CWM_KEYS and leaf not in PFM_KEYS:
+                return
+            mat = _as_alphabet_first(obj[:])
+            if mat is None:
+                return
+            parent = "/".join(name.split("/")[:-1]) or name
+            groups.setdefault(parent, {})[leaf] = mat
+
+        f.visititems(visit)
+
+    names, pfms, cwms = [], [], []
+    for path in sorted(groups):
+        entry = groups[path]
+        cwm = next((entry[k] for k in CWM_KEYS if k in entry), None)
+        pfm = next((entry[k] for k in PFM_KEYS if k in entry), None)
+        if cwm is None:
+            continue
+        if pfm is None:
+            mag = np.abs(cwm)
+            total = mag.sum(axis=0, keepdims=True)
+            pfm = np.divide(mag, total, out=np.full_like(mag, 0.25), where=total > 0)
+        names.append(_motif_name_from_path(path))
+        pfms.append(pfm)
+        cwms.append(cwm)
     return names, pfms, cwms
 
 
@@ -605,6 +669,21 @@ def main():
             print(f"ERROR: h5 not found: {h5_path}", file=sys.stderr)
             sys.exit(1)
         names, pwms, cwms = load_motifs_h5(h5_path)
+        if len(names) < 2:
+            print(
+                f"ERROR: found {len(names)} motif(s) in {h5_path}. Its layout "
+                "is not what was expected; datasets present:",
+                file=sys.stderr,
+            )
+            for line in h5_tree(h5_path):
+                print(f"  {line}", file=sys.stderr)
+            print(
+                "\nExpected a group per motif holding one of "
+                f"{CWM_KEYS} (contributions), optionally with one of "
+                f"{PFM_KEYS} (probabilities).",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         print(
             f"{args.head}: loaded {len(names)} clusters from {h5_path.name} "
             f"(e.g. {names[:2]})",
@@ -629,9 +708,9 @@ def main():
             "so prefer --modisco-h5 auto, which trims on contribution scores.",
             file=sys.stderr,
         )
-    if len(names) < 2:
-        print(f"ERROR: only {len(names)} motif(s) in {meme_path}", file=sys.stderr)
-        sys.exit(1)
+        if len(names) < 2:
+            print(f"ERROR: only {len(names)} motif(s) in {meme_path}", file=sys.stderr)
+            sys.exit(1)
 
     if args.subset is not None:
         wanted = load_subset(args.subset)
@@ -639,7 +718,7 @@ def main():
         missing = wanted - set(names)
         if missing:
             print(
-                f"NOTE: {len(missing)} subset name(s) not in the MEME file, e.g. "
+                f"NOTE: {len(missing)} subset name(s) not found in the motif source, e.g. "
                 f"{sorted(missing)[:3]}",
                 file=sys.stderr,
             )
