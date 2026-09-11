@@ -83,6 +83,7 @@ Usage:
 """
 
 import argparse
+import base64
 import os
 import re
 import sys
@@ -782,7 +783,35 @@ def annotate_pairs(
     return out.reset_index(drop=True)
 
 
-def write_pairs_html(pairs: pd.DataFrame, path: Path, head: str, threshold: float) -> None:
+def embed_svg(path: Path) -> str | None:
+    """An SVG file as a base64 data URI, or None if unreadable.
+
+    Embedded rather than linked because the HTML is written to figures/ while
+    the logos live under motifcompendium/, so a linked copy breaks as soon as
+    the report is moved off the machine that produced it -- which is how these
+    reports actually get read.
+
+    base64 in an <img> rather than inline <svg> markup: matplotlib SVGs carry
+    internal ids referenced through <defs>, and inlining several hundred of
+    them into one document risks id collisions that silently break rendering.
+    An <img> keeps each logo in its own rendering context.
+    """
+    try:
+        data = Path(path).read_bytes()
+    except OSError:
+        return None
+    return "data:image/svg+xml;base64," + base64.b64encode(data).decode("ascii")
+
+
+def write_pairs_html(
+    pairs: pd.DataFrame,
+    path: Path,
+    head: str,
+    threshold: float,
+    out_dir: Path | None = None,
+    embed: bool = True,
+    top_pairs: int = 0,
+) -> None:
     """Side-by-side logo pairs, so a merge can be judged by eye in seconds.
 
     Disagreeing pairs are listed first and highlighted: those are where
@@ -790,12 +819,17 @@ def write_pairs_html(pairs: pd.DataFrame, path: Path, head: str, threshold: floa
     """
     if pairs.empty or "logo_a" not in pairs.columns:
         return
+    base = Path(out_dir) if out_dir is not None else path.parent
     rows = pairs.copy()
     if "name_agree" in rows.columns:
         rows["_order"] = rows["name_agree"].map(
             lambda v: 0 if v is False else (1 if v is None else 2)
         )
-        rows = rows.sort_values(["_order", "max_seqlets"], ascending=[True, False])
+        sort_cols = ["_order"] + (["max_seqlets"] if "max_seqlets" in rows else [])
+        rows = rows.sort_values(sort_cols, ascending=[True] + [False] * (len(sort_cols) - 1))
+    n_total = len(rows)
+    if top_pairs > 0:
+        rows = rows.head(top_pairs)
 
     html = [
         "<html><head><meta charset='utf-8'><style>",
@@ -805,7 +839,8 @@ def write_pairs_html(pairs: pd.DataFrame, path: Path, head: str, threshold: floa
         "img{height:58px}tr.dis{background:#fff3f3}tr.unk{background:#fafafa}",
         "code{font-size:11px;color:#444}</style></head><body>",
         f"<h2>Mutual-best-hit pairs — {head} head, p &le; {threshold:g}</h2>",
-        f"<p>{len(rows)} pairs. Each row is one cluster and its reciprocated "
+        f"<p>{len(rows)} of {n_total} pairs shown. Each row is one cluster and "
+        "its reciprocated "
         "closest match, i.e. a self-contained claim that these two are the same "
         "motif. Pink rows disagree on JASPAR name and are listed first — that "
         "is where over-merging would be visible. A pair can still be a true "
@@ -814,6 +849,14 @@ def write_pairs_html(pairs: pd.DataFrame, path: Path, head: str, threshold: floa
         "<table><tr><th>p</th><th>A</th><th>logo A</th><th>B</th>"
         "<th>logo B</th><th>JASPAR</th><th>seqlets</th></tr>",
     ]
+    def img(rel) -> str:
+        if not rel or pd.isna(rel):
+            return "&mdash;"
+        if not embed:
+            return f"<img src='{rel}'>"
+        uri = embed_svg(base / str(rel))
+        return f"<img src='{uri}'>" if uri else "&mdash; <small>(logo missing)</small>"
+
     for _, r in rows.iterrows():
         agree = r.get("name_agree")
         cls = "dis" if agree is False else ("unk" if agree is None else "")
@@ -828,14 +871,23 @@ def write_pairs_html(pairs: pd.DataFrame, path: Path, head: str, threshold: floa
         html.append(
             f"<tr class='{cls}'><td>{r['p_value']:.1e}</td>"
             f"<td><code>{r['motif_a']}</code><br>{r.get('trimmed_len_a','?')}bp</td>"
-            f"<td>{'<img src=\'' + str(r['logo_a']) + '\'>' if r.get('logo_a') else '—'}</td>"
+            f"<td>{img(r.get('logo_a'))}</td>"
             f"<td><code>{r['motif_b']}</code><br>{r.get('trimmed_len_b','?')}bp</td>"
-            f"<td>{'<img src=\'' + str(r['logo_b']) + '\'>' if r.get('logo_b') else '—'}</td>"
+            f"<td>{img(r.get('logo_b'))}</td>"
             f"<td>{label}</td><td>{sa} / {sb}</td></tr>"
         )
     html.append("</table></body></html>")
     path.write_text("\n".join(html))
-    print(f"Saved {path}", file=sys.stderr)
+    size_mb = path.stat().st_size / 1e6
+    note = "logos embedded, self-contained" if embed else "logos linked"
+    print(f"Saved {path}  ({size_mb:.1f} MB, {note})", file=sys.stderr)
+    if embed and size_mb > 100:
+        print(
+            "  NOTE: that is large for a browser. Use --top-pairs to show "
+            "fewer, or --link-logos to reference the SVGs instead (only "
+            "usable in place).",
+            file=sys.stderr,
+        )
 
 
 def plot_sweep(summary: pd.DataFrame, head: str, out_stem: Path) -> None:
@@ -895,6 +947,18 @@ def main():
         "--logo-paths", type=Path, default=None, metavar="PATH",
         help="motifcompendium_{head}_cluster_logo_paths.tsv, for embedding "
              "logos in the review HTML (default: auto-detect)",
+    )
+    parser.add_argument(
+        "--link-logos", action="store_true",
+        help="reference logo SVGs by relative path instead of embedding them. "
+             "Smaller HTML, but it only renders on this machine in this "
+             "directory layout",
+    )
+    parser.add_argument(
+        "--top-pairs", type=int, default=0, metavar="N",
+        help="show only the N highest-priority pairs in the review HTML "
+             "(disagreements first, then by seqlet count); 0 shows all "
+             "(default: 0)",
     )
     parser.add_argument(
         "--p-thresholds", type=float, nargs="+", default=list(DEFAULT_THRESHOLDS),
@@ -1174,7 +1238,8 @@ def main():
     print(f"Saved {mutual_path}  ({len(mutual)} pairs)", file=sys.stderr)
     write_pairs_html(
         mutual, stem.parent / f"{stem.name}_mutual_pairs.html",
-        args.head, args.report_threshold,
+        args.head, args.report_threshold, out_dir=args.out_dir,
+        embed=not args.link_logos, top_pairs=args.top_pairs,
     )
     if "name_agree" in mutual.columns and len(mutual):
         disagree = mutual[mutual["name_agree"] == False]  # noqa: E712

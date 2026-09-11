@@ -549,6 +549,20 @@ pairs first** — those are where over-merging would be visible, so they are wha
 a reviewer should spend time on. Pairs are otherwise ordered by seqlet count,
 so the ones that most affect the lexicon size come first.
 
+Logos are **embedded as base64 data URIs**, so the HTML is self-contained and
+survives being copied off the cluster — which is how these reports get read.
+The report is written to `figures/` while the logos live under
+`motifcompendium/`, so a linked copy renders only in place. `--link-logos`
+references them instead when a smaller file is wanted, and `--top-pairs N`
+limits how many rows are shown (priority order preserved). The run prints the
+resulting file size.
+
+Embedding uses `<img src="data:...">` rather than inline `<svg>` markup because
+matplotlib SVGs carry internal ids referenced through `<defs>`, and inlining
+several hundred into one document risks id collisions that silently break
+rendering; an `<img>` keeps each logo in its own rendering context. A logo file
+that cannot be read is marked in place rather than failing the run.
+
 A disagreeing pair is not automatically a bad merge: JASPAR contains
 near-identical motifs, so `family_agree` distinguishes SP1-vs-SP9 (benign) from
 SP1-vs-GATA1 (not).

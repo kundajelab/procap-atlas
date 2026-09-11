@@ -2145,6 +2145,103 @@ def test_annotate_pairs_handles_empty_input():
     ).empty
 
 
+SVG_A = b"<svg xmlns='http://www.w3.org/2000/svg'><text>AAA</text></svg>"
+SVG_B = b"<svg xmlns='http://www.w3.org/2000/svg'><text>BBB</text></svg>"
+
+
+def test_embed_svg_returns_a_data_uri(tmp_path):
+    import base64
+
+    f = tmp_path / "a.svg"
+    f.write_bytes(SVG_A)
+    uri = mr.embed_svg(f)
+    assert uri.startswith("data:image/svg+xml;base64,")
+    assert base64.b64decode(uri.split(",", 1)[1]) == SVG_A
+
+
+def test_embed_svg_returns_none_for_missing_file(tmp_path):
+    assert mr.embed_svg(tmp_path / "nope.svg") is None
+
+
+def html_pairs_fixture():
+    return pd.DataFrame({
+        "motif_a": ["pos_patterns.0", "pos_patterns.2"],
+        "motif_b": ["pos_patterns.1", "pos_patterns.3"],
+        "p_value": [1e-9, 1e-8],
+        "jaspar_a": ["AP1", "GATA1"], "jaspar_b": ["AP1", "TBP"],
+        "seqlets_a": [100, 50], "seqlets_b": [90, 40],
+        "max_seqlets": [100, 50],
+        "name_agree": [True, False], "family_agree": [True, False],
+        "trimmed_len_a": [8, 9], "trimmed_len_b": [8, 9],
+        "logo_a": ["logos/a.svg", "logos/c.svg"],
+        "logo_b": ["logos/b.svg", "logos/d.svg"],
+    })
+
+
+def write_logo_tree(out_dir):
+    (out_dir / "logos").mkdir(parents=True, exist_ok=True)
+    for name, data in (("a", SVG_A), ("b", SVG_B), ("c", SVG_A), ("d", SVG_B)):
+        (out_dir / "logos" / f"{name}.svg").write_bytes(data)
+
+
+def test_pairs_html_embeds_logos_so_it_travels(tmp_path):
+    """The report gets copied off the cluster, so a linked SVG is a broken SVG.
+    Embedded output must contain no file references at all."""
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    write_logo_tree(out_dir)
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir, embed=True
+    )
+    text = html.read_text()
+    assert "data:image/svg+xml;base64," in text
+    assert text.count("data:image/svg+xml;base64,") == 4   # 2 pairs x 2 logos
+    assert "logos/a.svg" not in text                       # nothing linked
+    assert "logo missing" not in text
+
+
+def test_pairs_html_can_link_instead_of_embedding(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    write_logo_tree(out_dir)
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir, embed=False
+    )
+    text = html.read_text()
+    assert "logos/a.svg" in text
+    assert "data:image/svg+xml;base64," not in text
+
+
+def test_pairs_html_marks_missing_logos_without_failing(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()          # deliberately no logo files written
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir, embed=True
+    )
+    text = html.read_text()
+    assert "logo missing" in text
+    assert "data:image/svg+xml;base64," not in text
+
+
+def test_pairs_html_top_pairs_limits_rows_and_reports_total(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    write_logo_tree(out_dir)
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir,
+        embed=True, top_pairs=1,
+    )
+    text = html.read_text()
+    assert "1 of 2 pairs shown" in text
+    # the disagreeing pair is the one kept
+    assert "pos_patterns.2" in text
+    assert text.count("data:image/svg+xml;base64,") == 2
+
+
 def test_pairs_html_puts_disagreements_first(tmp_path):
     pairs = pd.DataFrame({
         "motif_a": ["pos_patterns.0", "pos_patterns.2"],
@@ -2158,7 +2255,7 @@ def test_pairs_html_puts_disagreements_first(tmp_path):
         "logo_a": ["a.svg", "c.svg"], "logo_b": ["b.svg", "d.svg"],
     })
     out = tmp_path / "p.html"
-    mr.write_pairs_html(pairs, out, "count", 1e-6)
+    mr.write_pairs_html(pairs, out, "count", 1e-6, embed=False)
     text = out.read_text()
     assert text.index("pos_patterns.2") < text.index("pos_patterns.0")
     assert "c.svg" in text and "class='dis'" in text
