@@ -608,6 +608,30 @@ different steps, and any text quoting one should say which. Do not "fix" this
 by rerunning with `--min-reads 0` — that would reintroduce the shallow-library
 recall problem the restriction exists to avoid.
 
+**Tested, and the design holds.** The one real risk was that MotifCompendium's
+across-experiment Leiden pass clusters all motifs jointly, so the 21 shallow
+experiments could have perturbed the *partition* of the retained ones rather
+than merely adding clusters. A control build on 198 only
+(`cluster_motifs.py --head count --min-reads 10000000 --out-dir ...`)
+reproduces the 219 build almost exactly:
+
+```text
+                         219-build (restricted to 198)   198-build
+clusters, prevalence>=2              343                    340
+TF-matched clusters                  306                    304
+pooled concentration               0.832                  0.836
+swap-null concentration            0.827                  0.830
+single-group clusters                 45                     45
+expected single-group               8.50                   8.84
+exact p                          2.0e-22                1.6e-21
+```
+
+Only 13 of 869 clusters differ at the partition boundary (1.5%), and the
+tissue-concentration result is identical to rounding error — 45 single-group
+TF-matched clusters in both. So discovery stays on 219 and analysis on 198, and
+the profile head should be built the same way to keep the count-vs-profile
+contrast a comparison of heads rather than of experiment sets.
+
 #### Calibrating the trim threshold against Fi-NeMo
 
 Contribution trimming at `--trim-threshold 0.3` leaves a median of 25bp out of
