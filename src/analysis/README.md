@@ -589,16 +589,24 @@ Three counts appear and all three are correct for different steps:
 - **219** — after dropping the 4 uncapped experiments and the one anomalous
   TSS-positioning experiment (ENCSR973QQI). This is the set the MotifCompendium
   clustering was run over, and what the manuscript methods quote.
-- **198** — the subset of those with >10M reads, which every script in this
-  directory defaults to via `--min-reads`, to hold motif-discovery power
-  roughly fixed.
+- **198** — the subset of those with >10M reads. The compendium was clustered
+  over all 219, but downstream analysis switched to 198 because of recall and
+  discovery problems in the shallow libraries (consistent with the read-depth
+  dependence in Fig. 1d). Every script in this directory defaults to this via
+  `--min-reads`.
 
-Confirmable from the data: of the 945 count-head clusters, 76 have no
-experiment in the 198-set at all, so they were discovered only in sub-10M
-experiments — which could not happen if the compendium had been built from 198.
-Lexicon sizes reported here are therefore on the 198-experiment subset, not the
-219 the compendium spans. State that restriction explicitly anywhere both
-numbers appear, or run with `--min-reads 0` to match.
+The data corroborates that switch: of the 945 count-head clusters, **76 have no
+experiment in the 198-set at all**, so they were discovered only in sub-10M
+libraries and no deep library ever reproduced them. That is 8% of the lexicon
+resting entirely on the least reliable experiments — and it also confirms the
+compendium really was built from 219, since those clusters could not exist
+otherwise.
+
+Lexicon sizes reported here are therefore on the 198-experiment subset while
+the compendium spans 219. Both numbers are correct; they just describe
+different steps, and any text quoting one should say which. Do not "fix" this
+by rerunning with `--min-reads 0` — that would reintroduce the shallow-library
+recall problem the restriction exists to avoid.
 
 #### Calibrating the trim threshold against Fi-NeMo
 
