@@ -1,7 +1,14 @@
 **/.DS_Store
 .DS_Store
 tmp/
+
+# Large workflow outputs and local scratch copies of cluster results
 hitcalls/
+figures/
+compendium/
+
+# Local working copy of the manuscript draft
+procap_atlas.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

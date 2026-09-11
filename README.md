@@ -108,8 +108,8 @@ Primary workflow docs:
   benchmarking, Apptainer notes, and architecture sweeps.
 - [`src/hub/`](src/hub/README.md): UCSC track hub generation, bigBed
   conversion, Hugging Face track hosting, and validation.
-- [`src/analysis/`](src/analysis/README.md): atlas-level count correlations and
-  model warning flags.
+- [`src/analysis/`](src/analysis/README.md): atlas-level count correlations,
+  cross-experiment motif panels for the manuscript, and model warning flags.
 - [`src/metaplot/`](src/metaplot/README.md): TSS-centered PRO-cap metaplots and
   heatmaps.
 - [`src/metaformer/`](src/metaformer/README.md): PromoterAI / MetaFormer helper
@@ -127,7 +127,7 @@ src/preprocess/   Processing pipeline for model inputs
 src/bpnet/        Primary BPNet model workflow
 src/cherimoya/    Cherimoya model workflow
 src/hub/          UCSC track hub and hosted track utilities
-src/analysis/     Atlas-level analyses and QC flags
+src/analysis/     Atlas-level analyses, motif panels, and QC flags
 src/metaplot/     TSS-centered signal plots
 src/metaformer/   Experimental PromoterAI / MetaFormer helpers
 src/procapnet/    Legacy ProCapNet benchmark helper

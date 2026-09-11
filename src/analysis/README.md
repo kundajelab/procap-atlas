@@ -91,9 +91,12 @@ their plotting logic via `_metric_comparison_plots.py`.
 ## Motif Atlas Panels
 
 Cross-experiment motif analyses behind the manuscript's motif-lexicon figure.
-Both scripts are atlas-scope (they read every experiment at once), unlike the
-per-experiment scripts under [`src/bpnet/hitcall/`](../bpnet/hitcall/README.md),
-and both share the biosample-to-tissue grouping in `_biosample_groups.py`.
+All five scripts here are atlas-scope (they read every experiment at once),
+unlike the per-experiment scripts under
+[`src/bpnet/hitcall/`](../bpnet/README.md#hit-calling), and they share the
+biosample-to-tissue grouping in `_biosample_groups.py`. See
+[Manuscript Panels](#manuscript-panels) for which of them produces which
+figure panel.
 
 That grouping is keyword-based curation, not computation. Write it out, edit
 it, and pass it back so the groups are explicit rather than implicit:
@@ -107,6 +110,86 @@ Biosamples matching no rule land in `other` and are always reported to stderr.
 Metastatic biosamples are matched before any organ rule, since they are named
 for the organ they spread *to* (e.g. "Metastatic Breast Carcinoma in the
 Brain" is not a neural sample).
+
+### Manuscript Panels
+
+The manuscript is targeted at a Brief Communication (Nature
+Methods/Genetics: <1600 words, ~2 display items), so Figure 2 has to carry the
+entire motif-lexicon story in one multi-panel figure and everything else moves
+to supplement. Panel letters below are **proposed, not fixed** — the point of
+the table is which script produces which piece of evidence.
+
+**All reported results are from the `count` head.** Both
+`plot_motif_rarefaction.py` and `motif_group_concentration.py` default to
+`--head profile`, so every manuscript command below passes `--head count`
+explicitly. The profile head is not yet built (see Pending below).
+
+| Proposed panel | Script | Status |
+| --- | --- | --- |
+| Fig 2 — tissue concentration of motif discovery | `motif_group_concentration.py` | done, `count` head |
+| Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
+| Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
+| Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
+| Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
+
+Figure 1e already shows a neuron-specific gene carrying neuron-specific
+motifs, so it is the single-locus counterpart to these atlas-scale panels.
+
+The three commands that produced the reported numbers:
+
+```bash
+# 2a: discovery concentration, both group levels
+python src/analysis/motif_group_concentration.py --head count --group-level tissue
+python src/analysis/motif_group_concentration.py --head count --group-level biosample
+
+# 2b: rarefaction, prevalence-filtered, with the abundance-threshold sweep
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --sweep
+
+# S: redundancy at the calibrated trim threshold, with the visual review HTML
+python src/analysis/motif_redundancy.py --head count --modisco-h5 auto \
+    --trim-threshold 0.5 --drop-untrimmable --report-threshold 1e-6
+```
+
+#### Results the figure rests on
+
+Every number here is measured, on the real `count`-head compendium, and is
+derived in the section linked in the right-hand column.
+
+| Claim | Value | Where |
+| --- | --- | --- |
+| Lexicon size (prevalence ≥ 2) | 343 clusters of 869 | [Rarefaction](#motif-lexicon-rarefaction) |
+| Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.827 tissue / 0.919 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
+| Confinement is lineage, not replication | 45 single-group clusters vs 8.50 expected exactly (`p = 2.0e-22`) or 7.87 under the swap null (`p < 0.001`); 50 of 59 restricted clusters span ≥2 biosamples within one tissue | [Concentration](#discovery-concentration) |
+| Small studies miss most of the lexicon | 6.8% of the lexicon recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Tissue diversity matters, but second to count | single-tissue sampling recovers ~15–19% fewer motifs at matched k | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates | [Redundancy](#measured-results) |
+| Not an artifact of the experiment universe | the 198-only control build reproduces every figure above | [Experiment universe](#experiment-universe-224-219-198) |
+
+Three claims were checked and **withdrawn**; do not reintroduce them:
+
+- The non-JASPAR class as novel lineage-specific motifs, and its +65%
+  diversity gap — the class is dominated by tandem composites.
+- Redundancy at 15–18% — that counts tandem-vs-core containment as duplication.
+- "Tissue structure is weak" — an artifact of reading per-band medians instead
+  of pooling.
+
+#### Pending
+
+- **Profile-head compendium.** The count-vs-profile concentration contrast is
+  the falsifiable test of the manuscript's two-lexicon claim, and it needs no
+  Fi-NeMo output. Build it with the same `--min-reads` default (0, all 219
+  experiments) so the contrast compares *heads*, not experiment sets.
+- **`motif_hit_density.py` has never been run on real data.** It is tested
+  against synthetic fixtures only. It reads per-experiment `hits_linked.tsv`,
+  which requires `hitcall/launch_link.py --head count` first.
+- **Fi-NeMo hit calls** are distributed as part of the resource regardless of
+  whether they appear in the manuscript, so the hit-density panel is worth
+  finishing even if Figure 2 ships without it.
+- **Alternate TSS usage** was proposed as an additional panel and has no script
+  yet. The atlas-scale version is a per-gene comparison of which annotated TSS
+  dominates across biosample groups; nothing in this directory computes it.
+- **PISA / attribution tracks** are deliberately out of scope for this figure.
+  They are either a supplement or their own manuscript on spatial syntax.
 
 ### Motif Lexicon Rarefaction
 
@@ -162,8 +245,12 @@ in `tests/test_motif_atlas_panels.py`). Only `total_seqlets`, `n_motifs` and
 `jaspar_name` are lost, so stratified curves collapse to a single class
 unless `--annotation-tsv` is supplied.
 
-To skip those stages on future runs, `cluster_motifs.py` takes
-`--skip-svg-logos` and `--logo-report-top-n 0`.
+To skip the SVG-logo stage on future runs, `cluster_motifs.py` takes
+`--skip-svg-logos`. Note that `--logo-report-top-n 0` does **not** skip the
+embedded-logo HTML report — 0 means *no cap*, i.e. every cluster is embedded,
+which is the most expensive setting and produced a 24 MB report on the real
+count head. The default of 500 is already the cheap path; pass a small
+positive number to make it cheaper.
 
 Two things to set deliberately:
 
@@ -288,6 +375,13 @@ k     diverse  redundant  uniform
 50      254.4      220.8    246.7
 ```
 
+At the small end, a single experiment recovers 6.8% of the 343-cluster lexicon
+and five recover 20.7% — i.e. a study of five PRO-cap experiments, a typical
+size before this atlas, misses roughly four-fifths of the motifs. That is the
+resource argument for the atlas, and the sweep below bounds it from the weak
+side too: at least 55% is missed at k=5 under *every* abundance threshold
+tested, so the claim does not depend on keeping low-abundance clusters in.
+
 `uniform` sits close to `diverse` because a random draw from 198 experiments
 spanning 19 tissue groups is already tissue-diverse. The informative contrast
 is `redundant` against the others: a study confined to one tissue recovers
@@ -295,13 +389,13 @@ is `redundant` against the others: a study confined to one tissue recovers
 diversity, is the primary driver — state the diversity effect at that size and
 do not overclaim it.
 
-The unmatched (non-JASPAR) class is the exception, and by a wide margin: 37
-clusters, with diverse 18.0 vs uniform 13.3 vs redundant 10.9 at k=25 (+65%
-diverse over redundant). The motifs most requiring tissue diversity to
-discover are the ones absent from JASPAR. Before relying on that, inspect
-those clusters' logos — `cluster_motifs.py` groups core promoter elements,
-repeats and unannotated motifs together in this class, and a tissue-structured
-repeat family would produce the same signal artifactually.
+The unmatched (non-JASPAR) class appears to be a dramatic exception — 37
+clusters, diverse 18.0 vs uniform 13.3 vs redundant 10.9 at k=25, a +65% gap —
+but **that figure is withdrawn**: logo review showed the class is dominated by
+tandem composites discovered idiosyncratically, not by novel lineage-specific
+TF motifs, so the gap measures discovery happenstance. Do not quote it. See
+[Decision: the non-JASPAR class is not analyzed
+further](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026).
 
 This panel measures where motifs are **discovered**, not where they are
 **used**. Tissue-specificity claims belong to the hit-density panel below;
@@ -312,8 +406,9 @@ in only one lineage.
 #### Collapsing the lexicon by motif identity
 
 `--collapse-by {cluster,jaspar_name,jaspar_family}` changes what counts as one
-lexicon unit. Cluster level is the default and is the **upper bound** on
-lexicon size, since ~10–18% of clusters are near-duplicates of another (see
+lexicon unit. Cluster level is the default and is a slight **upper bound** on
+lexicon size, since ~3–6% of prevalence≥2 clusters are containment-free
+near-duplicates of another (see
 [Compendium Redundancy](#compendium-redundancy)). Collapsing by JASPAR identity
 removes that by construction — 31 clusters best-matching SP9 become one unit —
 with no threshold to defend.
@@ -581,7 +676,7 @@ absorbing family members rather than finding duplicates. Note there is no
 threshold at which all three agree, so the lexicon size should be quoted with
 this range attached rather than as a single corrected number.
 
-#### Experiment universe: 224 / 219 / 198
+#### Experiment universe: 224, 219, 198
 
 Three counts appear and all three are correct for different steps:
 
@@ -800,9 +895,13 @@ idiosyncratically, not novel lineage-specific TF motifs, and the class is
 
 **Five exceptions worth a look if the class is ever revisited**: clusters 34
 (prevalence 31 across 13 tissue groups, 11,704 seqlets), 57, 68, 95 and 149
-(prevalence 6–18). Cluster 34 in particular is broad, deep and unrestricted,
-which is the profile of a genuine core promoter element rather than a
-tandem-discovery artifact — JASPAR carries no Inr/TATA/DPE entries at all.
+(prevalence 6–18). Cluster 34 is broad, deep and unrestricted, which looked
+like the profile of a genuine core promoter element (JASPAR carries no
+Inr/TATA/DPE entries at all) — but direct inspection identified it as a
+**tandem composite of an SP/KLF motif**, i.e. the same architecture as the
+rest of the class, just far more widely discovered. Treat the remaining four
+as unexamined rather than promising, and check the logo before believing any
+breadth-based argument about this class.
 
 The scaffold remains available for the profile head, whose unmatched class will
 be larger (63–93 motifs per experiment vs 23–30 for count).
@@ -995,8 +1094,15 @@ still be used in only one lineage.
 
 Motif x experiment hit-density matrix and tissue-specificity scores, rendered
 as a clustered heatmap with biosample-group and read-depth column strips.
+
+> **This script has never been run on real data.** It is covered by unit tests
+> against synthetic fixtures only, so treat its defaults (especially the
+> `balanced` row selection and the peak-count fallback) as unvalidated until a
+> real run has been inspected. It needs `hitcall/launch_link.py --head count`
+> to have produced `hits_linked.tsv` for each experiment first.
+
 Reads each experiment's `hits_linked.tsv` (from
-[`link_hits_to_compendium.py`](../bpnet/hitcall/README.md)), whose
+[`link_hits_to_compendium.py`](../bpnet/README.md#hit-calling)), whose
 `compendium_motif_name` column is the only cross-experiment-comparable motif
 identity available — hits are called per experiment against that experiment's
 own MoDISco motifs, so the raw `motif_name` means a different motif in every

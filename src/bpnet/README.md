@@ -319,8 +319,13 @@ first is not a practical alternative:
 ```bash
 python src/bpnet/motifcompendium/cluster_motifs.py --head count \
     --min-reads 10000000 --out-dir motifcompendium/bpnet_198 \
-    --skip-svg-logos --logo-report-top-n 0
+    --skip-svg-logos
 ```
+
+`--logo-report-top-n 0` is **not** a cheap setting: 0 means *no cap*, so every
+cluster's logo gets embedded in the HTML report (24 MB on the real count head).
+The default of 500 is already the cheap path, and a small positive number is
+cheaper still.
 
 Two things to know about a variant compendium. `cluster_final` ids are **not
 stable across runs**, so its hits are not comparable until
@@ -943,6 +948,122 @@ for this experiment/head with the default per-experiment motif source, not
 `--modisco-h5` pointed at the compendium. `launch_link.py` mirrors
 `launch_report.py`: no GPU needed, so it runs as its own cheap CPU-only SLURM
 job.
+
+### Hit-Call Diagnostics
+
+Read-only investigation scripts, plus one plotting script. None of them filter
+hits or write into the pipeline's own output files, so they are safe to run at
+any point. Each one's module docstring carries the full reasoning for why it
+exists; this is the index.
+
+Most of them were written while root-causing motif-specific overcalling
+(TATA/TA-Inr in K562, then CA-Inr in B-cell/neuron/liver), and the lesson that
+produced the whole set is worth repeating: **an identity-agnostic filter plus
+two clean spot-checks is not validation.** `hit_seqlet_confidence` looked safe
+that way and turned out to touch 28/45 motifs at 0–89% drop rates, including
+motifs with no contamination problem at all. Run the full per-motif breakdown
+before trusting a filter atlas-wide.
+
+Positional evidence — does a motif sit at a fixed offset from the real TSS?
+
+```bash
+python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --min-trim-len 6
+python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --plot-motifs pos_patterns.pattern_2
+python src/bpnet/hitcall/plot_motif_spacing_syntax.py -e ENCSR220XSM --motifs pos_patterns.pattern_12 --motifs pos_patterns.pattern_1
+```
+
+`diagnose_hit_summit_distance.py` prints a per-motif summary over every motif
+and writes individual histograms for a named subset. It joins hits back to the
+*real* PRO-cap summit from
+`data/processed/peaks/{experiment}_{biosample}_filtered.bed.gz`, because
+Fi-NeMo never sees one — `call_hits_bpnet.py` feeds it a synthetic narrowPeak
+whose "summit" is just the peak window's midpoint. That file's summit
+coordinate convention is undocumented upstream, so the script tests both
+interpretations against the peak window and prints which one it inferred.
+`plot_motif_spacing_syntax.py` turns the same machinery into one comparative
+violin plot (the core-promoter spacing-syntax view: TATA at -25 to -30, Inr at
+0); pass an explicit `--motifs` subset for anything paper-facing, since
+plotting every motif is unreadable.
+
+Is a suspicious hit set real? These two answer it with evidence that is not
+downstream of Fi-NeMo's own thresholding:
+
+```bash
+python src/bpnet/hitcall/diagnose_hit_signal_metaplot.py -e ENCSR342WAR --min-trim-len 6 --motif-name pos_patterns.pattern_2
+python src/bpnet/hitcall/diagnose_seqlet_confidence_by_group.py -e ENCSR342WAR --min-trim-len 6 --motif-name pos_patterns.pattern_2
+```
+
+Both split a motif's hits into "normal" (peaks with exactly one call) and
+"excess" (peaks with several), the shape of the overcalling problem. The first
+pulls real observed PRO-cap signal around each group (reusing
+`metaplot_tss.py`'s own extraction), which is the only ground truth available:
+every per-hit statistic Fi-NeMo reports describes agreement with the *model's*
+attributions, not whether initiation actually happens there. The second checks
+`tangermeme.seqlet.recursive_seqlets` corroboration rates per group, the signal
+that originally exposed the TATA defect.
+
+Which motifs need the corroboration floor, atlas-wide, without naming any of
+them:
+
+```bash
+python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR220XSM --min-trim-len 6
+python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR220XSM --out-tsv tmp/bg_energy_ENCSR220XSM.tsv
+python src/bpnet/hitcall/launch_background_energy_ratio.py --head profile --head count --min-trim-len 6
+```
+
+Measures how much more attribution energy sits outside a motif's trimmed core
+in the hits-averaged CWM than in its MoDISco archetype. This is the scoping
+signal behind `filter_low_confidence_hits.py --seqlet-background-excess-only`,
+and it exists because `cwm_similarity` is structurally blind to the problem:
+CA-Inr's trimmed core is only ~4bp, short enough that almost any hit
+containing it scores >0.9 against a near-zero-flank archetype. Reported as a
+difference, not a ratio — `background_ratio(modisco_fc)` is often ~0 for a
+cleanly discovered motif, and dividing by it blows the number up. The launcher
+runs it across every experiment/head so `detect_elbow_count`'s cutoffs can be
+reviewed by hand before being trusted atlas-wide.
+
+How hard did a filter actually hit each motif, and what is a motif's shared
+identity?
+
+```bash
+python src/bpnet/hitcall/diagnose_repeat_density_impact.py -e ENCSR220XSM --min-trim-len 6
+python src/bpnet/hitcall/lookup_compendium_cluster.py --pair ENCSR220XSM:pos_patterns.pattern_1 --pair ENCSR342WAR:pos_patterns.pattern_2
+```
+
+`diagnose_repeat_density_impact.py` diffs `hits_unique.tsv` against
+`hits_dedensified.tsv` per motif — no recomputation, the data is already
+there — giving `filter_repeat_density.py` the full per-motif breakdown that
+`hit_seqlet_confidence` should have had.
+`lookup_compendium_cluster.py` resolves `(experiment, local motif name)` pairs
+to their MotifCompendium cluster and reports whether they all agree, which is
+the identification step required before scoping a filter with
+`--seqlet-compendium-clusters`.
+
+### Housekeeping
+
+`call_hits_bpnet.py` and the post-hoc pipeline leave large redundant files
+behind. `cleanup_hitcalls.py` finds and removes them, in increasing order of
+judgment: always-safe deletes (`hits.tsv`, whose deduplicated
+`hits_unique.tsv` is what every downstream script actually reads; abandoned
+`hits_flank_filtered.tsv`/`hits_seqlet_filtered.tsv` stages; orphaned
+`regions.tmp.npz`), gzip-in-place (`hits.bed`), and opt-in removal of
+call-hits output superseded by a sibling trim-suffixed directory:
+
+```bash
+python src/bpnet/hitcall/cleanup_hitcalls.py                              # dry-run report (default)
+python src/bpnet/hitcall/cleanup_hitcalls.py --execute
+python src/bpnet/hitcall/cleanup_hitcalls.py --execute --include-abandoned-trim-dirs
+```
+
+It reports without touching anything unless `--execute` is passed, and skips
+anything modified in the last `--min-age-hours` (default 24) so an in-flight
+job's outputs are never removed underneath it.
+
+The abandoned-stage deletes are not merely about disk: `HITS_FILE_STAGES` in
+`call_hits_bpnet.py` still ranks those filenames *ahead* of the current
+outputs for staleness detection, so a leftover file that happens to be newer
+than the real current output would make `resolve_hits_path` silently prefer
+the stale abandoned one.
 
 ## Notes
 
