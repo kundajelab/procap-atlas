@@ -557,6 +557,16 @@ references them instead when a smaller file is wanted, and `--top-pairs N`
 limits how many rows are shown (priority order preserved). The run prints the
 resulting file size.
 
+**Check the `logos:` line the run prints.** It reports how many paths resolved,
+how many SVG files were actually found, their total size, and a concrete
+example path. Three failure modes previously looked identical in the report —
+no path table, paths that resolved to nothing, and paths whose files were
+missing — and all three simply rendered as dashes in every row. If the paths
+point somewhere unexpected, `--logo-paths` overrides the table and
+`--logo-root` overrides the directory its entries are relative to. A report
+with no usable logos is still written, now carrying an explicit banner rather
+than silently omitting the images.
+
 Embedding uses `<img src="data:...">` rather than inline `<svg>` markup because
 matplotlib SVGs carry internal ids referenced through `<defs>`, and inlining
 several hundred into one document risks id collisions that silently break

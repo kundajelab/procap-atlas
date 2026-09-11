@@ -704,12 +704,40 @@ def mutual_best_pairs(
     return pd.DataFrame(rows, columns=["motif_a", "motif_b", "p_value"])
 
 
+def describe_logo_resolution(pairs: pd.DataFrame) -> str:
+    """One-line account of how logo resolution actually went.
+
+    Written because the first version silently produced a logo-less report:
+    unresolved paths simply rendered as "logo missing" in every row, which
+    looks identical to a rendering problem. Reporting counts and a concrete
+    attempted path makes the difference obvious in one run.
+    """
+    if "logo_a" not in pairs.columns:
+        return "no logo column (no cluster_logo_paths.tsv found)"
+    paths = pd.concat([pairs["logo_a"], pairs["logo_b"]]).dropna()
+    n_slots = 2 * len(pairs)
+    if paths.empty:
+        return f"0/{n_slots} logo paths resolved (cluster ids did not match)"
+    exists = [p for p in paths if Path(p).exists()]
+    total_mb = sum(Path(p).stat().st_size for p in exists) / 1e6
+    msg = (
+        f"{len(paths)}/{n_slots} logo paths resolved, {len(exists)} file(s) "
+        f"present ({total_mb:.1f} MB)"
+    )
+    if len(exists) < len(paths):
+        msg += f"; example missing: {next(p for p in paths if not Path(p).exists())}"
+    elif exists:
+        msg += f"; e.g. {exists[0]}"
+    return msg
+
+
 def annotate_pairs(
     pairs: pd.DataFrame,
     widths: dict[str, int],
     cluster_metadata: Path | None,
     logo_paths: Path | None,
     out_dir: Path,
+    logo_root: Path = MC_DIR,
 ) -> pd.DataFrame:
     """Attach JASPAR names, seqlet counts and logo paths to each pair.
 
@@ -759,18 +787,12 @@ def annotate_pairs(
     if logo_paths is not None and Path(logo_paths).exists():
         lp = pd.read_csv(logo_paths, sep="\t")
         if "cluster_final" in lp.columns and "logo_fwd_svg" in lp.columns:
-            logo = dict(zip(lp["cluster_final"], lp["logo_fwd_svg"]))
+            logo = {int(k): v for k, v in zip(lp["cluster_final"], lp["logo_fwd_svg"])}
 
             def resolve(motif: str) -> str | None:
                 cid = cluster_id(motif)
                 rel = logo.get(cid) if cid is not None else None
-                if rel is None:
-                    return None
-                abs_path = (MC_DIR / rel).resolve()
-                try:
-                    return os.path.relpath(abs_path, out_dir.resolve())
-                except ValueError:
-                    return str(abs_path)
+                return None if rel is None else str((logo_root / rel).resolve())
 
             out["logo_a"] = out["motif_a"].map(resolve)
             out["logo_b"] = out["motif_b"].map(resolve)
@@ -817,9 +839,8 @@ def write_pairs_html(
     Disagreeing pairs are listed first and highlighted: those are where
     over-merging would show, and they are the ones worth the reviewer's time.
     """
-    if pairs.empty or "logo_a" not in pairs.columns:
+    if pairs.empty:
         return
-    base = Path(out_dir) if out_dir is not None else path.parent
     rows = pairs.copy()
     if "name_agree" in rows.columns:
         rows["_order"] = rows["name_agree"].map(
@@ -849,13 +870,25 @@ def write_pairs_html(
         "<table><tr><th>p</th><th>A</th><th>logo A</th><th>B</th>"
         "<th>logo B</th><th>JASPAR</th><th>seqlets</th></tr>",
     ]
-    def img(rel) -> str:
-        if not rel or pd.isna(rel):
+    have_logos = "logo_a" in rows.columns and rows["logo_a"].notna().any()
+    if not have_logos:
+        html.insert(
+            -1,
+            "<p style='background:#fff3cd;padding:8px'><b>No logos available.</b> "
+            "Either <code>motifcompendium_{head}_cluster_logo_paths.tsv</code> is "
+            "missing, or its paths did not resolve. Check the logo line printed "
+            "by the run, and pass <code>--logo-paths</code> / "
+            "<code>--logo-root</code> if the SVGs live elsewhere.</p>".replace(
+                "{head}", head
+            ),
+        )
+    def img(p) -> str:
+        if not p or pd.isna(p):
             return "&mdash;"
         if not embed:
-            return f"<img src='{rel}'>"
-        uri = embed_svg(base / str(rel))
-        return f"<img src='{uri}'>" if uri else "&mdash; <small>(logo missing)</small>"
+            return f"<img src='{p}'>"
+        uri = embed_svg(Path(str(p)))
+        return f"<img src='{uri}'>" if uri else "&mdash; <small>(file not found)</small>"
 
     for _, r in rows.iterrows():
         agree = r.get("name_agree")
@@ -947,6 +980,11 @@ def main():
         "--logo-paths", type=Path, default=None, metavar="PATH",
         help="motifcompendium_{head}_cluster_logo_paths.tsv, for embedding "
              "logos in the review HTML (default: auto-detect)",
+    )
+    parser.add_argument(
+        "--logo-root", type=Path, default=None, metavar="DIR",
+        help="directory the paths in cluster_logo_paths.tsv are relative to "
+             f"(default: {MC_DIR.name}/ alongside the compendium)",
     )
     parser.add_argument(
         "--link-logos", action="store_true",
@@ -1232,6 +1270,12 @@ def main():
     mutual = annotate_pairs(
         mutual_best_pairs(names, p_sym, args.report_threshold),
         width_map, args.cluster_metadata, logo_paths, args.out_dir,
+        logo_root=args.logo_root or MC_DIR,
+    )
+    print(
+        f"  logos: {describe_logo_resolution(mutual)}"
+        + (f" [from {logo_paths}]" if logo_paths else " [no path table]"),
+        file=sys.stderr,
     )
     mutual_path = stem.parent / f"{stem.name}_mutual_pairs.tsv"
     mutual.to_csv(mutual_path, sep="\t", index=False)

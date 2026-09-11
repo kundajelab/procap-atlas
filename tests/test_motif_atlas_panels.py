@@ -2119,7 +2119,14 @@ def test_annotate_pairs_flags_name_and_family_agreement(tmp_path):
     assert out.iloc[0]["motif_a"] == "pos_patterns.2"
 
 
-def test_annotate_pairs_resolves_logo_paths_relative_to_out_dir(tmp_path):
+def test_annotate_pairs_resolves_logos_against_logo_root(tmp_path):
+    """Paths are stored absolute: the HTML lives in figures/ while the SVGs
+    live under motifcompendium/, and a relative path that depends on the
+    report's location is what broke the first version."""
+    root = tmp_path / "mc"
+    (root / "logos" / "fwd").mkdir(parents=True)
+    for name in ("a", "b"):
+        (root / "logos" / "fwd" / f"{name}.svg").write_bytes(SVG_A)
     lp = tmp_path / "logos.tsv"
     pd.DataFrame({
         "cluster_final": [0, 1],
@@ -2131,11 +2138,43 @@ def test_annotate_pairs_resolves_logo_paths_relative_to_out_dir(tmp_path):
         "p_value": [1e-9],
     })
     out = mr.annotate_pairs(
-        pairs, {"pos_patterns.0": 8, "pos_patterns.1": 9}, None, lp, tmp_path
+        pairs, {"pos_patterns.0": 8, "pos_patterns.1": 9}, None, lp,
+        tmp_path, logo_root=root,
     )
+    assert Path(out.loc[0, "logo_a"]).is_absolute()
+    assert Path(out.loc[0, "logo_a"]).exists()
     assert out.loc[0, "logo_a"].endswith("a.svg")
-    assert out.loc[0, "logo_b"].endswith("b.svg")
-    assert not Path(out.loc[0, "logo_a"]).is_absolute()
+
+
+def test_describe_logo_resolution_distinguishes_the_failure_modes(tmp_path):
+    """The diagnostic that separates "paths never resolved" from "files are
+    missing" from "all good" -- previously all three looked identical in the
+    report."""
+    pairs = pd.DataFrame({"motif_a": ["a"], "motif_b": ["b"], "p_value": [1e-9]})
+    assert "no logo column" in mr.describe_logo_resolution(pairs)
+
+    unresolved = pairs.assign(logo_a=[None], logo_b=[None])
+    assert "0/2 logo paths resolved" in mr.describe_logo_resolution(unresolved)
+
+    good = tmp_path / "g.svg"; good.write_bytes(SVG_A)
+    partial = pairs.assign(logo_a=[str(good)], logo_b=[str(tmp_path / "nope.svg")])
+    msg = mr.describe_logo_resolution(partial)
+    assert "2/2 logo paths resolved, 1 file(s) present" in msg
+    assert "example missing" in msg
+
+    both = pairs.assign(logo_a=[str(good)], logo_b=[str(good)])
+    assert "2 file(s) present" in mr.describe_logo_resolution(both)
+
+
+def test_html_warns_when_no_logos_are_available(tmp_path):
+    """A logo-less report must say so rather than silently showing dashes."""
+    pairs = html_pairs_fixture().drop(columns=["logo_a", "logo_b"])
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(pairs, out, "count", 1e-6, out_dir=tmp_path)
+    text = out.read_text()
+    assert "No logos available" in text
+    assert "cluster_logo_paths.tsv" in text
+    assert "pos_patterns.0" in text          # the table is still written
 
 
 def test_annotate_pairs_handles_empty_input():
@@ -2178,6 +2217,12 @@ def html_pairs_fixture():
     })
 
 
+def absolutize(pairs, out_dir):
+    for col in ("logo_a", "logo_b"):
+        pairs[col] = pairs[col].map(lambda v: str((out_dir / v).resolve()))
+    return pairs
+
+
 def write_logo_tree(out_dir):
     (out_dir / "logos").mkdir(parents=True, exist_ok=True)
     for name, data in (("a", SVG_A), ("b", SVG_B), ("c", SVG_A), ("d", SVG_B)):
@@ -2192,13 +2237,14 @@ def test_pairs_html_embeds_logos_so_it_travels(tmp_path):
     write_logo_tree(out_dir)
     html = out_dir / "p.html"
     mr.write_pairs_html(
-        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir, embed=True
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=True,
     )
     text = html.read_text()
     assert "data:image/svg+xml;base64," in text
     assert text.count("data:image/svg+xml;base64,") == 4   # 2 pairs x 2 logos
-    assert "logos/a.svg" not in text                       # nothing linked
-    assert "logo missing" not in text
+    assert "logos/a.svg'" not in text                      # nothing linked
+    assert "file not found" not in text
 
 
 def test_pairs_html_can_link_instead_of_embedding(tmp_path):
@@ -2207,10 +2253,11 @@ def test_pairs_html_can_link_instead_of_embedding(tmp_path):
     write_logo_tree(out_dir)
     html = out_dir / "p.html"
     mr.write_pairs_html(
-        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir, embed=False
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=False,
     )
     text = html.read_text()
-    assert "logos/a.svg" in text
+    assert "a.svg" in text
     assert "data:image/svg+xml;base64," not in text
 
 
@@ -2219,10 +2266,11 @@ def test_pairs_html_marks_missing_logos_without_failing(tmp_path):
     out_dir.mkdir()          # deliberately no logo files written
     html = out_dir / "p.html"
     mr.write_pairs_html(
-        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir, embed=True
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=True,
     )
     text = html.read_text()
-    assert "logo missing" in text
+    assert "file not found" in text
     assert "data:image/svg+xml;base64," not in text
 
 
@@ -2232,8 +2280,8 @@ def test_pairs_html_top_pairs_limits_rows_and_reports_total(tmp_path):
     write_logo_tree(out_dir)
     html = out_dir / "p.html"
     mr.write_pairs_html(
-        html_pairs_fixture(), html, "count", 1e-6, out_dir=out_dir,
-        embed=True, top_pairs=1,
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=True, top_pairs=1,
     )
     text = html.read_text()
     assert "1 of 2 pairs shown" in text
@@ -2261,10 +2309,25 @@ def test_pairs_html_puts_disagreements_first(tmp_path):
     assert "c.svg" in text and "class='dis'" in text
 
 
-def test_pairs_html_skipped_without_logos(tmp_path):
+def test_pairs_html_written_even_without_logos(tmp_path):
+    """Contract change: the report is always written. Previously it was skipped
+    when no logo column existed, so a logo resolution failure produced no file
+    and no explanation -- indistinguishable from the script not running."""
     out = tmp_path / "p.html"
     mr.write_pairs_html(
         pd.DataFrame({"motif_a": ["a"], "motif_b": ["b"], "p_value": [1e-9]}),
+        out, "count", 1e-6,
+    )
+    assert out.exists()
+    text = out.read_text()
+    assert "No logos available" in text
+    assert "pos_patterns" not in text and "<code>a</code>" in text
+
+
+def test_pairs_html_still_skipped_when_there_are_no_pairs(tmp_path):
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(
+        pd.DataFrame(columns=["motif_a", "motif_b", "p_value"]),
         out, "count", 1e-6,
     )
     assert not out.exists()
