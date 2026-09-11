@@ -378,44 +378,47 @@ motifcompendium_{head}_cluster_logo_paths.tsv            # cluster_final -> logo
 motifcompendium_{head}_clusters/{pos,neg}_cluster_NNNN.html  # per-cluster motif collection (opt-in)
 ```
 
-Every build writes `motifcompendium_{head}_parameters.json` beside its other
-outputs, recording the thresholds, the experiment selection, the experiments
-that actually contributed a MoDISco h5, the MotifCompendium version and the
-repo commit. This exists because the outputs previously carried no record of
-how they were made, which turned "was this clustered at 0.85 or 0.90?" into an
-unanswerable question after `--across-threshold`'s default changed from 0.85 to
-0.90 on 2026-08-21 (commit `31d4f24`). Nothing else on disk distinguishes the
-two: the metadata, MEME export, cluster-average h5 and HTML reports are
-identical in shape either way, and the only 0.85/0.90 strings in the reports
-are JASPAR match scores.
+#### What a build's settings were, after the fact
 
-`run_params.py` reads those records back, either summarizing one or diffing
-two:
+Nothing in a compendium's outputs records how it was produced. The cluster
+metadata, MEME export, cluster-average h5 and HTML reports are identical in
+shape regardless of thresholds, and the only 0.85/0.90 strings in the reports
+are JASPAR match scores. That matters because several inputs have changed over
+the project's life, and every one of them moves the partition:
 
-```bash
-python src/bpnet/motifcompendium/run_params.py motifcompendium/bpnet/motifcompendium_count_parameters.json
-python src/bpnet/motifcompendium/run_params.py motifcompendium/bpnet/motifcompendium_{count,profile}_parameters.json
-python src/bpnet/motifcompendium/run_params.py old/params.json new/params.json --all
-```
+- **`--across-threshold`'s default changed from 0.85 to 0.90** on 2026-08-21,
+  in commit `31d4f24`. A build predating that commit was clustered at 0.85
+  unless overridden. The manuscript methods described 0.85 because they were
+  written against a pre-August build.
+- **MotifCompendium was updated mid-project.** It is installed editable
+  (`pip install -e .`), so `__version__` need not move between commits; a
+  library update can change clustering behaviour while looking identical from
+  the outside. This is the known cause of the atlas count-head compendium
+  going from 944 to 946 clusters on unchanged MoDISco inputs.
+- **The build set is `filters INTERSECT h5 files present when the job ran`.**
+  `collect_modisco_paths` silently skips a selected experiment whose MoDISco
+  output is not on disk yet, so the experiment set can change with no change to
+  `--min-reads` or `--blacklist`. At the default `--min-reads 0` this is the
+  only thing that can move it.
+- **Compute options are partition inputs, not just performance knobs.** GPU
+  float reductions are not order-deterministic and `--max-chunk` changes that
+  order, so they can flip pairs sitting on the across-threshold boundary.
 
-The diff defaults to settings only — the thresholds, experiment sets, JASPAR
-source and MotifCompendium version — because timestamps differ between any two
-runs and would bury the fields that matter. For experiment lists it prints the
-set difference, since "these differ" is not the question; which experiments one
-build has and the other lacks is. `--all` compares every key.
+Clustering is also **not known to be reproducible**: no seed is passed to
+`mc.cluster`, Leiden is a randomized algorithm, and the GPU path adds its own
+nondeterminism. Two builds on identical inputs are not guaranteed to agree,
+and that has never been tested here. Do not treat a small difference in
+cluster count between two builds as evidence of anything until it is.
 
-The record is written twice, once before the expensive stages and once after,
-so a build that died partway through leaves `completed: false` rather than no
-file at all — a record that only appeared on success would be
-indistinguishable from a pre-2026-09 build that never had one.
-
-**Builds predating this have no record.** Compare cluster counts between two
-metadata TSVs instead: `sum(n_motifs)` is the number of input MoDISco patterns
-and is invariant to the clustering threshold, while the row count is what the
-threshold moves, so equal input motifs with different cluster counts means the
-threshold (or MotifCompendium version) changed. Note that Leiden is stochastic,
-so two runs at identical settings can differ by a couple of clusters; a
-difference of that size is not evidence of anything.
+To compare two existing builds, use their metadata TSVs. `sum(n_motifs)` is
+the number of input MoDISco patterns and is invariant to the clustering
+threshold, while the row count is what the threshold moves, so equal input
+motifs with materially different cluster counts points at the threshold or the
+library version. The `experiments` column gives each build's experiment set
+directly, so whether the inputs changed is a lookup rather than an inference.
+Comparing the set of `(posneg, experiments)` signatures measures how much of
+the partition actually agrees, which the row count alone cannot -- two clusters
+merging while another splits nearly cancels in the total.
 
 The pipeline writes a full TSV plus a lightweight summary HTML for every
 cluster, with links to exported forward/reverse SVG logo files for every
