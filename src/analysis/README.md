@@ -681,13 +681,41 @@ Suggested vocabulary (kept short, since stratified curves are only readable
 with a handful of classes): `core_promoter`, `tandem_composite`,
 `hetero_composite`, `repeat`, `tf_unannotated`, `unclear`.
 
-Why this matters beyond tidiness: the non-JASPAR class was where the strongest
-apparent tissue restriction sat (6.4× single-group enrichment), but that rests
-on 14 clusters, 12 of them at prevalence ≤4, and 7 from `stem_ipsc` — a group
-with only 4 experiments. If most turn out to be tandem composites, the
-restriction is a statement about promoter architecture rather than about
-lineage-specific TF motifs, and the class should not be described as novel
-motifs. Annotating it is what settles that.
+#### Decision: the non-JASPAR class is not analyzed further (Sep 2026)
+
+The non-JASPAR class was where the strongest apparent tissue restriction sat
+(6.4× single-group enrichment, `p = 2e-9`), but on review that rests on 14
+clusters, 12 of them at prevalence ≤4, and 7 from `stem_ipsc` — a group with
+only 4 experiments. Direct inspection of the logos showed the class is
+dominated by **tandem composites** (cluster 150 is a double CCAAT box, 329 a
+double GGAAT), whose cores are in JASPAR but not as repeats. 22 of the 37 sit
+at prevalence 2.
+
+So the restriction describes recurring promoter architecture discovered
+idiosyncratically, not novel lineage-specific TF motifs, and the class is
+**excluded from analysis** rather than annotated. Consequences:
+
+- Quote concentration for the TF-matched class only: swap-null concentration
+  0.827 at tissue level (45 single-group vs 7.87 expected, `p < 0.001`) and
+  0.919 at biosample level. Those are already reported separately, so nothing
+  needs recomputing.
+- The +65% diverse-over-redundant figure for the unmatched class is withdrawn;
+  it rested entirely on these 37 clusters.
+- They stay *in* the lexicon count (343, not 306). Excluding them would need
+  its own justification and would shift every recovery figure; making no claim
+  about them costs nothing.
+- They stay in the released compendium, with a methods sentence noting ~11% of
+  clusters had no JASPAR match, were predominantly composite or tandem, and
+  were retained without further analysis.
+
+**Five exceptions worth a look if the class is ever revisited**: clusters 34
+(prevalence 31 across 13 tissue groups, 11,704 seqlets), 57, 68, 95 and 149
+(prevalence 6–18). Cluster 34 in particular is broad, deep and unrestricted,
+which is the profile of a genuine core promoter element rather than a
+tandem-discovery artifact — JASPAR carries no Inr/TATA/DPE entries at all.
+
+The scaffold remains available for the profile head, whose unmatched class will
+be larger (63–93 motifs per experiment vs 23–30 for count).
 
 ### Discovery Concentration
 
