@@ -437,6 +437,30 @@ python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experim
 Requires `cluster_metadata.tsv` (the pattern-to-cluster mapping carries no
 JASPAR names).
 
+Measured (198-only control build, 856 clusters; the canonical 219 build differs
+by 13 clusters so these move by at most one or two):
+
+```text
+prevalence  clusters  names  families  unnamed   name units  family units
+>= 1             856    162       104      294          456           398
+>= 2             340    114        77       36          150           113
+>= 3             234     89        63       15          104            78
+```
+
+"name units"/"family units" keep unnamed clusters as their own units, which is
+the default; `--drop-unnamed` gives the bare 114 names / 77 families at
+prevalence≥2.
+
+**Do not read 340 → 150 as 56% redundancy.** It is 2.3x, against a
+containment-free near-duplicate estimate of 3-6%, and the gap is JASPAR's
+resolution rather than the compendium's. The collapse is concentrated in a few
+labels — 31 clusters best-match SP9, 14 NFYA, 14 TBP, 13 Atf1; at family level
+SP alone absorbs 40 — and SP/KLF family members are near-identical GC-boxes
+that a nearest-neighbour lookup cannot separate. Cluster 34, a tandem SP/KLF
+composite, would merge into the same unit as a single GC-box. Quote the two
+levels as a bracket (343 upper, ~150 lower) and expect the truth nearer the
+upper end.
+
 `--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
 stratified curves. Without it the script falls back to a JASPAR-match proxy
 (matched vs. unmatched), which is only a proxy: JASPAR2026 has essentially no
