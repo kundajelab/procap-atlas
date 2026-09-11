@@ -78,7 +78,7 @@ def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on, weight_
     mc.cluster(**cluster_kwargs)
 
 
-def export_pattern_to_cluster_mapping(mc, head):
+def export_pattern_to_cluster_mapping(mc, head, out_dir=MC_DIR):
     """Map each experiment's own per-pattern Fi-NeMo motif_name (from calling
     hits directly against that experiment's own modisco.h5, the default
     hitcall/call_hits_bpnet.py source) to the atlas-wide MotifCompendium
@@ -112,13 +112,13 @@ def export_pattern_to_cluster_mapping(mc, head):
             + df["cluster_final"].astype(int).astype(str),
         }
     )
-    mapping_path = MC_DIR / f"motifcompendium_{head}_pattern_to_cluster.tsv"
+    mapping_path = out_dir / f"motifcompendium_{head}_pattern_to_cluster.tsv"
     mapping.to_csv(mapping_path, sep="\t", index=False)
     print(f"{head}: pattern->cluster mapping saved to {mapping_path}")
     return mapping_path
 
 
-def write_cluster_metadata(mc, head, logo_paths=None):
+def write_cluster_metadata(mc, head, logo_paths=None, out_dir=MC_DIR):
     agg = (
         mc.metadata.groupby("cluster_final")
         .agg(
@@ -150,7 +150,7 @@ def write_cluster_metadata(mc, head, logo_paths=None):
     if logo_paths is not None:
         agg = agg.merge(logo_paths, on="cluster_final", how="left")
 
-    metadata_path = MC_DIR / f"motifcompendium_{head}_cluster_metadata.tsv"
+    metadata_path = out_dir / f"motifcompendium_{head}_cluster_metadata.tsv"
     agg.to_csv(metadata_path, sep="\t", index=False)
     print(f"{head}: cluster metadata saved to {metadata_path}")
     return agg
@@ -185,8 +185,10 @@ def ensure_forward_reverse_logos(mc, logo_trimming=True):
         )
 
 
-def export_cluster_logo_svgs(mc, head, batch_size=100, logo_trimming=True):
-    logo_dir = MC_DIR / f"motifcompendium_{head}_cluster_logos"
+def export_cluster_logo_svgs(
+    mc, head, batch_size=100, logo_trimming=True, out_dir=MC_DIR
+):
+    logo_dir = out_dir / f"motifcompendium_{head}_cluster_logos"
     fwd_dir = logo_dir / "fwd"
     rev_dir = logo_dir / "rev"
     fwd_dir.mkdir(parents=True, exist_ok=True)
@@ -208,8 +210,8 @@ def export_cluster_logo_svgs(mc, head, batch_size=100, logo_trimming=True):
         records.append(
             {
                 "cluster_final": cluster_id,
-                "logo_fwd_svg": str(fwd_path.relative_to(MC_DIR)),
-                "logo_rev_svg": str(rev_path.relative_to(MC_DIR)),
+                "logo_fwd_svg": str(fwd_path.relative_to(out_dir)),
+                "logo_rev_svg": str(rev_path.relative_to(out_dir)),
             }
         )
 
@@ -229,7 +231,7 @@ def export_cluster_logo_svgs(mc, head, batch_size=100, logo_trimming=True):
 
     logo_paths = pd.DataFrame.from_records(records)
     logo_paths.to_csv(
-        MC_DIR / f"motifcompendium_{head}_cluster_logo_paths.tsv",
+        out_dir / f"motifcompendium_{head}_cluster_logo_paths.tsv",
         sep="\t",
         index=False,
     )
@@ -323,6 +325,7 @@ def process_head(
     per_cluster_html,
     export_svg_logos,
     svg_logo_batch_size,
+    out_dir=MC_DIR,
 ):
     if not h5_paths:
         print(f"{head}: no modisco h5 files found, skipping")
@@ -330,10 +333,10 @@ def process_head(
 
     print(f"{head}: building MotifCompendium from {len(h5_paths)} h5 files")
     mc = MotifCompendium.build_from_modisco(h5_paths)
-    mc.save(str(MC_DIR / f"motifcompendium_{head}_all_raw.mc"))
+    mc.save(str(out_dir / f"motifcompendium_{head}_all_raw.mc"))
 
     utils_analysis.plot_similarity_distribution(
-        mc, str(MC_DIR / f"motifcompendium_{head}_similarity_distribution.html")
+        mc, str(out_dir / f"motifcompendium_{head}_similarity_distribution.html")
     )
 
     assign_jaspar_labels(mc)
@@ -350,7 +353,7 @@ def process_head(
         cluster_on="cluster_within_model",
         weight_col="num_seqlets",
     )
-    mc.save(str(MC_DIR / f"motifcompendium_{head}_all_clustered.mc"))
+    mc.save(str(out_dir / f"motifcompendium_{head}_all_clustered.mc"))
 
     n_final = max(mc["cluster_final"]) + 1
     print(
@@ -358,12 +361,12 @@ def process_head(
         f"(within_threshold={within_threshold}, across_threshold={across_threshold})"
     )
 
-    export_pattern_to_cluster_mapping(mc, head)
+    export_pattern_to_cluster_mapping(mc, head, out_dir=out_dir)
 
     utils_analysis.export_compendium_clustered_modisco(
         mc,
         "cluster_final",
-        str(MC_DIR / f"motifcompendium_{head}_cluster_averages.h5"),
+        str(out_dir / f"motifcompendium_{head}_cluster_averages.h5"),
         weight_col="num_seqlets",
     )
     mc_avg = cluster_average_with_metadata(mc)
@@ -372,7 +375,7 @@ def process_head(
     mc_avg = mc_avg.sort("total_seqlets", ascending=False)
     utils_analysis.export_compendium_meme(
         mc_avg,
-        str(MC_DIR / f"motifcompendium_{head}_cluster_averages.meme"),
+        str(out_dir / f"motifcompendium_{head}_cluster_averages.meme"),
     )
 
     logo_paths = None
@@ -381,16 +384,19 @@ def process_head(
             mc_avg,
             head,
             batch_size=svg_logo_batch_size,
+            out_dir=out_dir,
         )
 
-    cluster_metadata = write_cluster_metadata(mc, head, logo_paths=logo_paths)
+    cluster_metadata = write_cluster_metadata(
+        mc, head, logo_paths=logo_paths, out_dir=out_dir
+    )
 
     if logo_report_top_n > 0:
         mc_avg_report = mc_avg[:logo_report_top_n]
     else:
         mc_avg_report = mc_avg
 
-    report_path = MC_DIR / f"motifcompendium_{head}_cluster_report.html"
+    report_path = out_dir / f"motifcompendium_{head}_cluster_report.html"
     report_columns = [
         "name",
         "source_cluster",
@@ -403,7 +409,7 @@ def process_head(
     ]
     report_columns = [c for c in report_columns if c in mc_avg_report.columns()]
     mc_avg_report.summary_table_html(str(report_path), columns=report_columns)
-    summary_path = MC_DIR / f"motifcompendium_{head}_cluster_summary.html"
+    summary_path = out_dir / f"motifcompendium_{head}_cluster_summary.html"
     write_cluster_summary_html(
         cluster_metadata,
         summary_path,
@@ -421,7 +427,7 @@ def process_head(
         print(f"{head}: per-cluster HTML reports skipped")
         return
 
-    cluster_html_dir = MC_DIR / f"motifcompendium_{head}_clusters"
+    cluster_html_dir = out_dir / f"motifcompendium_{head}_clusters"
     cluster_html_dir.mkdir(exist_ok=True)
     cluster_metadata_by_id = cluster_metadata.set_index("cluster_final")
     for posneg in ("pos", "neg"):
@@ -444,6 +450,21 @@ def main():
             "Cluster all modisco motifs across experiments using MotifCompendium "
             "without motif quality filtering."
         )
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=MC_DIR,
+        metavar="DIR",
+        help=(
+            "directory for all outputs (default: motifcompendium/bpnet/). Use "
+            "this to build a variant compendium without overwriting the "
+            "existing one -- the .mc save files alone run to hundreds of MB "
+            "per head, so copying the directory first is not a practical "
+            "alternative. Note cluster_final ids are not stable across runs, "
+            "so a variant compendium needs its own hitcall/launch_link.py "
+            "pass before its hits are comparable."
+        ),
     )
     parser.add_argument(
         "--min-reads",
@@ -525,7 +546,7 @@ def main():
     if args.svg_logo_batch_size < 1:
         parser.error("--svg-logo-batch-size must be at least 1")
 
-    MC_DIR.mkdir(parents=True, exist_ok=True)
+    args.out_dir.mkdir(parents=True, exist_ok=True)
 
     MotifCompendium.set_compute_options(
         max_cpus=args.max_cpus,
@@ -549,6 +570,7 @@ def main():
             args.per_cluster_html,
             not args.skip_svg_logos,
             args.svg_logo_batch_size,
+            out_dir=args.out_dir,
         )
 
 

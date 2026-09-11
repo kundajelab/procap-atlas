@@ -308,11 +308,27 @@ time:
    from `configs/n_reads.txt`). The atlas compendium was therefore built over
    all 219 QC-passing experiments; the >10M-read restriction to 198 is applied
    by the downstream analyses in [`src/analysis/`](../analysis/README.md), not
-   here. Note also that this script has no `--out-dir`, so a rerun overwrites
-   the existing compendium in place and renumbers `cluster_final` -- back up
-   `motifcompendium/bpnet/` first, and expect to rerun
-   `hitcall/launch_link.py` atlas-wide afterwards, since every
-   `hits_linked.tsv` keys on those ids.
+   here.
+
+Use `--out-dir` to build a variant compendium without disturbing the existing
+one. Outputs default to `motifcompendium/bpnet/` and a rerun there overwrites
+in place, which is not recoverable cheaply -- the `.mc` save files alone run to
+hundreds of MB per head (1.5 GB for the profile raw), so copying the directory
+first is not a practical alternative:
+
+```bash
+python src/bpnet/motifcompendium/cluster_motifs.py --head count \
+    --min-reads 10000000 --out-dir motifcompendium/bpnet_198 \
+    --skip-svg-logos --logo-report-top-n 0
+```
+
+Two things to know about a variant compendium. `cluster_final` ids are **not
+stable across runs**, so its hits are not comparable until
+`hitcall/launch_link.py` has been rerun against its own
+`pattern_to_cluster.tsv`; and the logo paths in its
+`cluster_logo_paths.tsv` are relative to its own `--out-dir`, so
+`src/analysis/motif_redundancy.py` needs `--logo-root` pointed there to embed
+logos.
 2. Loads every surviving experiment's `modisco/bpnet/{experiment}_{head}.modisco.h5`
    into one `MotifCompendium` via `build_from_modisco` — this is also where
    MotifCompendium collapses each source pattern down to a single averaged CWM,
