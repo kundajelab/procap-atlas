@@ -309,6 +309,39 @@ weak discovery-level tissue structure does not bound usage-level specificity,
 since a motif can be discovered in two arbitrary experiments and still be used
 in only one lineage.
 
+#### Collapsing the lexicon by motif identity
+
+`--collapse-by {cluster,jaspar_name,jaspar_family}` changes what counts as one
+lexicon unit. Cluster level is the default and is the **upper bound** on
+lexicon size, since ~10–18% of clusters are near-duplicates of another (see
+[Compendium Redundancy](#compendium-redundancy)). Collapsing by JASPAR identity
+removes that by construction — 31 clusters best-matching SP9 become one unit —
+with no threshold to defend.
+
+It errs the other way, so read the two as a bracket rather than picking one:
+JASPAR annotation is a nearest-neighbour lookup, so genuinely distinct variants
+can share a label and be merged when they shouldn't. Identity level is the
+**lower bound**.
+
+A unit's experiment set is the union over its member clusters, never the sum or
+the max: a motif discovered in different experiments under different cluster
+ids was still discovered in all of them, so prevalence can only grow.
+
+Unnamed clusters stay as their own units by default. On the real count head 37%
+of clusters carry no JASPAR name, and that unmatched class is where the
+strongest tissue concentration sits, so dropping it would discard the most
+interesting part of the lexicon. `--drop-unnamed` excludes them if a purely
+annotation-based lexicon is wanted.
+
+```bash
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --collapse-by jaspar_name
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --collapse-by jaspar_family
+```
+
+Requires `cluster_metadata.tsv` (the pattern-to-cluster mapping carries no
+JASPAR names).
+
 `--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
 stratified curves. Without it the script falls back to a JASPAR-match proxy
 (matched vs. unmatched), which is only a proxy: JASPAR2026 has essentially no

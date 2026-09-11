@@ -2417,3 +2417,138 @@ def test_mutual_best_pairs_keeps_schema_when_empty():
     empty = mr.mutual_best_pairs(names, p, 1e-9)
     assert empty.empty
     assert list(empty.columns) == ["motif_a", "motif_b", "p_value"]
+
+
+# --------------------------------------------------------------------------
+# identity-collapsed rarefaction
+# --------------------------------------------------------------------------
+
+
+def collapse_meta(rows):
+    """rows: (cluster_final, jaspar_name, exp_set)."""
+    return pd.DataFrame([
+        {"cluster_final": c, "jaspar_name": j, "posneg": "pos",
+         "exp_set": set(e), "prevalence": len(set(e)),
+         "total_seqlets": 100 * len(e), "n_motifs": len(e)}
+        for c, j, e in rows
+    ])
+
+
+def test_collapse_unions_experiment_sets_not_just_counts():
+    """The point of collapsing: a motif found in different experiments under
+    different cluster ids was still found in all of them, so prevalence is the
+    union -- never the sum, never the max."""
+    meta = collapse_meta([
+        (0, "SP9", ["E1", "E2"]),
+        (1, "SP9", ["E2", "E3"]),
+        (2, "GATA1", ["E4"]),
+    ])
+    out = rare.collapse_by_identity(meta, "jaspar_name")
+    row = out.set_index("jaspar_name")
+    assert row.loc["SP9", "prevalence"] == 3          # union {E1,E2,E3}
+    assert row.loc["SP9", "exp_set"] == {"E1", "E2", "E3"}
+    assert row.loc["SP9", "n_clusters"] == 2
+    assert row.loc["GATA1", "prevalence"] == 1
+    assert len(out) == 2
+
+
+def test_collapse_keeps_unnamed_clusters_as_singletons():
+    """37% of real clusters are unnamed and that class carries the strongest
+    tissue signal, so they must not be silently merged or dropped."""
+    meta = collapse_meta([
+        (0, "SP9", ["E1"]),
+        (1, None, ["E2"]),
+        (2, None, ["E3"]),
+    ])
+    out = rare.collapse_by_identity(meta, "jaspar_name")
+    assert len(out) == 3
+    unnamed = out[out.unit.str.startswith("__unnamed__")]
+    assert len(unnamed) == 2
+    assert set(unnamed.prevalence) == {1}
+
+
+def test_collapse_can_drop_unnamed_on_request():
+    meta = collapse_meta([(0, "SP9", ["E1"]), (1, None, ["E2"])])
+    out = rare.collapse_by_identity(meta, "jaspar_name", drop_unnamed=True)
+    assert len(out) == 1
+    assert out.iloc[0]["jaspar_name"] == "SP9"
+
+
+def test_collapse_at_family_level_is_coarser_than_name_level():
+    meta = collapse_meta([
+        (0, "SP1", ["E1"]), (1, "SP2", ["E2"]), (2, "SP9", ["E3"]),
+        (3, "GATA1", ["E4"]),
+    ])
+    by_name = rare.collapse_by_identity(meta, "jaspar_name")
+    by_family = rare.collapse_by_identity(meta, "jaspar_family")
+    assert len(by_name) == 4
+    assert len(by_family) == 2                       # SP* collapse, GATA1 alone
+    sp = by_family[by_family.unit == "SP"].iloc[0]
+    assert sp["prevalence"] == 3 and sp["n_clusters"] == 3
+
+
+def test_collapse_cluster_level_is_a_noop():
+    meta = collapse_meta([(0, "SP9", ["E1"]), (1, "SP9", ["E2"])])
+    assert rare.collapse_by_identity(meta, "cluster") is meta
+
+
+def test_collapse_requires_jaspar_column():
+    meta = pd.DataFrame({"cluster_final": [0], "exp_set": [{"E1"}], "prevalence": [1]})
+    with pytest.raises(ValueError, match="jaspar_name"):
+        rare.collapse_by_identity(meta, "jaspar_name")
+
+
+def test_collapse_sums_seqlets_across_members():
+    meta = collapse_meta([(0, "SP9", ["E1", "E2"]), (1, "SP9", ["E3"])])
+    out = rare.collapse_by_identity(meta, "jaspar_name")
+    assert out.iloc[0]["total_seqlets"] == 300        # 200 + 100
+    assert out.iloc[0]["n_motifs"] == 3
+
+
+def test_collapsed_lexicon_is_never_larger_than_the_cluster_lexicon():
+    rng = np.random.default_rng(0)
+    exps = [f"E{i}" for i in range(30)]
+    rows = [
+        (i, f"TF{i % 12}", list(rng.choice(exps, size=3, replace=False)))
+        for i in range(40)
+    ]
+    meta = collapse_meta(rows)
+    for level in ("jaspar_name", "jaspar_family"):
+        out = rare.collapse_by_identity(meta, level)
+        assert len(out) <= len(meta)
+        # and prevalence can only grow, never shrink
+        assert out["prevalence"].max() >= meta["prevalence"].max()
+
+
+def test_collapse_cli_end_to_end(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps[:6], "SP9", 6 * 500) for _ in range(4)]   # 4 clusters, one TF
+    rows += [("pos", exps[6:10], "GATA1", 4 * 400)]
+    rows += [("pos", exps[10:13], None, 3 * 100) for _ in range(2)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+         "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+         "--n-reps", "10", "--collapse-by", "jaspar_name"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "collapsed 7 clusters to 4 jaspar_name units" in result.stderr
+    assert "2 unnamed kept as singletons" in result.stderr
+    curves = pd.read_csv(tmp_path / "out" / "motif_rarefaction_profile.tsv", sep="\t")
+    full = curves[(curves.scheme == "uniform") & (curves.motif_class == "__all__")]
+    assert full.sort_values("k")["mean"].iloc[-1] == pytest.approx(4)
+
+
+def test_collapse_cli_rejects_mapping_input(tmp_path):
+    rows = [("pos", real_experiments(6), None)]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+         "--pattern-to-cluster", str(map_path), "--out-dir", str(tmp_path / "out"),
+         "--collapse-by", "jaspar_name"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "jaspar_name" in result.stderr

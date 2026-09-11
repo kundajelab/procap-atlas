@@ -51,6 +51,7 @@ Usage:
 """
 
 import argparse
+import re
 import sys
 from math import exp, lgamma
 from pathlib import Path
@@ -141,6 +142,81 @@ def load_presence(
     meta = meta[meta["prevalence"] > 0].reset_index(drop=True)
     universe = sorted(set().union(*meta["exp_set"])) if len(meta) else []
     return meta, universe
+
+
+def collapse_by_identity(
+    meta: pd.DataFrame, level: str, drop_unnamed: bool = False
+) -> pd.DataFrame:
+    """Merge clusters sharing a JASPAR identity into one lexicon unit.
+
+    Cluster-level rarefaction counts a motif once per MotifCompendium cluster,
+    and ~10-18% of those clusters are near-duplicates of another (see
+    motif_redundancy.py), so it overstates the lexicon. Collapsing by JASPAR
+    identity removes that by construction -- 31 clusters best-matching SP9
+    become one unit -- with no threshold to defend.
+
+    It errs the other way, though, and the two should be read as a bracket:
+    JASPAR annotation is a nearest-neighbour lookup, so genuinely distinct
+    variants can share a label and get merged that shouldn't be. Cluster level
+    is the upper bound on lexicon size, identity level the lower bound.
+
+    Unnamed clusters stay as their own units by default rather than being
+    dropped: on the real count head 37% of clusters carry no JASPAR name, and
+    that unmatched class is where the strongest tissue concentration sits, so
+    discarding it would throw away the most interesting part of the lexicon.
+    `--drop-unnamed` excludes them if a purely annotation-based lexicon is
+    wanted.
+
+    A unit's experiment set is the union over its member clusters, so
+    prevalence can only grow -- which is the point: a motif discovered in
+    different experiments under different cluster ids was still discovered.
+    """
+    if level == "cluster":
+        return meta
+    if "jaspar_name" not in meta.columns:
+        raise ValueError(
+            "--collapse-by needs a jaspar_name column, which only "
+            "cluster_metadata.tsv carries (not the pattern-to-cluster mapping)"
+        )
+
+    named = meta["jaspar_name"].notna() & (meta["jaspar_name"].astype(str) != "")
+    if drop_unnamed:
+        meta = meta[named].reset_index(drop=True)
+        named = pd.Series(True, index=meta.index)
+
+    def key(row) -> str:
+        name = row["jaspar_name"]
+        if not isinstance(name, str) or not name:
+            return f"__unnamed__{row['cluster_final']}"
+        if level == "jaspar_family":
+            base = name.split("::")[0]
+            return re.sub(r"[0-9]+[A-Z]?$", "", base).upper().rstrip("-_") or base.upper()
+        return name
+
+    meta = meta.copy()
+    meta["unit"] = meta.apply(key, axis=1)
+    rows = []
+    for unit, sub in meta.groupby("unit", sort=True):
+        exp_set = set().union(*sub["exp_set"]) if len(sub) else set()
+        row = {
+            "unit": unit,
+            "n_clusters": len(sub),
+            "exp_set": exp_set,
+            "prevalence": len(exp_set),
+            "cluster_final": sub["cluster_final"].iloc[0],
+            "posneg": sub["posneg"].iloc[0] if "posneg" in sub else "pos",
+            "jaspar_name": sub["jaspar_name"].iloc[0],
+        }
+        for col in ("total_seqlets", "n_motifs"):
+            if col in sub.columns:
+                row[col] = sub[col].sum()
+        if "jaspar_score" in sub.columns:
+            row["jaspar_score"] = sub["jaspar_score"].max()
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    if "total_seqlets" in out.columns and "n_motifs" in out.columns:
+        out["seqlets_per_motif"] = out["total_seqlets"] / out["n_motifs"].replace(0, np.nan)
+    return out.reset_index(drop=True)
 
 
 def load_presence_from_mapping(
@@ -522,6 +598,22 @@ def main():
              "roughly fixed (default: 10000000, matching cluster_motifs.py)",
     )
     parser.add_argument(
+        "--collapse-by", default="cluster",
+        choices=["cluster", "jaspar_name", "jaspar_family"],
+        help="what counts as one lexicon unit. 'cluster' is the upper bound on "
+             "lexicon size (inflated ~10-18%% by near-duplicate clusters); "
+             "JASPAR identity collapses those by construction but is a lower "
+             "bound, since nearest-neighbour labelling merges some genuinely "
+             "distinct variants. Read the two as a bracket (default: cluster)",
+    )
+    parser.add_argument(
+        "--drop-unnamed", action="store_true",
+        help="with --collapse-by, exclude clusters that have no JASPAR name "
+             "instead of keeping each as its own unit. Off by default because "
+             "37%% of real clusters are unnamed and that class carries the "
+             "strongest tissue concentration",
+    )
+    parser.add_argument(
         "--min-cluster-experiments", type=int, default=1, metavar="N",
         help="only count clusters seen in >= N experiments; 2 excludes "
              "singletons, the least reproducible clusters (default: 1)",
@@ -634,6 +726,22 @@ def main():
         meta, universe = load_presence_from_mapping(source, keep_experiments=keep)
     else:
         meta, universe = load_presence(source, keep_experiments=keep)
+    if args.collapse_by != "cluster":
+        before = len(meta)
+        try:
+            meta = collapse_by_identity(meta, args.collapse_by, args.drop_unnamed)
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
+        n_unnamed = int(
+            meta["unit"].astype(str).str.startswith("__unnamed__").sum()
+        ) if "unit" in meta.columns else 0
+        print(
+            f"{args.head}: collapsed {before} clusters to {len(meta)} "
+            f"{args.collapse_by} units ({n_unnamed} unnamed kept as singletons)",
+            file=sys.stderr,
+        )
+
     if args.min_cluster_experiments > 1:
         meta = meta[meta["prevalence"] >= args.min_cluster_experiments].reset_index(
             drop=True
