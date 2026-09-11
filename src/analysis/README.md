@@ -453,16 +453,32 @@ p       mutual excess   mutual name   complete name   single name
 1e-02   172 (18.3%)     46% (23x)     15%              0%
 ```
 
-`mutual` holds ~46–51% name agreement (57–62% at family level) over four orders
-of magnitude while its excess saturates at 172; `complete` degrades from 62% to
-15% and `single` collapses to 0%. Merges that stay equally well-supported as the
-threshold loosens are real; merges that get worse are absorbing noise. So
-**quote `mutual`: roughly one in six count-head clusters (15–18%) has a
-mutual-best duplicate**, putting 941 clusters at ~770–795 distinct motifs.
-`complete` and `single` are upper bounds only.
+`mutual` holds ~46–56% name agreement (57–64% at family level) over seven
+orders of magnitude while its excess grows five-fold and then saturates:
 
-Downstream, that scales the prevalence-filtered lexicon of 343 to ~285–290 and
-the 59 tissue-restricted clusters to ~50. The concentration *ratios* in
+```text
+p        mutual excess   name agree   family agree
+1e-11     36 (3.8%)      56%          61%
+1e-09     70 (7.4%)      50%          60%
+1e-06    147 (15.6%)     51%          59%
+1e-04    171 (18.2%)     47%          58%
+1e-02    172 (18.3%)     46%          57%
+```
+
+Agreement staying flat while the pair count grows five-fold is the key result:
+if loosening the threshold were adding spurious merges, agreement would decay
+toward the 2% chance level. It goes 56% → 46%, and the pairs added across that
+whole range have ~44% agreement on their own — still 22× chance. So there is no
+principled place to stop short, and `mutual` saturates at 172.
+
+**Quote `mutual` at its saturation point: ~18% of count-head clusters have a
+mutual-best duplicate** (172 of 941, leaving ~769 distinct motifs), with 15.6%
+at `p ≤ 1e-6` as a conservative floor. `complete` degrades from 62% to 15%
+agreement and `single` collapses to 0% over the same range, so both are upper
+bounds only.
+
+Downstream, that scales the prevalence-filtered lexicon of 343 to ~280–290 and
+the 59 tissue-restricted clusters to ~48–50. The concentration *ratios* in
 [Discovery Concentration](#discovery-concentration) are unaffected: duplicates
 share an experiment set, so they are equally restricted under both observed and
 null. Only the counts move.
@@ -576,6 +592,12 @@ that cannot be read is marked in place rather than failing the run.
 A disagreeing pair is not automatically a bad merge: JASPAR contains
 near-identical motifs, so `family_agree` distinguishes SP1-vs-SP9 (benign) from
 SP1-vs-GATA1 (not).
+
+The review set is much smaller than the pair count suggests. On the real count
+head at `p ≤ 1e-6`: 147 mutual pairs, but only 69 have both clusters
+JASPAR-named, of which 35 agree and **34 disagree** — and family-level
+agreement rescues 6 of those, leaving **28 pairs** that disagree even at family
+level. Those 28 are the entire question, and they sort to the top of the HTML.
 
 #### Footgun: degenerate p-values
 
