@@ -93,7 +93,7 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 MC_DIR = REPO_ROOT / "motifcompendium" / "bpnet"
-DEFAULT_THRESHOLDS = (1e-12, 1e-10, 1e-8, 1e-6, 1e-4, 1e-2)
+DEFAULT_THRESHOLDS = (1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-6, 1e-4, 1e-2)
 NAME_RE = re.compile(r"((?:pos|neg)_patterns\.\d+)")
 
 
@@ -523,6 +523,7 @@ def sweep(
     res: dict[str, np.ndarray],
     thresholds,
     min_overlap_frac: float,
+    jaspar: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Excess clusters per threshold under all three merge criteria.
 
@@ -546,8 +547,38 @@ def sweep(
             row[f"excess_{criterion}"] = len(names) - n_comp
             row[f"excess_frac_{criterion}"] = round((len(names) - n_comp) / len(names), 4)
             row[f"largest_{criterion}"] = int(sizes.iloc[0]) if len(sizes) else 0
+            if jaspar is not None:
+                frac, n_groups, n_in = jaspar_agreement(comps, jaspar)
+                row[f"jaspar_agree_{criterion}"] = (
+                    round(frac, 3) if frac is not None else np.nan
+                )
+                row[f"jaspar_groups_{criterion}"] = n_groups
         rows.append(row)
     return pd.DataFrame(rows)
+
+
+def jaspar_agreement(
+    comps: dict[str, int], jaspar: dict[str, str]
+) -> tuple[float | None, int, int]:
+    """Fraction of merged groups whose members share a JASPAR name.
+
+    The only external check available on whether a merge is real. High
+    agreement means the clusters really were the same motif; low agreement
+    means the criterion is merging distinct family members and is too loose.
+
+    Returns (fraction, n_groups_checked, n_clusters_in_them); fraction is None
+    when nothing merged, which is not the same as 0% agreement.
+    """
+    by_comp: dict[int, list[str]] = {}
+    for motif, comp in comps.items():
+        name = jaspar.get(motif)
+        if isinstance(name, str) and name:
+            by_comp.setdefault(comp, []).append(name)
+    merged = [v for v in by_comp.values() if len(v) > 1]
+    if not merged:
+        return None, 0, 0
+    consistent = sum(1 for v in merged if len(set(v)) == 1)
+    return consistent / len(merged), len(merged), sum(len(v) for v in merged)
 
 
 def plot_sweep(summary: pd.DataFrame, head: str, out_stem: Path) -> None:
@@ -765,8 +796,30 @@ def main():
             )
     widths = np.array([m.shape[-1] for m in pwms])
 
+    jaspar_map: dict[str, str] = {}
+    if args.cluster_metadata is not None and args.cluster_metadata.exists():
+        _meta = pd.read_csv(args.cluster_metadata, sep="\t")
+        if {"cluster_final", "posneg"} <= set(_meta.columns) and "jaspar_name" in _meta.columns:
+            _key = (
+                _meta["posneg"].astype(str) + "_patterns."
+                + _meta["cluster_final"].astype(int).astype(str)
+            )
+            jaspar_map = {
+                k: v for k, v in zip(_key, _meta["jaspar_name"])
+                if isinstance(v, str) and v
+            }
+            overlap = len(set(names) & set(jaspar_map))
+            print(
+                f"{args.head}: {overlap}/{len(names)} clusters matched to a "
+                "JASPAR name for the agreement check",
+                file=sys.stderr,
+            )
+
     res = self_compare(pwms, args.n_jobs)
-    summary = sweep(names, pwms, res, args.p_thresholds, args.min_overlap_frac)
+    summary = sweep(
+        names, pwms, res, args.p_thresholds, args.min_overlap_frac,
+        jaspar=jaspar_map or None,
+    )
 
     thresholds = sorted(set(args.p_thresholds) | {args.report_threshold})
     pairs = build_pairs(names, pwms, res, max(thresholds), args.min_overlap_frac)
@@ -829,22 +882,31 @@ def main():
                 file=sys.stderr,
             )
 
-    if "jaspar_name" in comp_df.columns:
-        named = comp_df.dropna(subset=["jaspar_name"])
-        multi = named.groupby("component")["motif"].size()
-        merged = named[named["component"].isin(multi[multi > 1].index)]
-        if not merged.empty:
-            agree = (
-                merged.groupby("component")["jaspar_name"].nunique() == 1
-            ).mean()
+    if jaspar_map and not at.empty:
+        row = at.iloc[0]
+        print(
+            f"\nJASPAR-name agreement within merged groups at "
+            f"p <= {args.report_threshold:g}:",
+            file=sys.stderr,
+        )
+        for criterion in MERGERS:
+            col = f"jaspar_agree_{criterion}"
+            if col not in row or pd.isna(row[col]):
+                print(f"  {criterion:<9} (nothing merged)", file=sys.stderr)
+                continue
             print(
-                f"\nOf merged components with >1 JASPAR-named cluster, "
-                f"{agree:.0%} are internally consistent in JASPAR name.\n"
-                "  High agreement => name collisions really were redundancy.\n"
-                "  Low agreement  => TOMTOM is merging distinct family members, "
-                "so loosen the threshold with care.",
+                f"  {criterion:<9} {row[col]:.0%} of "
+                f"{int(row[f'jaspar_groups_{criterion}'])} merged groups agree",
                 file=sys.stderr,
             )
+        print(
+            "\nAgreement is the only external check on whether a merge is real.\n"
+            "  High => those clusters really were the same motif.\n"
+            "  Low  => the criterion is merging distinct family members and is\n"
+            "          too loose; prefer the criterion that both merges\n"
+            "          something and agrees, and treat looser ones as upper bounds.",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":

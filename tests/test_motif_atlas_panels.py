@@ -1395,8 +1395,8 @@ def test_redundancy_cli_end_to_end(tmp_path):
     assert "jaspar_name" in comps.columns
     assert (out / "motif_redundancy_count.png").exists()
     assert "Redundancy sweep" in result.stderr
-    # the duplicate pair shares a JASPAR name, so agreement should be perfect
-    assert "internally consistent in JASPAR name" in result.stderr
+    # the duplicate pair shares a JASPAR name, so agreement should be reported
+    assert "JASPAR-name agreement within merged groups" in result.stderr
 
 
 def test_redundancy_cli_errors_without_meme(tmp_path):
@@ -1862,3 +1862,49 @@ def test_unrecognized_h5_layout_errors_with_a_tree_dump(tmp_path):
     assert "unexpected" in result.stderr          # tree dump
     assert "UnboundLocalError" not in result.stderr
     assert "Traceback" not in result.stderr
+
+
+def test_jaspar_agreement_perfect_and_zero():
+    comps = {"a": 0, "b": 0, "c": 1, "d": 1}
+    agree = {"a": "AP1", "b": "AP1", "c": "SP1", "d": "SP1"}
+    frac, n_groups, n_in = mr.jaspar_agreement(comps, agree)
+    assert (frac, n_groups, n_in) == (1.0, 2, 4)
+
+    disagree = {"a": "AP1", "b": "GATA1", "c": "SP1", "d": "TBP"}
+    frac, n_groups, _ = mr.jaspar_agreement(comps, disagree)
+    assert (frac, n_groups) == (0.0, 2)
+
+
+def test_jaspar_agreement_is_none_when_nothing_merged():
+    """None and 0% mean different things: nothing to check vs. checked and
+    inconsistent."""
+    comps = {"a": 0, "b": 1}
+    frac, n_groups, n_in = mr.jaspar_agreement(comps, {"a": "AP1", "b": "SP1"})
+    assert frac is None and n_groups == 0 and n_in == 0
+
+
+def test_jaspar_agreement_ignores_unnamed_clusters():
+    comps = {"a": 0, "b": 0, "c": 0}
+    # only two of the three carry a name; the unnamed one must not count
+    frac, n_groups, n_in = mr.jaspar_agreement(comps, {"a": "AP1", "b": "AP1"})
+    assert (frac, n_groups, n_in) == (1.0, 1, 2)
+
+
+def test_sweep_reports_agreement_per_criterion():
+    """The criterion-specific agreement is the number that decides which
+    redundancy estimate to trust, so every criterion must carry its own."""
+    pfms, cwms, names = [], [], []
+    for i in range(20):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T); cwms.append(cwm.T); names.append(f"pos_patterns.{i}")
+    pfms.append(pfms[0].copy()); cwms.append(cwms[0].copy())
+    names.append("pos_patterns.20")
+    trimmed, _ = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    res = mr.self_compare(trimmed, n_jobs=1)
+    jaspar = {n: f"TF{i}" for i, n in enumerate(names)}
+    jaspar["pos_patterns.20"] = "TF0"  # the duplicate shares name with cluster 0
+
+    summary = mr.sweep(names, trimmed, res, [1e-6], 0.7, jaspar=jaspar)
+    for criterion in mr.MERGERS:
+        assert f"jaspar_agree_{criterion}" in summary.columns
+        assert f"jaspar_groups_{criterion}" in summary.columns

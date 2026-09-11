@@ -412,10 +412,42 @@ compendium 306 clusters carry only **112 distinct JASPAR names** (SP9 claimed
 by 31 clusters, TBP by 15, NFYA by 14), which looks like ~57% redundancy. But
 JASPAR annotation is a nearest-neighbour lookup, so a bare GC-box and a GC-box
 with an ETS half-site can both best-match SP9 while being genuinely distinct.
-Passing `--cluster-metadata` reports how often merged components agree on
-JASPAR name, which distinguishes the two readings: high agreement means the
-name collisions really were redundancy, low agreement means TOMTOM is merging
-distinct family members and the threshold is too loose.
+
+`--cluster-metadata` therefore reports **JASPAR-name agreement within merged
+groups, per criterion** — the only external check available on whether a merge
+is real. High agreement means those clusters really were the same motif; low
+agreement means the criterion is merging distinct family members and is too
+loose. Prefer the criterion that both merges something *and* agrees, and treat
+looser ones as upper bounds. On the real count head at `p ≤ 1e-6`,
+complete-linkage agreement was only **39%**, which is why its 47.8% figure
+should not be quoted.
+
+Measured results (945 clusters from the h5, contribution-trimmed to a median
+of 25bp):
+
+```text
+p_threshold  excess_mutual  excess_complete  excess_single  largest_single
+1e-12             0.0%            0.0%           0.0%              1
+1e-10            12.0%           20.9%          34.6%            116
+1e-08            15.0%           32.4%          59.6%            265
+1e-06            17.5%           47.8%          85.5%            737
+1e-04            17.6%           65.0%          97.3%            917
+1e-02            17.7%           79.3%          99.9%            945
+```
+
+`mutual` plateaus at ~17.5% from `1e-6` onward with a largest group of 2, while
+`complete` and `single` keep climbing — the signature of the looser criteria
+absorbing family members rather than finding duplicates. Note there is no
+threshold at which all three agree, so the lexicon size should be quoted with
+this range attached rather than as a single corrected number.
+
+Two things to vary before settling on a figure. Contribution trimming at
+`--trim-threshold 0.3` still leaves a median 25bp of a 50bp window, and
+`src/bpnet/hitcall/`'s own notes record that CWM magnitude decays gradually
+across nearly every motif, so a stricter threshold (0.5, 0.7) isolates cores
+better and should reduce spurious merging. And `--subset` on the 59
+tissue-restricted clusters is the cleanest calibration available, since those
+show 6 excess by JASPAR name alone.
 
 `--min-overlap-frac` (default 0.7) requires the best alignment to cover that
 fraction of the shorter motif, suppressing significant-but-spurious
