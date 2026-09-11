@@ -188,6 +188,7 @@ def swap_null_test(
     split_cols: list[str],
     n_permutations: int,
     rng: np.random.Generator,
+    collect_draws: dict | None = None,
 ) -> pd.DataFrame:
     """Compare observed concentration against the degree-preserving null.
 
@@ -195,6 +196,12 @@ def swap_null_test(
     against their null distributions, plus an empirical one-sided p-value
     (#{null >= observed} + 1) / (n_permutations + 1) -- the standard
     add-one form, so a p-value is never reported as exactly zero.
+
+    Pass a dict as `collect_draws` to keep the per-permutation counts, which
+    the summary otherwise discards. A figure wants the null *distribution*
+    rather than its mean and 95th percentile: "observed 45, null mean 7.9" is
+    a weaker visual claim than showing 45 sitting outside the entire null
+    histogram.
     """
     exp_sets = list(annotated["exp_set"])
     labels = annotated[split_cols].astype(str).agg("|".join, axis=1).to_numpy()
@@ -221,6 +228,11 @@ def swap_null_test(
         for label, (n_single, mean_g) in stats(sets).items():
             null_single[label].append(n_single)
             null_mean[label].append(mean_g)
+
+    if collect_draws is not None:
+        collect_draws.update(
+            {label: list(vals) for label, vals in null_single.items()}
+        )
 
     rows = []
     for label in observed:
@@ -447,6 +459,12 @@ def main():
         help="write the resolved biosample->group table here and exit",
     )
     parser.add_argument(
+        "--save-null-draws", action="store_true",
+        help="also write the per-permutation null single-group counts, which "
+             "the figure needs to draw the null distribution rather than just "
+             "its mean and p95",
+    )
+    parser.add_argument(
         "--out-dir", type=Path, default=REPO_ROOT / "figures" / "motif_atlas",
         metavar="DIR", help="output directory (default: figures/motif_atlas/)",
     )
@@ -575,13 +593,25 @@ def main():
         print(summary.to_string(index=False), file=sys.stderr)
 
     if args.swap_permutations > 0:
+        draws = {} if args.save_null_draws else None
         swap = swap_null_test(
             annotated, group_map, split_cols, args.swap_permutations,
-            np.random.default_rng(args.seed),
+            np.random.default_rng(args.seed), collect_draws=draws,
         )
         swap_path = stem.parent / f"{stem.name}_swapnull.tsv"
         swap.to_csv(swap_path, sep="\t", index=False)
         print(f"Saved {swap_path}", file=sys.stderr)
+        if draws:
+            long = pd.DataFrame(
+                [
+                    {"motif_class": label, "permutation": i, "n_single_group": v}
+                    for label, vals in draws.items()
+                    for i, v in enumerate(vals)
+                ]
+            )
+            draws_path = stem.parent / f"{stem.name}_nulldraws.tsv"
+            long.to_csv(draws_path, sep="\t", index=False)
+            print(f"Saved {draws_path}", file=sys.stderr)
         with pd.option_context("display.width", 200, "display.max_columns", 30):
             print(
                 f"\nDegree-preserving null ({args.swap_permutations} curveball "
