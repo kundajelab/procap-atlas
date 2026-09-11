@@ -1867,11 +1867,12 @@ def test_unrecognized_h5_layout_errors_with_a_tree_dump(tmp_path):
 def test_jaspar_agreement_perfect_and_zero():
     comps = {"a": 0, "b": 0, "c": 1, "d": 1}
     agree = {"a": "AP1", "b": "AP1", "c": "SP1", "d": "SP1"}
-    frac, n_groups, n_in = mr.jaspar_agreement(comps, agree)
+    frac, n_groups, n_in, chance = mr.jaspar_agreement(comps, agree)
     assert (frac, n_groups, n_in) == (1.0, 2, 4)
+    assert 0.0 < chance <= 1.0
 
     disagree = {"a": "AP1", "b": "GATA1", "c": "SP1", "d": "TBP"}
-    frac, n_groups, _ = mr.jaspar_agreement(comps, disagree)
+    frac, n_groups, _, _ = mr.jaspar_agreement(comps, disagree)
     assert (frac, n_groups) == (0.0, 2)
 
 
@@ -1879,14 +1880,14 @@ def test_jaspar_agreement_is_none_when_nothing_merged():
     """None and 0% mean different things: nothing to check vs. checked and
     inconsistent."""
     comps = {"a": 0, "b": 1}
-    frac, n_groups, n_in = mr.jaspar_agreement(comps, {"a": "AP1", "b": "SP1"})
-    assert frac is None and n_groups == 0 and n_in == 0
+    frac, n_groups, n_in, chance = mr.jaspar_agreement(comps, {"a": "AP1", "b": "SP1"})
+    assert frac is None and n_groups == 0 and n_in == 0 and chance == 0.0
 
 
 def test_jaspar_agreement_ignores_unnamed_clusters():
     comps = {"a": 0, "b": 0, "c": 0}
     # only two of the three carry a name; the unnamed one must not count
-    frac, n_groups, n_in = mr.jaspar_agreement(comps, {"a": "AP1", "b": "AP1"})
+    frac, n_groups, n_in, _ = mr.jaspar_agreement(comps, {"a": "AP1", "b": "AP1"})
     assert (frac, n_groups, n_in) == (1.0, 1, 2)
 
 
@@ -1992,3 +1993,78 @@ def test_stricter_trim_threshold_narrows_cores():
         medians.append(float(np.median([t.shape[-1] for t in trimmed])))
     assert medians == sorted(medians, reverse=True), medians
     assert medians[0] > medians[-1]
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("SP9", "SP"), ("SP1", "SP"), ("SP2", "SP"),
+        ("ETV7", "ETV"), ("ELF2", "ELF"), ("Atf1", "ATF"),
+        ("POU2F1::SOX2", "POU2F"), ("Pou5f1::Sox2", "POU5F"),
+        ("ZNF143", "ZNF"), ("TBP", "TBP"), ("CTCF", "CTCF"),
+    ],
+)
+def test_jaspar_family_collapses_paralogues(name, expected):
+    assert mr.jaspar_family(name) == expected
+
+
+def test_agreement_chance_is_small_for_a_skewed_pool():
+    """The number that makes a ~50% observation interpretable: with names as
+    skewed as the real compendium's, random merging almost never agrees."""
+    pool = ["SP9"] * 31 + ["TBP"] * 15 + ["NFYA"] * 14 + [
+        f"TF{i}" for i in range(246)
+    ]
+    pairs = [["x", "y"]] * 50
+    chance = mr.agreement_chance(pairs, pool)
+    assert 0.0 < chance < 0.05
+
+
+def test_agreement_chance_is_one_when_every_name_is_identical():
+    assert mr.agreement_chance([["a", "a"]], ["N"] * 10) == pytest.approx(1.0)
+
+
+def test_agreement_chance_falls_with_group_size():
+    """Larger merged groups are harder to agree by chance, so the baseline
+    must depend on group size, not just the name distribution."""
+    pool = [f"TF{i % 10}" for i in range(100)]
+    c2 = mr.agreement_chance([["a", "b"]], pool)
+    c5 = mr.agreement_chance([["a"] * 5], pool)
+    assert c5 < c2
+
+
+def test_family_agreement_exceeds_exact_when_merges_are_within_family():
+    """The case that matters: two clusters that are the same motif but carry
+    different paralogue labels count as disagreement by name and agreement by
+    family."""
+    comps = {"a": 0, "b": 0, "c": 1, "d": 1}
+    jaspar = {"a": "SP1", "b": "SP9", "c": "ETV4", "d": "ETV7"}
+    by_name, _, _, _ = mr.jaspar_agreement(comps, jaspar, family=False)
+    by_family, _, _, _ = mr.jaspar_agreement(comps, jaspar, family=True)
+    assert by_name == 0.0
+    assert by_family == 1.0
+
+
+def test_family_agreement_does_not_rescue_cross_family_merges():
+    comps = {"a": 0, "b": 0}
+    jaspar = {"a": "SP1", "b": "GATA1"}
+    by_family, _, _, _ = mr.jaspar_agreement(comps, jaspar, family=True)
+    assert by_family == 0.0
+
+
+def test_sweep_records_chance_and_family_columns():
+    pfms, cwms, names = [], [], []
+    for i in range(20):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T); cwms.append(cwm.T); names.append(f"pos_patterns.{i}")
+    pfms.append(pfms[0].copy()); cwms.append(cwms[0].copy())
+    names.append("pos_patterns.20")
+    trimmed, _ = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    res = mr.self_compare(trimmed, n_jobs=1)
+    jaspar = {n: f"TF{i}" for i, n in enumerate(names)}
+    jaspar["pos_patterns.20"] = "TF0"
+
+    summary = mr.sweep(names, trimmed, res, [1e-6], 0.7, jaspar=jaspar)
+    for criterion in mr.MERGERS:
+        for prefix in ("jaspar_agree", "jaspar_chance", "jaspar_enrich",
+                       "family_agree", "family_enrich"):
+            assert f"{prefix}_{criterion}" in summary.columns

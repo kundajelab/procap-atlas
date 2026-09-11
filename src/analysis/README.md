@@ -413,17 +413,43 @@ by 31 clusters, TBP by 15, NFYA by 14), which looks like ~57% redundancy. But
 JASPAR annotation is a nearest-neighbour lookup, so a bare GC-box and a GC-box
 with an ETS half-site can both best-match SP9 while being genuinely distinct.
 
-`--cluster-metadata` therefore reports **JASPAR-name agreement within merged
-groups, per criterion** — the only external check available on whether a merge
-is real. High agreement means those clusters really were the same motif; low
-agreement means the criterion is merging distinct family members and is too
-loose. Prefer the criterion that both merges something *and* agrees, and treat
-looser ones as upper bounds. On the real count head at `p ≤ 1e-6`,
-complete-linkage agreement was only **39%**, which is why its 47.8% figure
-should not be quoted.
+`--cluster-metadata` therefore reports **JASPAR agreement within merged groups,
+per criterion, against its chance baseline** — the only external check
+available on whether a merge is real.
 
-Measured results (945 clusters from the h5, contribution-trimmed to a median
-of 25bp):
+Read the enrichment, not the raw percentage. Names are heavily skewed (306
+named clusters, 112 names, SP9 alone claiming 31), but the measured chance that
+two randomly merged clusters share a name is only **2.6%** (4.1% at family
+level), so a ~50% observation is a **~20× enrichment** and is evidence the
+merges are real, not the "low agreement" it superficially resembles. Family
+agreement additionally absorbs JASPAR's own redundancy: SP1/SP2/SP9 and
+ETV4/ETV6/ETV7 are near-identical PWMs, so two clusters can be the same motif
+while carrying different best-hit labels.
+
+#### Measured results
+
+Trim threshold matters, and the calibration target below fixes it. Across
+`--trim-threshold` 0.3 / 0.5 / 0.7 with `--drop-untrimmable`, at `p ≤ 1e-6`:
+
+```text
+trim  median   n      mutual excess   complete excess   name agree (mutual)
+0.3    25bp   897   159 (17.7%)      422 (47.0%)       43%
+0.5    16bp   941   147 (15.6%)      325 (34.5%)       51%
+0.7     7bp   945   123 (13.0%)      224 (23.7%)       52%
+```
+
+`mutual` is stable at **13–18%** across the whole range while `complete` halves,
+and at 0.7 the chaining warning stops firing entirely (largest complete-linkage
+group falls 11 → 6). Against a 2.6% chance baseline, 52% agreement is ~20×
+enrichment. So the defensible figure is that **roughly one in seven count-head
+clusters has a mutual-best duplicate**, and `complete`'s larger numbers are
+absorbing family members rather than finding duplicates.
+
+`--trim-threshold 0.5` best matches Fi-NeMo's own per-motif median (16bp vs
+14bp); 0.7 matches its hit-weighted median (7bp vs 6bp) but over-trims relative
+to the per-motif distribution.
+
+Earlier sweep, before trimming was calibrated (945 clusters at median 25bp):
 
 ```text
 p_threshold  excess_mutual  excess_complete  excess_single  largest_single
