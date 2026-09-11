@@ -504,14 +504,53 @@ toward the 2% chance level. It goes 56% → 46%, and the pairs added across that
 whole range have ~44% agreement on their own — still 22× chance. So there is no
 principled place to stop short, and `mutual` saturates at 172.
 
-**Quote `mutual` at its saturation point: ~18% of count-head clusters have a
-mutual-best duplicate** (172 of 941, leaving ~769 distinct motifs), with 15.6%
-at `p ≤ 1e-6` as a conservative floor. `complete` degrades from 62% to 15%
-agreement and `single` collapses to 0% over the same range, so both are upper
-bounds only.
+`complete` degrades from 62% to 15% agreement and `single` collapses to 0% over
+the same range, so both are upper bounds only.
 
-Downstream, that scales the prevalence-filtered lexicon of 343 to ~280–290 and
-the 59 tissue-restricted clusters to ~48–50. The concentration *ratios* in
+**But `mutual` itself over-counts, because of containment.** Many clusters are
+tandem composites — the same core repeated in one 50bp window — and a tandem
+mutual-best-matches its own single-core counterpart. That is a hierarchy, not
+"the same motif counted twice", and `--min-overlap-frac` cannot catch it since
+it measures coverage of the *shorter* motif, which containment satisfies by
+construction. Cluster 34 is the clearest case: prevalence 31 across 13 tissue
+groups, 11,704 seqlets, no JASPAR name — a tandem SP/KLF, i.e. a double
+GC-box, which is unnamed precisely because a 50bp window holding two GC-boxes
+does not best-match a single short SP motif.
+
+Splitting the 147 mutual pairs by JASPAR-name status shows the signature
+directly:
+
+```text
+pair class             n    med min/max len   >=25bp member   weaker member seqlets
+>=1 unnamed           78        19 / 27           49/78              27.5
+both named, agree     35        10 / 22           14/35              84
+both named, disagree  34      13.5 / 15            5/34              80
+```
+
+The unnamed-involving pairs are the majority, the widest, and have by far the
+weakest second member — and they were **never externally validated**, since the
+51% agreement figure could only be computed on the 69 evaluable pairs. The
+disagreeing pairs are the narrow, near-symmetric, well-supported ones: the
+profile of genuine near-duplicates with ambiguous labels.
+
+Excluding containment:
+
+```text
+filter                                 pairs   of 941   of 343
+no filter                                147    15.6%    11.7%
+exclude any unnamed member                69     7.3%     5.5%
+exclude any member >=25bp                 79     8.4%     6.3%
+both named AND narrow AND symmetric       42     4.5%     3.3%
+```
+
+**Quote 4–8%, not 15–18%.** The higher figures count tandem-vs-core containment
+as duplication. For the prevalence≥2 lexicon of 343 the containment-free
+estimate is ~3–6%, which is small enough that the lexicon size needs no
+material correction — a change from what this README previously recorded.
+
+Downstream, at the containment-free 3–6% the prevalence-filtered lexicon of 343
+becomes ~325–335 and the 59 tissue-restricted clusters ~56–57 — a correction
+small enough not to affect any claim. The concentration *ratios* in
 [Discovery Concentration](#discovery-concentration) are unaffected: duplicates
 share an experiment set, so they are equally restricted under both observed and
 null. Only the counts move.
@@ -541,6 +580,25 @@ p_threshold  excess_mutual  excess_complete  excess_single  largest_single
 absorbing family members rather than finding duplicates. Note there is no
 threshold at which all three agree, so the lexicon size should be quoted with
 this range attached rather than as a single corrected number.
+
+#### Experiment universe: 224 / 219 / 198
+
+Three counts appear and all three are correct for different steps:
+
+- **224** — every ENCODE PRO-cap experiment.
+- **219** — after dropping the 4 uncapped experiments and the one anomalous
+  TSS-positioning experiment (ENCSR973QQI). This is the set the MotifCompendium
+  clustering was run over, and what the manuscript methods quote.
+- **198** — the subset of those with >10M reads, which every script in this
+  directory defaults to via `--min-reads`, to hold motif-discovery power
+  roughly fixed.
+
+Confirmable from the data: of the 945 count-head clusters, 76 have no
+experiment in the 198-set at all, so they were discovered only in sub-10M
+experiments — which could not happen if the compendium had been built from 198.
+Lexicon sizes reported here are therefore on the 198-experiment subset, not the
+219 the compendium spans. State that restriction explicitly anywhere both
+numbers appear, or run with `--min-reads 0` to match.
 
 #### Calibrating the trim threshold against Fi-NeMo
 
