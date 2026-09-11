@@ -237,6 +237,21 @@ def trim_by_cwm(
     return out, widths
 
 
+def trimming_ineffective(
+    widths: np.ndarray, raw_widths: np.ndarray, frac: float = 0.8
+) -> bool:
+    """Did trimming fail to actually shrink these motifs?
+
+    The signature of information-content trimming on cluster-average PFMs: the
+    real count head went from 50bp to a median of 49bp, leaving the comparison
+    flank-dominated. Extracted as a predicate so it is testable without having
+    to assert on a subprocess's stderr.
+    """
+    if len(widths) == 0 or len(raw_widths) == 0:
+        return False
+    return bool(np.median(widths) > frac * np.median(raw_widths))
+
+
 def information_content(pwm: np.ndarray) -> np.ndarray:
     """Per-position information content in bits, shape (length,).
 
@@ -660,7 +675,7 @@ def main():
             f"(median {int(np.median(widths))}) at threshold {args.trim_threshold:g}",
             file=sys.stderr,
         )
-        if how == "information-content" and np.median(widths) > 0.8 * np.median(raw_widths):
+        if how == "information-content" and trimming_ineffective(widths, raw_widths):
             print(
                 "WARNING: information-content trimming barely shrank these "
                 f"motifs (median {int(np.median(widths))} of "
