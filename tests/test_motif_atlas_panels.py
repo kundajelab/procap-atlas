@@ -42,12 +42,42 @@ import motif_hit_density as mhd  # noqa: E402
 # --------------------------------------------------------------------------
 
 
-def test_metastases_are_not_routed_to_the_destination_organ():
-    """Metastatic biosamples are named for where they spread *to*, so an
-    organ rule must never claim them ahead of the metastasis rule."""
-    assert bg.assign_group("Metastatic Breast Carcinoma in the Brain") == "metastatic_carcinoma"
-    assert bg.assign_group("Colon Carcinoma Metastatic in the Lung") == "metastatic_carcinoma"
-    assert bg.assign_group("Metastatic Liver Carcinoma in the Adrenal Gland") == "metastatic_carcinoma"
+def test_metastases_are_routed_to_their_tissue_of_origin():
+    """Origin determines the regulatory program, so a breast metastasis
+    belongs with breast -- not with the organ it spread to, and not in a
+    `metastatic_carcinoma` bucket that is a clinical category rather than a
+    tissue. Both name orderings used by the atlas must work."""
+    assert bg.assign_group("Metastatic Breast Carcinoma in the Brain") == "breast"
+    assert bg.assign_group("Colon Carcinoma Metastatic in the Lung") == "gi_tract"
+    assert bg.assign_group("Metastatic Liver Carcinoma in the Adrenal Gland") == (
+        "liver_biliary"
+    )
+    assert bg.assign_group("Metastatic Lung Carcinoma in the Adrenal Gland") == (
+        "lung_airway"
+    )
+    assert bg.assign_group("Metastatic Pancreatic Carcinoma in the Ovary") == "pancreas"
+
+
+def test_destination_organ_never_wins_for_a_metastasis():
+    # The neural rule precedes the breast rule, so matching the whole name
+    # would file a breast metastasis in the brain as neural. Matching the
+    # extracted origin substring alone is what prevents that.
+    assert bg.assign_group("Metastatic Breast Carcinoma in the Brain") != "neural"
+    assert bg.assign_group("Colon Carcinoma Metastatic in the Brain") == "gi_tract"
+    assert bg.assign_group("Metastatic Breast Carcinoma in the Ovary") != "reproductive"
+
+
+def test_metastasis_origin_extracts_both_name_orderings():
+    assert bg.metastasis_origin("Metastatic Breast Carcinoma in the Brain") == "breast"
+    assert bg.metastasis_origin("Colon Carcinoma Metastatic in the Lung") == "colon"
+    assert bg.metastasis_origin("cerebellum") is None
+
+
+def test_unparseable_metastasis_falls_through_to_other():
+    # Loud rather than filed by destination: a new naming convention must not
+    # be silently swept into whichever organ appears in the string.
+    assert bg.metastasis_origin("Metastatic Tumour Of Unknown Primary") is None
+    assert bg.assign_group("Metastasis, site unspecified") == bg.OTHER_GROUP
 
 
 @pytest.mark.parametrize(
@@ -3464,10 +3494,8 @@ def test_exemplar_cli_errors_on_a_missing_h5(tmp_path):
 
 def test_lineage_caption_renders_multi_group_lineages():
     assert fig2.lineage_caption("heart,muscle") == "heart+muscle"
-    # three groups render in full when none of them is omitted
-    assert fig2.lineage_caption(
-        "gi_tract,liver_biliary,pancreas"
-    ) == "GI+liver+pancreas"
+    # endoderm, abbreviated to fit a column
+    assert fig2.lineage_caption("gi_tract,liver_biliary,pancreas") == "GI+liver+panc"
 
 
 def test_lineage_caption_handles_the_nan_from_multi_group_rows():
@@ -3503,22 +3531,20 @@ def test_rank_for_panel_collapses_duplicate_names():
     assert got[got["jaspar_name"] == "Arid5a"]["cluster_final"].iloc[0] == 1
 
 
-def test_lineage_caption_omits_metastatic():
-    # metastatic_carcinoma is a clinical category, not a tissue, and spelling
-    # it out was what overran the caption width.
-    assert fig2.lineage_caption("gi_tract,liver_biliary,metastatic_carcinoma") == (
-        "GI+liver"
+def test_lineage_caption_wraps_instead_of_overrunning():
+    # "blood+breast+kidney" is the widest lineage in the panel and overran its
+    # column on one line.
+    assert fig2.lineage_caption("blood_immune,breast,kidney_urinary") == (
+        "blood+breast+\nkidney"
     )
-    assert fig2.lineage_caption("blood_immune,metastatic_carcinoma") == "blood"
+    assert "\n" not in fig2.lineage_caption("heart,muscle")
 
 
-def test_lineage_caption_keeps_metastatic_rather_than_render_blank():
-    # a motif whose only group is omitted must still get a caption
-    assert fig2.lineage_caption("metastatic_carcinoma") == "met"
-
-
-def test_lineage_caption_omission_is_configurable():
+def test_lineage_caption_omission_still_works_if_asked():
+    # nothing is omitted by default now that metastases are filed by origin,
+    # but the mechanism stays for presentation choices
     assert fig2.lineage_caption("blood_immune,heart", omit=("heart",)) == "blood"
-    assert fig2.lineage_caption(
-        "gi_tract,metastatic_carcinoma", omit=()
-    ) == "GI+met"
+
+
+def test_lineage_caption_keeps_an_omitted_sole_group_rather_than_blank():
+    assert fig2.lineage_caption("heart", omit=("heart",)) == "heart"

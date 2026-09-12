@@ -107,9 +107,10 @@ python src/analysis/motif_hit_density.py --biosample-groups configs/biosample_gr
 ```
 
 Biosamples matching no rule land in `other` and are always reported to stderr.
-Metastatic biosamples are matched before any organ rule, since they are named
-for the organ they spread *to* (e.g. "Metastatic Breast Carcinoma in the
-Brain" is not a neural sample).
+Metastases are assigned to their tissue of **origin**, parsed from the
+biosample name, so "Metastatic Breast Carcinoma in the Brain" is a breast
+sample rather than a neural one or a `metastatic_carcinoma` one — see
+[Metastases are grouped by tissue of origin](#metastases-are-grouped-by-tissue-of-origin).
 
 ### Manuscript Panels
 
@@ -158,10 +159,10 @@ derived in the section linked in the right-hand column.
 | Claim | Value | Where |
 | --- | --- | --- |
 | Lexicon size (prevalence ≥ 2) | 343 clusters of the 869 seen in the 198-experiment analysis universe (945 in the raw 219-experiment build) | [Rarefaction](#motif-lexicon-rarefaction) |
-| Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.827 tissue / 0.919 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
-| Confinement is lineage, not replication | 45 single-group clusters vs 8.50 expected exactly (`p = 2.0e-22`) or 7.87 under the swap null (`p < 0.001`); 50 of 59 restricted clusters span ≥2 biosamples within one tissue | [Concentration](#discovery-concentration) |
+| Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.820 tissue / 0.918 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
+| Confinement is lineage, not replication | 49 single-group clusters vs 8.82 expected exactly (`p = 1.1e-25`) or 8.31 under the swap null (`p < 0.001`); 41 of those 49 span ≥2 biosamples within one tissue | [Concentration](#discovery-concentration) |
 | Small studies miss most of the lexicon | 6.8% of the lexicon recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
-| Tissue diversity matters, but second to count | single-tissue sampling recovers ~15–19% fewer motifs at matched k | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Tissue diversity matters, but second to count | single-tissue sampling recovers ~14–17% fewer motifs at matched k | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
 | Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates | [Redundancy](#measured-results) |
 | Not an artifact of the experiment universe | the 198-only control build reproduces every figure above | [Experiment universe](#experiment-universe-224-219-198) |
 
@@ -370,9 +371,9 @@ Measured on the real count-head compendium (343 clusters, 198 experiments):
 
 ```text
 k     diverse  redundant  uniform
-10      113.2       96.7    109.5
-25      190.1      159.2    180.9
-50      254.4      220.8    246.7
+10      115.4       97.5    109.5
+25      189.1      157.7    180.9
+50      254.1      217.9    246.7
 ```
 
 At the small end, a single experiment recovers 6.8% of the 343-cluster lexicon
@@ -383,9 +384,9 @@ side too: at least 55% is missed at k=5 under *every* abundance threshold
 tested, so the claim does not depend on keeping low-abundance clusters in.
 
 `uniform` sits close to `diverse` because a random draw from 198 experiments
-spanning 19 tissue groups is already tissue-diverse. The informative contrast
+spanning 18 tissue groups is already tissue-diverse. The informative contrast
 is `redundant` against the others: a study confined to one tissue recovers
-~15–19% fewer motifs at matched experiment count. Experiment count, not tissue
+~14–17% fewer motifs at matched experiment count. Experiment count, not tissue
 diversity, is the primary driver — state the diversity effect at that size and
 do not overclaim it.
 
@@ -496,24 +497,21 @@ bulk metastasis carries tumour, stroma and immune infiltrate together, so IRF1
 appearing there may be infiltrating immune cells rather than tumour-intrinsic
 regulation.
 
-`plot_figure2.py`'s `CAPTION_OMIT_GROUPS` therefore drops it from captions
-(`GI+liver+met` prints as `GI+liver`), which also fixed the caption overrun,
-with a fallback so a motif whose *only* group is omitted still gets a label.
-**The grouping itself is unchanged** — every statistic still counts
-`metastatic_carcinoma` as a group, and `n_groups` still includes it. This is
-presentation only, so the caption is not a complete statement of a motif's
-groups; read the TSV for that.
+This is now handled at the source: metastases are grouped by tissue of origin,
+so there is no `metastatic_carcinoma` label to print. See
+[Metastases are grouped by tissue of origin](#metastases-are-grouped-by-tissue-of-origin)
+for what that changed.
 
-Reassigning metastases to their tissue of origin is the cleaner fix and is
-fully determined by the names (all eight follow "Metastatic {origin} Carcinoma
-in the {destination}" or "{origin} Carcinoma Metastatic in the {destination}",
-giving colon, breast, liver, lung and pancreas). It is deliberately **not**
-done, because it would move every number in this directory.
+Captions are abbreviated (`gi_tract` → `GI`, `pancreas` → `panc`) and **wrap**
+rather than truncate, since the three-group lineages are the interesting ones
+— `GI+liver+panc` is endoderm — and the widest, `blood+breast+kidney`, overran
+its column on one line. `CAPTION_OMIT_GROUPS` is empty but retained, so a
+group can be suppressed in a caption without touching the grouping.
 
 **The trap this exists to avoid.** A low-abundance split of a ubiquitous motif
 is indistinguishable from a lineage motif in a sorted table. Cluster 192 is
 labelled NFYA, is confined to `blood_immune`, and reads as "blood-specific
-NFYA" — but cluster 1 is *also* NFYA, spans all 19 tissue groups and carries
+NFYA" — but cluster 1 is *also* NFYA, spans every tissue group and carries
 1.5M seqlets against cluster 192's 154. On the real count head 8 of the 45
 single-group TF-matched clusters are this: NFYA, SP9 (110 seqlets vs cluster
 0's 3.87M), Atf1 ×2, Nrf1, ELF2, ZNF131, TFEC. So a restricted cluster whose
@@ -979,7 +977,9 @@ same 219 experiments and unchanged MoDISco inputs. Every analysis number here
 is **unchanged** by that: the 343-cluster prevalence≥2 lexicon, all 343
 clusters' prevalence and `n_groups`, the 306/37 class split, 45 single-group vs
 8.50 expected, `p = 1.989652e-22`, and redundancy's 147 excess pairs (15.6%) all
-reproduce identically, cluster id for cluster id.
+reproduce identically, cluster id for cluster id. (Measured under the earlier
+`metastatic_carcinoma` grouping, on both sides, so the comparison is valid;
+under origin grouping the same build gives 49 vs 8.82.)
 
 The added clusters are therefore all prevalence-1 in the 198-experiment
 analysis universe -- low-prevalence splits that the prevalence≥2 filter removes
@@ -1196,8 +1196,8 @@ idiosyncratically, not novel lineage-specific TF motifs, and the class is
 **excluded from analysis** rather than annotated. Consequences:
 
 - Quote concentration for the TF-matched class only: swap-null concentration
-  0.827 at tissue level (45 single-group vs 7.87 expected, `p < 0.001`) and
-  0.919 at biosample level. Those are already reported separately, so nothing
+  0.820 at tissue level (49 single-group vs 8.31 expected, `p < 0.001`) and
+  0.918 at biosample level. Those are already reported separately, so nothing
   needs recomputing.
 - The +65% diverse-over-redundant figure for the unmatched class is withdrawn;
   it rested entirely on these 37 clusters.
@@ -1281,9 +1281,9 @@ Measured on the real count-head compendium, both classes are strongly
 tissue-concentrated, and the conclusion holds at both group levels:
 
 ```text
-tissue level (19 groups)
+tissue level (18 groups)
 motif_class   n    pooled_conc  n_single  expected  enrichment  p
-TF-matched    306  0.832        45        8.50      5.3x        2.0e-22
+TF-matched    306  0.827        49        8.82      5.6x       1.1e-25
 unmatched      37  0.767        14        2.19      6.4x        2.0e-09
 
 biosample level (112 groups)
@@ -1342,8 +1342,9 @@ three runs over identical data.
 Fixed by sorting (`sorted(only_a | only_b)`), after which two runs write
 byte-identical draw files. The conclusions were never at risk — every run gave
 `swap_concentration` 0.826 and `p < 0.001`, and the wobble was within
-Monte-Carlo error for 1000 permutations — but a figure quoting "45 vs 8.0
-expected" should reproduce, and it now does.
+Monte-Carlo error for 1000 permutations — but a figure quoting an expected
+value should reproduce, and it now does. (Diagnosed under the earlier
+grouping; the current numbers are 49 observed against a null mean of 8.31.)
 
 Worth noting the parallel: unseeded randomness in
 [`cluster_motifs.py`](../bpnet/README.md#motif-clustering) is flagged there as
@@ -1401,7 +1402,9 @@ Discarding **every** `stem_ipsc`-restricted cluster while holding the
 expectation at 8.50 -- deliberately conservative, since removing the group
 would also lower the expectation -- leaves 35 vs 8.50 = 4.1x, exact
 `p = 1.0e-13` (against 45, 5.3x, `p = 2.0e-22`). The result does not depend on
-the smallest group.
+the smallest group. (Measured under the earlier `metastatic_carcinoma`
+grouping; `stem_ipsc` is unaffected by the regrouping, so the conclusion
+carries, but the arithmetic would need redoing against 49/8.82.)
 
 Two caveats on reading the collapsed rows. The swap p-values floor at
 `1/(permutations+1)`, so 0.0033 at 300 permutations means `p < 0.005`, not a
@@ -1409,6 +1412,40 @@ weak result -- raise `--swap-permutations` if a smaller bound is wanted. And
 small tissue groups are structurally prone to single-group status: `stem_ipsc`
 holds 12 of 28 restricted units on 2% of experiments, which is the same
 small-group caveat that applies at cluster level.
+
+#### Metastases are grouped by tissue of origin
+
+All eight metastatic biosamples name their origin, so they are assigned to it
+rather than to a `metastatic_carcinoma` bucket — see
+[`_biosample_groups.py`](_biosample_groups.py). The old bucket put 21 of 198
+experiments into a clinical category that is not a tissue, and it fragmented
+real lineages: HNF1B read as `{gi_tract, liver_biliary, pancreas,
+metastatic_carcinoma}`, endoderm plus endoderm-derived metastases, one lineage
+counted as four groups. It was also uninterpretable in aggregate, since a bulk
+metastasis carries tumour, stroma and immune infiltrate together — an immune
+motif "in metastatic carcinoma" may be infiltrate rather than tumour-intrinsic.
+
+This is 18 groups rather than 19, and moves several group sizes:
+
+```text
+blood_immune 41  gi_tract 31  reproductive 18  breast 17  liver_biliary 15
+heart 15  pancreas 9  lung_airway 9  neural 8  vascular 7  muscle 7
+kidney_urinary 6  stem_ipsc 4  endocrine 3  hek 3  bone 2  skin 2  adipose 1
+```
+
+`breast` goes from 5 experiments to 17, because the metastatic breast
+carcinoma biosample alone carries 10.
+
+**It strengthens the result**, which is the expected direction: merging a
+motif's organ group with that organ's metastases turns two groups into one.
+TF-matched single-group clusters go 45 → **49** against 8.82 expected, exact
+`p` from 2.0e-22 → **1.1e-25**, and it is what finally surfaces HNF4A
+(`{blood, gi_tract, liver_biliary}`, 24 experiments) and HNF1B
+(`{gi_tract, liver_biliary, pancreas}` — textbook endoderm, 22 experiments) as
+restricted candidates at `--max-groups 3`.
+
+Numbers recorded elsewhere in this file that predate the change are marked
+where they appear.
 
 #### The read-depth confound, and the null that fixes it
 

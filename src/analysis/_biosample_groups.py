@@ -10,12 +10,32 @@ motif comparisons interpretable.
 
 Group assignment is inherently curation, not computation. `GROUP_RULES` below
 is a keyword-matching first pass, applied in order (first match wins, so more
-specific rules must come first -- notably every metastatic-carcinoma biosample
-is named for the organ it metastasized *to*, e.g. "Metastatic Breast Carcinoma
-in the Brain", which must not be routed to the neural group). Callers should
-write the resolved mapping out with `write_group_tsv` and hand-correct it, then
-pass it back via `--biosample-groups`; `load_group_map` prefers an override
-file over the rules whenever one is supplied.
+specific rules must come first). Callers should write the resolved mapping out
+with `write_group_tsv` and hand-correct it, then pass it back via
+`--biosample-groups`; `load_group_map` prefers an override file over the rules
+whenever one is supplied.
+
+Metastases are assigned to their tissue of **origin**, not to a
+`metastatic_carcinoma` bucket and not to the organ they spread to. All eight
+metastatic biosamples in the atlas name their origin -- "Metastatic Breast
+Carcinoma in the Brain", "Colon Carcinoma Metastatic in the Lung" -- and origin
+is what determines the regulatory program, so a breast metastasis belongs with
+breast.
+
+The earlier single bucket was actively misleading. 21 of 198 experiments landed
+in one pseudo-lineage that is a clinical category rather than a tissue, and it
+fragmented real ones: HNF1B's groups read `{gi_tract, liver_biliary, pancreas,
+metastatic_carcinoma}` -- endoderm plus endoderm-derived metastases, one
+lineage counted as four groups -- which inflated `n_groups` for exactly the
+factors the analysis exists to detect. It was also uninterpretable in
+aggregate, since a bulk metastasis carries tumour, stroma and immune
+infiltrate together, so an immune motif appearing "in metastatic carcinoma"
+could be infiltrate rather than tumour-intrinsic regulation.
+
+Matching runs against the extracted origin substring alone, which is
+load-bearing: the destination organ would otherwise claim the sample, and for
+"Metastatic Breast Carcinoma in the Brain" the neural rule precedes the breast
+rule, so it would be filed as neural.
 
 Unmatched biosamples land in "other" and are always reported by
 `load_group_map`, so a biosample added to the atlas later can never be
@@ -26,11 +46,16 @@ import re
 import sys
 from pathlib import Path
 
+# Patterns that pull the tissue of origin out of a metastasis's name. The atlas
+# uses two orderings: "Metastatic {origin} Carcinoma in the {destination}" and
+# "{origin} Carcinoma Metastatic in the {destination}".
+METASTASIS_ORIGIN_PATTERNS: tuple[str, ...] = (
+    r"metastatic\s+(.+?)\s+carcinoma",
+    r"^(.+?)\s+carcinoma\s+metastatic",
+)
+
 # (group, [regex patterns]) applied in order; first match wins.
 GROUP_RULES: list[tuple[str, list[str]]] = [
-    # Metastases are named for the destination organ, so they must be matched
-    # before any organ rule below would claim them.
-    ("metastatic_carcinoma", [r"metastatic", r"carcinoma metastatic"]),
     (
         "blood_immune",
         [
@@ -107,13 +132,39 @@ GROUP_RULES: list[tuple[str, list[str]]] = [
 OTHER_GROUP = "other"
 
 
+def metastasis_origin(biosample: str) -> str | None:
+    """The tissue of origin named in a metastasis's biosample name, or None.
+
+    Returns None for non-metastatic biosamples and for metastatic ones whose
+    name follows neither ordering, so an unparseable metastasis falls through
+    to `other` and gets reported rather than being filed by destination.
+    """
+    name = (biosample or "").lower()
+    if "metasta" not in name:
+        return None
+    for pattern in METASTASIS_ORIGIN_PATTERNS:
+        match = re.search(pattern, name)
+        if match:
+            origin = match.group(1).strip()
+            if origin:
+                return origin
+    return None
+
+
 def assign_group(biosample: str) -> str:
-    """Assign one biosample name to a tissue/lineage group via GROUP_RULES."""
+    """Assign one biosample name to a tissue/lineage group via GROUP_RULES.
+
+    Metastases are matched on their origin substring alone. Matching the whole
+    name would let the destination organ win: the neural rule precedes the
+    breast rule, so "Metastatic Breast Carcinoma in the Brain" would be filed
+    as neural.
+    """
     if not biosample:
         return OTHER_GROUP
-    name = biosample.lower()
+    origin = metastasis_origin(biosample)
+    haystack = origin if origin is not None else biosample.lower()
     for group, patterns in GROUP_RULES:
-        if any(re.search(p, name) for p in patterns):
+        if any(re.search(p, haystack) for p in patterns):
             return group
     return OTHER_GROUP
 

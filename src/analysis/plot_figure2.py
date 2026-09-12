@@ -87,27 +87,28 @@ SHORT_GROUP_LABEL = {
     "blood_immune": "blood",
     "gi_tract": "GI",
     "liver_biliary": "liver",
-    "metastatic_carcinoma": "met",
     "kidney_urinary": "kidney",
     "lung_airway": "lung",
     "stem_ipsc": "stem",
-    "vascular": "vasc",
-    "hek": "HEK",
     "reproductive": "repro",
+    "pancreas": "panc",
+    "vascular": "vasc",
     "endocrine": "endo",
+    "hek": "HEK",
 }
 
 
-# Groups omitted from figure captions. `metastatic_carcinoma` is a clinical
-# category rather than a tissue -- 21 experiments named for where a tumour
-# spread to -- so "GI+liver+met" tells a reader less than "GI+liver" does. The
-# grouping itself is unchanged, so every statistic still counts it as a group;
-# this only affects what the caption prints.
-CAPTION_OMIT_GROUPS: tuple[str, ...] = ("metastatic_carcinoma",)
+# Groups omitted from figure captions. Empty now that metastases are grouped
+# by tissue of origin rather than into a `metastatic_carcinoma` bucket, so
+# every group left is a real tissue worth naming. The mechanism stays because
+# suppressing a group in a caption is a presentation choice that should not
+# require touching the grouping.
+CAPTION_OMIT_GROUPS: tuple[str, ...] = ()
 
 
 def lineage_caption(value, max_groups: int = 3, short: bool = True,
-                    omit: tuple[str, ...] = CAPTION_OMIT_GROUPS) -> str:
+                    omit: tuple[str, ...] = CAPTION_OMIT_GROUPS,
+                    wrap_at: int = 14) -> str:
     """Render a lineage for a figure caption.
 
     `lineage` is a single group name or a comma-joined list, so the naive
@@ -127,7 +128,21 @@ def lineage_caption(value, max_groups: int = 3, short: bool = True,
               for p in parts]
     if len(labels) > max_groups:
         return f"{len(labels)} tissues"
-    return "+".join(labels) if short else " + ".join(labels)
+    if not short:
+        return " + ".join(labels)
+    # Wrap rather than truncate: three-group lineages are the interesting ones
+    # now that metastases are filed by origin ("GI+liver+panc" is endoderm),
+    # and the widest, "blood+breast+kidney", overruns its column at one line.
+    text, line = [], ""
+    for label in labels:
+        candidate = f"{line}+{label}" if line else label
+        if line and len(candidate) > wrap_at:
+            text.append(line + "+")
+            line = label
+        else:
+            line = candidate
+    text.append(line)
+    return "\n".join(text)
 
 
 def load_cwm(h5_path: Path, cluster_id: int, posneg: str = "pos") -> np.ndarray | None:
