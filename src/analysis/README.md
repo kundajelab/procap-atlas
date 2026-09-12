@@ -1741,7 +1741,41 @@ shallow ones can leave one usable experiment and no within-group pair — the
 tier the analysis exists to measure. Groups contributing a single experiment
 are reported (`adipose`, at `--min-reads 10000000`).
 
-### Differential prediction: the metric to lead with
+### Naming the dominant tissue: the metric to lead with
+
+For each peak, rank tissue groups by predicted signal and ask where the
+observed most-active group lands. This is the cleanest framing available,
+because **every model sees the identical sequence at a given peak**, so all
+variation across models there is model-specific — the shared promoter program
+cancels by construction rather than by peak selection or differencing. It is
+also immune to the units and transformation problems that afflict the
+correlations, since only the ordering of groups matters.
+
+Over 17 tissue groups with at least two experiments each:
+
+```text
+tau quantile   peaks   median rank   top1    top3    top5
+0.00 (all)    92,826             6  0.150   0.333   0.472
+0.50          46,413             5  0.176   0.369   0.504
+0.80          18,566             5  0.218   0.418   0.548
+0.90           9,283             4  0.246   0.445   0.572
+0.95           4,642             4  0.273   0.470   0.595
+0.99             929             3  0.284   0.509   0.625
+chance                              0.059   0.176   0.294
+```
+
+**At the most tissue-specific loci the models name the correct tissue out of 17
+in 28% of cases — 4.8x chance — and place it in their top 3 half the time, with
+a median rank of 3.** Accuracy rises monotonically with tau, which is the
+expected shape: the more tissue-specific a locus is, the more there is to get
+right. Even over all peaks it is 2.5x chance.
+
+This is the number to lead a supplementary panel with. It is interpretable
+without any of the caveats the correlations need, and it states the positive
+result plainly while leaving the magnitude limitation to the differential
+section below.
+
+### Differential prediction, and its ceiling
 
 Level correlations and the homogenization comparison both say the models look
 largely cell-type-agnostic. That conflicts with work showing promoter-edit and
@@ -1801,6 +1835,33 @@ shape. So: *direction reliably where the difference is real, magnitude
 poorly*. That is consistent both with edits working in matched cell types and
 with ProCapNet's cell-type-agnostic conclusion, which a level correlation is
 what measures.
+
+### An upper bound for differential accuracy
+
+A differential correlation has a measurable ceiling: the **reproducibility of
+the differential itself**. If cell types A and B each have two replicates, then
+`A1 - B1` and `A2 - B2` are two independent measurements of the same biological
+difference, and their correlation is the most any predictor could reach — the
+rest is measurement noise, which is amplified by differencing two noisy
+quantities.
+
+The current subset happens to contain two replicated biosamples (thyroid gland
+and HEK293T), giving one such estimate:
+
+```text
+reproducible fraction of the differential (ceiling)   0.765
+model differential r for the same comparison          0.220
+fraction of the ceiling attained                      28.8%
+```
+
+So the model recovers roughly **29% of the reproducible cell-type difference**
+between those two — a far more meaningful statement than r = 0.22 alone, and
+notably close to the 28% top-1 tissue-naming accuracy.
+
+This rests on a single pair, which is why the extraction should be rerun with
+`--replicates-per-group 2`: it lifts replicate pairs from 2 to 26 for 18 extra
+experiments, where reaching 22 pairs by raising `--balanced-per-group` to 8
+would cost 57.
 
 ### Units: both sides must be rescaled first
 

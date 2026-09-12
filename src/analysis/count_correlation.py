@@ -124,6 +124,7 @@ def balanced_subset(
     read_counts: dict[str, float], min_reads: float = 0.0,
     exclude_groups: tuple[str, ...] = ("other",),
     biosamples: dict[str, str] | None = None,
+    replicates_per_group: int = 0,
 ) -> dict:
     """The `per_group` deepest experiments from each tissue group.
 
@@ -177,6 +178,29 @@ def balanced_subset(
                 break
             if exp_id not in chosen:
                 chosen.append(exp_id)
+
+        # Deliberately add back replicates of one already-chosen biosample.
+        # Preferring distinct biosamples is right for the same-tissue tier but
+        # starves the same-biosample tier: on the real atlas --per-group 3
+        # yields 2 replicate pairs and --per-group 5 only 3, because each extra
+        # slot goes to a new biosample. Raising per_group to 8 reaches 22
+        # replicate pairs but costs 57 extra experiments; topping up the
+        # most-replicated biosample per group reaches a comparable count for a
+        # third of that.
+        if replicates_per_group > 0:
+            by_sample: dict[str, list[str]] = {}
+            for exp_id in members:
+                by_sample.setdefault(
+                    biosamples.get(exp_id, exp_id), []
+                ).append(exp_id)
+            richest = max(by_sample.values(), key=len)
+            added = 0
+            for exp_id in richest:
+                if added == replicates_per_group:
+                    break
+                if exp_id not in chosen:
+                    chosen.append(exp_id)
+                    added += 1
         keep.extend(chosen)
     return {e: experiments[e] for e in keep}
 
@@ -490,6 +514,18 @@ def main():
              "the same-tissue tier mostly blood_immune (41 of 198). 0 = all.",
     )
     parser.add_argument(
+        "--replicates-per-group",
+        type=int,
+        default=0,
+        metavar="N",
+        help="after choosing distinct biosamples, add N more experiments from "
+             "each group's most-replicated biosample. Preferring distinct "
+             "biosamples is right for the same-tissue tier but starves the "
+             "same-biosample tier, which anchors the low end of the "
+             "effect-size gradient: --balanced-per-group 3 gives only 2 "
+             "replicate pairs, and 5 gives 3.",
+    )
+    parser.add_argument(
         "--held-out-folds",
         action="store_true",
         help="predict each peak with the one fold model that did not train on "
@@ -618,6 +654,7 @@ def main():
         experiments = balanced_subset(
             experiments, tissue, args.balanced_per_group, n_reads_map,
             min_reads=args.min_reads, biosamples=biosample_of,
+            replicates_per_group=args.replicates_per_group,
         )
         if not experiments:
             print(

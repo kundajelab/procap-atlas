@@ -1013,3 +1013,182 @@ def test_load_counts_accepts_zeros():
     ok = d / "ok.tsv"
     pd.DataFrame([[0.0, 1.0]], index=["a"]).to_csv(ok, sep="\t")
     assert ccp.load_counts(ok).shape == (1, 2)
+
+
+def test_replicates_per_group_adds_back_same_biosample_experiments():
+    """Preferring distinct biosamples starves the same-biosample tier, which
+    anchors the low end of the effect-size gradient. On the real atlas
+    --per-group 3 yields 2 replicate pairs and 5 yields only 3, because every
+    extra slot goes to a new biosample."""
+    exps = {f"e{i}": {} for i in range(5)}
+    groups = {f"e{i}": "blood" for i in range(5)}
+    samples = {"e0": "K562", "e1": "K562", "e2": "K562", "e3": "PBMC",
+               "e4": "PBMC"}
+    depth = {f"e{i}": 100 - i for i in range(5)}
+
+    plain = cc.balanced_subset(exps, groups, 2, depth, biosamples=samples)
+    assert len({samples[e] for e in plain}) == 2, "distinct biosamples first"
+
+    topped = cc.balanced_subset(
+        exps, groups, 2, depth, biosamples=samples, replicates_per_group=1
+    )
+    assert len(topped) == 3
+    counts = {}
+    for e in topped:
+        counts[samples[e]] = counts.get(samples[e], 0) + 1
+    assert max(counts.values()) == 2, "one biosample must now have a pair"
+
+
+def test_replicates_per_group_targets_the_most_replicated_biosample():
+    exps = {f"e{i}": {} for i in range(4)}
+    groups = {f"e{i}": "blood" for i in range(4)}
+    samples = {"e0": "solo", "e1": "trio", "e2": "trio", "e3": "trio"}
+    depth = {"e0": 100, "e1": 90, "e2": 80, "e3": 70}
+    got = cc.balanced_subset(
+        exps, groups, 2, depth, biosamples=samples, replicates_per_group=1
+    )
+    # "trio" has three experiments, so it is where a replicate pair is cheapest
+    assert sum(1 for e in got if samples[e] == "trio") >= 2
+
+
+def test_replicates_per_group_is_a_noop_at_zero():
+    exps = {"a": {}, "b": {}}
+    groups = {"a": "blood", "b": "blood"}
+    samples = {"a": "K562", "b": "K562"}
+    got = cc.balanced_subset(
+        exps, groups, 1, {"a": 2, "b": 1}, biosamples=samples,
+        replicates_per_group=0,
+    )
+    assert len(got) == 1
+
+
+def test_replicate_topup_beats_raising_per_group_on_the_real_atlas():
+    """Targeted top-up reaches more replicate pairs than --per-group 8 while
+    extracting a third fewer experiments."""
+    import yaml
+
+    cfg = yaml.safe_load(open(REPO_ROOT / "configs" / "experiment_config.yaml"))
+    sys.path.insert(0, str(REPO_ROOT / "src" / "analysis"))
+    from _biosample_groups import load_group_map
+    from plot_motif_rarefaction import load_read_counts
+
+    tissue, sample = load_group_map(cfg["experiments"], None, quiet=True)
+    depth = load_read_counts()
+
+    def replicate_pairs(sub):
+        exps = list(sub)
+        return sum(
+            1
+            for i in range(len(exps))
+            for j in range(i + 1, len(exps))
+            if sample.get(exps[i]) == sample.get(exps[j])
+        )
+
+    topped = cc.balanced_subset(
+        cfg["experiments"], tissue, 3, depth, min_reads=10e6,
+        biosamples=sample, replicates_per_group=2,
+    )
+    wide = cc.balanced_subset(
+        cfg["experiments"], tissue, 8, depth, min_reads=10e6, biosamples=sample
+    )
+    assert replicate_pairs(topped) >= replicate_pairs(wide)
+    assert len(topped) < len(wide)
+
+
+# --- naming the dominant tissue --------------------------------------------
+#
+# The cleanest framing: every model sees the identical sequence at a given
+# peak, so all variation across models there is model-specific. No shared
+# component to cancel, and immune to units, scale, and whether log1p is
+# behaving linearly -- only the ordering of groups matters.
+
+
+def topk_frames(n_peaks=300, seed=0, model_skill=1.0):
+    """Peaks each dominated by one tissue; models partly recover which."""
+    rng = np.random.default_rng(seed)
+    tissues = ["blood", "heart", "liver"]
+    index, groups = [], {}
+    for tis in tissues:
+        for r in range(2):
+            e = f"{tis}{r}"
+            index.append(e)
+            groups[e] = tis
+    winner = rng.integers(0, len(tissues), n_peaks)
+    obs = np.ones((len(index), n_peaks))
+    pred = np.ones((len(index), n_peaks))
+    for i, e in enumerate(index):
+        ti = tissues.index(groups[e])
+        obs[i] += 50 * (winner == ti)
+        pred[i] += 50 * model_skill * (winner == ti)
+    cols = [f"p{i}" for i in range(n_peaks)]
+    return (
+        pd.DataFrame(obs, index=index, columns=cols),
+        pd.DataFrame(pred, index=index, columns=cols),
+        groups,
+    )
+
+
+def test_topk_is_perfect_when_models_know_the_tissue():
+    obs, pred, groups = topk_frames()
+    spec = ccp.peak_specificity(obs, groups)
+    out = ccp.dominant_tissue_accuracy(obs, pred, groups, spec, quantiles=(0.0,))
+    assert out["top1"].iloc[0] == pytest.approx(1.0)
+    assert out["n_groups"].iloc[0] == 3
+    # reported rounded to 4dp
+    assert out["top1_chance"].iloc[0] == pytest.approx(1 / 3, abs=1e-4)
+
+
+def test_topk_is_near_chance_when_models_ignore_the_tissue():
+    obs, pred, groups = topk_frames(model_skill=0.0)
+    spec = ccp.peak_specificity(obs, groups)
+    out = ccp.dominant_tissue_accuracy(obs, pred, groups, spec, quantiles=(0.0,))
+    # all models predict identically, so the argmax is arbitrary
+    assert out["top1"].iloc[0] < 0.6
+
+
+def test_topk_reports_rank_of_the_true_tissue():
+    obs, pred, groups = topk_frames()
+    spec = ccp.peak_specificity(obs, groups)
+    out = ccp.dominant_tissue_accuracy(obs, pred, groups, spec, quantiles=(0.0,))
+    assert out["median_rank_of_true"].iloc[0] == 1
+
+
+def test_topk_excludes_groups_with_one_experiment():
+    obs, pred, groups = topk_frames()
+    # add a singleton group: its "mean" would be a single experiment
+    obs.loc["solo"] = 1.0
+    pred.loc["solo"] = 99.0
+    groups["solo"] = "adipose"
+    spec = ccp.peak_specificity(obs, groups)
+    out = ccp.dominant_tissue_accuracy(obs, pred, groups, spec, quantiles=(0.0,))
+    assert out["n_groups"].iloc[0] == 3, "adipose has one experiment"
+
+
+def test_topk_is_scale_invariant_across_models():
+    """Immune to the per-model scale differences that broke the correlations:
+    only the ordering of group means at a peak matters."""
+    obs, pred, groups = topk_frames()
+    spec = ccp.peak_specificity(obs, groups)
+    base = ccp.dominant_tissue_accuracy(obs, pred, groups, spec, quantiles=(0.0,))
+    scaled = pred.copy()
+    scaled.loc["blood0"] *= 50            # one model on a wildly different scale
+    out = ccp.dominant_tissue_accuracy(obs, scaled, groups, spec, quantiles=(0.0,))
+    # group means shift, but every model in a group shares the tissue signal
+    assert out["top1"].iloc[0] >= base["top1"].iloc[0] - 0.35
+
+
+def test_topk_skips_thresholds_with_too_few_peaks():
+    obs, pred, groups = topk_frames(n_peaks=30)
+    spec = ccp.peak_specificity(obs, groups)
+    out = ccp.dominant_tissue_accuracy(
+        obs, pred, groups, spec, quantiles=(0.0, 0.99)
+    )
+    assert (out["n_peaks"] >= 20).all()
+
+
+def test_cli_reports_topk_sweep(tmp_path):
+    result = run_cli(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "Naming the most-active tissue" in result.stderr
+    got = pd.read_csv(tmp_path / "out" / "cross_celltype_topk.tsv", sep="\t")
+    assert "top1_over_chance" in got.columns

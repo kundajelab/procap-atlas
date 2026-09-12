@@ -310,6 +310,72 @@ def correlation_matrix(
     return out
 
 
+def dominant_tissue_accuracy(
+    observed: pd.DataFrame,
+    predicted: pd.DataFrame,
+    groups: dict[str, str],
+    specificity: pd.Series,
+    quantiles=(0.0, 0.5, 0.8, 0.9, 0.95, 0.99),
+    ks=(1, 3, 5),
+    min_experiments: int = 2,
+) -> pd.DataFrame:
+    """Can the models name which tissue a locus is most active in?
+
+    For each peak, rank tissue groups by predicted signal and ask where the
+    observed most-active group lands. Top-k accuracy against a chance rate of
+    k/G.
+
+    The cleanest framing available here, because it cancels the shared
+    component *by construction* rather than by peak selection or differencing:
+    every model sees the identical sequence at a given peak, so all variation
+    across models at that peak is model-specific. It is also immune to the
+    transformation questions that plague the correlations -- only the ordering
+    of groups matters, not units, scale, or whether log1p is behaving linearly.
+
+    Groups are restricted to those with `min_experiments` or more, so a group
+    mean is not a single experiment.
+    """
+    obs_g = group_means(observed, groups)
+    pred_g = group_means(predicted, groups)
+    if obs_g.empty or pred_g.empty:
+        return pd.DataFrame()
+
+    counts = pd.Series([groups[e] for e in observed.index if groups.get(e)]).value_counts()
+    keep = [g for g in obs_g.index if counts.get(g, 0) >= min_experiments]
+    obs_g, pred_g = obs_g.loc[keep], pred_g.loc[keep]
+    n_groups = len(keep)
+    if n_groups < 2:
+        return pd.DataFrame()
+
+    spec = specificity.dropna()
+    rows = []
+    for q in quantiles:
+        threshold = spec.quantile(q) if q > 0 else -np.inf
+        cols = [c for c in spec[spec >= threshold].index if c in obs_g.columns]
+        if len(cols) < 20:
+            continue
+        obs_v = obs_g[cols].to_numpy()
+        pred_v = pred_g[cols].to_numpy()
+        true = obs_v.argmax(axis=0)
+        order = np.argsort(-pred_v, axis=0)
+        rank = (order == true[None, :]).argmax(axis=0)
+        row = {
+            "tau_quantile": q,
+            "n_peaks": len(cols),
+            "n_groups": n_groups,
+            "median_rank_of_true": int(np.median(rank)) + 1,
+        }
+        for k in ks:
+            if k <= n_groups:
+                row[f"top{k}"] = round(float(np.mean(rank < k)), 4)
+                row[f"top{k}_chance"] = round(k / n_groups, 4)
+                row[f"top{k}_over_chance"] = round(
+                    float(np.mean(rank < k)) / (k / n_groups), 2
+                )
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def differential_prediction(
     observed: pd.DataFrame,
     predicted: pd.DataFrame,
@@ -879,6 +945,21 @@ def main():
                 file=sys.stderr,
             )
             spec = spec.loc[eligible]
+        topk = dominant_tissue_accuracy(observed, predicted, groups, spec)
+        if len(topk):
+            topk.to_csv(args.out_dir / "cross_celltype_topk.tsv", sep="\t",
+                        index=False)
+            with pd.option_context("display.width", 220):
+                print(
+                    "\nNaming the most-active tissue per peak, by specificity "
+                    "threshold. Every model sees the same sequence at a peak, "
+                    "so variation across models there is model-specific -- no "
+                    "shared component to cancel and no units to worry about:",
+                    file=sys.stderr,
+                )
+                cols = [c for c in topk.columns if not c.endswith("_chance")]
+                print(topk[cols].to_string(index=False), file=sys.stderr)
+
         strata = stratify_by_specificity(spec, args.specificity_quantile)
         spec.rename("specificity").to_csv(
             args.out_dir / "peak_specificity.tsv", sep="\t"
