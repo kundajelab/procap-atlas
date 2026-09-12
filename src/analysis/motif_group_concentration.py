@@ -172,7 +172,14 @@ def curveball_randomize(
         shared = a & b
         only_a = a - shared
         only_b = b - shared
-        pool = list(only_a | only_b)
+        # sorted(), not list(): a set of experiment-ID strings iterates in
+        # hash order, and Python randomizes string hashing per process unless
+        # PYTHONHASHSEED is set. Materializing it unsorted made the shuffle
+        # consume the same RNG draws against a different starting order, so
+        # --seed 0 gave 7.94, 8.09 and 7.97 as the null single-group mean on
+        # three runs over identical data. Sorting makes seed + data fully
+        # determine the result.
+        pool = sorted(only_a | only_b)
         if not pool:
             continue
         rng.shuffle(pool)

@@ -3018,3 +3018,194 @@ def test_exemplar_cli_warns_when_no_logos_resolve(tmp_path):
     assert "No logos could be read" in (
         tmp_path / "out" / "motif_exemplars_count.html"
     ).read_text()
+
+
+# --- figure assembly --------------------------------------------------------
+#
+# plot_figure2.py reads only files the other scripts wrote, so the risk is not
+# arithmetic but plumbing: the h5 stores contrib_scores as (length, 4) while
+# trim_cwm expects (4, length), and getting that backwards silently collapses
+# the per-position magnitude to four numbers and trims to nonsense rather than
+# raising.
+
+import plot_figure2 as fig2  # noqa: E402
+
+
+def write_cwm_h5(path, clusters, width=50, core=(20, 30)):
+    """An h5 shaped like MotifCompendium's cluster averages.
+
+    Signal only inside `core`, so a correct trim recovers that span and an
+    incorrect one recovers the whole window.
+    """
+    import h5py
+
+    with h5py.File(path, "w") as f:
+        for cid, posneg in clusters:
+            cwm = np.full((width, 4), 0.001)
+            cwm[core[0]:core[1], 0] = 1.0
+            f.create_dataset(f"{posneg}_patterns/{cid}/contrib_scores", data=cwm)
+    return path
+
+
+def test_load_cwm_returns_length_by_four(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")])
+    cwm = fig2.load_cwm(h5, 7)
+    assert cwm.shape == (50, 4)
+
+
+def test_load_cwm_is_none_for_absent_cluster(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")])
+    assert fig2.load_cwm(h5, 999) is None
+    assert fig2.load_cwm(h5, 7, posneg="neg") is None
+
+
+def test_trimmed_cwm_recovers_the_core_not_the_window(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")], core=(20, 30))
+    df = fig2.trimmed_cwm(h5, 7, pad=0)
+    # 10bp core, not the 50bp window: proves the (4, length) transpose is right
+    assert len(df) == 10
+    assert list(df.columns) == ["A", "C", "G", "T"]
+
+
+def test_trimmed_cwm_pads_symmetrically(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")], core=(20, 30))
+    assert len(fig2.trimmed_cwm(h5, 7, pad=2)) == 14
+
+
+def test_trimmed_cwm_pad_cannot_run_off_the_window(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")], core=(0, 50))
+    assert len(fig2.trimmed_cwm(h5, 7, pad=5)) == 50
+
+
+def test_group_labels_are_figure_ready():
+    # internal keys are snake_case; a figure should not show them
+    assert fig2.GROUP_LABEL["blood_immune"] == "blood / immune"
+    assert fig2.GROUP_LABEL["stem_ipsc"] == "stem / iPSC"
+
+
+def fig2_inputs(tmp_path, head="count"):
+    d = tmp_path
+    pd.DataFrame({
+        "k": [1, 5, 10] * 3,
+        "scheme": ["uniform"] * 3 + ["diverse"] * 3 + ["redundant"] * 3,
+        "motif_class": ["__all__"] * 9,
+        "mean": [20, 70, 110, 22, 75, 115, 18, 60, 95],
+        "lo": [15, 60, 100, 17, 65, 105, 13, 50, 85],
+        "hi": [25, 80, 120, 27, 85, 125, 23, 70, 105],
+        "n_clusters_total": [343] * 9,
+    }).to_csv(d / f"motif_rarefaction_{head}.tsv", sep="\t", index=False)
+    pd.DataFrame({
+        "motif_class": ["TF-matched"] * 50,
+        "permutation": range(50),
+        "n_single_group": list(np.random.default_rng(0).integers(3, 14, 50)),
+    }).to_csv(d / f"motif_concentration_{head}_tissue_nulldraws.tsv",
+              sep="\t", index=False)
+    pd.DataFrame({
+        "motif_class": ["TF-matched"],
+        "obs_single_group": [45],
+        "null_single_group_mean": [8.0],
+        "null_single_group_p95": [13.0],
+        "swap_concentration": [0.83],
+    }).to_csv(d / f"motif_concentration_{head}_tissue_swapnull.tsv",
+              sep="\t", index=False)
+    ub = pd.DataFrame({
+        "cluster_final": [0, 1], "jaspar_name": ["SP9", "NFYA"],
+        "prevalence": [198, 198], "n_groups": [19, 19],
+        "total_seqlets": [3_867_685, 1_511_338], "posneg": ["pos", "pos"],
+    })
+    ub.to_csv(d / f"motif_exemplars_{head}_ubiquitous.tsv", sep="\t", index=False)
+    re_ = pd.DataFrame({
+        "cluster_final": [88, 222], "jaspar_name": ["SPIB", "NEUROG2"],
+        "prevalence": [11, 3], "n_groups": [1, 1],
+        "total_seqlets": [1689, 22570], "posneg": ["pos", "pos"],
+        "sole_group": ["blood_immune", "neural"],
+    })
+    re_.to_csv(d / f"motif_exemplars_{head}_restricted.tsv", sep="\t", index=False)
+    h5 = write_cwm_h5(d / "avg.h5", [(0, "pos"), (1, "pos"), (88, "pos"),
+                                     (222, "pos")])
+    return h5
+
+
+def test_figure2_cli_end_to_end(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path),
+         "--modisco-h5", str(h5), "--n-ubiquitous", "2", "--n-restricted", "2"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "figure2_count.pdf").exists()
+    # per-panel files are written by default, for hand-alignment
+    for panel in ("a_rarefaction", "b_concentration", "c_exemplars"):
+        assert (tmp_path / f"figure2_count_{panel}.pdf").exists(), panel
+    assert "4 logos drawn" in result.stdout
+
+
+def test_figure2_cli_can_skip_the_split_panels(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2", "--no-split-panels"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "figure2_count.pdf").exists()
+    assert not (tmp_path / "figure2_count_a_rarefaction.pdf").exists()
+
+
+def test_figure2_cli_writes_individual_logos(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2", "--split-logos"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    logo_dir = tmp_path / "figure2_count_logos"
+    names = {p.name for p in logo_dir.glob("*.pdf")}
+    assert any("SPIB" in n for n in names)
+    # "::" is not filesystem-friendly on every platform, so it is replaced
+    assert not any("::" in n for n in names)
+
+
+def test_figure2_cli_names_every_missing_input(tmp_path):
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path),
+         "--modisco-h5", str(tmp_path / "nope.h5")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    # every missing file listed, plus the commands that produce them
+    for token in ("motif_rarefaction", "nulldraws", "motif_exemplars",
+                  "cluster-average h5", "plot_motif_rarefaction.py"):
+        assert token in result.stderr, token
+
+
+def test_figure2_cli_tells_you_the_profile_row_is_missing(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    # JASPAR has no Inr/TATA/DPE, so --include-unmatched is load-bearing
+    assert "--include-unmatched" in result.stderr
+
+
+def test_figure2_cli_warns_on_a_missing_profile_table(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2",
+         "--profile-exemplars", str(tmp_path / "absent.tsv")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "omitting the" in result.stderr

@@ -550,6 +550,63 @@ Two corrections to earlier notes, from running this on the canonical build:
   seqlets. SPIB is the defensible myeloid recovery. HNF4A remains correctly
   unrestricted (4 groups, 24 experiments, 157,498 seqlets).
 
+### Figure 2 Assembly
+
+Composites panels a-c from files the other scripts already wrote, so it does
+no analysis and can be re-run freely while iterating on layout.
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --n-ubiquitous 12 --n-restricted 10 --logos-per-row 6 --split-logos
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/figure2_{head}.{pdf,png}                  # composite
+figures/motif_atlas/figure2_{head}_a_rarefaction.{pdf,png}    # per-panel,
+figures/motif_atlas/figure2_{head}_b_concentration.{pdf,png}  #   for hand-
+figures/motif_atlas/figure2_{head}_c_exemplars.{pdf,png}      #   alignment
+figures/motif_atlas/figure2_{head}_logos/*.{pdf,png}          # --split-logos
+```
+
+Per-panel files are written by default: the composite is for judging the
+story, the separate files are what get aligned to a house style in a vector
+editor. `--split-logos` additionally writes one small transparent PDF per
+motif, unlabelled, so panel c can be rearranged freely. Text stays as text in
+the PDFs; logomaker glyphs come through as paths.
+
+Prerequisites, in order — the script names every missing one and the command
+that produces it:
+
+```bash
+plot_motif_rarefaction.py --head count --min-cluster-experiments 2
+motif_group_concentration.py --head count --group-level tissue --save-null-draws
+select_motif_exemplars.py --head count --logo-paths ...
+```
+
+**Panel c's two enemies are low-complexity clusters and weak ones**, and
+widening the rows finds both. Past rank 12 the ubiquitous list turns
+low-complexity: cluster 9 ("ZNF362", 86 experiments) is a poly-T run and
+cluster 14 ("ZNF131", 70 experiments) a CGC repeat — and their JASPAR scores
+are 0.96 and 0.94, so `--jaspar-score-threshold` does not catch them either.
+JASPAR contains low-complexity profiles, so a repeat CWM matches one well.
+Rank 12 is TBP, whose TATA box you want, so `--n-ubiquitous 12` is the clean
+cut. Among the restricted, POU2F1::SOX2 (213 seqlets) is visibly noisy and
+"BNC2" (253) reads as a TGA(G)TCA AP-1 site rather than anything GI-specific;
+raising `--min-seqlets` to 500 drops both, at the cost of the `gi_tract` row.
+
+There is no substitute for looking at the logos before quoting anything from
+this panel.
+
+`--modisco-h5` reads `{pos,neg}_patterns/{cluster_final}/contrib_scores`,
+shape `(length, 4)`. `trim_cwm` wants `(4, length)`, so the loader transposes;
+getting that backwards silently collapses per-position magnitude to four
+numbers and trims to nonsense instead of raising, which is why
+`tests/test_motif_atlas_panels.py` checks that a synthetic 10bp core inside a
+50bp window trims back to 10bp.
+
 ### Compendium Redundancy
 
 Measures how much of the lexicon is the same motif counted twice. Every count
@@ -1140,6 +1197,28 @@ an `enrichment_reliable` flag and the run warns about affected rows; read
 `single_group_p` (still exact) and `pooled_concentration` there instead. And at
 biosample level with a raised floor, the single-group test is unpowered by
 construction, so only `pooled_concentration` is usable.
+
+#### Footgun: the swap null ignored its own seed
+
+`curveball_randomize` materialized each trade's candidate pool with
+`list(only_a | only_b)` — a **set of experiment-ID strings**. Python randomizes
+string hashing per process unless `PYTHONHASHSEED` is set, so that set iterated
+in a different order in every run, `rng.shuffle` permuted a differently-ordered
+list against the same RNG draws, and `--seed 0` produced a different null each
+time: the TF-matched null single-group mean came out 7.94, 8.09 and 7.97 on
+three runs over identical data.
+
+Fixed by sorting (`sorted(only_a | only_b)`), after which two runs write
+byte-identical draw files. The conclusions were never at risk — every run gave
+`swap_concentration` 0.826 and `p < 0.001`, and the wobble was within
+Monte-Carlo error for 1000 permutations — but a figure quoting "45 vs 8.0
+expected" should reproduce, and it now does.
+
+Worth noting the parallel: unseeded randomness in
+[`cluster_motifs.py`](../bpnet/README.md#motif-clustering) is flagged there as
+untested, and this is the same class of bug caught in code where it *could* be
+tested. Any container-of-strings whose iteration order reaches an RNG needs
+sorting.
 
 #### Is the enrichment an artifact of cluster splitting?
 
