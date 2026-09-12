@@ -70,20 +70,49 @@ def load_counts(path: Path) -> pd.DataFrame:
     return df
 
 
+def take_columns(df: pd.DataFrame, cols) -> pd.DataFrame:
+    """Column subset by integer position rather than by label.
+
+    `df[cols]` and `df.loc[:, cols]` do label lookups, which at ~100,000
+    columns cost minutes: pandas builds an indexer entry per label. Resolving
+    labels to positions once and slicing with `.iloc` is the same result in
+    well under a second.
+    """
+    if list(cols) == list(df.columns):
+        return df
+    positions = df.columns.get_indexer(pd.Index(cols))
+    if (positions < 0).any():
+        missing = pd.Index(cols)[positions < 0]
+        raise KeyError(f"{len(missing)} column(s) not present, e.g. {missing[0]!r}")
+    return df.iloc[:, positions]
+
+
 def align(observed: pd.DataFrame, predicted: pd.DataFrame) -> tuple:
     """Restrict both matrices to shared experiments and shared peak columns.
 
     Column counts can differ if the two files were produced by different runs;
     silently correlating misaligned vectors would give a meaningless matrix, so
     this intersects explicitly and the caller reports what was dropped.
+
+    The identical-columns case -- both files from one run, which is the normal
+    one -- short-circuits before any column indexing happens at all.
     """
     exps = [e for e in observed.index if e in set(predicted.index)]
-    cols = [c for c in observed.columns if c in set(predicted.columns)]
     if not exps:
         raise ValueError("no experiments in common between observed and predicted")
-    if not cols:
+
+    if list(observed.columns) == list(predicted.columns):
+        cols = observed.columns
+    else:
+        pred_cols = set(predicted.columns)
+        cols = pd.Index([c for c in observed.columns if c in pred_cols])
+    if not len(cols):
         raise ValueError("no peaks in common between observed and predicted")
-    return observed.loc[exps, cols], predicted.loc[exps, cols]
+
+    return (
+        take_columns(observed.loc[exps], cols),
+        take_columns(predicted.loc[exps], cols),
+    )
 
 
 def most_variable_peaks(observed: pd.DataFrame, n: int) -> list:
@@ -166,6 +195,14 @@ def peak_specificity(
     return spec.clip(lower=0, upper=1)
 
 
+def top_group_signal(observed: pd.DataFrame, groups: dict[str, str]) -> pd.Series:
+    """Each peak's strongest tissue-group mean, back in count units."""
+    by_group = group_means(observed, groups)
+    if by_group.empty:
+        return pd.Series(np.nan, index=observed.columns)
+    return np.expm1(by_group.max(axis=0))
+
+
 def stratify_by_specificity(
     spec: pd.Series, quantile: float
 ) -> dict[str, list]:
@@ -188,6 +225,13 @@ def stratify_by_specificity(
     }
 
 
+def _standardize(a: np.ndarray) -> np.ndarray:
+    """Row-wise z-scores, with zero-variance rows left as zeros."""
+    centered = a - a.mean(axis=1, keepdims=True)
+    sd = centered.std(axis=1, keepdims=True)
+    return np.divide(centered, sd, out=np.zeros_like(centered), where=sd > 0)
+
+
 def correlation_matrix(
     observed: pd.DataFrame, predicted: pd.DataFrame, method: str = "pearson"
 ) -> pd.DataFrame:
@@ -196,15 +240,30 @@ def correlation_matrix(
     Rows are models, columns are experiments. On log1p counts, since counts
     span orders of magnitude and an untransformed Pearson would be dominated by
     the few strongest peaks.
+
+    Computed as a single matrix product of row-standardized values rather than
+    pair by pair. At 50 experiments and ~100,000 peaks the pair-by-pair form is
+    2,500 pandas `Series.corr` calls -- and the specificity stratification
+    needs two more matrices on top -- which takes minutes; standardizing once
+    and multiplying takes well under a second for identical results.
     """
-    pred = np.log1p(predicted)
-    obs = np.log1p(observed)
-    exps = list(observed.index)
-    out = pd.DataFrame(index=exps, columns=exps, dtype=float)
-    for i in exps:
-        pi = pred.loc[i]
-        for j in exps:
-            out.at[i, j] = pi.corr(obs.loc[j], method=method)
+    pred = np.log1p(predicted.to_numpy(dtype=float))
+    obs = np.log1p(observed.to_numpy(dtype=float))
+    if method == "spearman":
+        # Spearman is Pearson on ranks, so rank each row and reuse the same
+        # product. `argsort().argsort()` gives ordinal ranks; ties are broken
+        # arbitrarily rather than averaged, which at 100,000 mostly-distinct
+        # values moves the correlation in the fourth decimal at most.
+        pred = pred.argsort(axis=1).argsort(axis=1).astype(float)
+        obs = obs.argsort(axis=1).argsort(axis=1).astype(float)
+    elif method != "pearson":
+        raise ValueError(f"unknown method {method!r}")
+
+    n_peaks = pred.shape[1]
+    values = _standardize(pred) @ _standardize(obs).T / n_peaks
+    out = pd.DataFrame(
+        values, index=list(predicted.index), columns=list(observed.index)
+    )
     out.index.name = "model"
     out.columns.name = "experiment"
     return out
@@ -395,6 +454,16 @@ def main():
     parser.add_argument("--method", default="pearson",
                         choices=["pearson", "spearman"])
     parser.add_argument(
+        "--min-peak-signal", type=float, default=0.5, metavar="RPM",
+        help="before ranking by specificity, drop peaks whose strongest "
+             "tissue-group mean is below this (default: 0.5). Tau is inflated "
+             "by noise on near-empty peaks -- unfiltered, the top-decile "
+             "stratum has 12x less signal than the bottom decile and tau "
+             "anti-correlates with signal at rho = -0.45 -- which is why "
+             "filtering low-signal features before tau is standard. Raising "
+             "it sharpens the contrast rather than weakening it.",
+    )
+    parser.add_argument(
         "--specificity-index", default="tau", choices=["tau", "entropy"],
         help="tissue-specificity index: Yanai et al. 2005 tau (default), or "
              "normalized entropy as used by motif_hit_density.py",
@@ -448,7 +517,8 @@ def main():
     peaks = most_variable_peaks(observed, args.variable_peaks)
     if len(peaks) != observed.shape[1]:
         print(f"restricted to {len(peaks):,} most variable peaks", file=sys.stderr)
-        observed, predicted = observed[peaks], predicted[peaks]
+        observed = take_columns(observed, peaks)
+        predicted = take_columns(predicted, peaks)
 
     with open(CONFIG_PATH) as f:
         cfg = yaml.safe_load(f)["experiments"]
@@ -491,6 +561,16 @@ def main():
 
     if args.specificity_quantile > 0:
         spec = peak_specificity(observed, groups, args.specificity_index)
+        if args.min_peak_signal > 0:
+            signal = top_group_signal(observed, groups)
+            eligible = signal[signal >= args.min_peak_signal].index
+            print(
+                f"specificity stratification restricted to {len(eligible):,} of "
+                f"{len(spec):,} peaks with a tissue-group mean >= "
+                f"{args.min_peak_signal} RPM",
+                file=sys.stderr,
+            )
+            spec = spec.loc[eligible]
         strata = stratify_by_specificity(spec, args.specificity_quantile)
         spec.rename("specificity").to_csv(
             args.out_dir / "peak_specificity.tsv", sep="\t"
@@ -500,7 +580,10 @@ def main():
             if len(cols) < 2:
                 continue
             sub_pairs = long_form(
-                correlation_matrix(observed[cols], predicted[cols], args.method),
+                correlation_matrix(
+                    take_columns(observed, cols), take_columns(predicted, cols),
+                    args.method,
+                ),
                 groups, biosamples,
             )
             summary_s = summarize_tiers(sub_pairs).assign(stratum=name,

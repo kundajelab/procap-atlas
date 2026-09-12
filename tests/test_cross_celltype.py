@@ -652,3 +652,87 @@ def test_unequal_rows_would_raise_rather_than_corrupt():
     with pytest.raises(ValueError):
         pd.DataFrame(rows)
     assert pd.DataFrame({"a": np.zeros(10), "b": np.zeros(10)}).shape == (10, 2)
+
+
+# --- performance and the tau signal floor ----------------------------------
+
+
+def test_take_columns_short_circuits_identical_columns():
+    df = pd.DataFrame(np.zeros((2, 5)), columns=list("abcde"))
+    assert ccp.take_columns(df, list("abcde")) is df
+
+
+def test_take_columns_selects_by_position():
+    df = pd.DataFrame(np.arange(10).reshape(2, 5), columns=list("abcde"))
+    got = ccp.take_columns(df, ["c", "a"])
+    assert list(got.columns) == ["c", "a"]
+    assert list(got.iloc[0]) == [2, 0]
+
+
+def test_take_columns_raises_on_an_unknown_column():
+    df = pd.DataFrame(np.zeros((2, 3)), columns=list("abc"))
+    with pytest.raises(KeyError, match="not present"):
+        ccp.take_columns(df, ["a", "zz"])
+
+
+def test_align_is_fast_on_a_wide_matrix():
+    # align used .loc with ~100,000 column *labels*, which took minutes.
+    import time
+
+    n = 60_000
+    cols = [f"p{i}" for i in range(n)]
+    a = pd.DataFrame(np.zeros((4, n)), index=list("abcd"), columns=cols)
+    b = a.copy()
+    t0 = time.time()
+    o, p = ccp.align(a, b)
+    assert time.time() - t0 < 5, "wide align must not do per-label lookups"
+    assert o.shape == (4, n)
+
+
+def test_spearman_matches_pearson_on_ranks():
+    rng = np.random.default_rng(0)
+    o = pd.DataFrame(rng.lognormal(size=(4, 200)), index=list("abcd"))
+    p = pd.DataFrame(rng.lognormal(size=(4, 200)), index=list("abcd"))
+    got = ccp.correlation_matrix(o, p, "spearman")
+    ranks_o = np.log1p(o.to_numpy()).argsort(axis=1).argsort(axis=1)
+    ranks_p = np.log1p(p.to_numpy()).argsort(axis=1).argsort(axis=1)
+    ref = np.corrcoef(ranks_p, ranks_o)[:4, 4:]
+    assert np.allclose(got.to_numpy(), ref, atol=1e-9)
+
+
+def test_correlation_matrix_rejects_an_unknown_method():
+    o = counts_frame(["a", "b"], n_peaks=10)
+    with pytest.raises(ValueError, match="unknown method"):
+        ccp.correlation_matrix(o, o, "kendall")
+
+
+def test_correlation_matrix_tolerates_a_constant_row():
+    o = counts_frame(["a", "b"], n_peaks=20)
+    p = o.copy()
+    p.loc["a"] = 5.0                      # zero variance
+    m = ccp.correlation_matrix(o, p)
+    assert not np.isnan(m.to_numpy()).any(), "zero-variance rows give 0, not nan"
+    assert (m.loc["a"] == 0).all()
+
+
+def test_top_group_signal_is_in_count_units():
+    obs = pd.DataFrame({"p": [0.0, 0.0, 99.0]}, index=["b1", "b2", "h1"])
+    groups = {"b1": "blood", "b2": "blood", "h1": "heart"}
+    assert ccp.top_group_signal(obs, groups)["p"] == pytest.approx(99.0)
+
+
+def test_signal_floor_is_what_separates_real_specificity_from_noise():
+    """Tau is inflated by noise on near-empty peaks: a single stochastic blip
+    in one group scores ~1. On the real matrices the unfiltered top decile has
+    12x less signal than the bottom decile, and tau anti-correlates with signal
+    at rho = -0.45."""
+    groups = {"b1": "blood", "b2": "blood", "h1": "heart", "h2": "heart"}
+    obs = pd.DataFrame({
+        "noise_blip": [0.0, 0.0, 0.03, 0.0],     # empty but maximally skewed
+        "real_specific": [0.0, 0.0, 50.0, 50.0],
+    }, index=list(groups))
+    spec = ccp.peak_specificity(obs, groups)
+    assert spec["noise_blip"] == pytest.approx(spec["real_specific"], abs=1e-6)
+    signal = ccp.top_group_signal(obs, groups)
+    eligible = signal[signal >= 0.5].index
+    assert list(eligible) == ["real_specific"]
