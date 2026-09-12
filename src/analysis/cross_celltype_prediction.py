@@ -620,20 +620,35 @@ def long_form(
 
 
 def summarize_tiers(pairs: pd.DataFrame) -> pd.DataFrame:
-    """Per-tier location and spread, plus each tier's gap to the next."""
+    """Per-tier location and spread, plus each tier's gap to the next.
+
+    Reports a group-balanced median alongside the pooled one whenever the
+    model's tissue group is available. Pooling weights every pair equally,
+    which over the full atlas hands the result to the largest groups:
+    `blood_immune` is 41 of 198 experiments, so it contributes roughly a
+    quarter of all cross-tissue pairs and most within-tissue ones. The
+    balanced figure takes each group's median first and then the median across
+    groups, giving a 4-experiment lineage the same say as a 41-experiment one.
+    """
     rows = []
     for tier in TIERS:
-        sub = pairs[pairs["tier"] == tier]["correlation"]
+        sub = pairs[pairs["tier"] == tier]
         if not len(sub):
             continue
-        rows.append({
+        values = sub["correlation"]
+        row = {
             "tier": tier,
-            "n_pairs": len(sub),
-            "mean": round(float(sub.mean()), 4),
-            "median": round(float(sub.median()), 4),
-            "q25": round(float(sub.quantile(0.25)), 4),
-            "q75": round(float(sub.quantile(0.75)), 4),
-        })
+            "n_pairs": len(values),
+            "mean": round(float(values.mean()), 4),
+            "median": round(float(values.median()), 4),
+            "q25": round(float(values.quantile(0.25)), 4),
+            "q75": round(float(values.quantile(0.75)), 4),
+        }
+        if "model_group" in sub.columns and sub["model_group"].notna().any():
+            per_group = sub.groupby("model_group")["correlation"].median()
+            row["median_group_balanced"] = round(float(per_group.median()), 4)
+            row["n_groups"] = int(per_group.notna().sum())
+        rows.append(row)
     out = pd.DataFrame(rows)
     if len(out) > 1:
         out["delta_to_next"] = out["median"].diff(-1).round(4)

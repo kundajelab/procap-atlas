@@ -1725,7 +1725,50 @@ Peaks on chromosomes no fold claims (`chrM`, alt contigs) are dropped and
 reported. `fold_by_chrom` raises if a chromosome appears in two folds, since
 then nothing held it out.
 
-### Why a balanced subset
+### Run all 198, not a subset
+
+The balanced subset existed to find out cheaply whether the effect was there.
+It is, so run everything above 10M reads:
+
+```bash
+python src/analysis/count_correlation.py --model bpnet --device cuda \
+    --held-out-folds --min-reads 10000000 --max-peaks 100000
+```
+
+At 4.1x the extraction cost of 50 experiments it buys far more than four times
+the analysis:
+
+```text
+                          50-experiment subset   all >=10M
+experiments                                 50         198
+same-biosample pairs                          2         307
+same-tissue pairs                            45       1,826
+different-tissue pairs                    1,178      18,370
+biosamples with >=2 replicates                2          30
+ceiling estimates available                   1         435
+```
+
+The last row is the decisive one. The differential ceiling needs two
+replicated biosamples, and the subset happened to contain exactly two, giving
+one estimate. The full set gives 435, turning an anecdote into a distribution.
+It also removes a selection choice from the methods: "every experiment above
+10M reads" needs no defending, where "the three deepest per tissue group plus
+two replicates" does.
+
+**The quality filter matters here.** This script had no experiment-level
+exclusions -- its five "blacklist" references are the *genomic* hg38 blacklist
+-- so a naive run took in 203 experiments including the four uncapped
+libraries and ENCSR973QQI, whose models are poor for reasons unrelated to cell
+type. `--exclude-experiments` (default `ENCSR973QQI`) plus the uncapped check
+now reproduce `cluster_motifs.py`'s filter exactly: 224 -> 219 -> **198**, the
+same universe as every other analysis in the paper.
+
+With all 198, pooled tier medians are dominated by the largest groups --
+`blood_immune` is 41 experiments, so about a quarter of all cross-tissue pairs
+-- so `summarize_tiers()` also reports `median_group_balanced`, taking each
+group's median first and then the median across groups. Quote that one.
+
+### Why a balanced subset (superseded)
 
 `--balanced-per-group 3` takes the three deepest experiments from each tissue
 group: 50 experiments over 18 groups on the current atlas, 17 of them with at

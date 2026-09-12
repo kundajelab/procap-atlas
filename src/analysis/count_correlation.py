@@ -82,6 +82,34 @@ def extract_observed_counts(
     return X, counts * rpm_scale
 
 
+def exclude_low_quality(
+    experiments: dict, exclude: set[str]
+) -> tuple[dict, list[str], list[str]]:
+    """Drop blacklisted and uncapped experiments, as every other analysis does.
+
+    This script had no experiment-level quality filter at all -- its five
+    "blacklist" references are the *genomic* hg38 blacklist -- so a run over
+    everything above 10M reads pulled in 203 experiments including the four
+    uncapped libraries and ENCSR973QQI. `cluster_motifs.py` and the motif
+    analyses use 198: uncapped libraries have poor TSS enrichment and
+    ENCSR973QQI has anomalous signal downstream of GENCODE TSSs, so their
+    models are poor for reasons unrelated to cell type and would pollute every
+    tier.
+
+    Returns (kept, blacklisted, uncapped) so the caller can report what went.
+    """
+    kept, dropped_bl, dropped_un = {}, [], []
+    for exp_id, meta in experiments.items():
+        if exp_id in exclude:
+            dropped_bl.append(exp_id)
+            continue
+        if "uncapped" in str(meta.get("library_construction", "")).lower():
+            dropped_un.append(exp_id)
+            continue
+        kept[exp_id] = meta
+    return kept, dropped_bl, dropped_un
+
+
 def load_peak_contributors(union_peaks_path: Path) -> list[str] | None:
     """Experiment ids in bitset order, from make_union_peaks.py's sidecar."""
     sidecar = union_peaks_path.parent / (
@@ -514,6 +542,18 @@ def main():
              "the same-tissue tier mostly blood_immune (41 of 198). 0 = all.",
     )
     parser.add_argument(
+        "--exclude-experiments",
+        type=str,
+        nargs="*",
+        default=["ENCSR973QQI"],
+        metavar="ENCSR",
+        help="experiment accessions to drop, matching cluster_motifs.py's "
+             "--blacklist (default: ENCSR973QQI, whose signal is anomalously "
+             "downstream of GENCODE TSSs). Uncapped libraries are dropped "
+             "separately via their library_construction metadata. Pass no "
+             "values to keep everything.",
+    )
+    parser.add_argument(
         "--replicates-per-group",
         type=int,
         default=0,
@@ -642,6 +682,16 @@ def main():
         print(
             f"Subsampled union peaks to {len(union_peaks):,} (seed "
             f"{args.peak_seed})",
+            file=sys.stderr,
+        )
+
+    experiments, dropped_bl, dropped_un = exclude_low_quality(
+        experiments, set(args.exclude_experiments or [])
+    )
+    if dropped_bl or dropped_un:
+        print(
+            f"Quality filter: dropped {len(dropped_bl)} blacklisted and "
+            f"{len(dropped_un)} uncapped experiment(s); {len(experiments)} remain",
             file=sys.stderr,
         )
 

@@ -1192,3 +1192,59 @@ def test_cli_reports_topk_sweep(tmp_path):
     assert "Naming the most-active tissue" in result.stderr
     got = pd.read_csv(tmp_path / "out" / "cross_celltype_topk.tsv", sep="\t")
     assert "top1_over_chance" in got.columns
+
+
+# --- quality filter and group balancing ------------------------------------
+
+
+def test_exclude_low_quality_drops_blacklisted_and_uncapped():
+    exps = {
+        "good": {"library_construction": "PRO-cap"},
+        "bad": {"library_construction": "PRO-cap"},
+        "uncap": {"library_construction": "PRO-cap, uncapped"},
+    }
+    kept, bl, un = cc.exclude_low_quality(exps, {"bad"})
+    assert set(kept) == {"good"}
+    assert bl == ["bad"] and un == ["uncap"]
+
+
+def test_exclude_low_quality_matches_the_rest_of_the_paper():
+    """count_correlation.py had no experiment-level quality filter -- its five
+    'blacklist' references are the genomic hg38 blacklist -- so a run over
+    everything above 10M reads took in 203 experiments including the four
+    uncapped libraries and ENCSR973QQI. Every other analysis uses 198."""
+    import yaml
+
+    cfg = yaml.safe_load(open(REPO_ROOT / "configs" / "experiment_config.yaml"))
+    sys.path.insert(0, str(REPO_ROOT / "src" / "analysis"))
+    from plot_motif_rarefaction import load_read_counts
+
+    kept, bl, un = cc.exclude_low_quality(cfg["experiments"], {"ENCSR973QQI"})
+    assert len(kept) == 219, "224 minus 1 blacklisted minus 4 uncapped"
+    depth = load_read_counts()
+    assert sum(1 for e in kept if depth.get(e, 0) >= 10e6) == 198
+
+
+def test_exclude_low_quality_can_be_disabled():
+    exps = {"a": {"library_construction": "PRO-cap"}}
+    kept, bl, un = cc.exclude_low_quality(exps, set())
+    assert set(kept) == {"a"} and not bl
+
+
+def test_tier_summary_is_group_balanced_as_well_as_pooled():
+    # one huge group with low values, one small group with high ones: pooling
+    # hands the answer to the huge group
+    pairs = pd.DataFrame(
+        [dict(tier="different tissue", model_group="blood", correlation=0.1)] * 40
+        + [dict(tier="different tissue", model_group="stem", correlation=0.9)] * 2
+    )
+    out = ccp.summarize_tiers(pairs).iloc[0]
+    assert out["median"] == pytest.approx(0.1)
+    assert out["median_group_balanced"] == pytest.approx(0.5)
+    assert out["n_groups"] == 2
+
+
+def test_tier_summary_omits_balancing_without_groups():
+    pairs = pd.DataFrame([dict(tier="matched", correlation=0.5)])
+    out = ccp.summarize_tiers(pairs)
+    assert "median_group_balanced" not in out.columns
