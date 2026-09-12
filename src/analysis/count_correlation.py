@@ -710,6 +710,24 @@ def main():
             if not len(obs):
                 print(f"WARNING: {exp_id}: no peaks survived, skipping", file=sys.stderr)
                 continue
+            # Fail fast on a length mismatch. Held-out extraction relies on
+            # extract_loci dropping the same peaks for every experiment, which
+            # holds because its filtering depends only on the peaks, the FASTA
+            # and the blacklist. If that ever stops being true, pd.DataFrame
+            # would raise -- but only after every remaining experiment had been
+            # predicted, discarding hours of GPU time.
+            if obs_rows:
+                expected = len(next(iter(obs_rows.values())))
+                if len(obs) != expected:
+                    first = next(iter(obs_rows))
+                    print(
+                        f"ERROR: {exp_id} yielded {len(obs):,} peaks but "
+                        f"{first} yielded {expected:,}. Held-out rows must "
+                        "align across experiments; aborting rather than "
+                        "writing a matrix whose columns do not correspond.",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
             obs_rows[exp_id] = obs
             biosample_map[exp_id] = biosample_safe
             if pred is not None:

@@ -640,3 +640,15 @@ def test_replicate_only_warning_excludes_single_experiment_groups():
     )
     thin = sorted(g for g, n in sizes.items() if n >= 2 and distinct.get(g, 0) < 2)
     assert thin == ["blood"], "adipose has no pairs to describe"
+
+
+def test_unequal_rows_would_raise_rather_than_corrupt():
+    """The guarantee behind held-out extraction: rows align across
+    experiments. If they ever did not, pandas raises -- so a misaligned matrix
+    cannot be written silently. count_correlation.py now also checks per
+    experiment, because this exception would otherwise fire only after every
+    remaining experiment had been predicted."""
+    rows = {"a": np.zeros(10), "b": np.zeros(9)}
+    with pytest.raises(ValueError):
+        pd.DataFrame(rows)
+    assert pd.DataFrame({"a": np.zeros(10), "b": np.zeros(10)}).shape == (10, 2)
