@@ -1542,3 +1542,153 @@ def test_differential_tiers_labels_every_box_with_n_and_median():
     for i, a in enumerate(boxes):
         for b in boxes[i + 1:]:
             assert not a.overlaps(b), "tier labels overlap"
+
+
+# --- top-k and homogenization panels ----------------------------------------
+
+
+def topk_frame(n_groups=20, quantiles=(0.0, 0.9, 0.99)):
+    rows = []
+    for i, q in enumerate(quantiles):
+        row = {"tau_quantile": q, "n_peaks": 96121 // (10 ** i),
+               "n_groups": n_groups, "median_rank_of_true": 5 - i}
+        for k in (1, 3, 5):
+            acc = 0.19 + 0.07 * i + 0.2 * (k // 3)
+            row[f"top{k}"] = acc
+            row[f"top{k}_chance"] = k / n_groups
+            row[f"top{k}_over_chance"] = round(acc / (k / n_groups), 2)
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def test_topk_panel_draws_a_curve_and_a_chance_line_per_k():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    present = ccp.draw_topk(ax, topk_frame())
+    curves = [ln for ln in ax.get_lines() if len(ln.get_xdata()) > 2]
+    hlines = [ln for ln in ax.get_lines() if ln.get_linestyle() == ":"]
+    plt.close(fig)
+    assert present == [1, 3, 5]
+    assert len(curves) == 3, "one accuracy curve per k"
+    assert len(hlines) == 3, "one chance line per k"
+
+
+def test_topk_panel_shows_absolute_accuracy_not_only_the_multiple():
+    """The over-chance ratio alone reads as a big effect while hiding that
+    top-1 is a third; the y axis must carry the level."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    ccp.draw_topk(ax, topk_frame())
+    lo, hi = ax.get_ylim()
+    label = ax.get_ylabel()
+    plt.close(fig)
+    assert (lo, hi) == (0, 1), "accuracy axis should span the full range"
+    assert "accuracy" in label.lower()
+
+
+def test_topk_panel_tick_labels_carry_the_peak_count():
+    """The rightmost threshold rests on ~1,000 peaks against ~96,000; a reader
+    cannot weigh the curve's right end without that."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    t = topk_frame()
+    ccp.draw_topk(ax, t)
+    labels = [lbl.get_text() for lbl in ax.get_xticklabels()]
+    plt.close(fig)
+    assert len(labels) == len(t)
+    assert all("\n" in lbl for lbl in labels)
+    assert f"{t['n_peaks'].iloc[-1]:,}" in labels[-1]
+
+
+def test_topk_panel_spaces_thresholds_evenly_not_linearly():
+    """0, 0.5, 0.8, 0.9, 0.95, 0.99 on a linear axis crushes the four
+    thresholds that matter into the right fifth of the panel."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    t = topk_frame(quantiles=(0.0, 0.5, 0.8, 0.9, 0.95, 0.99))
+    ccp.draw_topk(ax, t)
+    xs = sorted(ax.get_xticks())
+    plt.close(fig)
+    gaps = np.diff(xs)
+    assert np.allclose(gaps, gaps[0]), "thresholds should be evenly spaced"
+
+
+def homogenization_frame(measured, predicted):
+    tiers = ["same biosample", "same tissue", "different tissue"]
+    rows = []
+    for source, vals in (("measured", measured), ("predicted", predicted)):
+        for tier, v in zip(tiers, vals):
+            rows.append({"source": source, "tier": tier, "n_pairs": 100,
+                         "median": v, "q25": v - 0.05, "q75": v + 0.05})
+    return pd.DataFrame(rows)
+
+
+def test_homogenization_panel_plots_both_sources_over_the_tiers():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    ccp.draw_homogenization(
+        ax, homogenization_frame([0.82, 0.20, 0.02], [0.75, 0.66, 0.57]),
+        "specific",
+    )
+    lines = [ln for ln in ax.get_lines() if len(ln.get_xdata()) == 3]
+    labels = [lbl.get_text().replace("\n", " ") for lbl in ax.get_xticklabels()]
+    plt.close(fig)
+    assert len(lines) == 2, "one line per source"
+    assert labels == ["same biosample", "same tissue", "different tissue"]
+
+
+def test_homogenization_gap_annotation_reports_the_final_tier_gap():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    ccp.draw_homogenization(
+        ax, homogenization_frame([0.82, 0.20, 0.02], [0.75, 0.66, 0.57]),
+        "specific", annotate_gap=True,
+    )
+    texts = " ".join(t.get_text() for t in ax.texts)
+    plt.close(fig)
+    assert "0.55" in texts, texts       # 0.57 - 0.02
+
+
+def test_homogenization_gap_annotation_is_off_by_default():
+    """The ubiquitous stratum has no interesting gap; annotating it there
+    would imply a failure the numbers do not show."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    ccp.draw_homogenization(
+        ax, homogenization_frame([0.94, 0.87, 0.79], [0.93, 0.91, 0.89]),
+        "ubiquitous",
+    )
+    texts = [t.get_text() for t in ax.texts if t.get_text().strip()]
+    plt.close(fig)
+    assert not texts
+
+
+def test_homogenization_figure_keeps_one_legend_for_the_pair(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    spec = homogenization_frame([0.82, 0.20, 0.02], [0.75, 0.66, 0.57])
+    ubiq = homogenization_frame([0.94, 0.87, 0.79], [0.93, 0.91, 0.89])
+    path = tmp_path / "hom.pdf"
+    ccp.plot_homogenization(spec, ubiq, path)
+    assert path.exists() and path.stat().st_size > 1000

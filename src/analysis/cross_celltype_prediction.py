@@ -1025,6 +1025,140 @@ def plot_differential_ceiling(quads: pd.DataFrame, path: Path) -> float:
     return slope
 
 
+K_COLOR = {1: "#08519c", 3: "#3182bd", 5: "#9ecae1"}
+
+
+def draw_topk(ax, topk: pd.DataFrame, ks=(1, 3, 5)) -> list[int]:
+    """Tissue-naming accuracy against the tau threshold.
+
+    Accuracy is plotted raw with its chance rate drawn beside it, rather than
+    as an over-chance ratio. The ratio alone reads as a large effect (6.7x)
+    while hiding that top-1 is 33% -- both facts belong in the panel, so the
+    multiple is annotated on the curve and the level is on the axis.
+
+    The tau thresholds are categorical, not linear: 0, 0.5, 0.8, 0.9, 0.95,
+    0.99 plotted on a linear axis crushes the four thresholds that matter into
+    the right fifth of the panel. Equal spacing gives each threshold equal
+    room, and the tick labels carry the peak count because the rightmost point
+    rests on ~1,000 peaks against ~96,000 at the left and is correspondingly
+    noisier.
+    """
+    present = [k for k in ks if f"top{k}" in topk.columns]
+    x = np.arange(len(topk))
+    for k in present:
+        ax.plot(x, topk[f"top{k}"], "o-", ms=3.5, lw=1.6,
+                color=K_COLOR.get(k, "#333333"), label=f"top-{k}")
+        chance = float(topk[f"top{k}_chance"].iloc[0])
+        ax.axhline(chance, color=K_COLOR.get(k, "#333333"), lw=0.7, ls=":",
+                   zorder=0)
+        ax.annotate(f"{topk[f'top{k}_over_chance'].iloc[-1]:.1f}x",
+                    xy=(x[-1], float(topk[f"top{k}"].iloc[-1])),
+                    xytext=(6, -1), textcoords="offset points",
+                    fontsize=6.5, color=K_COLOR.get(k, "#333333"),
+                    va="center", ha="left")
+    if present:
+        ax.text(x[0] - 0.35, float(topk[f"top{present[-1]}_chance"].iloc[0]),
+                "chance", fontsize=6, color="#777777", va="bottom", ha="left")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(
+        [f"{q:g}\n{n:,}" for q, n in zip(topk["tau_quantile"], topk["n_peaks"])],
+        fontsize=6.5,
+    )
+    ax.set_xlim(x[0] - 0.45, x[-1] + 0.75)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("tau quantile threshold / peaks retained", fontsize=8)
+    ax.set_ylabel("accuracy naming the most-active tissue", fontsize=8)
+    n_groups = int(topk["n_groups"].iloc[0])
+    ax.set_title(f"Naming the dominant tissue of {n_groups}", fontsize=9.5,
+                 loc="left", fontweight="bold")
+    ax.legend(frameon=False, fontsize=6.5, loc="upper left")
+    ax.spines[["top", "right"]].set_visible(False)
+    return present
+
+
+def plot_topk(topk: pd.DataFrame, path: Path) -> list[int]:
+    fig, ax = plt.subplots(figsize=(4.0, 3.1))
+    present = draw_topk(ax, topk)
+    fig.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return present
+
+
+def draw_homogenization(ax, table: pd.DataFrame, title: str,
+                        annotate_gap: bool = False) -> None:
+    """Measured vs predicted similarity across tiers, for one peak stratum.
+
+    Lines over an ordinal tier axis rather than grouped bars, because the
+    comparison is of *slopes*: measured similarity should fall as cell types
+    get less related, and the models' failure is that theirs does not fall
+    nearly as fast. Bars show six numbers; lines show the one thing that
+    matters about them.
+    """
+    tiers = [t for t in TIERS if t != "matched"
+             and (table["tier"] == t).any()]
+    x = np.arange(len(tiers))
+    style = {"measured": ("#333333", "-", "o"),
+             "predicted": ("#b2182b", "--", "s")}
+    ends = {}
+    for source in ("measured", "predicted"):
+        sub = table[table["source"] == source].set_index("tier").reindex(tiers)
+        color, ls, marker = style[source]
+        ax.plot(x, sub["median"], ls, marker=marker, ms=3.5, lw=1.6,
+                color=color, label=source)
+        if {"q25", "q75"} <= set(sub.columns):
+            ax.fill_between(x, sub["q25"], sub["q75"], color=color,
+                            alpha=0.13, lw=0)
+        ends[source] = float(sub["median"].iloc[-1])
+
+    if annotate_gap and len(ends) == 2:
+        lo, hi = sorted(ends.values())
+        ax.annotate(
+            "", xy=(x[-1], hi), xytext=(x[-1], lo),
+            arrowprops=dict(arrowstyle="<->", lw=0.8, color="#2166ac"),
+        )
+        ax.text(x[-1] - 0.08, (lo + hi) / 2,
+                f"models treat unrelated\ntissues as {hi - lo:.2f} more\nalike "
+                "than they are",
+                fontsize=6.2, color="#2166ac", va="center", ha="right",
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none",
+                          alpha=0.85), zorder=6)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([t.replace(" ", "\n") for t in tiers], fontsize=6.5)
+    ax.set_xlim(x[0] - 0.25, x[-1] + 0.25)
+    ax.set_ylim(-0.05, 1.0)
+    ax.axhline(0, color="#cccccc", lw=0.7, zorder=0)
+    ax.set_ylabel("within-pair correlation", fontsize=8)
+    ax.set_title(title, fontsize=9, loc="left", fontweight="bold")
+    ax.legend(frameon=False, fontsize=6.5, loc="lower left")
+    ax.spines[["top", "right"]].set_visible(False)
+
+
+def plot_homogenization(
+    specific: pd.DataFrame, ubiquitous: pd.DataFrame, path: Path
+) -> None:
+    """The two strata side by side; the contrast is the panel.
+
+    At ubiquitous peaks measured and predicted nearly coincide and there is no
+    visible failure. Showing that stratum beside the specific one is what
+    makes the specific panel interpretable rather than looking like a generic
+    accuracy shortfall.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(6.6, 2.9), sharey=True)
+    draw_homogenization(axes[0], specific,
+                        "Tissue-specific peaks", annotate_gap=True)
+    draw_homogenization(axes[1], ubiquitous, "Ubiquitous peaks")
+    axes[1].set_ylabel("")
+    # One legend for the pair; the styles are shared and a second copy costs
+    # space the lines could use.
+    legend = axes[1].get_legend()
+    if legend is not None:
+        legend.remove()
+    fig.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1264,6 +1398,7 @@ def main():
         if len(topk):
             topk.to_csv(args.out_dir / "cross_celltype_topk.tsv", sep="\t",
                         index=False)
+            plot_topk(topk, args.out_dir / "cross_celltype_topk.pdf")
             with pd.option_context("display.width", 220):
                 print(
                     "\nNaming the most-active tissue per peak, by specificity "
@@ -1280,6 +1415,7 @@ def main():
             args.out_dir / "peak_specificity.tsv", sep="\t"
         )
         rows = []
+        hom_by_stratum: dict[str, pd.DataFrame] = {}
         for name, cols in strata.items():
             if len(cols) < 2:
                 continue
@@ -1316,6 +1452,7 @@ def main():
                 args.out_dir / f"cross_celltype_homogenization_{name}.tsv",
                 sep="\t", index=False,
             )
+            hom_by_stratum[name] = hom
             base = reproducibility_baseline(oc, groups, biosamples, args.method)
             base_med = dict(zip(base["tier"], base["median"]))
             spread = np.log1p(oc.to_numpy(dtype=float)).std(axis=1)
@@ -1365,6 +1502,11 @@ def main():
             strat = pd.concat(rows, ignore_index=True)
             strat.to_csv(args.out_dir / "cross_celltype_by_specificity.tsv",
                          sep="\t", index=False)
+            if {"specific", "ubiquitous"} <= set(hom_by_stratum):
+                plot_homogenization(
+                    hom_by_stratum["specific"], hom_by_stratum["ubiquitous"],
+                    args.out_dir / "cross_celltype_homogenization.pdf",
+                )
             with pd.option_context("display.width", 200):
                 print(
                     "\nBy observed peak specificity "

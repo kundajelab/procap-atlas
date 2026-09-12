@@ -1961,9 +1961,19 @@ forces a cut, **b2 is the one to keep and b1 the one to move to text**: the
 tier gradient can be stated in a sentence with its three medians, while the
 constant-slope result cannot be conveyed without the scatter.
 
-**Panel a — tissue naming.** x = tau quantile threshold, y = accuracy; three
-lines (top-1/3/5) with their chance rates `k/G` as dashed horizontals. Source
-`cross_celltype_topk.tsv`, already written. This leads because it is
+**Panel a — tissue naming** (`draw_topk`, written every run to
+`cross_celltype_topk.pdf`). x = tau quantile threshold, y = accuracy; three
+lines (top-1/3/5) with their chance rates `k/G` as dotted horizontals and the
+over-chance multiple annotated at each line's right end.
+
+Two deliberate choices. **Accuracy is plotted raw, not as an over-chance
+ratio**: the ratio alone reads as a large effect (6.7x) while hiding that
+top-1 is 33%, and both facts belong in the panel. And **the thresholds are
+spaced evenly rather than linearly** — 0, 0.5, 0.8, 0.9, 0.95, 0.99 on a
+linear axis crushes the four that matter into the right fifth of the panel.
+The tick labels carry the peak count, because the rightmost point rests on 962
+peaks against 96,121 at the left and is correspondingly noisier; a reader
+cannot weigh the right end of the curve without that. This leads because it is
 ordering-only: immune to units, to `log1p` regime, and to the
 predict-signal-everywhere bias, and the shared sequence component cancels *by
 construction* since every model sees the same base pairs at a given peak. It
@@ -2050,9 +2060,28 @@ supported exactly one such quadruple; at 198 there are **1,058 quadruples over
 can be plotted per tier: **26.8% cross-tissue (IQR 23-32%)**, 23.4%
 same-tissue. Plot `attained` on the second axis, not the raw ceiling.
 
-**Panel c — homogenization, measured vs predicted.** Paired bars per tier, two
-colors, restricted to tissue-specific peaks; source
-`cross_celltype_homogenization_specific.tsv`. This is ProCapNet's own
+**Panel c — homogenization, measured vs predicted** (`plot_homogenization`,
+written every run to `cross_celltype_homogenization.pdf`). Two sub-panels,
+specific and ubiquitous, sharing a y axis; measured and predicted as lines
+over the ordinal tier axis with IQR bands.
+
+**Lines, not grouped bars, because the comparison is of slopes.** Measured
+similarity should fall as cell types get less related; the models' failure is
+that theirs does not fall nearly as fast. Bars show six numbers, lines show
+the one thing that matters about them:
+
+```text
+specific peaks     measured   predicted        ubiquitous   measured  predicted
+same biosample        0.821       0.745                        0.941      0.931
+same tissue           0.198       0.655                        0.869      0.912
+different tissue      0.016       0.574                        0.786      0.894
+```
+
+The gap at `different tissue` is annotated on the specific panel only (0.56).
+The ubiquitous panel deliberately carries no annotation — there is no
+interesting gap there, and marking one would imply a failure the numbers do
+not show. Showing it beside the specific panel is what makes the specific
+panel interpretable rather than looking like a generic accuracy shortfall. This is ProCapNet's own
 comparison and it is where the models fail, so it belongs in the figure rather
 than in the text:
 
@@ -2103,12 +2132,19 @@ before any tier gap is quoted, but it is a caveat, not a panel.
 4. ~~Add `plot_differential_tiers` and the ceiling scatter.~~ Done; both are
    written on every run, with `ceiling_fit` split out so the annotated slope
    is testable without parsing a PDF.
-5. **Next:** `plot_topk` (panel a) and `plot_homogenization` (panel c). Both
-   read tables that already exist —
-   `cross_celltype_topk.tsv` and
-   `cross_celltype_homogenization_{specific,ubiquitous}.tsv`.
-6. Assemble, then hand over per-panel PDFs for manual restyling, as with
-   Figure 2.
+5. ~~Add `plot_topk` (panel a) and `plot_homogenization` (panel c).~~ Done.
+6. **Next:** assemble the five panels into one figure, then hand over the
+   per-panel PDFs for manual restyling, as with Figure 2. Every panel is now
+   written on each run of `cross_celltype_prediction.py`:
+
+```text
+cross_celltype_topk.pdf                    panel a
+cross_celltype_differential_tiers.pdf      panel b1
+cross_celltype_differential_ceiling.pdf    panel b2
+cross_celltype_homogenization.pdf          panel c  (two sub-panels)
+cross_celltype_matrix.pdf                  panel d
+cross_celltype_tiers.pdf                   not used -- level correlations
+```
 
 ### Thresholding on tissue specificity
 
