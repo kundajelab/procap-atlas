@@ -220,6 +220,67 @@ def panel_rarefaction(ax, curves: pd.DataFrame, mark_k: int = 5) -> None:
     ax.spines[["top", "right"]].set_visible(False)
 
 
+def panel_lexicon_bracket(
+    ax, cluster_curves: pd.DataFrame, name_curves: pd.DataFrame,
+    mark_k: int = 5,
+) -> None:
+    """Supplementary: the lexicon size as a bracket, not a single number.
+
+    Answers the obvious reviewer question -- how many of the 343 clusters are
+    actually distinct motifs -- by plotting both readings at once. Cluster
+    level is the upper bound; collapsing clusters that share a JASPAR name is
+    the lower bound, with no threshold to defend. The shaded band between them
+    is where the true lexicon size sits.
+
+    The point of the panel is that the *claim* does not depend on which end you
+    take: the curve is far from its own asymptote at small k either way, so a
+    small study misses most of the lexicon whichever bound is used.
+    """
+    levels = [
+        ("by cluster (upper bound)", cluster_curves, "#1b7837", "-"),
+        ("by JASPAR name (lower bound)", name_curves, "#762a83", "--"),
+    ]
+    totals = []
+    series = []
+    for label, curves, color, ls in levels:
+        all_cls = curves[curves["motif_class"] == "__all__"]
+        uni = all_cls[all_cls["scheme"] == "uniform"].sort_values("k")
+        total = float(all_cls["n_clusters_total"].iloc[0])
+        totals.append(total)
+        series.append((uni["k"].to_numpy(), uni["mean"].to_numpy()))
+        ax.plot(uni["k"], uni["mean"], color=color, ls=ls, lw=1.8, label=label)
+        ax.axhline(total, color=color, lw=0.7, ls=":", zorder=1)
+        ax.text(ax.get_xlim()[1], total, f" {total:.0f}", va="center",
+                ha="left", fontsize=7, color=color, clip_on=False)
+
+    # The band is only meaningful where both curves are defined.
+    (k_hi, y_hi), (k_lo, y_lo) = series
+    if len(k_hi) == len(k_lo) and (k_hi == k_lo).all():
+        ax.fill_between(k_hi, y_lo, y_hi, color="#999999", alpha=0.12, lw=0)
+
+    for (k_arr, y_arr), total, color in zip(series, totals,
+                                           ["#1b7837", "#762a83"]):
+        hit = np.flatnonzero(k_arr == mark_k)
+        if len(hit):
+            y = float(y_arr[hit[0]])
+            ax.plot([mark_k], [y], "o", color=color, ms=4, zorder=5)
+            ax.annotate(
+                f"{y / total:.0%}", xy=(mark_k, y),
+                xytext=(mark_k + 9, y - max(totals) * 0.055),
+                fontsize=7, color=color,
+                arrowprops=dict(arrowstyle="-", lw=0.5, color=color),
+            )
+
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0, top=max(totals) * 1.08)
+    ax.set_xlabel("Experiments sampled")
+    ax.set_ylabel("Motifs recovered")
+    ax.set_title(f"Lexicon size is a bracket ({mark_k}-experiment recovery marked)",
+                 loc="left", fontweight="bold", fontsize=9)
+    ax.legend(frameon=False, fontsize=6.5, loc="lower right")
+    ax.spines[["top", "right"]].set_visible(False)
+
+
 def panel_concentration(
     ax, draws: pd.DataFrame, swap: pd.DataFrame, motif_class: str = "TF-matched",
     biosample_swap: pd.DataFrame | None = None,
@@ -466,6 +527,16 @@ def main():
     parser.add_argument("--group-level", default="tissue",
                         choices=["tissue", "biosample"])
     parser.add_argument("--motif-class", default="TF-matched")
+    parser.add_argument(
+        "--collapse-curves", type=Path, default=None, metavar="PATH",
+        help="motif_rarefaction_{head}.tsv from a --collapse-by jaspar_name "
+             "run. With it, a supplementary panel is written showing the "
+             "cluster-level and name-level curves as a bracket, which is the "
+             "answer to 'how many of these clusters are really distinct "
+             "motifs'. Generate it with: plot_motif_rarefaction.py --head "
+             "count --min-cluster-experiments 2 --collapse-by jaspar_name "
+             "--out-dir DIR",
+    )
     parser.add_argument("--profile-exemplars", type=Path, default=None, metavar="PATH")
     parser.add_argument("--profile-h5", type=Path, default=None, metavar="PATH")
     parser.add_argument("--trim-threshold", type=float, default=0.3, metavar="F")
@@ -596,6 +667,18 @@ def main():
                 per_row=args.logos_per_row),
             Path(f"{stem}_c_exemplars"), (w, h * 0.56),
         )
+        if args.collapse_curves is not None:
+            if not args.collapse_curves.exists():
+                print(f"ERROR: missing --collapse-curves: "
+                      f"{args.collapse_curves}", file=sys.stderr)
+            else:
+                collapsed = pd.read_csv(args.collapse_curves, sep="\t")
+                written += save_panel(
+                    lambda f: panel_lexicon_bracket(
+                        f.add_subplot(111), tables["curves"], collapsed,
+                        args.mark_k),
+                    Path(f"{stem}_s_lexicon_bracket"), (w * 0.52, h * 0.46),
+                )
         for path in written:
             print(f"Saved {path}")
 

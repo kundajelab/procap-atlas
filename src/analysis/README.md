@@ -130,6 +130,7 @@ explicitly. The profile head is not yet built (see Pending below).
 | Fig 2 — tissue concentration of motif discovery | `motif_group_concentration.py` | done, `count` head |
 | Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
 | Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
+| Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
 | Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
 | Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; 3 of 4 panel plotters unwritten |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
@@ -147,6 +148,14 @@ python src/analysis/select_motif_exemplars.py --head count --max-groups 2 \
     --logo-root compendium/
 python src/analysis/plot_figure2.py --head count --n-restricted 14 \
     --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5
+
+# S: the lexicon-size bracket, for "how many of these are really distinct?"
+python src/analysis/plot_motif_rarefaction.py --head count \
+    --min-cluster-experiments 2 --collapse-by jaspar_name --sweep \
+    --out-dir figures/motif_atlas/collapsed
+python src/analysis/plot_figure2.py --head count --n-restricted 14 \
+    --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5 \
+    --collapse-curves figures/motif_atlas/collapsed/motif_rarefaction_count.tsv
 
 # 2a: discovery concentration, both group levels
 python src/analysis/motif_group_concentration.py --head count --group-level tissue
@@ -554,6 +563,16 @@ python src/analysis/plot_motif_rarefaction.py --head count \
 python src/analysis/motif_group_concentration.py --head count \
     --group-level tissue --collapse-by jaspar_name
 ```
+
+`plot_figure2.py --collapse-curves` turns the first of those into a
+supplementary panel (`figure2_{head}_s_lexicon_bracket.pdf`): both uniform
+curves with their own asymptotes (343 and 155) and the band between them, with
+each level's own k=5 recovery marked (21% and 29%). The panel's argument is
+that the claim does not depend on which bound you take — at k=5 both curves
+are far from their own asymptote — so a reader can accept the lower bound and
+the conclusion is unchanged. `panel_lexicon_bracket` deliberately labels each
+level's fraction *of its own total*, since 21% of 343 and 29% of 155 are
+different statements and averaging them would be meaningless.
 
 Caveat to state alongside it: `jaspar_name` is the only identifier the
 compendium metadata carries — there is no JASPAR matrix-ID column. Collapsing

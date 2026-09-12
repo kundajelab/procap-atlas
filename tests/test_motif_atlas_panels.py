@@ -3675,3 +3675,70 @@ def test_category_labels_do_not_overlap_each_other(tmp_path):
     a, b = (t.get_window_extent(r) for t in rotated)
     plt.close(fig)
     assert not a.overlaps(b), "the two category labels overlap"
+
+
+# --- supplementary: the lexicon-size bracket --------------------------------
+
+
+def bracket_curves(total, scale=1.0, k_max=198):
+    """A saturating rarefaction curve with the shape of the real ones."""
+    ks = np.arange(1, k_max + 1)
+    mean = total * (1 - np.exp(-ks / (25.0 * scale)))
+    return pd.DataFrame({
+        "k": np.tile(ks, 3),
+        "scheme": np.repeat(["uniform", "diverse", "redundant"], len(ks)),
+        "motif_class": "__all__",
+        "mean": np.concatenate([mean, mean * 1.03, mean * 0.85]),
+        "n_clusters_total": float(total),
+    })
+
+
+def test_lexicon_bracket_plots_both_levels_with_their_own_asymptotes():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    fig2.panel_lexicon_bracket(ax, bracket_curves(343), bracket_curves(155),
+                               mark_k=5)
+    lines = [ln for ln in ax.get_lines() if len(ln.get_xdata()) > 2]
+    assert len(lines) == 2, "one curve per collapse level"
+    # asymptote guides carry the two totals
+    labels = {t.get_text().strip() for t in ax.texts}
+    assert {"343", "155"} <= labels, labels
+    # the band between them is drawn
+    assert ax.collections, "no shaded band between the bounds"
+    plt.close(fig)
+
+
+def test_lexicon_bracket_reports_each_levels_own_recovery_fraction():
+    """20.7% of 343 and 29.2% of 155 are different claims; both must appear."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    # scale the lower curve so its k=5 fraction differs from the upper one
+    fig2.panel_lexicon_bracket(ax, bracket_curves(343, scale=1.0),
+                               bracket_curves(155, scale=0.6), mark_k=5)
+    pct = sorted(t.get_text() for t in ax.texts if t.get_text().endswith("%"))
+    plt.close(fig)
+    assert len(pct) == 2, f"expected one fraction per level, got {pct}"
+    assert pct[0] != pct[1], "fractions should be each level's own, not shared"
+
+
+def test_lexicon_bracket_annotations_do_not_overlap():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(3.8, 2.9))
+    fig2.panel_lexicon_bracket(ax, bracket_curves(343), bracket_curves(155),
+                               mark_k=5)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    boxes = [t.get_window_extent(r) for t in ax.texts if t.get_text().strip()]
+    plt.close(fig)
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            assert not a.overlaps(b), "bracket annotations overlap"
