@@ -98,7 +98,16 @@ SHORT_GROUP_LABEL = {
 }
 
 
-def lineage_caption(value, max_groups: int = 3, short: bool = True) -> str:
+# Groups omitted from figure captions. `metastatic_carcinoma` is a clinical
+# category rather than a tissue -- 21 experiments named for where a tumour
+# spread to -- so "GI+liver+met" tells a reader less than "GI+liver" does. The
+# grouping itself is unchanged, so every statistic still counts it as a group;
+# this only affects what the caption prints.
+CAPTION_OMIT_GROUPS: tuple[str, ...] = ("metastatic_carcinoma",)
+
+
+def lineage_caption(value, max_groups: int = 3, short: bool = True,
+                    omit: tuple[str, ...] = CAPTION_OMIT_GROUPS) -> str:
     """Render a lineage for a figure caption.
 
     `lineage` is a single group name or a comma-joined list, so the naive
@@ -109,6 +118,10 @@ def lineage_caption(value, max_groups: int = 3, short: bool = True) -> str:
     parts = [p for p in str(value).split(",") if p and p != "nan"]
     if not parts:
         return ""
+    kept = [p for p in parts if p not in omit]
+    # Fall back to the unfiltered list rather than rendering a blank caption
+    # for a motif whose only group is an omitted one.
+    parts = kept or parts
     table = SHORT_GROUP_LABEL if short else GROUP_LABEL
     labels = [table.get(p, GROUP_LABEL.get(p, p.replace("_", " ")))
               for p in parts]

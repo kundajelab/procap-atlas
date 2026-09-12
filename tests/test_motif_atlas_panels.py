@@ -3464,9 +3464,10 @@ def test_exemplar_cli_errors_on_a_missing_h5(tmp_path):
 
 def test_lineage_caption_renders_multi_group_lineages():
     assert fig2.lineage_caption("heart,muscle") == "heart+muscle"
-    assert fig2.lineage_caption("gi_tract,liver_biliary,metastatic_carcinoma") == (
-        "GI+liver+met"
-    )
+    # three groups render in full when none of them is omitted
+    assert fig2.lineage_caption(
+        "gi_tract,liver_biliary,pancreas"
+    ) == "GI+liver+pancreas"
 
 
 def test_lineage_caption_handles_the_nan_from_multi_group_rows():
@@ -3500,3 +3501,24 @@ def test_rank_for_panel_collapses_duplicate_names():
     got = fig2.rank_for_panel(df, 3)
     assert list(got["jaspar_name"]) == ["MEF2A", "Arid5a"]
     assert got[got["jaspar_name"] == "Arid5a"]["cluster_final"].iloc[0] == 1
+
+
+def test_lineage_caption_omits_metastatic():
+    # metastatic_carcinoma is a clinical category, not a tissue, and spelling
+    # it out was what overran the caption width.
+    assert fig2.lineage_caption("gi_tract,liver_biliary,metastatic_carcinoma") == (
+        "GI+liver"
+    )
+    assert fig2.lineage_caption("blood_immune,metastatic_carcinoma") == "blood"
+
+
+def test_lineage_caption_keeps_metastatic_rather_than_render_blank():
+    # a motif whose only group is omitted must still get a caption
+    assert fig2.lineage_caption("metastatic_carcinoma") == "met"
+
+
+def test_lineage_caption_omission_is_configurable():
+    assert fig2.lineage_caption("blood_immune,heart", omit=("heart",)) == "blood"
+    assert fig2.lineage_caption(
+        "gi_tract,metastatic_carcinoma", omit=()
+    ) == "GI+met"

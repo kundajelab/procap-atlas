@@ -487,12 +487,28 @@ figures/motif_atlas/motif_exemplars_{head}_ubiquitous.tsv
 figures/motif_atlas/motif_exemplars_{head}.html   # logos embedded, three tables
 ```
 
-**Beware `metastatic_carcinoma` when reading lineages.** It is 21 experiments
-named for where a tumour spread *to*, not a lineage, so it fragments real ones:
-HNF1B's `{gi_tract, liver_biliary, pancreas, metastatic_carcinoma}` is endoderm
-plus endoderm-derived metastases, i.e. one lineage counted as four groups. It
-is why HNF1B and HNF4A need `--max-groups 4` rather than 3, and why several
-selected motifs pair an organ with `met`.
+**`metastatic_carcinoma` is omitted from figure captions.** It is 21
+experiments named for where a tumour spread *to*, not a lineage, so it
+fragments real ones — HNF1B's `{gi_tract, liver_biliary, pancreas,
+metastatic_carcinoma}` is endoderm plus endoderm-derived metastases, one
+lineage counted as four groups — and it is not interpretable in aggregate: a
+bulk metastasis carries tumour, stroma and immune infiltrate together, so IRF1
+appearing there may be infiltrating immune cells rather than tumour-intrinsic
+regulation.
+
+`plot_figure2.py`'s `CAPTION_OMIT_GROUPS` therefore drops it from captions
+(`GI+liver+met` prints as `GI+liver`), which also fixed the caption overrun,
+with a fallback so a motif whose *only* group is omitted still gets a label.
+**The grouping itself is unchanged** — every statistic still counts
+`metastatic_carcinoma` as a group, and `n_groups` still includes it. This is
+presentation only, so the caption is not a complete statement of a motif's
+groups; read the TSV for that.
+
+Reassigning metastases to their tissue of origin is the cleaner fix and is
+fully determined by the names (all eight follow "Metastatic {origin} Carcinoma
+in the {destination}" or "{origin} Carcinoma Metastatic in the {destination}",
+giving colon, breast, liver, lung and pancreas). It is deliberately **not**
+done, because it would move every number in this directory.
 
 **The trap this exists to avoid.** A low-abundance split of a ubiquitous motif
 is indistinguishable from a lineage motif in a sorted table. Cluster 192 is
