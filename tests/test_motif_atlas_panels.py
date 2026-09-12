@@ -3209,3 +3209,95 @@ def test_figure2_cli_warns_on_a_missing_profile_table(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "omitting the" in result.stderr
+
+
+# --- multi-group lineages ---------------------------------------------------
+#
+# A single-group criterion cannot see a factor whose lineage spans several of
+# the 19 keyword groups, and the atlas's clearest lineage motifs are exactly
+# those: MEF2A in {heart, muscle} (concentration 0.211, third most concentrated
+# cluster in the lexicon) and HNF1B in {GI, liver, pancreas} -- endoderm. Both
+# read as "not restricted" under n_groups == 1.
+
+
+def multigroup_frame():
+    return pd.DataFrame([
+        dict(cluster_final=46, jaspar_name="MEF2A", motif_class="TF-matched",
+             prevalence=17, n_groups=2, total_seqlets=130_013,
+             sole_group=None, groups="heart,muscle"),
+        dict(cluster_final=44, jaspar_name="HNF1B", motif_class="TF-matched",
+             prevalence=22, n_groups=3, total_seqlets=89_403, sole_group=None,
+             groups="gi_tract,liver_biliary,pancreas"),
+        dict(cluster_final=222, jaspar_name="NEUROG2", motif_class="TF-matched",
+             prevalence=3, n_groups=1, total_seqlets=22_570,
+             sole_group="neural", groups="neural"),
+        # CTCF: narrow cluster with real support, but the same name is
+        # discovered across 13 groups elsewhere.
+        dict(cluster_final=87, jaspar_name="CTCF", motif_class="TF-matched",
+             prevalence=11, n_groups=3, total_seqlets=63_421, sole_group=None,
+             groups="gi_tract,hek,stem_ipsc"),
+        dict(cluster_final=15, jaspar_name="CTCF", motif_class="TF-matched",
+             prevalence=67, n_groups=13, total_seqlets=38_508, sole_group=None,
+             groups=",".join(f"g{i}" for i in range(13))),
+    ])
+
+
+def test_lineage_label_falls_back_to_the_group_list():
+    d = exemplars.annotate(multigroup_frame())
+    lab = d.set_index("cluster_final")["lineage"]
+    assert lab[46] == "heart,muscle"
+    assert lab[222] == "neural"      # single-group still uses sole_group
+
+
+def test_max_groups_above_one_is_not_silently_a_noop():
+    d = exemplars.annotate(multigroup_frame())
+    # sole_group is NaN for multi-group clusters and groupby drops NaN keys,
+    # so capping per group on sole_group discarded every multi-group candidate.
+    got = exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
+                                      per_group=2)
+    assert 46 in set(got["cluster_final"]), "MEF2A must survive --max-groups 3"
+    assert 44 in set(got["cluster_final"]), "HNF1B must survive"
+
+
+def test_per_group_cap_applies_per_multi_group_lineage():
+    d = exemplars.annotate(multigroup_frame())
+    got = exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
+                                      per_group=1)
+    assert got.groupby("lineage").size().max() == 1
+
+
+def test_single_group_default_still_excludes_multi_group_clusters():
+    d = exemplars.annotate(multigroup_frame())
+    got = set(exemplars.select_restricted(d, min_seqlets=1000)["cluster_final"])
+    assert got == {222}
+
+
+def test_a_broadly_discovered_factor_is_flagged_below_the_ubiquitous_floor():
+    d = exemplars.annotate(multigroup_frame())
+    flagged = d.set_index("cluster_final")["name_also_broad"]
+    # CTCF's broad cluster spans 13 groups: clears the split-flag floor of 10
+    # but not the ubiquitous floor of 15, which is why one threshold let it
+    # through as a lineage candidate.
+    assert flagged[87], "narrow CTCF cluster must be flagged"
+    assert not flagged[46], "MEF2A is not discovered broadly anywhere"
+    assert not flagged[222]
+
+
+def test_split_flag_floor_is_configurable():
+    d = exemplars.annotate(multigroup_frame(), split_floor=14)
+    # raised above CTCF's 13-group cluster: no longer flagged
+    assert not d.set_index("cluster_final")["name_also_broad"][87]
+
+
+def test_ubiquitous_floor_and_split_floor_are_independent():
+    d = exemplars.annotate(multigroup_frame(), floor=15, split_floor=10)
+    # CTCF's 13-group cluster is flagged-broad but not ubiquitous-broad
+    assert d.set_index("cluster_final")["name_also_broad"][87]
+    assert 15 not in set(exemplars.select_ubiquitous(d)["cluster_final"])
+
+
+def test_ctcf_is_excluded_from_a_multi_group_selection():
+    d = exemplars.annotate(multigroup_frame())
+    got = set(exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
+                                          per_group=3)["cluster_final"])
+    assert 87 not in got

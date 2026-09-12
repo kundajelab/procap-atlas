@@ -529,6 +529,81 @@ Ubiquitous, by seqlets, one cluster per name: SP9 (3.87M), NFYA (1.51M), Atf1
 Banp (130k), ELK1::SREBF2 (126k). Name deduplication is on by default because
 ELF2 and Atf1 each otherwise appear twice in the top ten.
 
+#### Why HNF, IRF, MEF2 and SOX1 are not in the restricted list
+
+They are not missing from the analysis. Asked of the canonical count head,
+each has a different and instructive answer.
+
+**HNF and MEF2 are there, and are among the most concentrated motifs in the
+lexicon.** They fail only the binary `n_groups == 1` filter:
+
+```text
+cluster  name     experiments  groups                                     concentration
+     46  MEF2A             17  heart, muscle                                      0.211
+     44  HNF1B             22  gi_tract, liver_biliary, pancreas, metastatic      0.370
+     39  HNF4A             24  gi_tract, liver_biliary, metastatic, blood         0.355
+     98  Irf1               9  blood_immune, gi_tract, metastatic                 0.468
+     99  MEF2C              9  blood_immune, heart, vascular                      0.468
+     15  CTCF              67  13 groups                                          0.799
+```
+
+MEF2A's 0.211 is the third-lowest (most concentrated) value in the lexicon,
+and `{heart, muscle}` is exactly striated muscle; HNF1B's `{GI, liver,
+pancreas}` is exactly endoderm. **The 19 keyword tissue groups are finer than
+real lineages precisely where these factors act**, so a single-group criterion
+structurally cannot detect them. CTCF at 13 groups is the control that says the
+statistic is not simply calling everything concentrated.
+
+**IRF1 exists in both forms.** A blood-only IRF1 cluster (228) is among the 45
+single-group clusters, but carries 82 seqlets — below any sensible exemplar
+floor — while its abundance sits in the 3-group cluster 98 (19,988 seqlets).
+
+**SOX1 is absent as a label, and probably not as a motif.** The SOX-family
+clusters are Pou5f1::Sox2, SOX4 (×2), POU2F1::SOX2 (×2) and Sox11, and every
+*restricted* one is `stem_ipsc`, not neural. Two reasons: SOX family members
+bind near-identical `(A/T)(A/T)CAA(A/T)G` sites, so JASPAR's nearest-neighbour
+lookup assigns whichever profile scores highest and a neural SOX1 would most
+likely be labelled SOX2 or SOX4 (cluster 122, 7 experiments including neural,
+is the plausible carrier) — the same resolution limit that makes 31 clusters
+best-match SP9. And the count head captures initiation *strength*; a factor
+acting on positioning belongs to the profile head, which is not built yet.
+
+**Group size is the master variable**, and it biases the restricted list:
+
+```text
+blood_immune 41   gi_tract 28   metastatic 21   reproductive 18   heart 15
+liver_biliary 11  neural 8      pancreas 8      lung_airway 8     vascular 7
+muscle 7  kidney 6  breast 5  stem_ipsc 4  endocrine 3  hek 3  bone 2  skin 2  adipose 1
+```
+
+A blood-restricted motif needs to be confined to one group of 41 experiments;
+a neural one to a group of 8, a stem one to 4. That is why the single-group
+list is blood-heavy, and it is a property of the grouping rather than of
+transcription.
+
+**Consequence: use `--max-groups 2` or `3` for the exemplar panel.** At
+`--max-groups 3 --min-seqlets 1000 --per-group 2` the candidate list grows from
+5 to 19 and spans far more lineages, adding MEF2A (heart/muscle), Irf1, MEF2C,
+Foxo3 (GI/liver) and Arid5a. The 45-single-group headline stays as the
+statistic because it is conservative — it *understates* lineage structure — but
+it makes a poor selection rule for a figure.
+
+Two bugs this exposed, both fixed:
+
+- `--max-groups` above 1 was **silently a no-op**. `sole_group` is NaN for any
+  multi-group cluster and `groupby` drops NaN keys, so the per-group cap
+  discarded every multi-group candidate. Selection now groups on a `lineage`
+  column that falls back to the group list.
+- The "name also labels a broad cluster" guard needs a **lower floor than the
+  ubiquitous row does**. CTCF cluster 87 sits in 3 groups with 63,421 seqlets
+  and read as a lineage motif, while cluster 15 carries the same name across
+  13 — which clears a floor of 10 but not the ubiquitous floor of 15, so one
+  shared threshold flagged nothing. Note a seqlet-ratio rule would not have
+  caught it either: the narrow cluster has *more* seqlets than the broad one
+  (63,421 vs 38,508). `--split-flag-groups` (default 10) is now separate from
+  `--broad-groups` (default 15), and excludes 70 narrow splits of broadly
+  discovered factors including NFYA, TBP, SP9, ETV7 and ZNF362.
+
 **Planned: hit-based ranking.** Every criterion here is a *discovery*
 quantity — prevalence and seqlets describe where TF-MoDISco found a motif, not
 where it is used. Once `hits_linked.tsv` exists atlas-wide,

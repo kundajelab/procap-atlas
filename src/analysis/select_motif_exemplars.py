@@ -49,11 +49,25 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 MC_DIR = REPO_ROOT / "motifcompendium" / "bpnet"
 DEFAULT_OUT = REPO_ROOT / "figures" / "motif_atlas"
 
-# A cluster in this many or more tissue groups counts as broad, for the purpose
-# of deciding whether a restricted cluster's name is "also ubiquitous". Set
-# well below the 19-group maximum so a motif missing from a couple of groups
-# still counts as broad.
+# A cluster in this many or more tissue groups counts as broad, for selecting
+# the ubiquitous row. Set below the 19-group maximum so a motif missing from a
+# couple of groups still counts as broad.
 BROAD_GROUP_FLOOR = 15
+
+# A *lower* floor for the separate question of whether a restricted cluster's
+# JASPAR name is one the atlas discovers broadly elsewhere. These two are not
+# the same threshold, and conflating them let CTCF through: cluster 87 sits in
+# 3 tissue groups with 63,421 seqlets and reads as a lineage motif, while
+# cluster 15 carries the same name across 13 groups. 13 clears 10 but not 15,
+# so the single floor flagged nothing and CTCF -- the textbook ubiquitous
+# architectural factor -- became a lineage-restricted candidate.
+#
+# A seqlet-ratio rule would not have caught it either: cluster 87 has *more*
+# seqlets than the 13-group cluster 15 (63,421 vs 38,508), so this is not a
+# low-abundance split. The discriminating fact is simply that the atlas
+# discovers CTCF broadly somewhere, which makes any narrow CTCF cluster a poor
+# lineage claim regardless of its support.
+SPLIT_FLAG_GROUP_FLOOR = 10
 
 
 def load_concentration(path: Path) -> pd.DataFrame:
@@ -75,11 +89,40 @@ def broad_names(d: pd.DataFrame, floor: int = BROAD_GROUP_FLOOR) -> set:
     return set(d[d["n_groups"] >= floor]["jaspar_name"].dropna())
 
 
-def annotate(d: pd.DataFrame, floor: int = BROAD_GROUP_FLOOR) -> pd.DataFrame:
+def annotate(
+    d: pd.DataFrame,
+    floor: int = BROAD_GROUP_FLOOR,
+    split_floor: int = SPLIT_FLAG_GROUP_FLOOR,
+) -> pd.DataFrame:
     out = d.copy()
-    broad = broad_names(out, floor)
-    out["name_also_broad"] = out["jaspar_name"].isin(broad)
+    out["name_also_broad"] = out["jaspar_name"].isin(broad_names(out, split_floor))
+    out["lineage"] = lineage_label(out)
     return out
+
+
+def lineage_label(d: pd.DataFrame) -> pd.Series:
+    """The tissue grouping a cluster is confined to, single-group or not.
+
+    `sole_group` is NaN whenever a cluster spans more than one group, and
+    pandas `groupby` drops NaN keys -- so grouping the per-group cap on
+    `sole_group` silently discarded every multi-group candidate, making
+    --max-groups greater than 1 do nothing at all.
+
+    That mattered more than a stray flag. A single-group criterion cannot
+    detect a factor whose lineage spans several of the 19 keyword groups, and
+    the clearest lineage motifs in the atlas are exactly those: MEF2A sits in
+    {heart, muscle} (17 experiments, concentration 0.211 -- the third most
+    concentrated cluster in the lexicon), HNF1B in {gi_tract, liver_biliary,
+    pancreas, metastatic_carcinoma}, i.e. endoderm. Both read as "not
+    restricted" under n_groups == 1 while being textbook lineage factors.
+    """
+    sole = d["sole_group"] if "sole_group" in d.columns else pd.Series(
+        [None] * len(d), index=d.index
+    )
+    groups = d["groups"] if "groups" in d.columns else pd.Series(
+        [""] * len(d), index=d.index
+    )
+    return sole.where(sole.notna() & (sole.astype(str) != ""), groups).astype(str)
 
 
 def select_restricted(
@@ -117,9 +160,9 @@ def select_restricted(
         "total_seqlets", "prevalence"
     ]
     sub = sub.sort_values(order, ascending=False)
-    if per_group > 0 and "sole_group" in sub.columns:
-        sub = sub.groupby("sole_group", group_keys=False).head(per_group)
-    return sub.sort_values(["sole_group", "total_seqlets"], ascending=[True, False])
+    if per_group > 0 and "lineage" in sub.columns:
+        sub = sub.groupby("lineage", group_keys=False).head(per_group)
+    return sub.sort_values(["lineage", "total_seqlets"], ascending=[True, False])
 
 
 def select_ubiquitous(
@@ -182,7 +225,7 @@ def _row_html(r, logos: dict) -> str:
         else '<span style="color:#999">logo unavailable</span>'
     )
     name = html.escape(str(r.jaspar_name))
-    group = html.escape(str(getattr(r, "sole_group", "") or ""))
+    group = html.escape(str(getattr(r, "lineage", "") or ""))
     flag = (
         ' <span style="color:#b2182b;font-weight:bold">NAME ALSO BROAD</span>'
         if getattr(r, "name_also_broad", False) else ""
@@ -269,12 +312,22 @@ def main():
     )
     parser.add_argument(
         "--per-group", type=int, default=3, metavar="N",
-        help="keep at most this many per tissue group, best-supported first; "
+        help="keep at most this many per lineage (the tissue group, or the "
+             "set of groups when --max-groups > 1), best-supported first; "
              "0 keeps all (default: 3)",
     )
     parser.add_argument(
         "--broad-groups", type=int, default=BROAD_GROUP_FLOOR, metavar="N",
-        help=f"groups a cluster must span to count as broad (default: {BROAD_GROUP_FLOOR})",
+        help=f"groups a cluster must span to be shown as ubiquitous "
+             f"(default: {BROAD_GROUP_FLOOR})",
+    )
+    parser.add_argument(
+        "--split-flag-groups", type=int, default=SPLIT_FLAG_GROUP_FLOOR,
+        metavar="N",
+        help="a restricted cluster is flagged if another cluster with the same "
+             "JASPAR name spans at least this many groups, i.e. the atlas "
+             f"discovers that factor broadly elsewhere (default: "
+             f"{SPLIT_FLAG_GROUP_FLOOR})",
     )
     parser.add_argument(
         "--top-ubiquitous", type=int, default=10, metavar="N",
@@ -311,7 +364,8 @@ def main():
               file=sys.stderr)
         sys.exit(1)
 
-    d = annotate(load_concentration(conc), args.broad_groups)
+    d = annotate(load_concentration(conc), args.broad_groups,
+                 args.split_flag_groups)
     tf_only = not args.include_unmatched
 
     restricted = select_restricted(
@@ -343,12 +397,12 @@ def main():
         restricted, ubiquitous, flagged, logos, Path(f"{stem}.html"), args.head
     )
 
-    cols = ["cluster_final", "jaspar_name", "sole_group", "prevalence",
+    cols = ["cluster_final", "jaspar_name", "lineage", "prevalence",
             "n_groups", "total_seqlets"]
     print(f"Lineage-restricted candidates ({len(restricted)}):")
     print(restricted[cols].to_string(index=False))
     print(f"\nUbiquitous ({len(ubiquitous)}):")
-    print(ubiquitous[[c for c in cols if c != "sole_group"]].to_string(index=False))
+    print(ubiquitous[[c for c in cols if c != "lineage"]].to_string(index=False))
     if len(flagged):
         print(
             f"\nExcluded {len(flagged)} restricted cluster(s) whose JASPAR name "
