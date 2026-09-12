@@ -642,7 +642,11 @@ def main():
         distinct = Counter(
             tissue[e] for e in {biosample_of.get(e, e): e for e in experiments}.values()
         )
-        thin = sorted(g for g, n in sizes.items() if distinct.get(g, 0) < 2)
+        # Only groups that actually have within-group pairs: a
+        # single-experiment group has none, and is already reported above.
+        thin = sorted(
+            g for g, n in sizes.items() if n >= 2 and distinct.get(g, 0) < 2
+        )
         if thin:
             print(
                 f"NOTE: {len(thin)} group(s) have only one distinct biosample, so "

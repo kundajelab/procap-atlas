@@ -623,3 +623,20 @@ def test_cli_can_disable_the_specificity_stratification(tmp_path):
     result = run_cli(tmp_path, "--specificity-quantile", "0")
     assert result.returncode == 0, result.stderr
     assert not (tmp_path / "out" / "cross_celltype_by_specificity.tsv").exists()
+
+
+def test_replicate_only_warning_excludes_single_experiment_groups():
+    """A group with one experiment has no within-group pairs at all, so
+    reporting that its pairs are replicates is meaningless -- and it is already
+    reported as contributing no same-tissue pair."""
+    from collections import Counter
+
+    experiments = {"a": {}, "b": {}, "c": {}}
+    tissue = {"a": "adipose", "b": "blood", "c": "blood"}
+    sample = {"a": "fat", "b": "K562", "c": "K562"}
+    sizes = Counter(tissue[e] for e in experiments)
+    distinct = Counter(
+        tissue[e] for e in {sample.get(e, e): e for e in experiments}.values()
+    )
+    thin = sorted(g for g, n in sizes.items() if n >= 2 and distinct.get(g, 0) < 2)
+    assert thin == ["blood"], "adipose has no pairs to describe"
