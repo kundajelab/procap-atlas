@@ -3129,16 +3129,20 @@ def fig2_inputs(tmp_path, head="count"):
         "hi": [25, 80, 120, 27, 85, 125, 23, 70, 105],
         "n_clusters_total": [343] * 9,
     }).to_csv(d / f"motif_rarefaction_{head}.tsv", sep="\t", index=False)
+    null_draws = np.random.default_rng(0).integers(3, 14, 50)
     pd.DataFrame({
         "motif_class": ["TF-matched"] * 50,
         "permutation": range(50),
-        "n_single_group": list(np.random.default_rng(0).integers(3, 14, 50)),
+        "n_single_group": list(null_draws),
     }).to_csv(d / f"motif_concentration_{head}_tissue_nulldraws.tsv",
               sep="\t", index=False)
     pd.DataFrame({
         "motif_class": ["TF-matched"],
         "obs_single_group": [45],
-        "null_single_group_mean": [8.0],
+        # the draws' own mean, as the real script writes it. A hardcoded round
+        # number here is inconsistent with the draws beside it, which is the
+        # exact condition panel_concentration now refuses to plot.
+        "null_single_group_mean": [round(float(null_draws.mean()), 2)],
         "null_single_group_p95": [13.0],
         "swap_concentration": [0.83],
     }).to_csv(d / f"motif_concentration_{head}_tissue_swapnull.tsv",
@@ -3742,3 +3746,86 @@ def test_lexicon_bracket_annotations_do_not_overlap():
     for i, a in enumerate(boxes):
         for b in boxes[i + 1:]:
             assert not a.overlaps(b), "bracket annotations overlap"
+
+
+# --- panel b: the histogram and the caption must be one run -----------------
+
+
+def concentration_tables(draws_mean=6.07, null_mean=None, obs=37,
+                         classes=("TF-matched",), n=1000):
+    """Draws plus the swap-null row that the same run would have written.
+
+    `null_single_group_mean` defaults to the draws' own mean rounded to 2dp,
+    which is exactly what motif_group_concentration.py writes -- so the
+    consistent case is genuinely consistent. Pass `null_mean` explicitly to
+    simulate the two files coming from different runs.
+    """
+    rng = np.random.default_rng(0)
+    draws = pd.DataFrame({
+        "motif_class": np.repeat(list(classes), n),
+        "n_single_group": np.concatenate(
+            [rng.poisson(draws_mean, n) for _ in classes]
+        ),
+    })
+    reported = (
+        null_mean if null_mean is not None
+        else round(float(draws["n_single_group"].mean()), 2)
+    )
+    swap = pd.DataFrame({
+        "motif_class": list(classes),
+        "obs_single_group": [obs] * len(classes),
+        "null_single_group_mean": [reported] * len(classes),
+        "swap_concentration": [0.81] * len(classes),
+    })
+    return draws, swap
+
+
+def test_panel_b_rejects_null_draws_from_a_different_run():
+    """The exact bug: 18-group draws (mean 8.31) beside 21-group numbers."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=8.31, null_mean=6.07)
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="different runs"):
+        fig2.panel_concentration(ax, draws, swap)
+    plt.close(fig)
+
+
+def test_panel_b_accepts_draws_from_the_same_run():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=6.07)
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap)   # must not raise
+    plt.close(fig)
+
+
+def test_panel_b_reports_a_motif_class_missing_from_the_swap_table():
+    """A --drop-unnamed run writes the same filenames with one class only."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(classes=("TF-matched",))
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="absent from the swap-null table"):
+        fig2.panel_concentration(ax, draws, swap, motif_class="unmatched")
+    plt.close(fig)
+
+
+def test_panel_b_leaves_headroom_above_the_tallest_bar_for_the_legend():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables()
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap)
+    tallest = max(p.get_height() for p in ax.patches)
+    top = ax.get_ylim()[1]
+    plt.close(fig)
+    assert top > tallest * 1.15, "no room for the legend above the null mode"

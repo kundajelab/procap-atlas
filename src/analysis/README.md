@@ -157,9 +157,13 @@ python src/analysis/plot_figure2.py --head count --n-restricted 14 \
     --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5 \
     --collapse-curves figures/motif_atlas/collapsed/motif_rarefaction_count.tsv
 
-# 2a: discovery concentration, both group levels
-python src/analysis/motif_group_concentration.py --head count --group-level tissue
-python src/analysis/motif_group_concentration.py --head count --group-level biosample
+# 2a/2b: discovery concentration, both group levels.
+# --save-null-draws is REQUIRED: it writes the histogram panel b draws, and
+# without it a previous run's draws are silently reused (see below).
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level tissue --save-null-draws
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level biosample --save-null-draws
 
 # 2b: rarefaction, prevalence-filtered, with the abundance-threshold sweep
 python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --sweep
@@ -557,11 +561,15 @@ smaller n, not a weaker effect. So the concentration result is not an artifact
 of counting splits of the same motif as separate lineage-restricted motifs.
 
 ```bash
-# the reviewer-proof pair
+# the reviewer-proof pair. --out-dir is REQUIRED on both: a collapsed run
+# writes the same filenames as the canonical one and will otherwise overwrite
+# the figure's inputs with a 118-row, TF-matched-only table.
 python src/analysis/plot_motif_rarefaction.py --head count \
-    --min-cluster-experiments 2 --collapse-by jaspar_name --sweep
+    --min-cluster-experiments 2 --collapse-by jaspar_name --sweep \
+    --out-dir figures/motif_atlas/collapsed
 python src/analysis/motif_group_concentration.py --head count \
-    --group-level tissue --collapse-by jaspar_name
+    --group-level tissue --collapse-by jaspar_name \
+    --out-dir figures/motif_atlas/collapsed
 ```
 
 `plot_figure2.py --collapse-curves` turns the first of those into a
@@ -1297,6 +1305,32 @@ head at `p ≤ 1e-6`: 147 mutual pairs, but only 69 have both clusters
 JASPAR-named, of which 35 agree and **34 disagree** — and family-level
 agreement rescues 6 of those, leaving **28 pairs** that disagree even at family
 level. Those 28 are the entire question, and they sort to the top of the HTML.
+
+#### Footgun: panel b's histogram and caption can come from different runs
+
+`motif_group_concentration.py` writes the swap-null summary on every run but
+the per-permutation draws **only with `--save-null-draws`**. `plot_figure2.py`
+reads them as two separate files, so a rerun that omits the flag leaves the
+previous run's histogram beside the new run's numbers, and nothing downstream
+notices.
+
+This happened for real. After the 18-to-21 group lineage split, panel b drew a
+null centred on 8.31 (18 groups) while its caption read "37 vs 6.1 expected"
+(21 groups) — an internally contradictory panel that looks entirely normal.
+
+Two guards now exist, both in `panel_concentration`:
+
+- The draws' mean must match the swap table's `null_single_group_mean` to
+  within 0.05, or it raises. They are the same permutations, and the table
+  stores that mean rounded to 2dp, so any real discrepancy means two runs.
+- A motif class missing from the swap table raises with the classes it does
+  have, which is what a `--drop-unnamed` run leaves behind.
+
+The related trap is output collision: a `--collapse-by` or `--drop-unnamed`
+run writes the *same filenames* as the canonical run. One such sensitivity run
+overwrote `motif_concentration_count_tissue.tsv` with a 118-row,
+TF-matched-only table. Always pass `--out-dir` for anything that is not the
+canonical build.
 
 #### Footgun: degenerate p-values
 

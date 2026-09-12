@@ -285,13 +285,47 @@ def panel_concentration(
     ax, draws: pd.DataFrame, swap: pd.DataFrame, motif_class: str = "TF-matched",
     biosample_swap: pd.DataFrame | None = None,
 ) -> None:
-    d = draws[draws["motif_class"] == motif_class]["n_single_group"].to_numpy()
-    row = swap[swap["motif_class"] == motif_class].iloc[0]
+    sub = swap[swap["motif_class"] == motif_class]
+    if not len(sub):
+        raise ValueError(
+            f"motif class {motif_class!r} is absent from the swap-null table "
+            f"(it has {sorted(swap['motif_class'].unique())}). A "
+            "--collapse-by/--drop-unnamed run writes the same filenames, so "
+            "check that the table came from the canonical run."
+        )
+    row = sub.iloc[0]
     obs = int(row["obs_single_group"])
+
+    d = draws[draws["motif_class"] == motif_class]["n_single_group"].to_numpy()
+    if not len(d):
+        raise ValueError(
+            f"no null draws for motif class {motif_class!r}; rerun "
+            "motif_group_concentration.py with --save-null-draws"
+        )
+    # The histogram and the annotations must come from the SAME run. They are
+    # separate files written by the same invocation, so a rerun that omits
+    # --save-null-draws leaves a stale histogram beside fresh numbers -- which
+    # is exactly what happened when the tissue grouping changed from 18 to 21
+    # groups: the drawn null still centred on 8.31 while the caption said 6.07.
+    # Nothing downstream notices, and the panel is simply wrong.
+    expected_mean = float(row["null_single_group_mean"])
+    if abs(d.mean() - expected_mean) > 0.05:
+        raise ValueError(
+            f"null draws disagree with the swap-null table for "
+            f"{motif_class!r}: draws mean {d.mean():.3f} vs reported "
+            f"{expected_mean:.3f}. The two files are from different runs. "
+            "Rerun motif_group_concentration.py with --save-null-draws so "
+            "both are written together."
+        )
 
     bins = np.arange(d.min() - 0.5, max(d.max(), obs) + 1.5, 1.0)
     ax.hist(d, bins=bins, color="#bbbbbb", edgecolor="white", lw=0.3,
             label=f"degree-preserving null\n(n={len(d)} permutations)")
+    # Headroom for the legend, which sits upper-left because the null mode
+    # does. Without it the mode's bar runs into the legend text -- and the mode
+    # moves whenever the grouping changes, so this cannot be a fixed limit.
+    counts, _ = np.histogram(d, bins=bins)
+    ax.set_ylim(top=counts.max() * 1.28)
     ax.axvline(obs, color="#b2182b", lw=2, zorder=5)
     # Directly beside the line rather than on an arrow: the arrow's tail
     # landed on the legend, which sits upper-left because the null mode does.
