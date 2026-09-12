@@ -487,6 +487,13 @@ figures/motif_atlas/motif_exemplars_{head}_ubiquitous.tsv
 figures/motif_atlas/motif_exemplars_{head}.html   # logos embedded, three tables
 ```
 
+**Beware `metastatic_carcinoma` when reading lineages.** It is 21 experiments
+named for where a tumour spread *to*, not a lineage, so it fragments real ones:
+HNF1B's `{gi_tract, liver_biliary, pancreas, metastatic_carcinoma}` is endoderm
+plus endoderm-derived metastases, i.e. one lineage counted as four groups. It
+is why HNF1B and HNF4A need `--max-groups 4` rather than 3, and why several
+selected motifs pair an organ with `met`.
+
 **The trap this exists to avoid.** A low-abundance split of a ubiquitous motif
 is indistinguishable from a lineage motif in a sorted table. Cluster 192 is
 labelled NFYA, is confined to `blood_immune`, and reads as "blood-specific
@@ -510,7 +517,40 @@ many experiments of the lineage a motif recurs in rather than absolute depth,
 because recurrence across 11 experiments is the lineage claim while depth
 within 2 is consistent with one peculiar sample.
 
-Measured at `--min-seqlets 200`, the defensible set:
+#### Two filters that only shape can provide
+
+Name-based and abundance-based filters both miss failure modes that reached a
+rendered figure. Both need `--modisco-h5`.
+
+**A duplicate under a different JASPAR name.** `name_also_broad` compares
+labels, so it cannot see that cluster 59 ("SP2", 15 experiments) draws the same
+GC-box as the ubiquitous SP9, or that cluster 119 ("ZNF800") draws the same
+TCTCGCGAGA CGCG box as Banp. Both appeared in panel c *beside their own
+ubiquitous twin*. `flag_shape_duplicates` correlates each candidate's trimmed
+CWM against every ubiquitous motif over all offsets and both strands, and drops
+matches at `--dup-corr-threshold` (default 0.8):
+
+```text
+cluster  name     lineage                 seqlets  duplicates  r
+     59  SP2      blood+GI+lung              3070  SP9         0.807
+    119  ZNF800   HEK+neural                 8614  Banp        0.961
+```
+
+**A cluster with no locatable core.** Cluster 96 ("ZNF800", 5,103 seqlets, 3
+tissue groups) passed every filter and rendered as a smear: its trimmed CWM is
+**31bp** wide. `--max-trim-width` (default 25) drops it. A seqlet floor cannot:
+ZNF143 is a legitimately long motif at 23bp with 354,000 seqlets, and the
+diffuse cluster has more seqlets than several motifs worth showing. This is the
+same pathology `motif_redundancy.py` handles with `--drop-untrimmable`.
+
+With `--max-groups 3 --min-seqlets 1000 --per-group 2` plus both shape filters,
+the panel becomes 16 candidates over 8 lineages, every logo matching its label:
+MEF2A (heart+muscle, A/T-rich site), Pou5f1::Sox2 (stem), Foxo3 (GI+liver+met,
+FOX site), POU2F3 (blood, octamer), NEUROG2 (neural, E-box), Irf1
+(blood+GI+met, ISRE), Arid5a (liver+met), HSF4 (blood+kidney+met, heat-shock
+element), Tcf12 (blood+neural, E-box), EBF3, REL (NF-kB), SPIB (ETS).
+
+Measured at `--min-seqlets 200`, the single-group-only set:
 
 ```text
 group          motif           experiments  seqlets

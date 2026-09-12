@@ -68,7 +68,53 @@ GROUP_LABEL = {
     "pancreas": "pancreas",
     "reproductive": "reproductive",
     "hek": "HEK293",
+    "muscle": "muscle",
+    "vascular": "vascular",
+    "lung_airway": "lung",
+    "kidney_urinary": "kidney",
+    "breast": "breast",
+    "bone": "bone",
+    "skin": "skin",
+    "adipose": "adipose",
+    "endocrine": "endocrine",
 }
+
+
+# Compact forms for captions. A three-group lineage spelled out in full
+# ("blood / immune + GI tract + metastatic") is wider than the logo above it
+# and collides with its neighbours.
+SHORT_GROUP_LABEL = {
+    "blood_immune": "blood",
+    "gi_tract": "GI",
+    "liver_biliary": "liver",
+    "metastatic_carcinoma": "met",
+    "kidney_urinary": "kidney",
+    "lung_airway": "lung",
+    "stem_ipsc": "stem",
+    "vascular": "vasc",
+    "hek": "HEK",
+    "reproductive": "repro",
+    "endocrine": "endo",
+}
+
+
+def lineage_caption(value, max_groups: int = 3, short: bool = True) -> str:
+    """Render a lineage for a figure caption.
+
+    `lineage` is a single group name or a comma-joined list, so the naive
+    `sole_group` lookup renders "nan" for every multi-group cluster -- which is
+    exactly the set worth showing once --max-groups exceeds 1 (MEF2A in
+    heart+muscle, HNF1B in GI+liver+pancreas).
+    """
+    parts = [p for p in str(value).split(",") if p and p != "nan"]
+    if not parts:
+        return ""
+    table = SHORT_GROUP_LABEL if short else GROUP_LABEL
+    labels = [table.get(p, GROUP_LABEL.get(p, p.replace("_", " ")))
+              for p in parts]
+    if len(labels) > max_groups:
+        return f"{len(labels)} tissues"
+    return "+".join(labels) if short else " + ".join(labels)
 
 
 def load_cwm(h5_path: Path, cluster_id: int, posneg: str = "pos") -> np.ndarray | None:
@@ -221,28 +267,42 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
     return drew
 
 
+def rank_for_panel(df: pd.DataFrame, n: int, one_per_name: bool = True):
+    """The n best-supported rows, one per JASPAR name.
+
+    select_motif_exemplars.py sorts its table by lineage so it reads well as a
+    table, which means a naive head(n) takes whichever lineages sort first
+    alphabetically -- blood_immune, every time. Re-rank by support here.
+    """
+    out = df.sort_values("total_seqlets", ascending=False)
+    if one_per_name and "jaspar_name" in out.columns:
+        out = out.drop_duplicates(subset="jaspar_name", keep="first")
+    return out.head(n)
+
+
 def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
                     profile_rows=None, profile_h5=None, trim_kwargs=None,
                     n_ubiquitous=12, n_restricted=12, per_row=6):
     trim_kwargs = trim_kwargs or {}
     rows = []
     if profile_rows is not None and len(profile_rows) and profile_h5:
-        rows.append(("profile head: initiation shape", profile_rows.head(n_restricted),
-                     profile_h5, lambda r: str(r.jaspar_name)))
+        rows.append(("profile head: initiation shape",
+                     rank_for_panel(profile_rows, n_restricted), profile_h5,
+                     lambda r: str(r.jaspar_name)))
     rows.append((
         "count head: ubiquitous",
-        ubiquitous.head(n_ubiquitous),
+        rank_for_panel(ubiquitous, n_ubiquitous),
         h5_path,
         lambda r: f"{r.jaspar_name}\n{int(r.prevalence)} exp",
     ))
     rows.append((
         "count head: lineage-restricted",
-        restricted.head(n_restricted),
+        rank_for_panel(restricted, n_restricted),
         h5_path,
         lambda r: (
             f"{r.jaspar_name}\n"
-            f"{GROUP_LABEL.get(str(r.sole_group), str(r.sole_group))}"
-            f", {int(r.prevalence)}"
+            f"{lineage_caption(getattr(r, 'lineage', getattr(r, 'sole_group', '')))}"
+            f"\n{int(r.prevalence)} exp"
         ),
     ))
 
@@ -457,12 +517,12 @@ def main():
         logo_dir = Path(f"{stem}_logos")
         trim_kwargs = dict(threshold=args.trim_threshold, min_len=args.min_trim_len)
         paths = save_individual_logos(
-            tables["ubiquitous"].head(args.n_ubiquitous), Path(h5_path),
-            logo_dir, "ubiquitous", trim_kwargs,
+            rank_for_panel(tables["ubiquitous"], args.n_ubiquitous),
+            Path(h5_path), logo_dir, "ubiquitous", trim_kwargs,
         )
         paths += save_individual_logos(
-            tables["restricted"].head(args.n_restricted), Path(h5_path),
-            logo_dir, "restricted", trim_kwargs,
+            rank_for_panel(tables["restricted"], args.n_restricted),
+            Path(h5_path), logo_dir, "restricted", trim_kwargs,
         )
         if profile_rows is not None and args.profile_h5:
             paths += save_individual_logos(

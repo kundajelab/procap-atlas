@@ -43,6 +43,7 @@ import html
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -183,6 +184,116 @@ def select_ubiquitous(
         # list spends figure rows on the same motif twice.
         sub = sub.drop_duplicates(subset="jaspar_name", keep="first")
     return sub.head(top_n)
+
+
+def _load_trimmed_cwms(h5_path, cluster_ids, posneg_by_id, threshold=0.3,
+                       min_len=6):
+    """cluster_final -> trimmed CWM as (4, length), for shape comparison."""
+    import h5py
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from motif_redundancy import trim_cwm
+
+    out = {}
+    with h5py.File(h5_path, "r") as f:
+        for cid in cluster_ids:
+            group = f"{posneg_by_id.get(cid, 'pos')}_patterns"
+            if group not in f or str(cid) not in f[group]:
+                continue
+            cwm = np.asarray(f[group][str(cid)]["contrib_scores"][:]).T
+            start, end = trim_cwm(cwm, threshold=threshold, min_len=min_len)
+            out[cid] = cwm[:, start:end]
+    return out
+
+
+def _best_correlation(a: np.ndarray, b: np.ndarray) -> float:
+    """Max Pearson correlation of two CWMs over all offsets and both strands.
+
+    Shape comparison rather than label comparison. The name-based guard cannot
+    see a duplicate carrying a *different* JASPAR label, and on real data two
+    such pairs reached the figure: cluster 119 labelled ZNF800 draws the same
+    TCTCGCGAGA CGCG box as the ubiquitous Banp cluster, and cluster 59 labelled
+    SP2 draws the same GC-box as SP9. Both would have appeared as
+    lineage-restricted motifs beside their own ubiquitous twin.
+    """
+    best = -1.0
+    for mat in (b, b[::-1, ::-1]):            # forward and reverse complement
+        short, long_ = (a, mat) if a.shape[1] <= mat.shape[1] else (mat, a)
+        w = short.shape[1]
+        for off in range(long_.shape[1] - w + 1):
+            x = short.ravel()
+            y = long_[:, off:off + w].ravel()
+            if x.std() == 0 or y.std() == 0:
+                continue
+            best = max(best, float(np.corrcoef(x, y)[0, 1]))
+    return best
+
+
+def trim_widths(h5_path, clusters: pd.DataFrame, threshold=0.3, min_len=6) -> dict:
+    """cluster_final -> trimmed CWM width in bp.
+
+    A motif whose contribution stays diffuse across 30bp has no locatable
+    core, and its logo is unreadable noise rather than a motif. On the real
+    count head cluster 96 ("ZNF800", 5,103 seqlets) trims to 31bp and drew a
+    long smear in the figure, while the legitimately long ZNF143 trims to 23bp
+    with 354,000 seqlets -- so a width cap separates them and a seqlet floor
+    does not. Same pathology motif_redundancy.py handles with
+    --drop-untrimmable.
+    """
+    posneg = dict(zip(clusters["cluster_final"], clusters["posneg"])) if (
+        "posneg" in clusters.columns) else {}
+    cwms = _load_trimmed_cwms(
+        h5_path, list(clusters["cluster_final"]), posneg, threshold, min_len
+    )
+    return {cid: mat.shape[1] for cid, mat in cwms.items()}
+
+
+def flag_shape_duplicates(
+    restricted: pd.DataFrame,
+    ubiquitous: pd.DataFrame,
+    h5_path,
+    threshold: float = 0.8,
+    trim_threshold: float = 0.3,
+    min_trim_len: int = 6,
+) -> pd.DataFrame:
+    """Add `dup_of` / `dup_corr`: the ubiquitous motif a candidate duplicates.
+
+    Returns `restricted` unchanged plus two columns, so the caller can report
+    the exclusion rather than silently dropping rows.
+    """
+    out = restricted.copy()
+    out["dup_of"] = None
+    out["dup_corr"] = np.nan
+    if not len(out) or not len(ubiquitous) or h5_path is None:
+        return out
+
+    posneg = {}
+    for df in (restricted, ubiquitous):
+        if "posneg" in df.columns:
+            posneg.update(dict(zip(df["cluster_final"], df["posneg"])))
+    cwms = _load_trimmed_cwms(
+        h5_path,
+        list(out["cluster_final"]) + list(ubiquitous["cluster_final"]),
+        posneg, trim_threshold, min_trim_len,
+    )
+    names = dict(zip(ubiquitous["cluster_final"], ubiquitous["jaspar_name"]))
+
+    for i, row in out.iterrows():
+        a = cwms.get(row["cluster_final"])
+        if a is None:
+            continue
+        best, best_name = -1.0, None
+        for ucid in ubiquitous["cluster_final"]:
+            b = cwms.get(ucid)
+            if b is None:
+                continue
+            corr = _best_correlation(a, b)
+            if corr > best:
+                best, best_name = corr, names.get(ucid)
+        if best >= threshold:
+            out.at[i, "dup_of"] = best_name
+            out.at[i, "dup_corr"] = round(best, 3)
+    return out
 
 
 def embed_svg(path: Path) -> str | None:
@@ -350,6 +461,28 @@ def main():
              "default only the best-supported is shown, since near-duplicate "
              "broad clusters otherwise fill the list",
     )
+    parser.add_argument(
+        "--modisco-h5", type=Path, default=None, metavar="PATH",
+        help="motifcompendium_{head}_cluster_averages.h5. With it, candidates "
+             "whose CWM shape matches a ubiquitous motif are flagged and "
+             "dropped even when JASPAR gave them a different name -- which the "
+             "name-based guard cannot see",
+    )
+    parser.add_argument(
+        "--max-trim-width", type=int, default=25, metavar="BP",
+        help="drop candidates whose trimmed CWM stays wider than this, i.e. "
+             "have no locatable core (default: 25; needs --modisco-h5)",
+    )
+    parser.add_argument(
+        "--dup-corr-threshold", type=float, default=0.8, metavar="R",
+        help="max CWM correlation to a ubiquitous motif, over all offsets and "
+             "both strands, before a candidate is called a duplicate "
+             "(default: 0.8)",
+    )
+    parser.add_argument(
+        "--keep-shape-duplicates", action="store_true",
+        help="report shape duplicates but keep them in the selection",
+    )
     parser.add_argument("--include-unmatched", action="store_true",
                         help="also consider clusters JASPAR could not name")
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT, metavar="DIR")
@@ -383,6 +516,35 @@ def main():
         & d["name_also_broad"]
     ].sort_values("total_seqlets", ascending=False)
 
+    shape_dups = pd.DataFrame()
+    if args.modisco_h5 is not None:
+        if not args.modisco_h5.exists():
+            print(f"ERROR: {args.modisco_h5} not found", file=sys.stderr)
+            sys.exit(1)
+        widths = trim_widths(args.modisco_h5, restricted)
+        restricted = restricted.copy()
+        restricted["trim_width"] = restricted["cluster_final"].map(widths)
+        wide = restricted[restricted["trim_width"] > args.max_trim_width]
+        if len(wide):
+            print(
+                f"\nExcluded {len(wide)} candidate(s) with no locatable core "
+                f"(trimmed CWM wider than {args.max_trim_width}bp):"
+            )
+            print(
+                wide[["cluster_final", "jaspar_name", "lineage", "prevalence",
+                      "total_seqlets", "trim_width"]].to_string(index=False)
+            )
+            restricted = restricted[
+                restricted["trim_width"] <= args.max_trim_width
+            ]
+        restricted = flag_shape_duplicates(
+            restricted, ubiquitous, args.modisco_h5,
+            threshold=args.dup_corr_threshold,
+        )
+        shape_dups = restricted[restricted["dup_of"].notna()]
+        if not args.keep_shape_duplicates:
+            restricted = restricted[restricted["dup_of"].isna()]
+
     logo_paths = args.logo_paths
     logo_root = args.logo_root or (
         Path(logo_paths).parent if logo_paths else MC_DIR
@@ -403,6 +565,17 @@ def main():
     print(restricted[cols].to_string(index=False))
     print(f"\nUbiquitous ({len(ubiquitous)}):")
     print(ubiquitous[[c for c in cols if c != "lineage"]].to_string(index=False))
+    if len(shape_dups):
+        print(
+            f"\nExcluded {len(shape_dups)} candidate(s) whose CWM shape "
+            f"matches a ubiquitous motif at r >= {args.dup_corr_threshold} "
+            "despite a different JASPAR name:"
+        )
+        print(
+            shape_dups[["cluster_final", "jaspar_name", "lineage", "prevalence",
+                        "total_seqlets", "dup_of", "dup_corr"]]
+            .to_string(index=False)
+        )
     if len(flagged):
         print(
             f"\nExcluded {len(flagged)} restricted cluster(s) whose JASPAR name "

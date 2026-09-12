@@ -3301,3 +3301,202 @@ def test_ctcf_is_excluded_from_a_multi_group_selection():
     got = set(exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
                                           per_group=3)["cluster_final"])
     assert 87 not in got
+
+
+# --- shape-based exclusion --------------------------------------------------
+#
+# Two failures that survived every name- and abundance-based filter and reached
+# a rendered figure: cluster 59 ("SP2") draws the same GC-box as the ubiquitous
+# SP9, cluster 119 ("ZNF800") the same CGCG box as Banp, and cluster 96
+# ("ZNF800", 5,103 seqlets) has no locatable core at all -- it trims to 31bp
+# and renders as a smear.
+
+
+def make_cwm(pattern, width=50, start=20, amp=1.0):
+    """A (length, 4) contribution matrix with `pattern` written into it."""
+    idx = {"A": 0, "C": 1, "G": 2, "T": 3}
+    cwm = np.full((width, 4), 0.001)
+    for i, ch in enumerate(pattern):
+        cwm[start + i, idx[ch]] = amp
+    return cwm
+
+
+def write_shape_h5(path, spec, width=50):
+    import h5py
+
+    with h5py.File(path, "w") as f:
+        for cid, cwm in spec.items():
+            f.create_dataset(f"pos_patterns/{cid}/contrib_scores", data=cwm)
+    return path
+
+
+def test_best_correlation_is_one_for_identical_motifs():
+    a = make_cwm("GGGGCGGGGC")[20:30].T
+    assert exemplars._best_correlation(a, a) == pytest.approx(1.0)
+
+
+def test_best_correlation_finds_the_reverse_complement():
+    a = make_cwm("GGGGCGGGGC")[20:30].T
+    rc = a[::-1, ::-1]
+    # a duplicate discovered on the other strand must still score ~1
+    assert exemplars._best_correlation(a, rc) == pytest.approx(1.0)
+
+
+def test_best_correlation_is_low_for_unrelated_motifs():
+    a = make_cwm("GGGGCGGGGC")[20:30].T
+    b = make_cwm("TTTTATTTTA")[20:30].T
+    assert exemplars._best_correlation(a, b) < 0.5
+
+
+def test_best_correlation_finds_a_shorter_motif_inside_a_longer_one():
+    short = make_cwm("CCAAT")[20:25].T
+    long_ = make_cwm("GGCCAATGG")[20:29].T
+    assert exemplars._best_correlation(short, long_) > 0.9
+
+
+def test_shape_duplicate_is_flagged_across_different_names(tmp_path):
+    h5 = write_shape_h5(tmp_path / "s.h5", {
+        0: make_cwm("GGGGCGGGGC"),     # ubiquitous SP9
+        59: make_cwm("GGGGCGGGGC"),    # same shape, labelled SP2
+        46: make_cwm("CTAAAAATAG"),    # genuinely different
+    })
+    ub = pd.DataFrame([dict(cluster_final=0, jaspar_name="SP9", posneg="pos")])
+    re_ = pd.DataFrame([
+        dict(cluster_final=59, jaspar_name="SP2", posneg="pos"),
+        dict(cluster_final=46, jaspar_name="MEF2A", posneg="pos"),
+    ])
+    out = exemplars.flag_shape_duplicates(re_, ub, h5).set_index("cluster_final")
+    assert out.loc[59, "dup_of"] == "SP9"
+    assert out.loc[59, "dup_corr"] >= 0.8
+    assert out.loc[46, "dup_of"] is None
+
+
+def test_flag_shape_duplicates_is_a_noop_without_an_h5():
+    re_ = pd.DataFrame([dict(cluster_final=1, jaspar_name="X", posneg="pos")])
+    out = exemplars.flag_shape_duplicates(re_, re_, None)
+    assert out["dup_of"].isna().all()
+
+
+def test_trim_widths_separates_a_diffuse_cluster_from_a_long_one(tmp_path):
+    diffuse = np.full((50, 4), 0.5)              # no locatable core
+    long_real = make_cwm("ACTACAATTCCCAGGAATGC", start=15)
+    h5 = write_shape_h5(tmp_path / "w.h5", {96: diffuse, 2: long_real})
+    df = pd.DataFrame([
+        dict(cluster_final=96, posneg="pos"), dict(cluster_final=2, posneg="pos"),
+    ])
+    w = exemplars.trim_widths(h5, df)
+    assert w[96] > 25, "a flat CWM has no core and must not squeeze under the cap"
+    assert w[2] <= 25
+
+
+def test_exemplar_cli_excludes_shape_duplicates_and_says_so(tmp_path):
+    conc = tmp_path / "c.tsv"
+    pd.DataFrame([
+        dict(cluster_final=0, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=3_867_685,
+             sole_group=None, groups="", posneg="pos"),
+        dict(cluster_final=59, jaspar_name="SP2", motif_class="TF-matched",
+             prevalence=15, n_groups=1, total_seqlets=3070,
+             sole_group="blood_immune", groups="blood_immune", posneg="pos"),
+        dict(cluster_final=46, jaspar_name="MEF2A", motif_class="TF-matched",
+             prevalence=17, n_groups=1, total_seqlets=130_013,
+             sole_group="heart", groups="heart", posneg="pos"),
+    ]).to_csv(conc, sep="\t", index=False)
+    h5 = write_shape_h5(tmp_path / "s.h5", {
+        0: make_cwm("GGGGCGGGGC"), 59: make_cwm("GGGGCGGGGC"),
+        46: make_cwm("CTAAAAATAG"),
+    })
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+         "--head", "count", "--concentration-tsv", str(conc),
+         "--modisco-h5", str(h5), "--min-seqlets", "1000",
+         "--out-dir", str(tmp_path / "out")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    kept = pd.read_csv(tmp_path / "out" / "motif_exemplars_count_restricted.tsv",
+                       sep="\t")
+    assert set(kept["cluster_final"]) == {46}
+    assert "CWM shape" in result.stdout and "SP9" in result.stdout
+
+
+def test_exemplar_cli_can_keep_shape_duplicates(tmp_path):
+    conc = tmp_path / "c.tsv"
+    pd.DataFrame([
+        dict(cluster_final=0, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=3_867_685,
+             sole_group=None, groups="", posneg="pos"),
+        dict(cluster_final=59, jaspar_name="SP2", motif_class="TF-matched",
+             prevalence=15, n_groups=1, total_seqlets=3070,
+             sole_group="blood_immune", groups="blood_immune", posneg="pos"),
+    ]).to_csv(conc, sep="\t", index=False)
+    h5 = write_shape_h5(tmp_path / "s.h5", {
+        0: make_cwm("GGGGCGGGGC"), 59: make_cwm("GGGGCGGGGC"),
+    })
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+         "--head", "count", "--concentration-tsv", str(conc),
+         "--modisco-h5", str(h5), "--min-seqlets", "1000",
+         "--keep-shape-duplicates", "--out-dir", str(tmp_path / "out")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    kept = pd.read_csv(tmp_path / "out" / "motif_exemplars_count_restricted.tsv",
+                       sep="\t")
+    assert 59 in set(kept["cluster_final"])
+
+
+def test_exemplar_cli_errors_on_a_missing_h5(tmp_path):
+    conc = tmp_path / "c.tsv"
+    exemplar_frame().to_csv(conc, sep="\t", index=False)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+         "--head", "count", "--concentration-tsv", str(conc),
+         "--modisco-h5", str(tmp_path / "nope.h5"), "--out-dir", str(tmp_path)],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "not found" in result.stderr
+
+
+# --- caption rendering ------------------------------------------------------
+
+
+def test_lineage_caption_renders_multi_group_lineages():
+    assert fig2.lineage_caption("heart,muscle") == "heart+muscle"
+    assert fig2.lineage_caption("gi_tract,liver_biliary,metastatic_carcinoma") == (
+        "GI+liver+met"
+    )
+
+
+def test_lineage_caption_handles_the_nan_from_multi_group_rows():
+    # sole_group is literally the string "nan" once round-tripped through TSV
+    assert fig2.lineage_caption("nan") == ""
+    assert fig2.lineage_caption(float("nan")) == ""
+
+
+def test_lineage_caption_summarizes_very_broad_lineages():
+    assert fig2.lineage_caption(",".join(f"g{i}" for i in range(9))) == "9 tissues"
+
+
+def test_rank_for_panel_reranks_by_support_not_table_order():
+    df = pd.DataFrame([
+        dict(cluster_final=1, jaspar_name="A", total_seqlets=10, lineage="blood"),
+        dict(cluster_final=2, jaspar_name="B", total_seqlets=999, lineage="zzz"),
+    ])
+    # the table is sorted by lineage, so head() alone would take "blood" first
+    assert list(rank := fig2.rank_for_panel(df, 1)["jaspar_name"]) == ["B"], rank
+
+
+def test_rank_for_panel_collapses_duplicate_names():
+    df = pd.DataFrame([
+        dict(cluster_final=1, jaspar_name="Arid5a", total_seqlets=12404,
+             lineage="liver+met"),
+        dict(cluster_final=2, jaspar_name="Arid5a", total_seqlets=7738,
+             lineage="GI+met"),
+        dict(cluster_final=3, jaspar_name="MEF2A", total_seqlets=130013,
+             lineage="heart+muscle"),
+    ])
+    got = fig2.rank_for_panel(df, 3)
+    assert list(got["jaspar_name"]) == ["MEF2A", "Arid5a"]
+    assert got[got["jaspar_name"] == "Arid5a"]["cluster_final"].iloc[0] == 1
