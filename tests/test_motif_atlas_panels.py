@@ -3829,3 +3829,87 @@ def test_panel_b_leaves_headroom_above_the_tallest_bar_for_the_legend():
     top = ax.get_ylim()[1]
     plt.close(fig)
     assert top > tallest * 1.15, "no room for the legend above the null mode"
+
+
+def test_panel_b_title_is_overridable_for_the_collapsed_version():
+    """The supplementary copy must not be captioned 'b'."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=1.47, obs=11)
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap,
+                             title="Discovery is lineage-confined\n"
+                                   "(one unit per JASPAR name)")
+    t = ax.get_title(loc="left")
+    plt.close(fig)
+    assert "JASPAR name" in t and not t.startswith("b")
+
+
+def test_panel_b_default_title_still_carries_the_panel_letter():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables()
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap)
+    t = ax.get_title(loc="left")
+    plt.close(fig)
+    assert t.startswith("b")
+
+
+def test_collapsed_panel_b_guard_also_applies(tmp_path):
+    """The consistency guard is not bypassed by the collapsed route."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=1.47, null_mean=6.07, obs=11)
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="different runs"):
+        fig2.panel_concentration(ax, draws, swap, title="collapsed")
+    plt.close(fig)
+
+
+def test_collapsed_concentration_is_supplementary_only(tmp_path):
+    """The main figure must keep MotifCompendium clusters.
+
+    JASPAR-name collapse is a supplementary robustness panel, not the headline
+    result, so `--collapse-concentration` must add a file and leave the main
+    figure untouched. Asserted by rendering twice and comparing bytes: if the
+    collapsed tables ever leak into panel b of the main figure, the PNGs
+    diverge and this fails.
+    """
+    h5 = fig2_inputs(tmp_path)
+    base = [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+            "--head", "count", "--in-dir", str(tmp_path),
+            "--modisco-h5", str(h5), "--n-ubiquitous", "2",
+            "--n-restricted", "2"]
+
+    plain_stem = tmp_path / "plain"
+    r = subprocess.run(base + ["--out-stem", str(plain_stem)],
+                       capture_output=True, text=True, env=SUBPROC_ENV)
+    assert r.returncode == 0, r.stderr
+    plain_main = (tmp_path / "plain.png").read_bytes()
+
+    # a collapsed directory whose numbers differ from the canonical ones
+    coll = tmp_path / "collapsed"
+    coll.mkdir()
+    draws, swap = concentration_tables(draws_mean=1.47, obs=11)
+    draws.to_csv(coll / "motif_concentration_count_tissue_nulldraws.tsv",
+                 sep="\t", index=False)
+    swap.to_csv(coll / "motif_concentration_count_tissue_swapnull.tsv",
+                sep="\t", index=False)
+
+    coll_stem = tmp_path / "withcoll"
+    r = subprocess.run(
+        base + ["--out-stem", str(coll_stem), "--collapse-concentration", str(coll)],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert r.returncode == 0, r.stderr
+    assert (tmp_path / "withcoll_s_concentration_jaspar_name.pdf").exists(), \
+        "the supplementary panel was not written"
+    assert (tmp_path / "withcoll.png").read_bytes() == plain_main, \
+        "collapsed tables changed the main figure; panel b must stay cluster-level"

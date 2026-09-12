@@ -284,6 +284,7 @@ def panel_lexicon_bracket(
 def panel_concentration(
     ax, draws: pd.DataFrame, swap: pd.DataFrame, motif_class: str = "TF-matched",
     biosample_swap: pd.DataFrame | None = None,
+    title: str = "b   Discovery is lineage-confined",
 ) -> None:
     sub = swap[swap["motif_class"] == motif_class]
     if not len(sub):
@@ -361,8 +362,7 @@ def panel_concentration(
 
     ax.set_xlabel("Motifs confined to a single tissue group")
     ax.set_ylabel("Permutations")
-    ax.set_title("b   Discovery is lineage-confined", loc="left",
-                 fontweight="bold", fontsize=10)
+    ax.set_title(title, loc="left", fontweight="bold", fontsize=10)
     ax.legend(frameon=False, fontsize=6.5, loc="upper left")
     ax.spines[["top", "right"]].set_visible(False)
 
@@ -571,6 +571,14 @@ def main():
              "count --min-cluster-experiments 2 --collapse-by jaspar_name "
              "--out-dir DIR",
     )
+    parser.add_argument(
+        "--collapse-concentration", type=Path, default=None, metavar="DIR",
+        help="directory holding motif_concentration_{head}_*.tsv from a "
+             "--collapse-by jaspar_name run (with --save-null-draws). With "
+             "it, a supplementary panel b is written at JASPAR-name level, "
+             "which shows the concentration result is not an artifact of "
+             "counting splits of one motif as separate restricted motifs.",
+    )
     parser.add_argument("--profile-exemplars", type=Path, default=None, metavar="PATH")
     parser.add_argument("--profile-h5", type=Path, default=None, metavar="PATH")
     parser.add_argument("--trim-threshold", type=float, default=0.3, metavar="F")
@@ -701,6 +709,32 @@ def main():
                 per_row=args.logos_per_row),
             Path(f"{stem}_c_exemplars"), (w, h * 0.56),
         )
+        if args.collapse_concentration is not None:
+            cd = args.collapse_concentration
+            cdraws = cd / f"motif_concentration_{args.head}_tissue_nulldraws.tsv"
+            cswap = cd / f"motif_concentration_{args.head}_tissue_swapnull.tsv"
+            cbio = cd / f"motif_concentration_{args.head}_biosample_swapnull.tsv"
+            missing_c = [q for q in (cdraws, cswap) if not q.exists()]
+            if missing_c:
+                for q in missing_c:
+                    print(f"ERROR: missing {q}", file=sys.stderr)
+                print("Generate with: motif_group_concentration.py --head "
+                      f"{args.head} --group-level tissue --collapse-by "
+                      f"jaspar_name --save-null-draws --out-dir {cd}",
+                      file=sys.stderr)
+            else:
+                written += save_panel(
+                    lambda f: panel_concentration(
+                        f.add_subplot(111),
+                        pd.read_csv(cdraws, sep="\t"),
+                        pd.read_csv(cswap, sep="\t"),
+                        args.motif_class,
+                        pd.read_csv(cbio, sep="\t") if cbio.exists() else None,
+                        title="Discovery is lineage-confined\n"
+                              "(one unit per JASPAR name)"),
+                    Path(f"{stem}_s_concentration_jaspar_name"),
+                    (w * 0.52, h * 0.46),
+                )
         if args.collapse_curves is not None:
             if not args.collapse_curves.exists():
                 print(f"ERROR: missing --collapse-curves: "

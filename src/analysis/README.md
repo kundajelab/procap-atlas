@@ -131,6 +131,7 @@ explicitly. The profile head is not yet built (see Pending below).
 | Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
 | Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
 | Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
+| Supp — concentration at JASPAR-name level | `plot_figure2.py --collapse-concentration` | done, `figure2_count_s_concentration_jaspar_name.pdf` |
 | Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
 | Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; 3 of 4 panel plotters unwritten |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
@@ -149,13 +150,23 @@ python src/analysis/select_motif_exemplars.py --head count --max-groups 2 \
 python src/analysis/plot_figure2.py --head count --n-restricted 14 \
     --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5
 
+# S: JASPAR-name robustness panels. The MAIN figure stays cluster-level;
+# these write separate _s_* files.
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level tissue --collapse-by jaspar_name --save-null-draws \
+    --out-dir figures/motif_atlas/collapsed
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level biosample --collapse-by jaspar_name --save-null-draws \
+    --out-dir figures/motif_atlas/collapsed
+
 # S: the lexicon-size bracket, for "how many of these are really distinct?"
 python src/analysis/plot_motif_rarefaction.py --head count \
     --min-cluster-experiments 2 --collapse-by jaspar_name --sweep \
     --out-dir figures/motif_atlas/collapsed
 python src/analysis/plot_figure2.py --head count --n-restricted 14 \
     --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5 \
-    --collapse-curves figures/motif_atlas/collapsed/motif_rarefaction_count.tsv
+    --collapse-curves figures/motif_atlas/collapsed/motif_rarefaction_count.tsv \
+    --collapse-concentration figures/motif_atlas/collapsed
 
 # 2a/2b: discovery concentration, both group levels.
 # --save-null-draws is REQUIRED: it writes the histogram panel b draws, and
@@ -571,6 +582,27 @@ python src/analysis/motif_group_concentration.py --head count \
     --group-level tissue --collapse-by jaspar_name \
     --out-dir figures/motif_atlas/collapsed
 ```
+
+**The main figure stays at MotifCompendium cluster level.** Both collapses are
+supplementary robustness panels, not the headline result, and
+`plot_figure2.py` writes them to separate `_s_*` files. A test renders the
+figure with and without `--collapse-concentration` and asserts the main PNG is
+byte-identical, so a collapsed table can never leak into panel b.
+
+`plot_figure2.py --collapse-concentration DIR` writes the name-level panel b
+(`figure2_{head}_s_concentration_jaspar_name.pdf`). It is visually the
+stronger version: the null never reaches 6 single-group units in 1,000
+permutations while the observed value is 11.
+
+```text
+                          units  observed  swap null mean  x null  biosample conc
+cluster level               306        37            6.07    6.1x            0.92
+one unit per JASPAR name    118        11            1.47    7.5x            0.94
+```
+
+Those are swap-null ratios, which is what the panel annotates; the exact
+Poisson-binomial expectations are 6.01 (6.2x) and 1.42 (7.7x). The panel and
+the text have to agree on which null they mean.
 
 `plot_figure2.py --collapse-curves` turns the first of those into a
 supplementary panel (`figure2_{head}_s_lexicon_bracket.pdf`): both uniform
