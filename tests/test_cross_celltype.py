@@ -736,3 +736,52 @@ def test_signal_floor_is_what_separates_real_specificity_from_noise():
     signal = ccp.top_group_signal(obs, groups)
     eligible = signal[signal >= 0.5].index
     assert list(eligible) == ["real_specific"]
+
+
+# --- reproducibility baseline ----------------------------------------------
+#
+# A predicted-vs-observed correlation is uninterpretable without two reference
+# points: the ceiling (how well the data agrees with itself) and the benchmark
+# (what a related experiment's own measurements would give instead of a model).
+
+
+def test_baseline_excludes_the_trivial_matched_diagonal():
+    obs = counts_frame(["a", "b", "c"], n_peaks=50)
+    groups = {"a": "blood", "b": "blood", "c": "heart"}
+    base = ccp.reproducibility_baseline(obs, groups, None)
+    assert "matched" not in set(base["tier"]), "observed vs itself is 1.0"
+
+
+def test_baseline_recovers_a_known_replicate_structure():
+    rng = np.random.default_rng(0)
+    shared = np.abs(rng.normal(size=400)) * 10
+    obs = pd.DataFrame(
+        np.vstack([
+            shared + np.abs(rng.normal(0, 0.1, 400)),   # a1, near-identical
+            shared + np.abs(rng.normal(0, 0.1, 400)),   # a2, its replicate
+            np.abs(rng.normal(size=400)) * 10,          # c, unrelated
+        ]),
+        index=["a1", "a2", "c"],
+        columns=[f"p{i}" for i in range(400)],
+    )
+    groups = {"a1": "blood", "a2": "blood", "c": "heart"}
+    samples = {"a1": "K562", "a2": "K562", "c": "LV"}
+    base = ccp.reproducibility_baseline(obs, groups, samples).set_index("tier")
+    assert base.at["same biosample", "median"] > 0.9
+    assert base.at["same biosample", "median"] > base.at["different tissue", "median"]
+
+
+def test_baseline_is_computed_on_observed_only():
+    # It must not touch predictions: its purpose is to bound them.
+    obs = counts_frame(["a", "b"], n_peaks=40)
+    groups = {"a": "blood", "b": "heart"}
+    one = ccp.reproducibility_baseline(obs, groups, None)
+    two = ccp.reproducibility_baseline(obs, groups, None)
+    assert one.equals(two)
+
+
+def test_cli_reports_the_baseline(tmp_path):
+    result = run_cli(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "Observed-vs-observed" in result.stderr
+    assert (tmp_path / "out" / "cross_celltype_baseline.tsv").exists()

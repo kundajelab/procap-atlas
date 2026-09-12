@@ -1775,6 +1775,61 @@ one sample.
 Note both tiers are significant by sign test even at 1.03x: the test is
 sensitive to direction, not size. Quote the ratios.
 
+### What the correlations measure, and against what ceiling
+
+Each cell of the matrix is the Pearson correlation **across peaks** between
+log1p of model *i*'s predicted total counts and log1p of experiment *j*'s
+observed RPM counts. So it asks: *does this model get which promoters are
+strong and which are weak, in this cell type?*
+
+Three consequences:
+
+- **Counts, not shape.** Predictions are summed over both strands and all
+  1000 output positions, so all positional information is discarded. A model
+  could place the TSS wrongly and still score well. ProCapNet's cross-cell-type
+  work was substantially profile-based; this is the counts analogue.
+- **Scale-free.** Pearson on log1p is invariant to a multiplicative factor, so
+  systematic over- or under-prediction of overall level is invisible. Only the
+  relative pattern across loci is measured.
+- **Dominated by the active/inactive contrast.** Peaks are the atlas-wide
+  union, so for any one experiment many are inactive, and much of a high r is
+  "this locus is a promoter at all" rather than cell-type-specific
+  quantitation.
+
+The numbers are uninterpretable without the observed-vs-observed baseline,
+which the run prints and writes to `cross_celltype_baseline.tsv`:
+
+```text
+stratum      tier              observed  predicted
+specific     same biosample       0.874      0.149
+specific     same tissue          0.279      0.046
+specific     different tissue    -0.009      0.010
+ubiquitous   same biosample       0.955      0.762
+ubiquitous   same tissue          0.888      0.719
+ubiquitous   different tissue     0.821      0.714
+```
+
+It gives two reference points:
+
+**The ceiling.** A sequence model can at best recover the reproducible part of
+an experiment's signal, which is replicate agreement: 0.874 at specific peaks,
+0.955 at ubiquitous ones. So matched accuracy is ~10% of the ceiling at
+specific peaks (0.086/0.874) and ~77% at ubiquitous ones (0.735/0.955). The
+data at specific peaks is highly reproducible — the models simply do not
+predict it.
+
+**The benchmark, and it is unflattering.** Another related experiment's own
+measurements beat the model in both strata. At specific peaks, a different
+biosample of the same tissue correlates with experiment *j* at 0.279 where the
+model manages 0.086. At ubiquitous peaks, a *different tissue's* observed data
+gives 0.821 against the model's 0.735. Any claim that the models capture
+cell-type-specific initiation has to be stated against that: they are
+directionally correct (47/50, 8.6x) but worse than a nearby measurement.
+
+The within-experiment dynamic range also differs 6.6-fold between strata
+(median log1p sd 0.225 specific vs 1.487 ubiquitous), which is the mechanical
+part of why absolute r is so much lower among specific peaks.
+
 **Do not compare absolute r across strata.** Within the specific stratum most
 peaks are near-zero for any given experiment, since they are specific to
 *other* tissues, so there is little variance to explain and r is compressed

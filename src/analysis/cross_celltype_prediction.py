@@ -269,6 +269,34 @@ def correlation_matrix(
     return out
 
 
+def reproducibility_baseline(
+    observed: pd.DataFrame,
+    groups: dict[str, str],
+    biosamples: dict[str, str] | None,
+    method: str = "pearson",
+) -> pd.DataFrame:
+    """Observed-vs-observed correlations, by tier.
+
+    Two reference points a predicted-vs-observed number cannot be read without.
+
+    The **ceiling**: a model predicts from sequence alone, so it can at best
+    recover the reproducible part of an experiment's signal. Replicate
+    agreement (`same biosample`, observed vs observed) is that ceiling, and it
+    differs enormously between strata -- so the same r means different things
+    in each.
+
+    The **benchmark**: what you would get by using a *related experiment's
+    measurements* instead of a model. If observed same-tissue agreement
+    exceeds predicted matched accuracy, then another sample of the same lineage
+    is a better predictor than the model, which is worth knowing before
+    claiming the model has learned cell-type-specific initiation.
+    """
+    matrix = correlation_matrix(observed, observed, method)
+    pairs = long_form(matrix, groups, biosamples)
+    out = pairs[pairs["tier"] != "matched"]      # matched is 1.0 by identity
+    return summarize_tiers(out)
+
+
 def tier_of(
     model: str,
     experiment: str,
@@ -530,6 +558,9 @@ def main():
     pairs = long_form(matrix, groups, biosamples)
     summary = summarize_tiers(pairs)
     per_model = paired_within_model(pairs)
+    baseline = reproducibility_baseline(observed, groups, biosamples, args.method)
+    baseline.to_csv(args.out_dir / "cross_celltype_baseline.tsv", sep="\t",
+                    index=False) if False else None
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     matrix.to_csv(args.out_dir / "cross_celltype_matrix.tsv", sep="\t")
@@ -540,9 +571,23 @@ def main():
     plot_matrix(matrix, groups, args.out_dir / "cross_celltype_matrix.pdf")
     plot_tiers(pairs, args.out_dir / "cross_celltype_tiers.pdf")
 
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    baseline.to_csv(args.out_dir / "cross_celltype_baseline.tsv", sep="\t",
+                    index=False)
+
     with pd.option_context("display.width", 200, "display.max_columns", 20):
         print("\nAccuracy by relatedness:", file=sys.stderr)
         print(summary.to_string(index=False), file=sys.stderr)
+        print(
+            "\nObserved-vs-observed for the same tiers -- the ceiling a "
+            "sequence model could reach, and what a related experiment's own "
+            "measurements would give instead of a model:",
+            file=sys.stderr,
+        )
+        print(
+            baseline[["tier", "n_pairs", "median"]].to_string(index=False),
+            file=sys.stderr,
+        )
 
     for column, label in (
         ("beats_different_tissue", "a different tissue"),
@@ -579,6 +624,19 @@ def main():
         for name, cols in strata.items():
             if len(cols) < 2:
                 continue
+            oc = take_columns(observed, cols)
+            base = reproducibility_baseline(oc, groups, biosamples, args.method)
+            base_med = dict(zip(base["tier"], base["median"]))
+            spread = np.log1p(oc.to_numpy(dtype=float)).std(axis=1)
+            print(
+                f"  {name:11s}: observed replicate agreement "
+                f"{base_med.get('same biosample', float('nan')):.3f}, "
+                f"observed same-tissue {base_med.get('same tissue', float('nan')):.3f}, "
+                f"observed different-tissue "
+                f"{base_med.get('different tissue', float('nan')):.3f}; "
+                f"median within-experiment log1p sd {np.median(spread):.3f}",
+                file=sys.stderr,
+            )
             sub_pairs = long_form(
                 correlation_matrix(
                     take_columns(observed, cols), take_columns(predicted, cols),
