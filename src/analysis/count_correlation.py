@@ -25,6 +25,7 @@ Usage:
 """
 
 import argparse
+from collections import Counter
 import re
 import sys
 from pathlib import Path
@@ -47,6 +48,7 @@ FASTA = str(REPO_ROOT / "data" / "hg38.fa")
 BLACKLIST = str(REPO_ROOT / "data" / "hg38.blacklist.bed.gz")
 DEFAULT_UNION_PEAKS = REPO_ROOT / "data" / "processed" / "peaks" / "union_peaks.bed.gz"
 N_FOLDS = 7
+CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
 
 
 def extract_observed_counts(
@@ -78,6 +80,141 @@ def extract_observed_counts(
     counts = torch.abs(y).sum(dim=(-1, -2)).numpy()
     rpm_scale = 1e6 / total_reads
     return X, counts * rpm_scale
+
+
+def balanced_subset(
+    experiments: dict, groups: dict[str, str], per_group: int,
+    read_counts: dict[str, float], min_reads: float = 0.0,
+    exclude_groups: tuple[str, ...] = ("other",),
+) -> dict:
+    """The `per_group` deepest experiments from each tissue group.
+
+    A full all-pairs matrix over 198 experiments is far more GPU time than the
+    three-tier contrast needs, and an unbalanced subset would make the
+    same-tissue tier mostly blood_immune, which is 41 of 198 experiments.
+    Taking the deepest per group also holds model quality roughly fixed, since
+    accuracy tracks read depth.
+
+    `min_reads` is applied here rather than left to the caller's later filter:
+    selecting the three deepest of a group and *then* dropping the shallow ones
+    can leave a group with one usable experiment and no within-group pair,
+    which is the tier the analysis exists to measure. `exclude_groups` drops
+    the `other` bucket, which is the unmatched-biosample fallback rather than a
+    lineage.
+    """
+    if per_group <= 0:
+        return experiments
+    by_group: dict[str, list[str]] = {}
+    for exp_id in experiments:
+        group = groups.get(exp_id)
+        if group is None or group in exclude_groups:
+            continue
+        if read_counts.get(exp_id, 0) < min_reads:
+            continue
+        by_group.setdefault(group, []).append(exp_id)
+    keep = []
+    for group, members in sorted(by_group.items()):
+        members.sort(key=lambda e: read_counts.get(e, 0), reverse=True)
+        keep.extend(members[:per_group])
+    return {e: experiments[e] for e in keep}
+
+
+def load_chrom_folds(path: Path = CHROM_SPLITS_PATH) -> dict[int, set[str]]:
+    """fold index -> the chromosomes held out as that fold's test set."""
+    with open(path) as f:
+        folds = yaml.safe_load(f)["folds"]
+    return {int(k): set(v) for k, v in folds.items()}
+
+
+def fold_by_chrom(folds: dict[int, set[str]]) -> dict[str, int]:
+    """chromosome -> the single fold that holds it out.
+
+    Raises if a chromosome appears in two folds, which would mean no fold
+    actually held it out and the "held-out" guarantee is void.
+    """
+    out: dict[str, int] = {}
+    for fold, chroms in sorted(folds.items()):
+        for chrom in chroms:
+            if chrom in out:
+                raise ValueError(
+                    f"{chrom} appears in folds {out[chrom]} and {fold}; "
+                    "held-out predictions would not be held out"
+                )
+            out[chrom] = fold
+    return out
+
+
+def split_peaks_by_fold(
+    union_peaks: pd.DataFrame, assignment: dict[str, int]
+) -> list[tuple[int, pd.DataFrame]]:
+    """Peaks grouped by the fold that held their chromosome out, fold order.
+
+    Fold order is fixed and ascending so that concatenating each fold's
+    results yields vectors that line up across experiments. That is what makes
+    held-out extraction work at all: `extract_loci` silently drops peaks
+    (blacklist, invalid sequence) without reporting which, so per-peak identity
+    is unrecoverable -- but the filtering depends only on the peaks, the FASTA
+    and the blacklist, never on the experiment, so every experiment loses
+    exactly the same rows and a fixed concatenation order keeps them aligned.
+
+    Peaks on chromosomes no fold claims are dropped; the caller reports them.
+    """
+    known = union_peaks["chrom"].map(assignment)
+    out = []
+    for fold in sorted(set(assignment.values())):
+        sub = union_peaks[known == fold]
+        if len(sub):
+            out.append((fold, sub))
+    return out
+
+
+def unassigned_chroms(union_peaks: pd.DataFrame, assignment: dict[str, int]) -> list[str]:
+    """Chromosomes present in the peaks that no fold holds out."""
+    return sorted(set(union_peaks["chrom"]) - set(assignment))
+
+
+def extract_heldout_counts(
+    union_peaks: pd.DataFrame,
+    pl_bw: str,
+    mn_bw: str,
+    total_reads: float,
+    model_dir: Path,
+    exp_id: str,
+    assignment: dict[str, int],
+    batch_size: int,
+    device: str,
+) -> tuple[np.ndarray, np.ndarray | None]:
+    """Observed and held-out predicted counts, concatenated in fold order.
+
+    Each peak is predicted by the one fold model that never trained on its
+    chromosome. `extract_predicted_counts` instead averages all seven folds at
+    every peak, which inflates a model's apparent accuracy on its *own*
+    experiment -- six of the seven folds trained on those peaks -- while giving
+    no such advantage when predicting a different experiment. That is exactly
+    the quantity a matched-versus-mismatched comparison measures, so the
+    averaged version cannot be used for it.
+
+    Costs less, not more: one prediction per peak rather than seven.
+    """
+    obs_parts, pred_parts = [], []
+    for fold, peaks in split_peaks_by_fold(union_peaks, assignment):
+        X, obs = extract_observed_counts(peaks, pl_bw, mn_bw, total_reads)
+        obs_parts.append(obs)
+        model_path = model_dir / f"{exp_id}.fold{fold}.torch"
+        if not model_path.exists():
+            return np.concatenate(obs_parts) if obs_parts else np.array([]), None
+        model = torch.load(model_path, weights_only=False, map_location="cpu")
+        pred = predict(
+            model=model, X=X, batch_size=batch_size, device=device, verbose=False
+        )
+        scaled = (
+            torch.nn.functional.softmax(pred[0].reshape(pred[0].shape[0], -1), dim=-1)
+            * torch.exp(pred[1])
+        ).reshape(*pred[0].shape)
+        pred_parts.append(scaled.sum(dim=(-1, -2)).numpy())
+    if not obs_parts:
+        return np.array([]), None
+    return np.concatenate(obs_parts), np.concatenate(pred_parts)
 
 
 def extract_predicted_counts(
@@ -240,6 +377,25 @@ def main():
         help="run only this experiment (for testing)",
     )
     parser.add_argument(
+        "--balanced-per-group",
+        type=int,
+        default=0,
+        metavar="N",
+        help="run only the N deepest experiments per tissue group. A full "
+             "all-pairs matrix over 198 experiments is more GPU time than the "
+             "three-tier contrast needs, and an unbalanced subset would make "
+             "the same-tissue tier mostly blood_immune (41 of 198). 0 = all.",
+    )
+    parser.add_argument(
+        "--held-out-folds",
+        action="store_true",
+        help="predict each peak with the one fold model that did not train on "
+             "its chromosome, instead of averaging all 7 folds. Required for "
+             "any matched-vs-mismatched comparison: fold averaging lets a "
+             "model see its own experiment's peaks in training and so inflates "
+             "the diagonal. Also 7x cheaper.",
+    )
+    parser.add_argument(
         "--batch-size",
         type=int,
         default=64,
@@ -295,6 +451,48 @@ def main():
             sys.exit(1)
         experiments = {args.experiment: experiments[args.experiment]}
 
+    if args.balanced_per_group > 0:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from _biosample_groups import load_group_map
+
+        tissue, _ = load_group_map(experiments, None, quiet=True)
+        before = len(experiments)
+        experiments = balanced_subset(
+            experiments, tissue, args.balanced_per_group, n_reads_map,
+            min_reads=args.min_reads,
+        )
+        if not experiments:
+            print(
+                "ERROR: balanced subset is empty; lower --min-reads or "
+                "--balanced-per-group",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        sizes = Counter(tissue[e] for e in experiments)
+        singles = sorted(g for g, n in sizes.items() if n < 2)
+        print(
+            f"Balanced subset: {len(experiments)} of {before} experiments, "
+            f"up to {args.balanced_per_group} per group over {len(sizes)} groups",
+            file=sys.stderr,
+        )
+        if singles:
+            print(
+                f"NOTE: {len(singles)} group(s) contribute one experiment and so "
+                f"no same-tissue pair: {', '.join(singles)}",
+                file=sys.stderr,
+            )
+
+    fold_assignment: dict[str, int] = {}
+    if args.held_out_folds:
+        fold_assignment = fold_by_chrom(load_chrom_folds())
+        skipped = unassigned_chroms(union_peaks, fold_assignment)
+        if skipped:
+            print(
+                f"NOTE: dropping peaks on {len(skipped)} chromosome(s) no fold "
+                f"holds out: {', '.join(skipped)}",
+                file=sys.stderr,
+            )
+
     obs_rows: dict[str, np.ndarray] = {}
     pred_rows: dict[str, np.ndarray] = {}
     biosample_map: dict[str, str] = {}
@@ -322,14 +520,40 @@ def main():
         if total_reads == 0:
             print(f"WARNING: {exp_id}: total_reads=0, skipping", file=sys.stderr)
             continue
+        base_dir = args.model_dir or (REPO_ROOT / "models" / (args.model or ""))
+        model_dir = base_dir / exp_id
+
+        if args.held_out_folds and args.model is not None:
+            if not model_dir.exists():
+                print(
+                    f"WARNING: {exp_id}: model dir not found ({model_dir}), skipping",
+                    file=sys.stderr,
+                )
+                continue
+            obs, pred = extract_heldout_counts(
+                union_peaks, pl_path, mn_path, total_reads, model_dir, exp_id,
+                fold_assignment, args.batch_size, args.device,
+            )
+            if not len(obs):
+                print(f"WARNING: {exp_id}: no peaks survived, skipping", file=sys.stderr)
+                continue
+            obs_rows[exp_id] = obs
+            biosample_map[exp_id] = biosample_safe
+            if pred is not None:
+                pred_rows[exp_id] = pred
+            else:
+                print(
+                    f"WARNING: {exp_id}: missing a fold model, predictions skipped",
+                    file=sys.stderr,
+                )
+            continue
+
         X, obs = extract_observed_counts(union_peaks, pl_path, mn_path, total_reads)
         obs_rows[exp_id] = obs
         biosample_map[exp_id] = biosample_safe
 
         # Predicted counts — reuse X from observed extraction (same filtering)
         if args.model is not None:
-            base_dir = args.model_dir or (REPO_ROOT / "models" / args.model)
-            model_dir = base_dir / exp_id
             if not model_dir.exists():
                 print(
                     f"WARNING: {exp_id}: model dir not found ({model_dir}), skipping predictions",

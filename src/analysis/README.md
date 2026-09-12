@@ -1594,6 +1594,105 @@ actually called) rather than summed density, which shrinks in direct
 proportion to how few tissues a motif is restricted to and so would exclude
 exactly those motifs.
 
+## Cross-Cell-Type Prediction
+
+Does a model predict its own cell type's initiation better than another's? The
+ProCapNet analysis (Cochran et al.) asked this across six cell lines; the atlas
+asks it across every experiment at once. Destined for a supplementary panel.
+
+Three tiers, in increasing distance — `matched` (model *i* on experiment *i*),
+`same tissue`, `different tissue`. Matched > same tissue > different tissue is
+the claim, and the middle tier is what makes it a statement about cell-type
+specificity rather than about overfitting: a model that merely memorized its
+own experiment would beat both other tiers equally.
+
+Two steps, split by where they can run.
+
+**Extraction — Sherlock.** Needs the reference genome, processed BigWigs, union
+peaks and every fold model:
+
+```bash
+python src/analysis/count_correlation.py --model bpnet --device cuda \
+    --held-out-folds --balanced-per-group 3 --min-reads 10000000
+```
+
+**Analysis — local**, from the two count matrices that writes:
+
+```bash
+python src/analysis/cross_celltype_prediction.py \
+    --observed figures/count_correlation/observed_counts.tsv \
+    --predicted figures/count_correlation/predicted_counts.tsv
+python src/analysis/cross_celltype_prediction.py --variable-peaks 20000
+```
+
+Outputs:
+
+```text
+figures/cross_celltype/cross_celltype_matrix.tsv      # model x experiment r
+figures/cross_celltype/cross_celltype_pairs.tsv       # long form, with tiers
+figures/cross_celltype/cross_celltype_tiers.tsv       # per-tier summary
+figures/cross_celltype/cross_celltype_per_model.tsv   # one row per model
+figures/cross_celltype/cross_celltype_{matrix,tiers}.pdf
+```
+
+### `--held-out-folds` is not optional for this comparison
+
+`extract_predicted_counts` averages all seven fold models at every peak. A
+model predicting its **own** experiment then benefits from six folds that
+trained on those exact peaks, while predicting a different experiment gets no
+such help — so the matched diagonal is inflated by construction, which is
+precisely the quantity being measured. `cross_celltype_prediction.py` says so
+on every run and takes `--i-know-these-are-fold-averaged` to proceed anyway,
+for looking at the shape of the result only.
+
+Note what fold averaging does *not* invalidate: neither the `same tissue` nor
+the `different tissue` tier involves a model predicting its own experiment, so
+that contrast survives it. A predicted-vs-predicted clustering is likewise
+unaffected. Only the diagonal is compromised.
+
+`--held-out-folds` predicts each peak with the one fold model that did not
+train on its chromosome. **This uses every peak, not one fold's test set** —
+the seven folds partition all 24 chromosomes, so their union is complete and
+each peak is simply scored out-of-fold. It is 7x *cheaper* than averaging, one
+prediction per peak instead of seven, and it holds the diagonal and
+off-diagonal to the same standard. It also removes sequence memorization and
+not just label memorization: peaks are a shared union set, so a model did
+train on those regions even for off-diagonal pairs.
+
+Peaks on chromosomes no fold claims (`chrM`, alt contigs) are dropped and
+reported. `fold_by_chrom` raises if a chromosome appears in two folds, since
+then nothing held it out.
+
+### Why a balanced subset
+
+`--balanced-per-group 3` takes the three deepest experiments from each tissue
+group: 50 experiments over 18 groups on the current atlas, 17 of them with at
+least two members, giving ~50 matched, ~100 same-tissue and ~2,300
+different-tissue pairs. An unbalanced subset would make the same-tissue tier
+mostly `blood_immune`, which is 41 of 198 experiments, and the full all-pairs
+matrix is far more GPU time than the contrast needs. Taking the deepest also
+holds model quality roughly fixed, since accuracy tracks read depth.
+
+`--min-reads` is applied *inside* the selection rather than by the caller's
+later filter, because picking a group's three deepest and then dropping the
+shallow ones can leave one usable experiment and no within-group pair — the
+tier the analysis exists to measure. Groups contributing a single experiment
+are reported (`adipose`, at `--min-reads 10000000`).
+
+### Confounds reported rather than assumed away
+
+- **Read depth.** Deeper experiments are predicted better and depth differs by
+  tissue group (Kruskal-Wallis `p = 1.2e-4`), so the run prints the Spearman
+  correlation between matched accuracy and `log10(reads)`. A non-trivial value
+  means the tier gap needs a depth-matched check before being quoted.
+- **Pooling.** `cross_celltype_per_model.tsv` gives one row per model and an
+  exact sign test against 50%, because pooling all pairs treats pairs sharing a
+  model as independent and lets a few well-predicted experiments carry the
+  result.
+- **Counts only.** This compares summed counts. ProCapNet's cross-cell-type
+  work was substantially profile-based, and a profile version (per-peak
+  Jensen-Shannon distance) would need its own extraction.
+
 ## Warning Flags
 
 Generates read-depth, perturbation, uncapped-library, and manual warning flags
