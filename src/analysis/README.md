@@ -1613,8 +1613,19 @@ peaks and every fold model:
 
 ```bash
 python src/analysis/count_correlation.py --model bpnet --device cuda \
-    --held-out-folds --balanced-per-group 3 --min-reads 10000000
+    --held-out-folds --balanced-per-group 3 --min-reads 10000000 \
+    --max-peaks 100000
 ```
+
+**Subsample the peaks.** The atlas has 905,540 union peaks, and at 50 models
+that is 45.3M peak-predictions — several GPU-hours, and ~360 MB per output
+matrix. For a correlation it is precision nobody needs: the standard error of
+`r` is ~0.001 at 905k peaks and ~0.003 at 100k, against tier gaps of order
+0.1–0.3. `--max-peaks 100000` is ~9x cheaper for no usable loss, and
+`--peak-seed` fixes the draw so reruns stay comparable. The subsample is taken
+once, before the fold split, because every experiment must see the same peaks —
+the correlated vectors line up only if the draw is identical, and a
+per-experiment draw would break that silently.
 
 **Analysis — local**, from the two count matrices that writes:
 

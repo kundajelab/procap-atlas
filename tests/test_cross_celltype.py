@@ -385,3 +385,32 @@ def test_balanced_subset_on_the_real_atlas_is_tier_capable():
     # a same-tissue tier needs at least two experiments in several groups
     assert sum(1 for n in sizes.values() if n >= 2) >= 10
     assert len(got) < 80, "the point of the subset is to be cheaper than 198"
+
+
+# --- peak subsampling ------------------------------------------------------
+
+
+def test_peak_subsample_is_deterministic_for_a_fixed_seed():
+    # Every experiment and fold must see the same peaks: the vectors being
+    # correlated line up only if the subsample is drawn once, identically.
+    peaks = pd.DataFrame({
+        "chrom": ["chr1"] * 100, "start": range(100), "end": range(1, 101),
+    })
+    a = peaks.sample(n=10, random_state=0).sort_values(["chrom", "start"])
+    b = peaks.sample(n=10, random_state=0).sort_values(["chrom", "start"])
+    assert list(a["start"]) == list(b["start"])
+    c = peaks.sample(n=10, random_state=1).sort_values(["chrom", "start"])
+    assert list(a["start"]) != list(c["start"])
+
+
+def test_subsampled_peaks_still_split_across_folds():
+    assignment = cc.fold_by_chrom(cc.load_chrom_folds())
+    rng = np.random.default_rng(0)
+    chroms = rng.choice(sorted(assignment), size=500)
+    peaks = pd.DataFrame({
+        "chrom": chroms, "start": range(500), "end": range(1, 501),
+    })
+    sub = peaks.sample(n=100, random_state=0)
+    folds = cc.split_peaks_by_fold(sub, assignment)
+    assert sum(len(d) for _, d in folds) == 100
+    assert len(folds) > 1, "a subsample should still span several folds"

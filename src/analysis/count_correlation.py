@@ -377,6 +377,26 @@ def main():
         help="run only this experiment (for testing)",
     )
     parser.add_argument(
+        "--max-peaks",
+        type=int,
+        default=0,
+        metavar="N",
+        help="randomly subsample the union peaks to N before extracting "
+             "(0 = all). The atlas has 905,540 union peaks, which for a "
+             "correlation is far more precision than needed: the standard "
+             "error of r is ~0.001 at 905k and ~0.003 at 100k, against tier "
+             "gaps of order 0.1-0.3. Cost and output size scale linearly with "
+             "this, so 100000 is ~9x cheaper for no usable loss.",
+    )
+    parser.add_argument(
+        "--peak-seed",
+        type=int,
+        default=0,
+        metavar="N",
+        help="RNG seed for --max-peaks (default: 0). Fixed so a rerun extracts "
+             "the same peaks and two runs remain comparable.",
+    )
+    parser.add_argument(
         "--balanced-per-group",
         type=int,
         default=0,
@@ -450,6 +470,19 @@ def main():
             print(f"ERROR: {args.experiment!r} not in config", file=sys.stderr)
             sys.exit(1)
         experiments = {args.experiment: experiments[args.experiment]}
+
+    if args.max_peaks > 0 and args.max_peaks < len(union_peaks):
+        # Subsampled once, here, so every experiment and every fold sees the
+        # same peaks -- the vectors being correlated must line up across
+        # experiments, and a per-experiment draw would break that silently.
+        union_peaks = union_peaks.sample(
+            n=args.max_peaks, random_state=args.peak_seed
+        ).sort_values(["chrom", "start"]).reset_index(drop=True)
+        print(
+            f"Subsampled union peaks to {len(union_peaks):,} (seed "
+            f"{args.peak_seed})",
+            file=sys.stderr,
+        )
 
     if args.balanced_per_group > 0:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
