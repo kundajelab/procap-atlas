@@ -1762,9 +1762,9 @@ of the same model.
 
 ```text
 tier              n_pairs  median  frac > 0  sign test p
-same biosample          2  0.073        1.0         0.5
-same tissue            45  0.110        1.0       5.7e-14
-different tissue     1178  0.146        1.0         < 1e-300
+same biosample          2  0.080        1.0         0.5
+same tissue            45  0.125        1.0       5.7e-14
+different tissue     1178  0.175        1.0         < 1e-300
 ```
 
 **Every one of 1,178 cross-tissue pairs is positive.** The models do predict
@@ -1777,11 +1777,70 @@ noise and so offer nothing to predict (0.073, and n=2 here); same tissue has
 some (0.110); different tissue has most (0.146). A metric that confused shared
 signal for cell-type signal would not produce that ordering.
 
-Magnitude remains modest — r ≈ 0.15 is ~2% of differential variance — so the
-honest summary is *direction reliably, magnitude poorly*. That is consistent
-with edits working in matched cell types (direction is what an edit's sign
-needs) and with ProCapNet's cell-type-agnostic conclusion (magnitude is what a
-level correlation sees).
+Magnitude is modest, and `r²` is the wrong way to say so. It answers "what
+fraction of Δobs variance does a rescaling of Δpred capture", which conflates
+the model being wrong with Δobs being noisy — and a difference of two noisy
+measurements has amplified noise, so the attainable r² is far below 1. It also
+says nothing about the quantity an edit needs, which is the sign.
+
+Directional accuracy on the differential, stratified by how large the true
+difference is, says it better:
+
+```text
+|Δobs| percentile   peaks    median sign accuracy   pairs above chance
+0-50%              32,650                   0.519                 76%
+80-90%             10,026                   0.578                 88%
+95-99%              3,997                   0.662                 98%
+99-100%             1,000                   0.712                 99%
+```
+
+At the peaks with the largest true cell-type differences the model gets the
+direction right 71% of the time, rising monotonically with effect size — and
+near chance where the "difference" is mostly noise, which is the expected
+shape. So: *direction reliably where the difference is real, magnitude
+poorly*. That is consistent both with edits working in matched cell types and
+with ProCapNet's cell-type-agnostic conclusion, which a level correlation is
+what measures.
+
+### Units: both sides must be rescaled first
+
+`count_correlation.py` RPM-normalizes observed signal but leaves predictions in
+whatever count scale each model was trained on. On the real matrices that is
+not a constant factor:
+
+```text
+              row sums        tracks read depth   median value   entries < 1
+observed      ~122,000 (tight)            0.184          0.039           92%
+predicted   ~9,065,000 (4x spread)        0.879         34.014          0.13%
+```
+
+So `log1p` sat in a **linear** regime on the observed side and a
+**logarithmic** one on the predicted side — not log fold-change on either, and
+not comparable between them. Differencing then carried a per-model offset of
+roughly `log(scale_i / scale_j)`, which a correlation is immune to but sign
+accuracy is not. `--normalize within-peaks` (the default) rescales both to a
+common total first; it lifts the cross-tissue differential from 0.146 to 0.175.
+
+What remains after normalization is a property of the predictions rather than
+of units, and it is the known behaviour of local sequence models — ChromBPNet
+included — of putting some signal at inactive loci:
+
+```text
+observed:  median 0.316, 34.3% exact zeros
+predicted: median 3.762,  0% zeros
+at peaks where an experiment observes exactly zero, its own model
+predicts a median of 3.20, against 4.15 at active peaks
+```
+
+A 1.3x ratio where the truth is zero-versus-something. This is ProCapNet's
+"predisposition to predict initiation activity at regions that are inactive in
+that cell-line but active in others", and it explains the rest of this section:
+the models predict "this is a promoter" across the union set, so level
+correlations are dominated by shared signal and differential magnitude is
+capped, while the residual modulation stays lineage-correct. It also means the
+atlas-wide **union peak set is a hostile evaluation set** for cell-type
+specificity, since most of it is inactive in any given experiment — another
+reason to lead with the differential.
 
 ### The metric ProCapNet actually uses
 

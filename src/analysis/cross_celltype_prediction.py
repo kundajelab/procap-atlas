@@ -63,10 +63,27 @@ TIERS = ("matched", "same biosample", "same tissue", "different tissue")
 
 
 def load_counts(path: Path) -> pd.DataFrame:
-    """Experiments x peaks count matrix, experiments on the index."""
+    """Experiments x peaks count matrix, experiments on the index.
+
+    Rejects negative values. Counts cannot be negative -- observed signal is
+    RPM over abs()'d strands and predictions are softmax times exp(log_counts)
+    -- and a negative entry would otherwise fail silently and catastrophically:
+    normalization scales it up, `log1p` of anything at or below -1 is NaN, and
+    every correlation involving that row comes back as exactly 0.0 rather than
+    as an error. A minus-strand BigWig read without abs() would do it, since
+    this repo stores minus-strand coverage as negative values.
+    """
     df = pd.read_csv(path, sep="\t", index_col=0)
     if df.empty:
         raise ValueError(f"{path} has no rows")
+    negative = (df < 0).sum().sum()
+    if negative:
+        worst = float(df.min().min())
+        raise ValueError(
+            f"{path} has {negative:,} negative value(s), minimum {worst:.4g}. "
+            "Counts must be non-negative; check that minus-strand signal was "
+            "absolute-valued during extraction."
+        )
     return df
 
 
@@ -85,6 +102,30 @@ def take_columns(df: pd.DataFrame, cols) -> pd.DataFrame:
         missing = pd.Index(cols)[positions < 0]
         raise KeyError(f"{len(missing)} column(s) not present, e.g. {missing[0]!r}")
     return df.iloc[:, positions]
+
+
+def normalize_within_peaks(df: pd.DataFrame, total: float = 1e6) -> pd.DataFrame:
+    """Rescale each row to a common total over the peak set.
+
+    Required, because observed and predicted counts arrive on entirely
+    different scales. `count_correlation.py` RPM-normalizes observed signal
+    (row sums ~122,000, tightly clustered) but leaves predictions in whatever
+    count scale each model was trained on (row sums ~9,065,000, spanning 4x and
+    tracking read depth at Spearman 0.879).
+
+    That is not merely a constant factor. With observed values median 0.039 and
+    92% of entries below 1, `log1p` is effectively *linear* on the observed
+    side, while predicted values median 34 with 87% above 10 put it firmly in
+    its *logarithmic* regime. Correlating the two as-is compares a near-linear
+    quantity against a log one, and differencing inherits a per-model offset of
+    roughly log(scale_i / scale_j), which biases the sign of a differential
+    directly -- a correlation is immune to it, sign accuracy is not.
+
+    After this, both sides are counts-per-million within the peak set and
+    log1p means the same thing on each.
+    """
+    sums = df.sum(axis=1).replace(0, np.nan)
+    return df.div(sums, axis=0) * total
 
 
 def align(observed: pd.DataFrame, predicted: pd.DataFrame) -> tuple:
@@ -646,6 +687,16 @@ def main():
     parser.add_argument("--method", default="pearson",
                         choices=["pearson", "spearman"])
     parser.add_argument(
+        "--normalize", default="within-peaks", choices=["within-peaks", "none"],
+        help="rescale each experiment's observed and predicted counts to a "
+             "common total over the peak set before comparing (default). "
+             "Observed counts are RPM-normalized while predictions are in each "
+             "model's own count scale, 74x larger and tracking read depth, "
+             "which puts log1p in a linear regime on one side and a "
+             "logarithmic one on the other. 'none' reproduces the unnormalized "
+             "comparison.",
+    )
+    parser.add_argument(
         "--min-peak-signal", type=float, default=0.5, metavar="RPM",
         help="before ranking by specificity, drop peaks whose strongest "
              "tissue-group mean is below this (default: 0.5). Tau is inflated "
@@ -701,6 +752,16 @@ def main():
         )
 
     observed, predicted = align(load_counts(args.observed), load_counts(args.predicted))
+    if args.normalize == "within-peaks":
+        obs_total = float(observed.sum(axis=1).median())
+        pred_total = float(predicted.sum(axis=1).median())
+        print(
+            f"Normalizing within peaks: observed row sums ~{obs_total:,.0f} and "
+            f"predicted ~{pred_total:,.0f} rescaled to a common 1e6",
+            file=sys.stderr,
+        )
+        observed = normalize_within_peaks(observed)
+        predicted = normalize_within_peaks(predicted)
     print(
         f"{len(observed)} experiments x {observed.shape[1]:,} shared peaks",
         file=sys.stderr,

@@ -269,8 +269,10 @@ def tiered_inputs(tmp_path, n_peaks=300, seed=0):
     for exp in picked:
         own = rng.normal(size=n_peaks)
         truth = 2 * group_signal[tissue[exp]] + 1.5 * own
-        obs[exp] = np.expm1(np.clip(truth + rng.normal(0, 0.3, n_peaks), -5, 8))
-        pred[exp] = np.expm1(np.clip(truth + rng.normal(0, 0.3, n_peaks), -5, 8))
+        # clip at 0, not -5: expm1 of a negative is negative, and counts
+        # cannot be negative
+        obs[exp] = np.expm1(np.clip(truth + rng.normal(0, 0.3, n_peaks), 0, 8))
+        pred[exp] = np.expm1(np.clip(truth + rng.normal(0, 0.3, n_peaks), 0, 8))
     index = [f"p{i}" for i in range(n_peaks)]
     o = tmp_path / "obs.tsv"
     p = tmp_path / "pred.tsv"
@@ -927,3 +929,87 @@ def test_cli_reports_differential_prediction(tmp_path):
     for name in ("cross_celltype_differential.tsv",
                  "cross_celltype_differential_pairs.tsv"):
         assert (tmp_path / "out" / name).exists(), name
+
+
+# --- scale normalization ---------------------------------------------------
+#
+# count_correlation.py RPM-normalizes observed signal but leaves predictions in
+# each model's own trained count scale. On the real matrices that is a 74x
+# difference in row sums, with predicted totals tracking read depth at
+# Spearman 0.879 -- so log1p sat in a linear regime on one side and a
+# logarithmic one on the other, and differencing carried a per-model offset.
+
+
+def test_normalize_puts_rows_on_a_common_total():
+    df = pd.DataFrame([[1.0, 1.0], [100.0, 300.0]], index=["a", "b"])
+    out = ccp.normalize_within_peaks(df, total=1000)
+    assert out.sum(axis=1).tolist() == pytest.approx([1000.0, 1000.0])
+    assert out.loc["b"].tolist() == pytest.approx([250.0, 750.0])
+
+
+def test_normalize_preserves_within_row_proportions():
+    df = pd.DataFrame([[1.0, 2.0, 7.0]], index=["a"])
+    out = ccp.normalize_within_peaks(df)
+    assert (out.loc["a"] / out.loc["a"].sum()).tolist() == pytest.approx(
+        [0.1, 0.2, 0.7]
+    )
+
+
+def test_normalize_leaves_an_all_zero_row_as_nan_not_inf():
+    df = pd.DataFrame([[0.0, 0.0], [1.0, 1.0]], index=["dead", "b"])
+    out = ccp.normalize_within_peaks(df)
+    assert out.loc["dead"].isna().all()
+    assert np.isfinite(out.loc["b"]).all()
+
+
+def test_normalize_removes_a_per_row_scale_offset_from_differentials():
+    """A constant per-model scale shifts every differential in one direction.
+    A correlation is immune to it; sign accuracy is not."""
+    rng = np.random.default_rng(0)
+    n = 500
+    base = np.abs(rng.normal(size=n)) * 10 + 1
+    delta = rng.normal(size=n) * 0.5
+    obs = pd.DataFrame(np.vstack([base + delta, base - delta]),
+                       index=["a", "b"]).abs()
+    # model b's predictions are on a 50x larger scale than model a's
+    pred = pd.DataFrame(np.vstack([base + delta, 50 * (base - delta)]),
+                        index=["a", "b"]).abs()
+
+    raw = np.log1p(pred.to_numpy())
+    raw_delta = raw[0] - raw[1]
+    assert (raw_delta < 0).mean() > 0.95, "unnormalized: offset dominates sign"
+
+    fixed = np.log1p(ccp.normalize_within_peaks(pred).to_numpy())
+    fixed_delta = fixed[0] - fixed[1]
+    true_delta = np.log1p(obs.to_numpy())[0] - np.log1p(obs.to_numpy())[1]
+    agree = np.mean(np.sign(fixed_delta) == np.sign(true_delta))
+    assert agree > 0.9, f"normalized signs should track the truth, got {agree}"
+
+
+def test_cli_normalizes_by_default_and_can_be_turned_off(tmp_path):
+    on = run_cli(tmp_path)
+    assert on.returncode == 0, on.stderr
+    assert "Normalizing within peaks" in on.stderr
+    off = run_cli(tmp_path, "--normalize", "none")
+    assert off.returncode == 0, off.stderr
+    assert "Normalizing within peaks" not in off.stderr
+
+
+def test_load_counts_rejects_negative_values(tmp_path):
+    """Silent catastrophe otherwise: normalization scales a negative up, log1p
+    of anything <= -1 is NaN, and every correlation involving that row comes
+    back as exactly 0.0 instead of erroring. Caught by a synthetic fixture that
+    used expm1 of a clipped normal and produced -0.993."""
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame([[1.0, -0.993]], index=["a"]).to_csv(bad, sep="\t")
+    with pytest.raises(ValueError, match="negative value"):
+        ccp.load_counts(bad)
+
+
+def test_load_counts_accepts_zeros():
+    import tempfile
+
+    d = Path(tempfile.mkdtemp())
+    ok = d / "ok.tsv"
+    pd.DataFrame([[0.0, 1.0]], index=["a"]).to_csv(ok, sep="\t")
+    assert ccp.load_counts(ok).shape == (1, 2)
