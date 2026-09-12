@@ -399,8 +399,10 @@ def differential_prediction(
 
     Its own internal check is the tier ordering: predictability should scale
     with how large the true difference is. On this atlas it does -- replicate
-    pairs 0.035, same tissue 0.110, different tissue 0.159 -- since replicate
-    pairs differ only by noise and so offer nothing to predict.
+    pairs 0.080, same tissue 0.125, different tissue 0.175 -- since replicate
+    pairs differ only by noise and so offer nothing to predict. (Those are the
+    `--normalize within-peaks` values; before that rescaling the cross-tissue
+    median was 0.146.)
     """
     obs = np.log1p(observed.to_numpy(dtype=float))
     pred = np.log1p(predicted.to_numpy(dtype=float))
@@ -1093,7 +1095,10 @@ def main():
                 file=sys.stderr,
             )
 
-    print(f"\nSaved 4 tables and 2 figures to {args.out_dir}", file=sys.stderr)
+    n_tsv = len(list(args.out_dir.glob("*.tsv")))
+    n_fig = len(list(args.out_dir.glob("*.pdf")))
+    print(f"\nSaved {n_tsv} tables and {n_fig} figures to {args.out_dir}",
+          file=sys.stderr)
 
 
 if __name__ == "__main__":

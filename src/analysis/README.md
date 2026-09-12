@@ -1630,9 +1630,124 @@ peaks and every fold model:
 
 ```bash
 python src/analysis/count_correlation.py --model bpnet --device cuda \
-    --held-out-folds --balanced-per-group 3 --min-reads 10000000 \
-    --max-peaks 100000
+    --held-out-folds --min-reads 10000000 --max-peaks 100000 \
+    --out-dir figures/count_correlation_all198
 ```
+
+`224 -> 219` (one blacklisted, four uncapped) `-> 198` above 10M reads. No
+`--balanced-per-group` or `--replicates-per-group`: both are superseded by
+running everything. Give it a distinct `--out-dir`, since the default
+(`figures/count_correlation/`) holds the 50-experiment matrices. With the same
+union-peaks file and `--peak-seed 0` the subsample is identical, so the 50 are
+a strict subset of the 198 and the old numbers can be reproduced on those rows
+as a check.
+
+### Supplementary Figure: cross-cell-type prediction
+
+One figure, four panels, 2x2. The ordering is deliberate: each panel answers
+the objection the previous one raises.
+
+```text
++---------------------------+---------------------------+
+| a  tissue-naming top-k    | b  differential by tier,  |
+|    vs tau threshold       |    vs its own ceiling     |
+|    (the positive result)  |    (magnitude, not rank)  |
++---------------------------+---------------------------+
+| c  homogenization:        | d  198 x 198 matrix,      |
+|    measured vs predicted  |    ordered by tissue      |
+|    (the limitation)       |    (the raw object)       |
++---------------------------+---------------------------+
+```
+
+**Panel a — tissue naming.** x = tau quantile threshold, y = accuracy; three
+lines (top-1/3/5) with their chance rates `k/G` as dashed horizontals. Source
+`cross_celltype_topk.tsv`, already written. This leads because it is
+ordering-only: immune to units, to `log1p` regime, and to the
+predict-signal-everywhere bias, and the shared sequence component cancels *by
+construction* since every model sees the same base pairs at a given peak. It
+also has the cleanest shape — monotone in tau, 2.55x chance over all peaks
+rising to 4.83x in the top 1%:
+
+```text
+tau q    n_peaks   top1    chance   x chance
+0.00      92,826   0.150   0.0588     2.55
+0.90       9,283   0.246   0.0588     4.18
+0.99         929   0.284   0.0588     4.83
+```
+
+The monotonicity is the internal control: a metric picking up depth or batch
+structure would not track tau.
+
+**Panel b — differential prediction, ceiling-normalized.** Box or violin of
+`differential_r` by tier from `cross_celltype_differential_pairs.tsv`, with a
+second y-axis (or an overlaid band) for the replicate-derived ceiling. Tier
+ordering is itself the control — replicate pairs differ only by noise, so they
+*should* be lowest, and they are (0.080 / 0.125 / 0.175). Every one of the 1178
+cross-tissue pairs is positive.
+
+This panel is the one that reconciles the two literatures: differencing cancels
+the shared promoter program analytically, so it is the projection an edit or
+perturbation experiment measures, which is why matched-vs-unmatched can be
+decisive there while looking modest in a level correlation.
+
+**Needs one new function**, `differential_ceiling`: for pairs `(i, j)` where
+both biosamples are replicated, `corr(obs_i' - obs_j', obs_i - obs_j)`. On the
+50-experiment subset there was exactly one such quadruple; at 198 there are 30
+replicated biosamples and 289 same-biosample pairs, so this becomes a
+distribution and the "fraction of ceiling attained" can be plotted per tier
+rather than quoted as a single 28.8%.
+
+**Panel c — homogenization, measured vs predicted.** Paired bars per tier, two
+colors, restricted to tissue-specific peaks; source
+`cross_celltype_homogenization_specific.tsv`. This is ProCapNet's own
+comparison and it is where the models fail, so it belongs in the figure rather
+than in the text:
+
+```text
+specific peaks     measured   predicted
+same biosample        0.878       0.778
+same tissue           0.262       0.692
+different tissue      0.002       0.603
+```
+
+Measured signal at specific peaks is *uncorrelated* across tissues (0.002)
+while predictions stay at 0.603 — the models collapse the cell-type axis.
+Showing the all-peaks version beside it as an inset makes the point sharper,
+because there the two nearly agree (0.654 vs 0.778) and the failure is
+invisible.
+
+**Panel d — the matrix.** `cross_celltype_matrix.pdf`, already produced by
+`plot_matrix`, rows/columns ordered by tissue group with group boundaries
+drawn. At 198 x 198 individual cells stop being readable, which is fine: its
+job is to show that block structure exists at all and that the diagonal is not
+the only signal. If it reads as noise at final size, drop it to panel-a
+position in a 3-panel figure rather than shrinking it.
+
+#### What this figure does not claim
+
+The level correlations (`cross_celltype_tiers.tsv`: matched 0.482, different
+tissue 0.430) are **text, not a panel.** A 0.05 gap against a replicate
+ceiling of 0.911 is not a figure-worthy effect, and the honest reading is in
+[What the correlations measure](#what-the-correlations-measure-and-against-what-ceiling):
+an observed same-tissue *measurement* (0.785) beats the matched model, so on
+level correlation alone another sample of the same lineage is the better
+predictor. Panels a-c exist because they are the projections where the models
+do carry cell-type information; putting the level correlation in the figure
+would invite the reader to weigh it equally.
+
+Also deliberately absent: the depth confound is reported in text (matched
+accuracy vs `log10` depth, Spearman 0.366) and needs a depth-matched check
+before any tier gap is quoted, but it is a caveat, not a panel.
+
+#### Build order
+
+1. Run the all-198 extraction (above).
+2. Verify the 50-experiment numbers reproduce on the subset rows.
+3. Implement `differential_ceiling` + its test.
+4. Add `plot_topk`, `plot_differential_tiers`, `plot_homogenization`; only
+   `plot_matrix` and `plot_tiers` exist today.
+5. Assemble, then hand over per-panel PDFs for manual restyling, as with
+   Figure 2.
 
 ### Thresholding on tissue specificity
 
@@ -1901,10 +2016,25 @@ So the model recovers roughly **29% of the reproducible cell-type difference**
 between those two — a far more meaningful statement than r = 0.22 alone, and
 notably close to the 28% top-1 tissue-naming accuracy.
 
-This rests on a single pair, which is why the extraction should be rerun with
-`--replicates-per-group 2`: it lifts replicate pairs from 2 to 26 for 18 extra
-experiments, where reaching 22 pairs by raising `--balanced-per-group` to 8
-would cost 57.
+This rests on a single pair, which is why it is not yet quotable. The all-198
+extraction fixes it outright rather than by subset engineering: the
+`same biosample` tier goes from 4 pairs to **289**, over 30 replicated
+biosamples, so the ceiling becomes a distribution rather than one number.
+`--replicates-per-group` was the earlier workaround and is superseded — see
+[Run all 198, not a subset](#run-all-198-not-a-subset).
+
+Tier sizes at full scale, for reference when reading any of the tables below:
+
+```text
+matched            198
+same biosample     289   (30 replicated biosamples)
+same tissue      1,666   (17 of 18 groups have >=2 experiments)
+different tissue 17,548
+```
+
+Note that `differential_ceiling` is **not implemented** — the 0.765 above was
+computed ad hoc. It is the one piece of new code the supplementary figure
+needs.
 
 ### Units: both sides must be rescaled first
 
