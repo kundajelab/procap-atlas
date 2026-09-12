@@ -42,6 +42,7 @@ Usage:
 """
 
 import argparse
+import itertools
 import sys
 from pathlib import Path
 
@@ -442,6 +443,110 @@ def summarize_differential(pairs: pd.DataFrame) -> pd.DataFrame:
             "q75": round(float(sub.quantile(0.75)), 4),
             "frac_positive": round(float((sub > 0).mean()), 4),
             "sign_test_p": sign_test(int((sub > 0).sum()), len(sub)),
+        })
+    return pd.DataFrame(rows)
+
+
+def replicate_pairs(
+    experiments, biosamples: dict[str, str], max_per_biosample: int = 3
+) -> dict[str, list[tuple[str, str]]]:
+    """Disjoint replicate pairs within each biosample, deterministically.
+
+    Experiments are sorted by accession and paired consecutively --
+    `(e0, e1), (e2, e3), ...` -- so no experiment appears in two pairs from the
+    same biosample. Reusing one experiment across pairs would make the
+    resulting ceiling estimates share noise and look more concentrated than
+    they are. Capped per biosample because the atlas is lopsided: HCT116 alone
+    has 15 experiments, and taking every combination would let it dominate.
+    """
+    by_biosample: dict[str, list[str]] = {}
+    for exp in experiments:
+        b = biosamples.get(exp)
+        if b is not None:
+            by_biosample.setdefault(b, []).append(exp)
+    out = {}
+    for b, exps in by_biosample.items():
+        exps = sorted(exps)
+        pairs = [(exps[i], exps[i + 1]) for i in range(0, len(exps) - 1, 2)]
+        if pairs:
+            out[b] = pairs[:max_per_biosample]
+    return out
+
+
+def differential_ceiling(
+    observed: pd.DataFrame,
+    predicted: pd.DataFrame,
+    groups: dict[str, str],
+    biosamples: dict[str, str],
+    max_per_biosample: int = 3,
+) -> pd.DataFrame:
+    """How much of the *reproducible* cell-type difference the models recover.
+
+    A differential correlation has no natural scale -- r = 0.18 is
+    uninterpretable without knowing how much of that difference is measurable
+    at all. Differencing two noisy quantities amplifies noise, so the ceiling
+    is well below 1 and has to be measured rather than assumed.
+
+    Given two biosamples that are each replicated, `obs_i - obs_j` and
+    `obs_i' - obs_j'` are two independent measurements of the same biological
+    difference. Their correlation is the most any predictor could achieve; the
+    remainder is measurement noise. `attained = model / ceiling` is then the
+    fraction of the reproducible difference the model recovers, which is
+    comparable across tiers and across specificity strata in a way the raw
+    correlation is not.
+
+    Requires replication on both sides, so it is only estimable at atlas
+    scale: the 50-experiment subset supported exactly one quadruple, while the
+    198-experiment run has 30 replicated biosamples and 435 biosample pairs.
+    """
+    obs = np.log1p(observed.to_numpy(dtype=float))
+    pred = np.log1p(predicted.to_numpy(dtype=float))
+    idx = {e: i for i, e in enumerate(observed.index)}
+    reps = replicate_pairs(observed.index, biosamples, max_per_biosample)
+
+    def corr(a, b):
+        a = a - a.mean()
+        b = b - b.mean()
+        na, nb = np.linalg.norm(a), np.linalg.norm(b)
+        return float(a @ b / (na * nb)) if na > 0 and nb > 0 else np.nan
+
+    rows = []
+    for b1, b2 in itertools.combinations(sorted(reps), 2):
+        for (i, ip) in reps[b1]:
+            for (j, jp) in reps[b2]:
+                a, bb, c, d = idx[i], idx[ip], idx[j], idx[jp]
+                ceiling = corr(obs[a] - obs[c], obs[bb] - obs[d])
+                model = corr(pred[a] - pred[c], obs[a] - obs[c])
+                rows.append({
+                    "biosample_a": b1,
+                    "biosample_b": b2,
+                    "experiment_a": i,
+                    "experiment_b": j,
+                    "tier": tier_of(i, j, groups, biosamples),
+                    "ceiling": round(ceiling, 4),
+                    "model": round(model, 4),
+                    "attained": (round(model / ceiling, 4)
+                                 if ceiling and ceiling > 0 else np.nan),
+                })
+    return pd.DataFrame(rows)
+
+
+def summarize_ceiling(quads: pd.DataFrame) -> pd.DataFrame:
+    """Median ceiling, model differential and attained fraction, by tier."""
+    rows = []
+    for tier in TIERS:
+        sub = quads[quads["tier"] == tier]
+        if not len(sub):
+            continue
+        att = sub["attained"].dropna()
+        rows.append({
+            "tier": tier,
+            "n_quadruples": len(sub),
+            "median_ceiling": round(float(sub["ceiling"].median()), 4),
+            "median_model": round(float(sub["model"].median()), 4),
+            "median_attained": round(float(att.median()), 4) if len(att) else np.nan,
+            "attained_q25": round(float(att.quantile(0.25)), 4) if len(att) else np.nan,
+            "attained_q75": round(float(att.quantile(0.75)), 4) if len(att) else np.nan,
         })
     return pd.DataFrame(rows)
 
@@ -922,6 +1027,29 @@ def main():
             file=sys.stderr,
         )
         print(diff_summary.to_string(index=False), file=sys.stderr)
+
+        ceiling = differential_ceiling(observed, predicted, groups, biosamples)
+        if len(ceiling):
+            ceiling.to_csv(
+                args.out_dir / "cross_celltype_differential_ceiling.tsv",
+                sep="\t", index=False,
+            )
+            ceil_summary = summarize_ceiling(ceiling)
+            ceil_summary.to_csv(
+                args.out_dir / "cross_celltype_ceiling_summary.tsv",
+                sep="\t", index=False,
+            )
+            n_bs = len(set(ceiling["biosample_a"]) | set(ceiling["biosample_b"]))
+            print(
+                f"\nCeiling for the differential, from {len(ceiling)} "
+                f"quadruples over {n_bs} replicated biosamples: obs_i - obs_j "
+                "against obs_i' - obs_j' is two independent measurements of "
+                "the same difference, so their correlation is the most any "
+                "predictor could reach. 'attained' is the fraction of the "
+                "reproducible difference the model recovers:",
+                file=sys.stderr,
+            )
+            print(ceil_summary.to_string(index=False), file=sys.stderr)
         print(
             "\nHow much cell-type difference the models reproduce "
             "(ProCapNet's comparison): predicted-vs-predicted should be no "

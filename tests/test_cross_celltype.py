@@ -1248,3 +1248,119 @@ def test_tier_summary_omits_balancing_without_groups():
     pairs = pd.DataFrame([dict(tier="matched", correlation=0.5)])
     out = ccp.summarize_tiers(pairs)
     assert "median_group_balanced" not in out.columns
+
+
+# --- differential ceiling ----------------------------------------------------
+
+
+def test_replicate_pairs_are_disjoint_within_a_biosample():
+    bios = {f"e{i}": "B" for i in range(5)}
+    pairs = ccp.replicate_pairs([f"e{i}" for i in range(5)], bios)
+    used = [e for pair in pairs["B"] for e in pair]
+    assert len(used) == len(set(used)), "an experiment was reused across pairs"
+    assert len(pairs["B"]) == 2, "5 experiments give 2 disjoint pairs, not 3"
+
+
+def test_replicate_pairs_skips_unreplicated_biosamples():
+    bios = {"a": "A", "b": "B", "c": "B"}
+    pairs = ccp.replicate_pairs(["a", "b", "c"], bios)
+    assert "A" not in pairs and pairs["B"] == [("b", "c")]
+
+
+def test_replicate_pairs_is_capped_per_biosample():
+    bios = {f"e{i}": "B" for i in range(12)}
+    pairs = ccp.replicate_pairs([f"e{i}" for i in range(12)], bios,
+                                max_per_biosample=2)
+    assert len(pairs["B"]) == 2
+
+
+def test_replicate_pairs_is_order_independent():
+    exps = [f"e{i}" for i in range(6)]
+    bios = {e: "B" for e in exps}
+    assert (ccp.replicate_pairs(exps, bios)
+            == ccp.replicate_pairs(list(reversed(exps)), bios))
+
+
+def test_a_predictor_as_good_as_a_replicate_attains_exactly_the_ceiling():
+    """The definition, stated as a test.
+
+    If a model's prediction for a1 is literally another replicate's
+    measurement (a2), then its differential correlation *is* the ceiling, so
+    attained must be exactly 1.0. Anything else means `model` and `ceiling`
+    are not being computed on the same contrast.
+    """
+    rng = np.random.default_rng(11)
+    n = 300
+    sig_a, sig_b = rng.normal(size=n) * 10, rng.normal(size=n) * 10
+    rows = {
+        "a1": np.abs(sig_a + rng.normal(size=n)),
+        "a2": np.abs(sig_a + rng.normal(size=n)),
+        "b1": np.abs(sig_b + rng.normal(size=n)),
+        "b2": np.abs(sig_b + rng.normal(size=n)),
+    }
+    obs = pd.DataFrame(rows).T
+    obs.columns = [f"p{i}" for i in range(n)]
+    pred = obs.copy()
+    pred.loc["a1"] = obs.loc["a2"].to_numpy()   # predict a1 using replicate a2
+    pred.loc["b1"] = obs.loc["b2"].to_numpy()
+    groups = {"a1": "ga", "a2": "ga", "b1": "gb", "b2": "gb"}
+    bios = {"a1": "A", "a2": "A", "b1": "B", "b2": "B"}
+    q = ccp.differential_ceiling(obs, pred, groups, bios)
+    assert len(q) == 1
+    assert q.at[0, "ceiling"] > 0.5, "replicates should agree on the difference"
+    assert q.at[0, "attained"] == pytest.approx(1.0, abs=1e-3)
+
+
+def test_ceiling_is_high_when_replicates_agree_and_low_when_they_do_not():
+    rng = np.random.default_rng(0)
+    n = 400
+    signal_a = rng.normal(size=n) * 10
+    signal_b = rng.normal(size=n) * 10
+    groups = {"a1": "ga", "a2": "ga", "b1": "gb", "b2": "gb"}
+    bios = {"a1": "A", "a2": "A", "b1": "B", "b2": "B"}
+
+    def frame(noise):
+        return pd.DataFrame(
+            np.abs(np.vstack([
+                signal_a + rng.normal(size=n) * noise,
+                signal_a + rng.normal(size=n) * noise,
+                signal_b + rng.normal(size=n) * noise,
+                signal_b + rng.normal(size=n) * noise,
+            ])),
+            index=["a1", "a2", "b1", "b2"],
+            columns=[f"p{i}" for i in range(n)],
+        )
+
+    clean = ccp.differential_ceiling(frame(0.1), frame(0.1), groups, bios)
+    noisy = ccp.differential_ceiling(frame(20.0), frame(20.0), groups, bios)
+    assert clean.at[0, "ceiling"] > 0.9
+    assert noisy.at[0, "ceiling"] < clean.at[0, "ceiling"]
+
+
+def test_differential_ceiling_is_empty_without_replication_on_both_sides():
+    exps = ["a1", "a2", "b1"]
+    obs = counts_frame(exps, n_peaks=50)
+    groups = {"a1": "ga", "a2": "ga", "b1": "gb"}
+    bios = {"a1": "A", "a2": "A", "b1": "B"}
+    assert ccp.differential_ceiling(obs, obs, groups, bios).empty
+
+
+def test_summarize_ceiling_orders_tiers_and_reports_quadruple_counts():
+    quads = pd.DataFrame({
+        "tier": ["different tissue", "same tissue", "different tissue"],
+        "ceiling": [0.8, 0.6, 0.7],
+        "model": [0.2, 0.1, 0.3],
+        "attained": [0.25, 0.1667, 0.4286],
+    })
+    out = ccp.summarize_ceiling(quads)
+    assert list(out["tier"]) == ["same tissue", "different tissue"]
+    assert list(out["n_quadruples"]) == [1, 2]
+
+
+def test_attained_is_nan_rather_than_infinite_at_a_zero_ceiling():
+    quads = pd.DataFrame({
+        "tier": ["same tissue"], "ceiling": [0.0], "model": [0.2],
+        "attained": [np.nan],
+    })
+    out = ccp.summarize_ceiling(quads)
+    assert np.isnan(out.at[0, "median_attained"])

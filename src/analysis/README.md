@@ -131,6 +131,7 @@ explicitly. The profile head is not yet built (see Pending below).
 | Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
 | Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
 | Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
+| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; 3 of 4 panel plotters unwritten |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
 
 Figure 1e already shows a neuron-specific gene carrying neuron-specific
@@ -1670,9 +1671,9 @@ rising to 4.83x in the top 1%:
 
 ```text
 tau q    n_peaks   top1    chance   x chance
-0.00      92,826   0.150   0.0588     2.55
-0.90       9,283   0.246   0.0588     4.18
-0.99         929   0.284   0.0588     4.83
+0.00      93,018   0.178   0.0588      3.0
+0.90       9,302   0.316   0.0588      5.4
+0.99         931   0.392   0.0588      6.7
 ```
 
 The monotonicity is the internal control: a metric picking up depth or batch
@@ -1682,20 +1683,21 @@ structure would not track tau.
 `differential_r` by tier from `cross_celltype_differential_pairs.tsv`, with a
 second y-axis (or an overlaid band) for the replicate-derived ceiling. Tier
 ordering is itself the control — replicate pairs differ only by noise, so they
-*should* be lowest, and they are (0.080 / 0.125 / 0.175). Every one of the 1178
-cross-tissue pairs is positive.
+*should* be lowest, and they are (0.064 / 0.139 / 0.177). 17,546 of the 17,548
+cross-tissue pairs are positive.
 
 This panel is the one that reconciles the two literatures: differencing cancels
 the shared promoter program analytically, so it is the projection an edit or
 perturbation experiment measures, which is why matched-vs-unmatched can be
 decisive there while looking modest in a level correlation.
 
-**Needs one new function**, `differential_ceiling`: for pairs `(i, j)` where
-both biosamples are replicated, `corr(obs_i' - obs_j', obs_i - obs_j)`. On the
-50-experiment subset there was exactly one such quadruple; at 198 there are 30
-replicated biosamples and 289 same-biosample pairs, so this becomes a
-distribution and the "fraction of ceiling attained" can be plotted per tier
-rather than quoted as a single 28.8%.
+`differential_ceiling` (implemented Sep 2026) supplies the second axis: for
+biosamples that are each replicated, `corr(obs_i' - obs_j', obs_i - obs_j)` is
+two independent measurements of the same difference. The 50-experiment subset
+supported exactly one such quadruple; at 198 there are **1,058 quadruples over
+30 replicated biosamples**, so the ceiling is a distribution and "attained"
+can be plotted per tier: **26.8% cross-tissue (IQR 23-32%)**, 23.4%
+same-tissue. Plot `attained` on the second axis, not the raw ceiling.
 
 **Panel c — homogenization, measured vs predicted.** Paired bars per tier, two
 colors, restricted to tissue-specific peaks; source
@@ -1704,17 +1706,17 @@ comparison and it is where the models fail, so it belongs in the figure rather
 than in the text:
 
 ```text
-specific peaks     measured   predicted
-same biosample        0.878       0.778
-same tissue           0.262       0.692
-different tissue      0.002       0.603
+specific peaks      measured   predicted
+same biosample         0.831        ----
+same tissue            0.210        ----
+different tissue       0.013       0.575
+ubiquitous, diff.      0.798       0.896
 ```
 
-Measured signal at specific peaks is *uncorrelated* across tissues (0.002)
-while predictions stay at 0.603 — the models collapse the cell-type axis.
-Showing the all-peaks version beside it as an inset makes the point sharper,
-because there the two nearly agree (0.654 vs 0.778) and the failure is
-invisible.
+Measured signal at specific peaks is essentially *uncorrelated* across tissues
+(0.013) while predictions stay at 0.575 — the models compress the cell-type
+axis. Show the ubiquitous stratum beside it, because there the two nearly
+agree (0.798 vs 0.896) and the failure is invisible.
 
 **Panel d — the matrix.** `cross_celltype_matrix.pdf`, already produced by
 `plot_matrix`, rows/columns ordered by tissue group with group boundaries
@@ -1725,27 +1727,30 @@ position in a 3-panel figure rather than shrinking it.
 
 #### What this figure does not claim
 
-The level correlations (`cross_celltype_tiers.tsv`: matched 0.482, different
-tissue 0.430) are **text, not a panel.** A 0.05 gap against a replicate
-ceiling of 0.911 is not a figure-worthy effect, and the honest reading is in
+The level correlations (`cross_celltype_tiers.tsv`: matched 0.461, different
+tissue 0.405) are **text, not a panel** — and at 198 the pooled `same tissue`
+tier actually falls *below* `different tissue`, a composition artifact of one
+41-experiment group. A 0.06 gap against a replicate ceiling of 0.899 is not a
+figure-worthy effect, and the honest reading is in
 [What the correlations measure](#what-the-correlations-measure-and-against-what-ceiling):
-an observed same-tissue *measurement* (0.785) beats the matched model, so on
-level correlation alone another sample of the same lineage is the better
+an observed same-tissue *measurement* (0.679) beats the matched model (0.461),
+so on level correlation alone another sample of the same lineage is the better
 predictor. Panels a-c exist because they are the projections where the models
 do carry cell-type information; putting the level correlation in the figure
 would invite the reader to weigh it equally.
 
 Also deliberately absent: the depth confound is reported in text (matched
-accuracy vs `log10` depth, Spearman 0.366) and needs a depth-matched check
+accuracy vs `log10` depth, Spearman 0.404) and needs a depth-matched check
 before any tier gap is quoted, but it is a caveat, not a panel.
 
 #### Build order
 
-1. Run the all-198 extraction (above).
-2. Verify the 50-experiment numbers reproduce on the subset rows.
-3. Implement `differential_ceiling` + its test.
-4. Add `plot_topk`, `plot_differential_tiers`, `plot_homogenization`; only
-   `plot_matrix` and `plot_tiers` exist today.
+1. ~~Run the all-198 extraction.~~ Done; `figures/count_correlation_all198/`.
+2. ~~Verify the 50-experiment numbers reproduce on the subset rows.~~ Done:
+   observed byte-identical, predicted to 1.6e-5 relative.
+3. ~~Implement `differential_ceiling` + its test.~~ Done.
+4. **Next:** add `plot_topk`, `plot_differential_tiers`,
+   `plot_homogenization`; only `plot_matrix` and `plot_tiers` exist today.
 5. Assemble, then hand over per-panel PDFs for manual restyling, as with
    Figure 2.
 
@@ -1850,7 +1855,7 @@ python src/analysis/count_correlation.py --model bpnet --device cuda \
     --held-out-folds --min-reads 10000000 --max-peaks 100000
 ```
 
-At 4.1x the extraction cost of 50 experiments it buys far more than four times
+At 4.1x the extraction cost of 50 experiments it bought far more than four times
 the analysis:
 
 ```text
@@ -1913,20 +1918,20 @@ Over 17 tissue groups with at least two experiments each:
 
 ```text
 tau quantile   peaks   median rank   top1    top3    top5
-0.00 (all)    92,826             6  0.150   0.333   0.472
-0.50          46,413             5  0.176   0.369   0.504
-0.80          18,566             5  0.218   0.418   0.548
-0.90           9,283             4  0.246   0.445   0.572
-0.95           4,642             4  0.273   0.470   0.595
-0.99             929             3  0.284   0.509   0.625
+0.00 (all)    93,018             6  0.178   0.366   0.499
+0.50          46,509             5  0.217   0.416   0.545
+0.80          18,604             4  0.272   0.479   0.603
+0.90           9,302             3  0.316   0.520   0.639
+0.95           4,651             3  0.363   0.570   0.677
+0.99             931             2  0.392   0.603   0.707
 chance                              0.059   0.176   0.294
 ```
 
 **At the most tissue-specific loci the models name the correct tissue out of 17
-in 28% of cases — 4.8x chance — and place it in their top 3 half the time, with
-a median rank of 3.** Accuracy rises monotonically with tau, which is the
+in 39% of cases — 6.7x chance — and place it in their top 3 60% of the time,
+with a median rank of 2.** Accuracy rises monotonically with tau, which is the
 expected shape: the more tissue-specific a locus is, the more there is to get
-right. Even over all peaks it is 2.5x chance.
+right. Even over all peaks it is 3.0x chance.
 
 This is the number to lead a supplementary panel with. It is interpretable
 without any of the caveats the correlations need, and it states the positive
@@ -1954,20 +1959,19 @@ of the same model.
 
 ```text
 tier              n_pairs  median  frac > 0  sign test p
-same biosample          2  0.080        1.0         0.5
-same tissue            45  0.125        1.0       5.7e-14
-different tissue     1178  0.175        1.0         < 1e-300
+same biosample        289  0.064      0.979       1.6e-75
+same tissue          1666  0.139      0.999           ~0
+different tissue    17548  0.177     >0.999           ~0
 ```
 
-**Every one of 1,178 cross-tissue pairs is positive.** The models do predict
-the direction of cell-type differences; the level correlation simply cannot see
-it.
+**17,546 of 17,548 cross-tissue pairs are positive.** The models do predict the
+direction of cell-type differences; the level correlation simply cannot see it.
 
 The tier ordering is the internal check, and it comes out right: predictability
 scales with how large the true difference is. Replicate pairs differ only by
-noise and so offer nothing to predict (0.073, and n=2 here); same tissue has
-some (0.110); different tissue has most (0.146). A metric that confused shared
-signal for cell-type signal would not produce that ordering.
+noise and so offer nothing to predict (0.064); same tissue has some (0.139);
+different tissue has most (0.177). A metric that confused shared signal for
+cell-type signal would not produce that ordering.
 
 Magnitude is modest, and `r²` is the wrong way to say so. It answers "what
 fraction of Δobs variance does a rescaling of Δpred capture", which conflates
@@ -2125,39 +2129,175 @@ cross-cell-line range (0.5-0.71) is lower than our different-tissue median
 (0.737), as expected: six deliberately distinct cell lines differ more than a
 draw across 18 tissue groups that includes many related ones.
 
-### Measured results (50 experiments, 99,907 peaks, held-out folds)
+### Measured results (198 experiments, 99,907 peaks, held-out folds)
 
-Pooled over all peaks the tiers are nearly flat — matched 0.460, same
-biosample 0.472, same tissue 0.437, different tissue 0.423 — so the headline
-number is not a big gap. The structure is in the stratification. With the
-default 0.5 RPM signal floor, 5,092 peaks per decile:
+Superseded the 50-experiment subset in Sep 2026. The 50 are a strict subset:
+observed counts reproduce byte-identically and predictions agree to 1.6e-5
+relative (float32 rounding), so the two runs are directly comparable.
+
+```bash
+python src/analysis/cross_celltype_prediction.py \
+    --observed figures/count_correlation_all198/observed_counts.tsv \
+    --predicted figures/count_correlation_all198/predicted_counts.tsv \
+    --out-dir figures/cross_celltype_all198
+```
+
+Tier sizes: 198 matched, 578 same-biosample, 3,332 same-tissue, 35,096
+different-tissue **directed** (model *i* on experiment *j*) pairs. The
+differential and ceiling tables are **undirected** and so report half as many
+— 289 same-biosample, 1,666 same-tissue, 17,548 different-tissue. Both are
+correct; they count different objects, and the factor of two between the two
+sets of tables is not a bug.
+
+#### The pooled level correlation inverts, and should not be quoted
+
+```text
+tier               median   group-balanced
+matched            0.4605           0.4741
+same biosample     0.4308           0.4376
+same tissue        0.3959           0.4440
+different tissue   0.4047           0.4047
+```
+
+Pooled, `same tissue` (0.396) falls **below** `different tissue` (0.405) —
+the tier ordering breaks. Group-balanced it does not (0.444 vs 0.405). This is
+Simpson's paradox, and it has a single identifiable cause:
+
+```text
+group           same-tissue median   pairs   share of tier
+blood_immune                 0.314   1,518            46%
+bone                         0.352       2             0%
+...other 15 groups          >0.405   1,812            54%
+```
+
+Only 2 of 17 groups fall below the different-tissue median, and `blood_immune`
+holds 1,518 of those 1,520 pairs — 41 experiments in one group generating 46%
+of the same-tissue tier. Its observed same-tissue agreement is mid-range
+(0.619, 3rd lowest of 17) while its *model* same-tissue agreement is the
+lowest by a wide margin, so this is not simply low biological reproducibility
+in immune samples.
+
+The practical consequence: **the pooled level correlation is not a usable
+statistic on this atlas**, and neither is the tier gap derived from it. Quote
+the group-balanced median, or better, quote the stratified and differential
+results below. This is why the level correlation is text rather than a
+supplementary panel.
+
+#### The dissociation, which does hold
+
+With the default 0.5 RPM signal floor, 9,302 peaks per decile:
 
 ```text
 stratum      matched  same biosample  same tissue  different  matched/diff
-specific       0.087           0.149        0.046      0.010         8.6x
-ubiquitous     0.735           0.762        0.719      0.714         1.03x
+specific       0.081           0.085        0.040      0.013         6.4x
+ubiquitous     0.734           0.695        0.691      0.712         1.03x
 ```
 
-Per-stratum sign tests over models, which is the statistic to quote since
-pooled pairs share models:
+Per-stratum sign tests over models, the statistic to quote since pooled pairs
+share models:
 
 ```text
-specific     47/50 models beat their median different-tissue pair   p = 3.7e-11
-ubiquitous   36/50                                                  p = 0.0026
+specific     180/198 models beat their median different-tissue pair  p = 8.5e-35
+ubiquitous   122/198                                                 p = 0.0013
 ```
 
 **The dissociation is the finding.** At ubiquitous peaks the models are
-accurate (r ~ 0.72) and entirely interchangeable — cell-type identity buys
-1.03x, so that accuracy reflects a shared core-promoter program rather than
-cell-type knowledge. At tissue-specific peaks the models are weak in absolute
-terms (r ~ 0.09) but strongly discriminating, and `same tissue` lands between
-matched and different rather than with different, so transfer degrades with
-lineage distance instead of falling off a cliff. That gradient is what
-distinguishes learned lineage-relevant sequence features from memorization of
-one sample.
+accurate (r ~ 0.71) and entirely interchangeable — cell-type identity buys
+1.03x — so that accuracy reflects a shared core-promoter program rather than
+cell-type knowledge. At specific peaks they are weak absolutely (r ~ 0.08) but
+strongly discriminating at 6.4x. Note that at 198 the specific-stratum tiers
+are *not* cleanly monotone (same biosample 0.085 ~ matched 0.081), which the
+50-experiment run made look cleaner than it is.
 
-Note both tiers are significant by sign test even at 1.03x: the test is
-sensitive to direction, not size. Quote the ratios.
+Both tiers are significant by sign test even at 1.03x: the test is sensitive
+to direction, not size. Quote the ratios.
+
+#### Tissue naming: the strongest result, and it strengthened
+
+```text
+tau quantile   n_peaks   median rank   top-1   x chance   top-5
+0.00            93,018             6   0.178       3.0x   0.499
+0.50            46,509             5   0.217       3.7x   0.545
+0.80            18,604             4   0.272       4.6x   0.603
+0.90             9,302             3   0.316       5.4x   0.639
+0.95             4,651             3   0.363       6.2x   0.677
+0.99               931             2   0.392       6.7x   0.707
+```
+
+17 groups, so chance is 0.0588. Every number improved over the 50-experiment
+run (top-1 at tau>=0.99 was 0.284, now 0.392) because group means are
+estimated from more experiments. The median rank of the true group falls from
+6th to 2nd of 17 across the tau range, and the monotonicity in tau is the
+internal control — a metric tracking depth or batch structure would not
+follow tau.
+
+#### Differential prediction and its ceiling
+
+```text
+tier               n_pairs   median   frac positive
+same biosample         289   0.0638           0.979
+same tissue          1,666   0.1387           0.999
+different tissue    17,548   0.1772          >0.999
+```
+
+The ordering is the control and it holds: replicate pairs differ only by
+noise, so they are correctly lowest. 17,546 of 17,548 cross-tissue pairs are
+positive.
+
+Against the measured ceiling, from 1,058 quadruples over 30 replicated
+biosamples:
+
+```text
+tier               quadruples   ceiling   model   attained   IQR
+same tissue               102    0.6056  0.1337     23.4%    18-29%
+different tissue          956    0.6985  0.1804     26.8%    23-32%
+```
+
+So the models recover roughly **27% of the reproducible cross-tissue
+difference**. The earlier single-quadruple estimate (28.8%) sat inside this
+IQR, so it was imprecise rather than wrong. Do not reintroduce the claim that
+this figure is "notably close" to top-1 tissue naming — at 198 those are 27%
+and 39%, and the resemblance at 50 was a coincidence.
+
+#### Where the models fail: homogenization
+
+Predicted-vs-predicted should be no more similar across cell types than
+measured-vs-measured. At tissue-specific peaks it is far more similar:
+
+```text
+specific peaks     measured   predicted
+same biosample        0.831       ----
+same tissue           0.210       ----
+different tissue      0.013       0.575
+ubiquitous peaks
+different tissue      0.798       0.896
+```
+
+Measured signal at specific peaks is essentially **uncorrelated** across
+tissues (0.013) while predictions stay at 0.575 — the models compress the
+cell-type axis. At ubiquitous peaks the two nearly agree (0.798 vs 0.896) and
+the failure is invisible, which is why the specific stratum has to be shown.
+
+A consensus of *other experiments' measurements* also beats the matched model
+at specific peaks (0.257 vs 0.081, model wins only 24/198, p = 2.9e-29). That
+belongs in the text; it is the strongest single caveat on the whole analysis.
+
+#### Confounds that got worse at full scale
+
+Matched accuracy vs `log10` read depth is Spearman **0.404** over 198 models
+(was 0.366 over 50). Depth also differs by tissue group, so any tier gap
+quoted from the level correlations needs a depth-matched check first — another
+reason to lead with tissue naming and the ceiling-normalized differential,
+neither of which is a level correlation.
+
+#### Harmless numerical warnings
+
+Running `correlation_matrix` under `np.seterr(all="warn")` emits "divide by
+zero / overflow / invalid encountered in matmul". These are spurious FPE flags
+set by padded SIMD lanes in the BLAS kernel, not a numerical problem: the
+diagonal comes back at 1.0 to within 1e-12 and every off-diagonal entry is
+finite and in range. `_standardize` already guards zero-variance rows. The
+script's own run does not emit them.
 
 ### What the correlations measure, and against what ceiling
 
