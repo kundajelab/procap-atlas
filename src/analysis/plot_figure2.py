@@ -58,6 +58,12 @@ SCHEME_STYLE = {
 # Tissue labels as they should read in a figure, not as _biosample_groups.py
 # spells them internally.
 GROUP_LABEL = {
+    # Haematopoietic lineages, split out of the former "blood_immune" group.
+    "lymphoid_t": "T / NK",
+    "lymphoid_b": "B lymphoid",
+    "myeloid_erythroid": "myeloid / erythroid",
+    "lymphoid_bulk": "lymphoid tissue",
+    # Retained so captions rendered from pre-split outputs still resolve.
     "blood_immune": "blood / immune",
     "stem_ipsc": "stem / iPSC",
     "neural": "neural",
@@ -84,6 +90,10 @@ GROUP_LABEL = {
 # ("blood / immune + GI tract + metastatic") is wider than the logo above it
 # and collides with its neighbours.
 SHORT_GROUP_LABEL = {
+    "lymphoid_t": "T/NK",
+    "lymphoid_b": "B",
+    "myeloid_erythroid": "myeloid",
+    "lymphoid_bulk": "lymph",
     "blood_immune": "blood",
     "gi_tract": "GI",
     "liver_biliary": "liver",
@@ -268,8 +278,17 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
 
     n = len(rows)
     n_sub = max(1, -(-n // per_row))
+    # Row spacing has to follow the tallest caption, not a constant. Restricted
+    # motifs carry three lines (name / lineage / n exp) against the ubiquitous
+    # panel's two, and at a fixed hspace the third line was drawn straight
+    # through the logos of the row above.
+    caption_lines = max(
+        (str(label_fn(r)).count("\n") + 1 for r in rows.itertuples()),
+        default=1,
+    )
+    hspace = 1.05 + 0.45 * max(0, caption_lines - 2)
     inner = GridSpecFromSubplotSpec(
-        n_sub, per_row, subplot_spec=spec, wspace=0.30, hspace=1.05
+        n_sub, per_row, subplot_spec=spec, wspace=0.30, hspace=hspace
     )
     drew = 0
     for i, r in enumerate(rows.itertuples()):

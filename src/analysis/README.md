@@ -140,6 +140,14 @@ motifs, so it is the single-locus counterpart to these atlas-scale panels.
 The three commands that produced the reported numbers:
 
 ```bash
+# 2c: lineage-restricted and ubiquitous exemplars (--max-groups 2, see below)
+python src/analysis/select_motif_exemplars.py --head count --max-groups 2 \
+    --per-group 3 --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5 \
+    --logo-paths compendium/motifcompendium_count_cluster_logo_paths.tsv \
+    --logo-root compendium/
+python src/analysis/plot_figure2.py --head count --n-restricted 14 \
+    --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5
+
 # 2a: discovery concentration, both group levels
 python src/analysis/motif_group_concentration.py --head count --group-level tissue
 python src/analysis/motif_group_concentration.py --head count --group-level biosample
@@ -160,8 +168,8 @@ derived in the section linked in the right-hand column.
 | Claim | Value | Where |
 | --- | --- | --- |
 | Lexicon size (prevalence ≥ 2) | 343 clusters of the 869 seen in the 198-experiment analysis universe (945 in the raw 219-experiment build) | [Rarefaction](#motif-lexicon-rarefaction) |
-| Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.820 tissue / 0.918 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
-| Confinement is lineage, not replication | 49 single-group clusters vs 8.82 expected exactly (`p = 1.1e-25`) or 8.31 under the swap null (`p < 0.001`); 41 of those 49 span ≥2 biosamples within one tissue | [Concentration](#discovery-concentration) |
+| Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.811 tissue / 0.918 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
+| Confinement is lineage, not replication | 37 single-group clusters vs 6.01 expected exactly (`p = 2.5e-20`) or 6.07 under the swap null (`p < 0.001`), over 21 tissue groups | [Concentration](#discovery-concentration) |
 | Small studies miss most of the lexicon | 6.8% of the lexicon recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
 | Tissue diversity matters, but second to count | single-tissue sampling recovers ~14–17% fewer motifs at matched k | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
 | Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates | [Redundancy](#measured-results) |
@@ -385,7 +393,7 @@ side too: at least 55% is missed at k=5 under *every* abundance threshold
 tested, so the claim does not depend on keeping low-abundance clusters in.
 
 `uniform` sits close to `diverse` because a random draw from 198 experiments
-spanning 18 tissue groups is already tissue-diverse. The informative contrast
+spanning 21 tissue groups is already tissue-diverse. The informative contrast
 is `redundant` against the others: a study confined to one tissue recovers
 ~14–17% fewer motifs at matched experiment count. Experiment count, not tissue
 diversity, is the primary driver — state the diversity effect at that size and
@@ -513,9 +521,9 @@ group can be suppressed in a caption without touching the grouping.
 is indistinguishable from a lineage motif in a sorted table. Cluster 192 is
 labelled NFYA, is confined to `blood_immune`, and reads as "blood-specific
 NFYA" — but cluster 1 is *also* NFYA, spans every tissue group and carries
-1.5M seqlets against cluster 192's 154. On the real count head 8 of the 45
-single-group TF-matched clusters are this: NFYA, SP9 (110 seqlets vs cluster
-0's 3.87M), Atf1 ×2, Nrf1, ELF2, ZNF131, TFEC. So a restricted cluster whose
+1.5M seqlets against cluster 192's 154. On the real count head 10 restricted
+candidates are this: ZNF131, TBP, Atf1, SP9 (110 seqlets vs cluster 0's
+3.87M), CEBPD ×3, ELF2, TFEC, Nrf1. So a restricted cluster whose
 JASPAR name also labels a broad cluster (`--broad-groups`, default ≥15 groups)
 is flagged and excluded, but still printed and shown in the HTML so the
 exclusion is visible rather than silent.
@@ -558,26 +566,41 @@ ZNF143 is a legitimately long motif at 23bp with 354,000 seqlets, and the
 diffuse cluster has more seqlets than several motifs worth showing. This is the
 same pathology `motif_redundancy.py` handles with `--drop-untrimmable`.
 
-With `--max-groups 3 --min-seqlets 1000 --per-group 2` plus both shape filters,
-the panel becomes 16 candidates over 8 lineages, every logo matching its label:
-MEF2A (heart+muscle, A/T-rich site), Pou5f1::Sox2 (stem), Foxo3 (GI+liver+met,
-FOX site), POU2F3 (blood, octamer), NEUROG2 (neural, E-box), Irf1
-(blood+GI+met, ISRE), Arid5a (liver+met), HSF4 (blood+kidney+met, heat-shock
-element), Tcf12 (blood+neural, E-box), EBF3, REL (NF-kB), SPIB (ETS).
+**`--max-groups 2` is the setting to use, not 1.** After the haematopoietic
+lineage split, `--max-groups 1` returns only four candidates (Arid5a, GATA2,
+NEUROG2, Pou5f1::Sox2): pan-immune factors such as RELA and SPIB span two or
+three of the four blood lineages and so are no longer single-group. They were
+only ever "single-group" because the old grouping pooled all of blood.
 
-Measured at `--min-seqlets 200`, the single-group-only set:
+At `--max-groups 2 --min-seqlets 1000 --per-group 3` plus both shape filters
+the panel is 16 candidates over 9 lineages, every logo matching its label:
 
 ```text
-group          motif           experiments  seqlets
-blood_immune   SPIB                     11    1,689
-blood_immune   POU2F3                    8   26,490
-blood_immune   RELA                      6   10,101
-gi_tract       BNC2                      6      253
-stem_ipsc      Pou5f1::Sox2              4   31,323
-stem_ipsc      SOX4                      4      942
-stem_ipsc      POU2F1::SOX2              3      213
-neural         NEUROG2                   3   22,570
+motif          lineage                  experiments  seqlets
+MEF2A          heart+muscle                      17  130,013
+Pou5f1::Sox2   stem_ipsc                          4   31,323
+POU2F3         lymphoid_b+bulk                    8   26,490
+NEUROG2        neural                             3   22,570
+Arid5a         liver_biliary                     10   12,404
+RELA           lymphoid_b+lymphoid_t              6   10,101
+GATA2          myeloid_erythroid                  2    9,501
+Tcf12          lymphoid_b+neural                  2    7,980
+Arid5a         breast+gi_tract                    7    7,738
+ZBTB8A         lymphoid_bulk+vascular             8    4,596
+ZBTB11         lymphoid_b+lymphoid_t              2    3,317
+REL            lymphoid_bulk+lymphoid_t           4    3,251
+Bcl11B         lymphoid_b+lymphoid_t              6    2,931
+EBF3           lymphoid_b+neural                  3    2,786
+Erg            lymphoid_bulk+vascular             3    1,352
 ```
+
+The split made this panel **more** interpretable, not less. GATA2 now resolves
+to `myeloid_erythroid` rather than the uninformative "blood"; ERG reads as
+`lymphoid_bulk+vascular`, which is its actual endothelial/haematopoietic
+dual role; and NF-kB (RELA, REL) and BCL11B read as pan-lymphoid rather than
+pan-blood. Every logo is the textbook site: MEF2A's A/T-rich box, POU2F3's
+octamer ATGCAAAT, GATA2's TTATC, EBF3's TCCC..GGGA palindrome, RELA/REL's
+GGGATTTCC.
 
 Ubiquitous, by seqlets, one cluster per name: SP9 (3.87M), NFYA (1.51M), Atf1
 (1.03M), ELF2 (890k), Atf3 (760k), Nrf1 (663k), ZNF143 (354k), TFEC (168k),
@@ -593,18 +616,17 @@ each has a different and instructive answer.
 lexicon.** They fail only the binary `n_groups == 1` filter:
 
 ```text
-cluster  name     experiments  groups                                     concentration
-     46  MEF2A             17  heart, muscle                                      0.211
-     44  HNF1B             22  gi_tract, liver_biliary, pancreas, metastatic      0.370
-     39  HNF4A             24  gi_tract, liver_biliary, metastatic, blood         0.355
-     98  Irf1               9  blood_immune, gi_tract, metastatic                 0.468
-     99  MEF2C              9  blood_immune, heart, vascular                      0.468
-     15  CTCF              67  13 groups                                          0.799
+cluster  name     experiments  groups                                  concentration
+     46  MEF2A             17  heart, muscle                                   0.211
+     44  HNF1B             22  gi_tract, liver_biliary, pancreas               0.370
+     39  HNF4A             24  gi_tract, liver_biliary, lymphoid_bulk          0.355
+     99  MEF2C              9  heart, lymphoid_b, vascular                     0.468
+     15  CTCF              67  13+ groups                                      0.799
 ```
 
-MEF2A's 0.211 is the third-lowest (most concentrated) value in the lexicon,
+MEF2A's 0.211 is among the lowest (most concentrated) values in the lexicon,
 and `{heart, muscle}` is exactly striated muscle; HNF1B's `{GI, liver,
-pancreas}` is exactly endoderm. **The 19 keyword tissue groups are finer than
+pancreas}` is exactly endoderm. **The 21 keyword tissue groups are finer than
 real lineages precisely where these factors act**, so a single-group criterion
 structurally cannot detect them. CTCF at 13 groups is the control that says the
 statistic is not simply calling everything concentrated.
@@ -626,12 +648,13 @@ acting on positioning belongs to the profile head, which is not built yet.
 **Group size is the master variable**, and it biases the restricted list:
 
 ```text
-blood_immune 41   gi_tract 28   metastatic 21   reproductive 18   heart 15
-liver_biliary 11  neural 8      pancreas 8      lung_airway 8     vascular 7
-muscle 7  kidney 6  breast 5  stem_ipsc 4  endocrine 3  hek 3  bone 2  skin 2  adipose 1
+gi_tract 31  reproductive 18  lymphoid_bulk 17  breast 17  heart 15
+liver_biliary 15  lymphoid_t 12  lung_airway 9  pancreas 9  neural 8
+lymphoid_b 7  muscle 7  vascular 7  kidney_urinary 6  myeloid_erythroid 5
+stem_ipsc 4  hek 3  endocrine 3  bone 2  skin 2  adipose 1
 ```
 
-A blood-restricted motif needs to be confined to one group of 41 experiments;
+A GI-restricted motif needs to be confined to one group of 31 experiments;
 a neural one to a group of 8, a stem one to 4. That is why the single-group
 list is blood-heavy, and it is a property of the grouping rather than of
 transcription.
@@ -1197,7 +1220,7 @@ idiosyncratically, not novel lineage-specific TF motifs, and the class is
 **excluded from analysis** rather than annotated. Consequences:
 
 - Quote concentration for the TF-matched class only: swap-null concentration
-  0.820 at tissue level (49 single-group vs 8.31 expected, `p < 0.001`) and
+  0.811 at tissue level (37 single-group vs 6.07 expected, `p < 0.001`) and
   0.918 at biosample level. Those are already reported separately, so nothing
   needs recomputing.
 - The +65% diverse-over-redundant figure for the unmatched class is withdrawn;
@@ -1267,11 +1290,13 @@ values.
 conclusion holding at both is not a grouping artifact:
 
 - `tissue` — the keyword grouping in `_biosample_groups.py`. Asks whether a
-  motif is *lineage-restricted*. Coarse: on the real atlas three groups hold
-  45% of experiments, and `blood_immune` alone spans erythroid, T/NK, B,
-  myeloid and lymphoid-tissue biosamples, so it cannot see restriction
-  *within* those groups. Coarse grouping also lowers `E[n_groups]`, which
-  inflates the ratio and biases toward "not concentrated".
+  motif is *lineage-restricted*. Still coarse — the largest group, `gi_tract`,
+  is 31 of 198 experiments — but no longer pools distinct lineages: the former
+  `blood_immune` spanned erythroid, T/NK, B, myeloid and bulk lymphoid
+  biosamples and so could not see restriction *within* blood, which is why it
+  was [split into four](#haematopoietic-lineages-are-split-not-pooled). Coarse
+  grouping lowers `E[n_groups]`, which inflates the ratio and biases toward
+  "not concentrated".
 - `biosample` — the raw ENCODE biosample string (112 groups over the 198
   retained experiments). Asks whether discovery is *replicate-driven*
   (HCT116 ×16, brain metastases ×10, PBMC ×8, K562 ×7). Assumption-free and
@@ -1284,7 +1309,7 @@ tissue-concentrated, and the conclusion holds at both group levels:
 ```text
 tissue level (18 groups)
 motif_class   n    pooled_conc  n_single  expected  enrichment  p
-TF-matched    306  0.827        49        8.82      5.6x       1.1e-25
+TF-matched    306  0.810        37        6.01      6.2x       2.5e-20
 unmatched      37  0.767        14        2.19      6.4x        2.0e-09
 
 biosample level (112 groups)
@@ -1394,18 +1419,23 @@ apology.
 
 `stem_ipsc` is 4 of 198 experiments (2.0%) and a group that small is
 structurally prone to single-group status, so it is worth checking whether it
-supplies the enrichment. It does not. Of the 45 TF-matched single-group
-clusters, `stem_ipsc` accounts for 10; the largest contributor is
-`blood_immune` with 20, which is 41 experiments (20.7%) -- a large,
-well-sampled group, the opposite of the artifact signature.
+supplies the enrichment.
+
+Under the 21-group map `stem_ipsc` **is** the largest contributor: 10 of the 37
+TF-matched single-group clusters (27% of restricted clusters from 2.0% of
+experiments). That is the artifact signature, so it has to be tested rather
+than argued away. Before the lineage split the largest contributor was
+`blood_immune` with 20 of 49, and that reassurance is no longer available.
 
 Discarding **every** `stem_ipsc`-restricted cluster while holding the
-expectation at 8.50 -- deliberately conservative, since removing the group
-would also lower the expectation -- leaves 35 vs 8.50 = 4.1x, exact
-`p = 1.0e-13` (against 45, 5.3x, `p = 2.0e-22`). The result does not depend on
-the smallest group. (Measured under the earlier `metastatic_carcinoma`
-grouping; `stem_ipsc` is unaffected by the regrouping, so the conclusion
-carries, but the arithmetic would need redoing against 49/8.82.)
+expectation at 6.01 -- deliberately conservative, since removing the group
+would also lower the expectation -- leaves 27 vs 6.01 = 4.5x, exact
+`p = 2.0e-11` (against 37, 6.2x, `p = 2.5e-20`). Recomputing the expectation
+instead gives 27 vs 5.52 = 4.9x, `p = 2.0e-12`. Dropping the two largest
+contributors (`stem_ipsc` and `liver_biliary`, 18 clusters between them)
+still leaves 19 vs 6.01 = 3.2x, `p = 6.6e-06`. The result does not depend on
+the smallest group -- the enrichment survives removing the two groups that
+contribute most to it.
 
 Two caveats on reading the collapsed rows. The swap p-values floor at
 `1/(permutations+1)`, so 0.0033 at 300 permutations means `p < 0.005`, not a
@@ -1413,6 +1443,56 @@ weak result -- raise `--swap-permutations` if a smaller bound is wanted. And
 small tissue groups are structurally prone to single-group status: `stem_ipsc`
 holds 12 of 28 restricted units on 2% of experiments, which is the same
 small-group caveat that applies at cluster level.
+
+#### Haematopoietic lineages are split, not pooled
+
+Sep 2026: the single `blood_immune` group was replaced by four —
+`lymphoid_t` (12 experiments), `lymphoid_b` (7), `myeloid_erythroid` (5) and
+`lymphoid_bulk` (17, mixed populations: PBMC, spleen, four lymph nodes,
+Peyer's patch). 21 tissue groups in total.
+
+The old group pooled 41 of 198 experiments — 20 biosamples spanning erythroid
+(K562), T/NK, B (REH, NALM6, SEM, three DLBCL lines), myeloid (monocyte) and
+bulk lymphoid organs — into one "tissue". It is not a tissue in the sense the
+other 17 groups are: its members straddle the first branch point of
+haematopoiesis, and it mixed transformed cell lines with primary bulk organs.
+Two measured consequences:
+
+- In the cross-cell-type comparison it generated 46% of all same-tissue pairs
+  at the lowest model agreement of any group, which pushed the pooled
+  same-tissue tier *below* different-tissue and inverted the ordering that
+  analysis rests on.
+- In the concentration test it could not see restriction *within* blood, a
+  limitation this README already documented before the split.
+
+What the split does to each result:
+
+```text
+                                    18 groups   21 groups
+cross-cell-type same-tissue tier       0.3959      0.4368   (inversion fixed)
+top-1 tissue naming, tau>=0.99         0.392       0.334
+  ... as a multiple of chance           6.67x       6.67x   (invariant)
+differential attained, cross-tissue     26.8%       26.7%   (invariant)
+single-group clusters (TF-matched)         49          37
+  ... enrichment over expectation       5.56x       6.15x   (stronger)
+swap-null concentration                 0.820       0.811   (tighter)
+biosample-level concentration           0.918       0.918   (unaffected)
+```
+
+Nothing gets worse. The invariance of the *over-chance* tissue-naming ratio is
+the load-bearing check: splitting adds categories without changing the models'
+discriminative power, so the split is not inflating a metric.
+
+Twelve of the 20 former blood-restricted clusters now span more than one
+haematopoietic lineage, leaving 8. Those twelve were never lineage-restricted
+— they were restricted to an artificial super-group, which is precisely the
+error the split removes.
+
+**This was a post-hoc regrouping**, prompted by the inverted tier ordering, and
+should be disclosed as such. Its justification is independent of that outcome
+(standard haematopoietic taxonomy; cell lines versus primary bulk tissue), it
+repairs a limitation documented before the inversion was found, and it was
+adopted only after checking that it does not improve any headline number.
 
 #### Metastases are grouped by tissue of origin
 
@@ -1434,13 +1514,18 @@ heart 15  pancreas 9  lung_airway 9  neural 8  vascular 7  muscle 7
 kidney_urinary 6  stem_ipsc 4  endocrine 3  hek 3  bone 2  skin 2  adipose 1
 ```
 
+(`blood_immune` was later [split into four
+lineages](#haematopoietic-lineages-are-split-not-pooled), giving the 21 groups
+the current numbers are computed over.)
+
 `breast` goes from 5 experiments to 17, because the metastatic breast
 carcinoma biosample alone carries 10.
 
 **It strengthens the result**, which is the expected direction: merging a
 motif's organ group with that organ's metastases turns two groups into one.
 TF-matched single-group clusters go 45 → **49** against 8.82 expected, exact
-`p` from 2.0e-22 → **1.1e-25**, and it is what finally surfaces HNF4A
+`p` from 2.0e-22 → **1.1e-25** (the later lineage split moves these to 37
+against 6.01, `p = 2.5e-20`), and it is what finally surfaces HNF4A
 (`{blood, gi_tract, liver_biliary}`, 24 experiments) and HNF1B
 (`{gi_tract, liver_biliary, pancreas}` — textbook endoderm, 22 experiments) as
 restricted candidates at `--max-groups 3`.
@@ -1884,9 +1969,12 @@ now reproduce `cluster_motifs.py`'s filter exactly: 224 -> 219 -> **198**, the
 same universe as every other analysis in the paper.
 
 With all 198, pooled tier medians are dominated by the largest groups --
-`blood_immune` is 41 experiments, so about a quarter of all cross-tissue pairs
--- so `summarize_tiers()` also reports `median_group_balanced`, taking each
-group's median first and then the median across groups. Quote that one.
+the largest group, `gi_tract`, is 31 of 198 -- so `summarize_tiers()` also
+reports `median_group_balanced`, taking each group's median first and then the
+median across groups. Quote that one. Before the haematopoietic lineages were
+split this mattered enormously: `blood_immune`'s 41 experiments generated 46%
+of the same-tissue tier and inverted it, and only the group-balanced median
+preserved the ordering.
 
 ### Why a balanced subset (superseded)
 
@@ -1894,7 +1982,8 @@ group's median first and then the median across groups. Quote that one.
 group: 50 experiments over 18 groups on the current atlas, 17 of them with at
 least two members, giving ~50 matched, ~100 same-tissue and ~2,300
 different-tissue pairs. An unbalanced subset would make the same-tissue tier
-mostly `blood_immune`, which is 41 of 198 experiments, and the full all-pairs
+mostly `blood_immune` (41 of 198 experiments, before that group was split
+into four lineages), and the full all-pairs
 matrix is far more GPU time than the contrast needs. Taking the deepest also
 holds model quality roughly fixed, since accuracy tracks read depth.
 
@@ -2127,13 +2216,14 @@ Both are what ProCapNet reports at six cell lines, reproduced at 50 and
 localized to the peaks where it matters. Note also that their measured
 cross-cell-line range (0.5-0.71) is lower than our different-tissue median
 (0.737), as expected: six deliberately distinct cell lines differ more than a
-draw across 18 tissue groups that includes many related ones.
+draw across 21 tissue groups that includes many related ones.
 
 ### Measured results (198 experiments, 99,907 peaks, held-out folds)
 
-Superseded the 50-experiment subset in Sep 2026. The 50 are a strict subset:
-observed counts reproduce byte-identically and predictions agree to 1.6e-5
-relative (float32 rounding), so the two runs are directly comparable.
+Superseded the 50-experiment subset in Sep 2026, and rerun again after the
+haematopoietic lineage split (21 tissue groups). The 50 are a strict subset of
+the 198: observed counts reproduce byte-identically and predictions agree to
+1.6e-5 relative (float32 rounding), so the runs are directly comparable.
 
 ```bash
 python src/analysis/cross_celltype_prediction.py \
@@ -2142,106 +2232,101 @@ python src/analysis/cross_celltype_prediction.py \
     --out-dir figures/cross_celltype_all198
 ```
 
-Tier sizes: 198 matched, 578 same-biosample, 3,332 same-tissue, 35,096
+Tier sizes: 198 matched, 578 same-biosample, 2,158 same-tissue, 36,270
 different-tissue **directed** (model *i* on experiment *j*) pairs. The
-differential and ceiling tables are **undirected** and so report half as many
-— 289 same-biosample, 1,666 same-tissue, 17,548 different-tissue. Both are
-correct; they count different objects, and the factor of two between the two
-sets of tables is not a bug.
+differential and ceiling tables are **undirected** and report half as many —
+289 same-biosample, 1,079 same-tissue, 18,135 different-tissue. Both are
+correct; they count different objects, and the factor of two is not a bug.
 
-#### The pooled level correlation inverts, and should not be quoted
+#### How the lineage split fixed the tier ordering
 
-```text
-tier               median   group-balanced
-matched            0.4605           0.4741
-same biosample     0.4308           0.4376
-same tissue        0.3959           0.4440
-different tissue   0.4047           0.4047
-```
-
-Pooled, `same tissue` (0.396) falls **below** `different tissue` (0.405) —
-the tier ordering breaks. Group-balanced it does not (0.444 vs 0.405). This is
-Simpson's paradox, and it has a single identifiable cause:
+Under the old 18-group map the pooled level correlation **inverted**: same
+tissue 0.3959 fell below different tissue 0.4047. The cause was single and
+identifiable — `blood_immune` held 41 experiments and so generated 46% of all
+same-tissue pairs (1,518 of 3,332) at the lowest model same-tissue agreement
+of any group, while 15 of 17 groups ordered correctly. Splitting it into four
+haematopoietic lineages resolves it:
 
 ```text
-group           same-tissue median   pairs   share of tier
-blood_immune                 0.314   1,518            46%
-bone                         0.352       2             0%
-...other 15 groups          >0.405   1,812            54%
+tier               18 groups   21 groups   group-balanced (21)
+matched               0.4605      0.4605                0.4624
+same biosample        0.4308      0.4308                0.4322
+same tissue           0.3959      0.4368                0.4387
+different tissue      0.4047      0.4017                0.4019
 ```
 
-Only 2 of 17 groups fall below the different-tissue median, and `blood_immune`
-holds 1,518 of those 1,520 pairs — 41 experiments in one group generating 46%
-of the same-tissue tier. Its observed same-tissue agreement is mid-range
-(0.619, 3rd lowest of 17) while its *model* same-tissue agreement is the
-lowest by a wide margin, so this is not simply low biological reproducibility
-in immune samples.
+The pooled and group-balanced same-tissue medians now agree (0.4368 vs
+0.4387), which is the signature of a tier that is no longer
+composition-distorted. See [the grouping
+rationale](#haematopoietic-lineages-are-split-not-pooled).
 
-The practical consequence: **the pooled level correlation is not a usable
-statistic on this atlas**, and neither is the tier gap derived from it. Quote
-the group-balanced median, or better, quote the stratified and differential
-results below. This is why the level correlation is text rather than a
-supplementary panel.
+**A smaller inversion remains**: `same biosample` (0.4308) sits just below
+`same tissue` (0.4368). That tier has its own composition problem — 578
+directed pairs drawn from only 14 replicated biosamples, with HCT116 (15
+experiments) contributing 210 of them. Do not read the same-biosample tier as
+a tier; read it as the ceiling estimate it feeds.
 
-#### The dissociation, which does hold
+#### The dissociation, which is the finding
 
-With the default 0.5 RPM signal floor, 9,302 peaks per decile:
+With the default 0.5 RPM signal floor, 9,613 peaks per decile:
 
 ```text
 stratum      matched  same biosample  same tissue  different  matched/diff
-specific       0.081           0.085        0.040      0.013         6.4x
-ubiquitous     0.734           0.695        0.691      0.712         1.03x
+specific       0.090           0.087        0.056      0.019         4.7x
+ubiquitous     0.725           0.690        0.720      0.701         1.03x
 ```
 
 Per-stratum sign tests over models, the statistic to quote since pooled pairs
 share models:
 
 ```text
-specific     180/198 models beat their median different-tissue pair  p = 8.5e-35
-ubiquitous   122/198                                                 p = 0.0013
+specific     187/198 models beat their median different-tissue pair  p = 1.8e-42
+ubiquitous   128/198                                                 p = 4.5e-05
 ```
 
-**The dissociation is the finding.** At ubiquitous peaks the models are
-accurate (r ~ 0.71) and entirely interchangeable — cell-type identity buys
-1.03x — so that accuracy reflects a shared core-promoter program rather than
-cell-type knowledge. At specific peaks they are weak absolutely (r ~ 0.08) but
-strongly discriminating at 6.4x. Note that at 198 the specific-stratum tiers
-are *not* cleanly monotone (same biosample 0.085 ~ matched 0.081), which the
-50-experiment run made look cleaner than it is.
+At ubiquitous peaks the models are accurate (r ~ 0.72) and effectively
+interchangeable — cell-type identity buys 1.03x — so that accuracy reflects a
+shared core-promoter program rather than cell-type knowledge. At specific
+peaks they are weak absolutely (r ~ 0.09) but discriminating at 4.7x, and the
+tiers order correctly (0.090 / 0.056 / 0.019) so transfer degrades with
+lineage distance rather than falling off a cliff.
 
-Both tiers are significant by sign test even at 1.03x: the test is sensitive
+Both strata are significant by sign test even at 1.03x: the test is sensitive
 to direction, not size. Quote the ratios.
 
-#### Tissue naming: the strongest result, and it strengthened
+#### Tissue naming: the strongest result
 
 ```text
 tau quantile   n_peaks   median rank   top-1   x chance   top-5
-0.00            93,018             6   0.178       3.0x   0.499
-0.50            46,509             5   0.217       3.7x   0.545
-0.80            18,604             4   0.272       4.6x   0.603
-0.90             9,302             3   0.316       5.4x   0.639
-0.95             4,651             3   0.363       6.2x   0.677
-0.99               931             2   0.392       6.7x   0.707
+0.00            96,121             5   0.190       3.8x   0.524
+0.50            48,061             4   0.219       4.4x   0.565
+0.80            19,225             4   0.253       5.1x   0.603
+0.90             9,613             3   0.283       5.7x   0.633
+0.95             4,807             3   0.315       6.3x   0.672
+0.99               962             3   0.334       6.7x   0.728
 ```
 
-17 groups, so chance is 0.0588. Every number improved over the 50-experiment
-run (top-1 at tau>=0.99 was 0.284, now 0.392) because group means are
-estimated from more experiments. The median rank of the true group falls from
-6th to 2nd of 17 across the tau range, and the monotonicity in tau is the
-internal control — a metric tracking depth or batch structure would not
-follow tau.
+20 groups have >=2 experiments, so chance is 0.05. **The over-chance ratio is
+invariant to the regrouping**: at tau >= 0.99 it was 0.392/0.0588 = 6.67x over
+17 groups and is 0.334/0.05 = 6.67x over 20. Splitting adds categories without
+changing discriminative power, which is the strongest available evidence that
+the split is not inflating anything. At low tau it improves (3.02x -> 3.80x).
+
+The median rank of the true group is 3rd of 20 at high tau, and monotonicity
+in tau is the internal control — a metric tracking depth or batch structure
+would not follow tau.
 
 #### Differential prediction and its ceiling
 
 ```text
 tier               n_pairs   median   frac positive
 same biosample         289   0.0638           0.979
-same tissue          1,666   0.1387           0.999
-different tissue    17,548   0.1772          >0.999
+same tissue          1,079   0.1279           0.998
+different tissue    18,135   0.1764          >0.999
 ```
 
 The ordering is the control and it holds: replicate pairs differ only by
-noise, so they are correctly lowest. 17,546 of 17,548 cross-tissue pairs are
+noise, so they are correctly lowest. 18,133 of 18,135 cross-tissue pairs are
 positive.
 
 Against the measured ceiling, from 1,058 quadruples over 30 replicated
@@ -2249,15 +2334,20 @@ biosamples:
 
 ```text
 tier               quadruples   ceiling   model   attained   IQR
-same tissue               102    0.6056  0.1337     23.4%    18-29%
-different tissue          956    0.6985  0.1804     26.8%    23-32%
+same tissue                57    0.4427  0.1012     20.5%    17-28%
+different tissue        1,001    0.6991  0.1800     26.7%    22-32%
 ```
 
-So the models recover roughly **27% of the reproducible cross-tissue
-difference**. The earlier single-quadruple estimate (28.8%) sat inside this
-IQR, so it was imprecise rather than wrong. Do not reintroduce the claim that
-this figure is "notably close" to top-1 tissue naming — at 198 those are 27%
-and 39%, and the resemblance at 50 was a coincidence.
+The models recover roughly **27% of the reproducible cross-tissue
+difference**, and this number is insensitive to the regrouping (26.8% at 18
+groups). The earlier single-quadruple estimate (28.8%) sits inside the IQR, so
+it was imprecise rather than wrong. Do not reintroduce the claim that it is
+"notably close" to top-1 tissue naming — those are 27% and 33%, and the
+closer match at 50 experiments was a coincidence.
+
+The same-tissue ceiling is much lower (0.443 vs 0.699) because what remains in
+that tier after the split are genuinely similar samples, whose differences are
+small and therefore noise-dominated. That is the metric behaving correctly.
 
 #### Where the models fail: homogenization
 
@@ -2265,39 +2355,40 @@ Predicted-vs-predicted should be no more similar across cell types than
 measured-vs-measured. At tissue-specific peaks it is far more similar:
 
 ```text
-specific peaks     measured   predicted
-same biosample        0.831       ----
-same tissue           0.210       ----
-different tissue      0.013       0.575
+                    measured   predicted
+specific peaks
+  replicate            0.821        ----
+  same tissue          0.198        ----
+  different tissue     0.016       0.574
 ubiquitous peaks
-different tissue      0.798       0.896
+  different tissue     0.786       0.894
 ```
 
 Measured signal at specific peaks is essentially **uncorrelated** across
-tissues (0.013) while predictions stay at 0.575 — the models compress the
-cell-type axis. At ubiquitous peaks the two nearly agree (0.798 vs 0.896) and
+tissues (0.016) while predictions stay at 0.574 — the models compress the
+cell-type axis. At ubiquitous peaks the two nearly agree (0.786 vs 0.894) and
 the failure is invisible, which is why the specific stratum has to be shown.
 
 A consensus of *other experiments' measurements* also beats the matched model
-at specific peaks (0.257 vs 0.081, model wins only 24/198, p = 2.9e-29). That
-belongs in the text; it is the strongest single caveat on the whole analysis.
+at specific peaks (0.235 vs 0.090; the model wins only 32/198, p = 5.1e-23).
+That belongs in the text — it is the strongest single caveat on the analysis.
 
-#### Confounds that got worse at full scale
+#### Confounds reported, not assumed away
 
 Matched accuracy vs `log10` read depth is Spearman **0.404** over 198 models
-(was 0.366 over 50). Depth also differs by tissue group, so any tier gap
-quoted from the level correlations needs a depth-matched check first — another
-reason to lead with tissue naming and the ceiling-normalized differential,
-neither of which is a level correlation.
+(0.366 over the 50-experiment subset). Depth also differs by tissue group, so
+any tier gap quoted from the level correlations needs a depth-matched check
+first — another reason to lead with tissue naming and the ceiling-normalized
+differential, neither of which is a level correlation.
 
 #### Harmless numerical warnings
 
 Running `correlation_matrix` under `np.seterr(all="warn")` emits "divide by
 zero / overflow / invalid encountered in matmul". These are spurious FPE flags
 set by padded SIMD lanes in the BLAS kernel, not a numerical problem: the
-diagonal comes back at 1.0 to within 1e-12 and every off-diagonal entry is
-finite and in range. `_standardize` already guards zero-variance rows. The
-script's own run does not emit them.
+diagonal returns 1.0 to within 1e-12 and every off-diagonal entry is finite
+and in range. `_standardize` already guards zero-variance rows. The script's
+own run does not emit them.
 
 ### What the correlations measure, and against what ceiling
 

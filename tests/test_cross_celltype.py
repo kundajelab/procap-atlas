@@ -259,8 +259,12 @@ def tiered_inputs(tmp_path, n_peaks=300, seed=0):
     by_group = {}
     for exp, group in tissue.items():
         by_group.setdefault(group, []).append(exp)
+    # Two largest groups, chosen by size rather than named: hardcoding group
+    # names made every CLI test fail when blood_immune was split by lineage,
+    # for reasons unrelated to what these tests check.
+    largest = sorted(by_group, key=lambda g: (-len(by_group[g]), g))[:2]
     picked = []
-    for group in ("blood_immune", "gi_tract"):
+    for group in largest:
         picked += sorted(by_group[group])[:2]
 
     rng = np.random.default_rng(seed)
@@ -1062,9 +1066,23 @@ def test_replicates_per_group_is_a_noop_at_zero():
     assert len(got) == 1
 
 
-def test_replicate_topup_beats_raising_per_group_on_the_real_atlas():
-    """Targeted top-up reaches more replicate pairs than --per-group 8 while
-    extracting a third fewer experiments."""
+def test_replicate_topup_is_cheaper_but_no_longer_pair_richer():
+    """The subset strategies, both superseded by running all 198.
+
+    Targeted top-up was adopted because at 18 tissue groups it reached more
+    replicate pairs than `--per-group 8` while extracting a third fewer
+    experiments. Splitting blood_immune into four lineages (21 groups) killed
+    the pair advantage -- more groups means `--per-group 8` sweeps in more
+    replicated biosamples -- leaving only the cost advantage:
+
+        top-up(3, +2)   81 experiments    33 replicate pairs
+        per-group 8    130 experiments    46 replicate pairs
+        all 198        198 experiments   289 replicate pairs
+
+    Neither subset is close to the full run, which is why both flags are
+    superseded. Kept as a regression test on `balanced_subset` and as the
+    record of why the top-up recommendation was withdrawn.
+    """
     import yaml
 
     cfg = yaml.safe_load(open(REPO_ROOT / "configs" / "experiment_config.yaml"))
@@ -1091,8 +1109,11 @@ def test_replicate_topup_beats_raising_per_group_on_the_real_atlas():
     wide = cc.balanced_subset(
         cfg["experiments"], tissue, 8, depth, min_reads=10e6, biosamples=sample
     )
-    assert replicate_pairs(topped) >= replicate_pairs(wide)
-    assert len(topped) < len(wide)
+    assert len(topped) < len(wide), "top-up should stay the cheaper extraction"
+    # The pair advantage is gone at 21 groups; assert the current direction so
+    # a future regrouping that restores it shows up as a failure to look at.
+    assert replicate_pairs(topped) < replicate_pairs(wide)
+    assert replicate_pairs(wide) < 289, "the full 198 run dominates both"
 
 
 # --- naming the dominant tissue --------------------------------------------

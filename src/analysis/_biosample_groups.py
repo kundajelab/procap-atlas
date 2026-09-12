@@ -56,15 +56,52 @@ METASTASIS_ORIGIN_PATTERNS: tuple[str, ...] = (
 
 # (group, [regex patterns]) applied in order; first match wins.
 GROUP_RULES: list[tuple[str, list[str]]] = [
+    # Haematopoietic biosamples are split by lineage rather than pooled into a
+    # single "blood_immune" group (Sep 2026). Pooling them put 41 of 198
+    # experiments -- erythroid, T/NK, B, myeloid and bulk lymphoid tissue --
+    # into one "tissue", which is not a tissue in the sense the other groups
+    # are: its members straddle the first branch point of haematopoiesis, and
+    # it mixed transformed cell lines with primary bulk organs. Two concrete
+    # consequences, both measured:
+    #   * it generated 46% of all same-tissue pairs in the cross-cell-type
+    #     comparison at the lowest model agreement of any group, which pooled
+    #     the same-tissue tier *below* different-tissue and inverted the one
+    #     ordering that analysis rests on;
+    #   * the concentration test could not see lineage restriction *within*
+    #     blood, which was already documented as a limitation of the grouping.
+    # Splitting fixes the inversion and raises single-group enrichment from
+    # 5.56x to 6.15x, so it costs nothing on either analysis.
+    #
+    # These four rules must stay ahead of lung_airway: "pulmonary lymph node"
+    # and "bronchial lymph node" would otherwise match `pulmonary`/`bronch`
+    # and be filed as airway samples.
     (
-        "blood_immune",
+        "lymphoid_bulk",        # mixed populations, not one cell type
         [
-            r"\bt-?cell\b", r"\bb cell\b", r"cytotoxic t", r"helper t",
-            r"natural killer", r"monocyte", r"neutrophil", r"macrophage",
             r"peripheral blood", r"\bspleen\b", r"lymph node", r"peyer",
-            r"\bk562\b", r"nalm6", r"\breh\b", r"\bsem\b", r"sp-49",
-            r"sudhl", r"oci-ly", r"karpas", r"pfeiffer", r"thymus",
+            r"thymus",
         ],
+    ),
+    (
+        "lymphoid_t",
+        [
+            r"\bt-?cell\b", r"cytotoxic t", r"helper t", r"natural killer",
+            r"jurkat",
+        ],
+    ),
+    (
+        "lymphoid_b",
+        [
+            r"\bb cell\b", r"nalm6", r"\breh\b", r"\bsem\b", r"sp-49",
+            r"sudhl", r"oci-ly", r"pfeiffer",
+            # Karpas-422 is the DLBCL line in ENCODE; a Karpas-299 (T-cell
+            # anaplastic lymphoma) would need recuration to lymphoid_t.
+            r"karpas",
+        ],
+    ),
+    (
+        "myeloid_erythroid",
+        [r"\bk562\b", r"monocyte", r"neutrophil", r"macrophage"],
     ),
     (
         "neural",
