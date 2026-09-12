@@ -3553,3 +3553,125 @@ def test_lineage_caption_omission_still_works_if_asked():
 
 def test_lineage_caption_keeps_an_omitted_sole_group_rather_than_blank():
     assert fig2.lineage_caption("heart", omit=("heart",)) == "heart"
+
+
+# --- panel c layout ---------------------------------------------------------
+#
+# Caption overlap escaped review twice. `_logo_grid` set `hspace` -- a fraction
+# of the *axis* height -- from the caption's line count, but a caption is sized
+# in points, so a value tuned on the standalone panel drew the third line
+# straight through the logos of the row above once the same grid was packed
+# into figure2_count.pdf, where the band is about a third as tall. These tests
+# render at both sizes and check the geometry rather than eyeballing a PNG.
+
+
+def exemplar_tables(n_ubiquitous=10, n_restricted=14):
+    ub = pd.DataFrame({
+        "cluster_final": range(n_ubiquitous),
+        "jaspar_name": [f"UB{i}" for i in range(n_ubiquitous)],
+        "prevalence": np.arange(n_ubiquitous)[::-1] + 50,
+        "n_groups": 21,
+        "total_seqlets": np.arange(n_ubiquitous)[::-1] + 1000,
+        "posneg": "pos",
+    })
+    re_ = pd.DataFrame({
+        "cluster_final": range(100, 100 + n_restricted),
+        "jaspar_name": [f"RE{i}" for i in range(n_restricted)],
+        "prevalence": np.arange(n_restricted)[::-1] + 2,
+        "n_groups": 2,
+        "total_seqlets": np.arange(n_restricted)[::-1] + 100,
+        "posneg": "pos",
+        # three-line caption: name / lineage / n exp
+        "lineage": "lymphoid_b,lymphoid_t",
+    })
+    return ub, re_
+
+
+def exemplar_h5(tmp_path, ub, re_):
+    import h5py
+
+    path = tmp_path / "ex.h5"
+    with h5py.File(path, "w") as f:
+        for cl in list(ub["cluster_final"]) + list(re_["cluster_final"]):
+            pfm, cwm, _, _ = flanked_pair(seed=int(cl) % 4)
+            # MotifCompendium keys by cluster id, not "pattern_N"
+            g = f.require_group("pos_patterns").create_group(str(int(cl)))
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    return path
+
+
+def _title_collisions(fig):
+    """Axes whose title box intersects another axis's drawing area."""
+    fig.canvas.draw()
+    boxes = [(ax, ax.get_window_extent()) for ax in fig.axes]
+    hits = []
+    for ax, _ in boxes:
+        t = ax.title
+        if not t.get_text():
+            continue
+        tb = t.get_window_extent(fig.canvas.get_renderer())
+        for other, ob in boxes:
+            if other is ax:
+                continue
+            if tb.overlaps(ob):
+                hits.append((t.get_text().split("\n")[0], other))
+    return hits
+
+
+@pytest.mark.parametrize(
+    "figsize,band",
+    [
+        ((7.4, 3.4), None),          # the standalone panel
+        ((7.4, 6.2), (1.45, 0.52)),  # as packed into the combined figure
+    ],
+)
+def test_exemplar_captions_do_not_overlap_the_logos_above(tmp_path, figsize, band):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=figsize)
+    if band is None:
+        spec = GridSpec(1, 1, figure=fig)[0, 0]
+    else:
+        ratio, hspace = band
+        spec = GridSpec(2, 1, figure=fig, height_ratios=[1.0, ratio],
+                        hspace=hspace)[1, 0]
+    drew = fig2.panel_exemplars(
+        fig, spec, ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=10, n_restricted=14,
+    )
+    assert drew == 24
+    hits = _title_collisions(fig)
+    plt.close(fig)
+    assert not hits, f"captions overlap logos at figsize={figsize}: {hits}"
+
+
+def test_category_labels_do_not_overlap_each_other(tmp_path):
+    """The two rotated band labels sat on one sub-row each and collided."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(7.4, 6.2))
+    spec = GridSpec(2, 1, figure=fig, height_ratios=[1.0, 1.45], hspace=0.52)[1, 0]
+    fig2.panel_exemplars(
+        fig, spec, ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=10, n_restricted=14,
+    )
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    rotated = [t for t in fig.texts if t.get_rotation() == 90]
+    assert len(rotated) == 2, "expected one label per category"
+    a, b = (t.get_window_extent(r) for t in rotated)
+    plt.close(fig)
+    assert not a.overlaps(b), "the two category labels overlap"

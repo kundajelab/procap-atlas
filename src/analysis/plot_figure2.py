@@ -255,8 +255,14 @@ def panel_concentration(
             parts.append(
                 f"biosample concentration {brow.iloc[0]['swap_concentration']:.2f}"
             )
-    ax.text(0.97, 0.42, "\n".join(parts), transform=ax.transAxes, ha="right",
-            va="top", fontsize=7.5)
+    # Anchored to the observed line in data coordinates, not to 0.97 of the
+    # axes: the line sits at the right edge, so an axes-fraction anchor put the
+    # last line of text underneath it.
+    ax.set_xlim(right=max(ax.get_xlim()[1], obs + 1.5))
+    ax.text(
+        obs - 1.2, 0.42, "\n".join(parts),
+        transform=ax.get_xaxis_transform(), ha="right", va="top", fontsize=7.5,
+    )
 
     ax.set_xlabel("Motifs confined to a single tissue group")
     ax.set_ylabel("Permutations")
@@ -278,15 +284,36 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
 
     n = len(rows)
     n_sub = max(1, -(-n // per_row))
-    # Row spacing has to follow the tallest caption, not a constant. Restricted
-    # motifs carry three lines (name / lineage / n exp) against the ubiquitous
-    # panel's two, and at a fixed hspace the third line was drawn straight
-    # through the logos of the row above.
+
+    # Row spacing has to be solved in inches, not set as a constant.
+    # `hspace` is a fraction of the *axis* height, while a caption is sized in
+    # points, so any fixed value that clears three lines (name / lineage /
+    # n exp) in the standalone panel draws them straight through the logos of
+    # the row above once the same grid is packed into the combined figure,
+    # where the band is roughly a third as tall.
+    #
+    # For n rows at hspace h: ax = band/(n + (n-1)h) and gap = h*ax, so
+    # requiring gap >= caption gives h = c*n / (band - c*(n-1)).
     caption_lines = max(
         (str(label_fn(r)).count("\n") + 1 for r in rows.itertuples()),
         default=1,
     )
-    hspace = 1.05 + 0.45 * max(0, caption_lines - 2)
+    band = spec.get_position(fig)
+    band_h = band.height * fig.get_size_inches()[1]
+    hspace = 1.05
+    if n_sub > 1:
+        while label_fontsize > 4.0:
+            caption_h = caption_lines * label_fontsize * 1.2 / 72.0 + 0.015
+            denom = band_h - caption_h * (n_sub - 1)
+            if denom > 0:
+                needed = caption_h * n_sub / denom
+                # A band tall enough to satisfy this still has to leave the
+                # logos legible; past ~3.5 the axes are thinner than the
+                # captions and shrinking the text is the better trade.
+                if needed <= 3.5:
+                    hspace = max(hspace, needed)
+                    break
+            label_fontsize -= 0.4
     inner = GridSpecFromSubplotSpec(
         n_sub, per_row, subplot_spec=spec, wspace=0.30, hspace=hspace
     )
@@ -308,9 +335,14 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
         ax.set_title(label_fn(r), fontsize=label_fontsize, pad=1.2,
                      linespacing=1.2)
         drew += 1
-        if i == 0:
-            ax.text(-0.12, 0.5, subtitle, transform=ax.transAxes, rotation=90,
-                    ha="right", va="center", fontsize=7, color="#555555")
+    # Centred on the band rather than on its first sub-row. Anchored to the
+    # first axis, the two category labels were both centred on a single logo
+    # row and overlapped each other whenever the label was taller than one row.
+    if drew:
+        fig.text(
+            band.x0 - 0.018, band.y0 + band.height / 2, subtitle,
+            rotation=90, ha="right", va="center", fontsize=7, color="#555555",
+        )
     return drew
 
 
@@ -332,18 +364,25 @@ def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
                     n_ubiquitous=12, n_restricted=12, per_row=6):
     trim_kwargs = trim_kwargs or {}
     rows = []
-    if profile_rows is not None and len(profile_rows) and profile_h5:
+    # The "count head:" prefix is only informative when a profile row is
+    # present to contrast with. Without one, both labels carry it, and they
+    # are then longer than the bands they label and overlap each other.
+    have_profile = bool(
+        profile_rows is not None and len(profile_rows) and profile_h5
+    )
+    prefix = "count head: " if have_profile else ""
+    if have_profile:
         rows.append(("profile head: initiation shape",
                      rank_for_panel(profile_rows, n_restricted), profile_h5,
                      lambda r: str(r.jaspar_name)))
     rows.append((
-        "count head: ubiquitous",
+        f"{prefix}ubiquitous",
         rank_for_panel(ubiquitous, n_ubiquitous),
         h5_path,
         lambda r: f"{r.jaspar_name}\n{int(r.prevalence)} exp",
     ))
     rows.append((
-        "count head: lineage-restricted",
+        f"{prefix}lineage-restricted",
         rank_for_panel(restricted, n_restricted),
         h5_path,
         lambda r: (
@@ -496,8 +535,8 @@ def main():
               "profile row", file=sys.stderr)
 
     fig = plt.figure(figsize=tuple(args.figsize))
-    gs = GridSpec(2, 2, figure=fig, height_ratios=[1.0, 1.15],
-                  hspace=0.78, wspace=0.26,
+    gs = GridSpec(2, 2, figure=fig, height_ratios=[1.0, 1.45],
+                  hspace=0.52, wspace=0.26,
                   left=0.09, right=0.965, top=0.94, bottom=0.04)
 
     panel_rarefaction(fig.add_subplot(gs[0, 0]), tables["curves"], args.mark_k)

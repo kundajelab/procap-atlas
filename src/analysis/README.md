@@ -782,6 +782,37 @@ numbers and trims to nonsense instead of raising, which is why
 `tests/test_motif_atlas_panels.py` checks that a synthetic 10bp core inside a
 50bp window trims back to 10bp.
 
+#### Panel c layout: spacing has to be solved in inches
+
+`_logo_grid` sizes row spacing from the caption height in **inches**, not from
+a constant `hspace`. `hspace` is a fraction of the *axis* height while a
+caption is sized in points, so any value tuned on the standalone panel draws
+the third caption line (name / lineage / n exp) straight through the logos of
+the row above once the same grid is packed into `figure2_count.pdf`, where the
+band is about a third as tall. For `n` sub-rows, `ax = band/(n + (n-1)h)` and
+`gap = h*ax`, so requiring `gap >= caption` gives:
+
+```text
+h = caption * n / (band - caption * (n - 1))
+```
+
+If that has no solution the label font shrinks in 0.4pt steps rather than the
+figure silently overlapping. Two other layout rules worth keeping:
+
+- The rotated category labels are centred on the **band**, via `fig.text` in
+  figure coordinates. Anchored to the first sub-row's axes they were both
+  centred on a single logo row and overlapped each other.
+- Those labels drop the `count head:` prefix unless a profile row is present
+  to contrast with — with the prefix they are wider than the bands they label.
+- Panel b's statistics block is anchored to the observed line in **data**
+  coordinates, not to 0.97 of the axes. The line sits at the right edge, so an
+  axes-fraction anchor put the last line of text underneath it.
+
+`tests/test_motif_atlas_panels.py` renders the panel at both the standalone and
+the packed figure size and asserts no caption box intersects another axis, so
+this cannot regress silently again — it escaped review twice before the test
+existed.
+
 ### Compendium Redundancy
 
 Measures how much of the lexicon is the same motif counted twice. Every count
