@@ -862,6 +862,169 @@ def plot_tiers(pairs: pd.DataFrame, path: Path) -> None:
     plt.close(fig)
 
 
+TIER_COLOR = {
+    "matched": "#333333",
+    "same biosample": "#2166ac",
+    "same tissue": "#1b7837",
+    "different tissue": "#b2182b",
+}
+
+
+def draw_differential_tiers(ax, pairs: pd.DataFrame) -> list[str]:
+    """Differential r by relatedness tier, with the tier ordering as the point.
+
+    Box rather than violin: the distributions are tight and unimodal, and a
+    violin at 18,135 points against 289 implies a density comparison the
+    sample sizes do not support.
+
+    The ordering is the internal control and has to be readable, so each tier
+    is annotated with its n and median. Replicate pairs *should* be lowest --
+    they differ only by measurement noise, so there is nothing to predict --
+    and a metric that confused shared promoter signal for cell-type signal
+    would not produce that gradient.
+    """
+    present = [t for t in TIERS if (pairs["tier"] == t).any()]
+    data = [pairs[pairs["tier"] == t]["differential_r"].dropna().to_numpy()
+            for t in present]
+    bp = ax.boxplot(data, widths=0.6, showfliers=False, patch_artist=True,
+                    medianprops=dict(color="black", lw=1.4))
+    for patch, tier in zip(bp["boxes"], present):
+        patch.set_facecolor(TIER_COLOR.get(tier, "#888888"))
+        patch.set_alpha(0.55)
+    ax.axhline(0, color="#999999", lw=0.8, ls=":", zorder=0)
+    # Reserve a strip below the data for the n/median labels. Placing them at
+    # the existing ylim drew them through the lower whiskers, which dip below
+    # zero for the replicate tier.
+    y0, y1 = ax.get_ylim()
+    strip = (y1 - y0) * 0.17
+    ax.set_ylim(y0 - strip, y1)
+    for i, (tier, vals) in enumerate(zip(present, data), start=1):
+        ax.text(i, y0 - strip * 0.55,
+                f"n={len(vals):,}\nmed {np.median(vals):.3f}",
+                ha="center", va="center", fontsize=6.5, color="#444444")
+    ax.set_xticks(range(1, len(present) + 1))
+    ax.set_xticklabels([t.replace(" ", "\n") for t in present], fontsize=7.5)
+    ax.set_ylabel("corr(Δ predicted, Δ observed)")
+    ax.set_title("Differential prediction by relatedness", fontsize=9.5,
+                 loc="left", fontweight="bold")
+    ax.spines[["top", "right"]].set_visible(False)
+    return present
+
+
+def plot_differential_tiers(
+    pairs: pd.DataFrame, summary: pd.DataFrame, path: Path
+) -> list[str]:
+    fig, ax = plt.subplots(figsize=(4.0, 3.1))
+    present = draw_differential_tiers(ax, pairs)
+    fig.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return present
+
+
+def ceiling_fit(quads: pd.DataFrame) -> tuple[pd.DataFrame, float, int]:
+    """(usable quadruples, through-origin slope, number omitted).
+
+    Split out of the plotting so the number the panel annotates is testable
+    without parsing a PDF.
+
+    The slope is `sum(xy)/sum(x^2)`, not the mean of per-quadruple `attained`
+    ratios. The two differ materially: a ratio whose denominator is a
+    near-zero ceiling is noise, and averaging ratios lets those dominate. The
+    through-origin fit weights each quadruple by how much reproducible signal
+    it actually had.
+
+    Quadruples with a non-positive ceiling are omitted entirely rather than
+    clipped: there the two replicate-derived differentials anticorrelate, so
+    the pair is noise-dominated and the ratio is meaningless rather than
+    small.
+    """
+    usable = quads[quads["ceiling"] > 0].dropna(subset=["attained"])
+    if not len(usable):
+        return usable, float("nan"), len(quads)
+    x = usable["ceiling"].to_numpy(dtype=float)
+    y = usable["model"].to_numpy(dtype=float)
+    slope = float((x * y).sum() / (x * x).sum())
+    return usable, slope, len(quads) - len(usable)
+
+
+def draw_differential_ceiling(ax, quads: pd.DataFrame) -> float:
+    """Model differential against the reproducible differential, per quadruple.
+
+    The panel that makes r ~ 0.18 interpretable. x is how much of the
+    cell-type difference is measurable at all -- the correlation between two
+    independent replicate-derived differentials -- and y is what the model
+    recovers. The diagonal is the ceiling; the fitted line through the origin
+    is the fraction attained.
+
+    A scatter rather than a bar of the median attained fraction, because the
+    constancy of the slope is the finding: the ceiling ranges over roughly
+    0.4-0.95 across biosample pairs while the attained fraction stays near
+    0.26, so the model recovers a fixed share of whatever is reproducible
+    rather than a fixed correlation. A single median would hide that.
+
+    Quadruples with a non-positive ceiling are dropped: the two replicate
+    differentials anticorrelate there, so the pair is noise-dominated and the
+    ratio is meaningless rather than small.
+    """
+    q, slope, dropped = ceiling_fit(quads)
+    for tier in TIERS:
+        sub = q[q["tier"] == tier]
+        if not len(sub):
+            continue
+        ax.scatter(sub["ceiling"], sub["model"], s=7, alpha=0.35, lw=0,
+                   color=TIER_COLOR.get(tier, "#888888"),
+                   label=f"{tier} (n={len(sub):,})")
+
+    hi = float(max(q["ceiling"].max(), q["model"].max())) * 1.05
+    # Labels sit on a white box: both annotations have to cross the point
+    # cloud or the fitted line to reach the space they belong in.
+    box = dict(boxstyle="round,pad=0.18", fc="white", ec="none", alpha=0.85)
+    ax.plot([0, hi], [0, hi], color="#555555", lw=0.9, ls="--", zorder=1)
+    # Below the legend (upper left) and above the point cloud: the empty
+    # triangle between the diagonal and the data is the only free space.
+    ax.annotate("ceiling (perfect prediction)", xy=(hi * 0.52, hi * 0.52),
+                xytext=(hi * 0.16, hi * 0.66), fontsize=6.5, color="#555555",
+                bbox=box, zorder=6,
+                arrowprops=dict(arrowstyle="-", lw=0.5, color="#555555"))
+
+    ax.plot([0, hi], [0, hi * slope], color="black", lw=1.4, zorder=3)
+    ax.annotate(f"{slope:.0%} of reproducible\ndifference recovered",
+                xy=(hi * 0.90, hi * 0.90 * slope),
+                xytext=(hi * 0.97, hi * 0.42), fontsize=7, ha="right",
+                bbox=box, zorder=6,
+                arrowprops=dict(arrowstyle="-", lw=0.5, color="black"))
+
+
+    ax.set_xlim(0, hi)
+    ax.set_ylim(0, hi)
+    ax.set_aspect("equal")
+    ax.set_xlabel("reproducible differential (replicate-derived ceiling)")
+    ax.set_ylabel("model differential")
+    ax.set_title("Differential accuracy against its ceiling", fontsize=9.5,
+                 loc="left", fontweight="bold")
+    if dropped:
+        # Bottom right, below the fitted line -- the only region free of both
+        # the point cloud and the two other annotations. Stating the drop on
+        # the panel matters: a reader counting points against the reported
+        # quadruple total would otherwise find them missing.
+        ax.text(hi * 0.98, hi * 0.045,
+                f"{dropped} of {len(quads):,} quadruples omitted "
+                "(ceiling \u2264 0)",
+                fontsize=5.6, color="#777777", va="center", ha="right",
+                bbox=box, zorder=6)
+    ax.legend(frameon=False, fontsize=6, loc="upper left")
+    ax.spines[["top", "right"]].set_visible(False)
+    return slope
+
+
+def plot_differential_ceiling(quads: pd.DataFrame, path: Path) -> float:
+    fig, ax = plt.subplots(figsize=(4.0, 3.1))
+    slope = draw_differential_ceiling(ax, quads)
+    fig.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return slope
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1027,6 +1190,10 @@ def main():
             file=sys.stderr,
         )
         print(diff_summary.to_string(index=False), file=sys.stderr)
+        plot_differential_tiers(
+            diff_pairs, diff_summary,
+            args.out_dir / "cross_celltype_differential_tiers.pdf",
+        )
 
         ceiling = differential_ceiling(observed, predicted, groups, biosamples)
         if len(ceiling):
@@ -1050,6 +1217,9 @@ def main():
                 file=sys.stderr,
             )
             print(ceil_summary.to_string(index=False), file=sys.stderr)
+            plot_differential_ceiling(
+                ceiling, args.out_dir / "cross_celltype_differential_ceiling.pdf"
+            )
         print(
             "\nHow much cell-type difference the models reproduce "
             "(ProCapNet's comparison): predicted-vs-predicted should be no "

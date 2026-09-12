@@ -1943,15 +1943,23 @@ the objection the previous one raises.
 
 ```text
 +---------------------------+---------------------------+
-| a  tissue-naming top-k    | b  differential by tier,  |
-|    vs tau threshold       |    vs its own ceiling     |
-|    (the positive result)  |    (magnitude, not rank)  |
+| a  tissue-naming top-k    | b1 differential by tier   |
+|    vs tau threshold       |    (the ordering control) |
+|    (the positive result)  |                           |
 +---------------------------+---------------------------+
-| c  homogenization:        | d  198 x 198 matrix,      |
-|    measured vs predicted  |    ordered by tissue      |
-|    (the limitation)       |    (the raw object)       |
+| b2 model vs reproducible  | c  homogenization:        |
+|    differential, per pair |    measured vs predicted  |
+|    (magnitude vs ceiling) |    (the limitation)       |
 +---------------------------+---------------------------+
+| d  198 x 198 matrix, ordered by tissue (raw object)   |
+|    -- drop to text if it reads as noise at final size |
++-------------------------------------------------------+
 ```
+
+Five panels rather than four, because the differential needs two. If space
+forces a cut, **b2 is the one to keep and b1 the one to move to text**: the
+tier gradient can be stated in a sentence with its three medians, while the
+constant-slope result cannot be conveyed without the scatter.
 
 **Panel a — tissue naming.** x = tau quantile threshold, y = accuracy; three
 lines (top-1/3/5) with their chance rates `k/G` as dashed horizontals. Source
@@ -1972,12 +1980,62 @@ tau q    n_peaks   top1    chance   x chance
 The monotonicity is the internal control: a metric picking up depth or batch
 structure would not track tau.
 
-**Panel b — differential prediction, ceiling-normalized.** Box or violin of
-`differential_r` by tier from `cross_celltype_differential_pairs.tsv`, with a
-second y-axis (or an overlaid band) for the replicate-derived ceiling. Tier
-ordering is itself the control — replicate pairs differ only by noise, so they
-*should* be lowest, and they are (0.064 / 0.139 / 0.177). 17,546 of the 17,548
-cross-tissue pairs are positive.
+**Panel b — differential prediction. Two panels, not one** (implemented Sep
+2026 as `draw_differential_tiers` and `draw_differential_ceiling`; both are
+written on every run to `cross_celltype_differential_{tiers,ceiling}.pdf`).
+
+They were split because a single axes cannot carry both claims. The tier
+gradient needs all 19,503 pairs including the replicate tier, which has no
+ceiling estimate at all; the ceiling view is restricted to the 1,058
+quadruples where both biosamples are replicated. Forcing them together would
+mean a twin axis over two different row sets.
+
+**b1, by tier** — box of `differential_r` from
+`cross_celltype_differential_pairs.tsv`, one box per tier, each labelled with
+its n and median. Box rather than violin: a violin at 18,135 points beside 289
+implies a density comparison those sample sizes do not support. The gradient
+is the internal control and it holds — 0.064 / 0.128 / 0.176 — with replicate
+pairs correctly lowest, since they differ only by measurement noise and so
+offer nothing to predict.
+
+**b2, against the ceiling** — scatter of model differential against the
+replicate-derived reproducible differential, one point per quadruple, with the
+diagonal (perfect prediction) and the through-origin fit.
+
+The reason this is a scatter and not a bar of the median attained fraction is
+that **the constancy of the slope is the finding**:
+
+```text
+ceiling quintile   median ceiling   median model   median attained
+0.04-0.52                   0.443          0.127             0.330
+0.52-0.65                   0.593          0.150             0.253
+0.65-0.74                   0.693          0.174             0.251
+0.74-0.81                   0.774          0.204             0.265
+0.81-0.97                   0.858          0.224             0.259
+```
+
+The ceiling ranges over roughly 0.4-0.95 across biosample pairs while the
+attained fraction sits at 0.25-0.27 in the top four quintiles, and
+Pearson(ceiling, model) = 0.574. So the models recover a **fixed share of
+whatever is reproducible**, not a fixed correlation — a much stronger
+statement than "r = 0.18", and one a median bar would hide. The fitted
+through-origin slope is 0.260.
+
+The lowest quintile reads higher (0.330) because a ratio with a small
+denominator is noisy, which is also why `ceiling_fit` uses
+`sum(xy)/sum(x^2)` rather than the mean of per-quadruple ratios: the
+through-origin fit weights each quadruple by how much reproducible signal it
+actually had. On the real data the mean ratio would overstate the slope.
+
+15 of the 1,058 quadruples have a **non-positive ceiling** — the two
+replicate-derived differentials anticorrelate, so the pair is noise-dominated
+and the ratio is meaningless rather than small. They are omitted, and the
+panel says so on its face, because a reader counting points against the
+reported 1,058 would otherwise find them missing.
+
+Note that only `same tissue` (50) and `different tissue` (993) appear in b2:
+the ceiling needs replication on *both* sides of a pair, which the matched and
+same-biosample tiers cannot provide by construction.
 
 This panel is the one that reconciles the two literatures: differencing cancels
 the shared promoter program analytically, so it is the projection an edit or
@@ -2042,9 +2100,14 @@ before any tier gap is quoted, but it is a caveat, not a panel.
 2. ~~Verify the 50-experiment numbers reproduce on the subset rows.~~ Done:
    observed byte-identical, predicted to 1.6e-5 relative.
 3. ~~Implement `differential_ceiling` + its test.~~ Done.
-4. **Next:** add `plot_topk`, `plot_differential_tiers`,
-   `plot_homogenization`; only `plot_matrix` and `plot_tiers` exist today.
-5. Assemble, then hand over per-panel PDFs for manual restyling, as with
+4. ~~Add `plot_differential_tiers` and the ceiling scatter.~~ Done; both are
+   written on every run, with `ceiling_fit` split out so the annotated slope
+   is testable without parsing a PDF.
+5. **Next:** `plot_topk` (panel a) and `plot_homogenization` (panel c). Both
+   read tables that already exist —
+   `cross_celltype_topk.tsv` and
+   `cross_celltype_homogenization_{specific,ubiquitous}.tsv`.
+6. Assemble, then hand over per-panel PDFs for manual restyling, as with
    Figure 2.
 
 ### Thresholding on tissue specificity

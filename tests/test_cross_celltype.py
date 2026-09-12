@@ -1385,3 +1385,160 @@ def test_attained_is_nan_rather_than_infinite_at_a_zero_ceiling():
     })
     out = ccp.summarize_ceiling(quads)
     assert np.isnan(out.at[0, "median_attained"])
+
+
+# --- differential prediction panels -----------------------------------------
+
+
+def ceiling_frame(rows):
+    """rows = [(tier, ceiling, model)]"""
+    df = pd.DataFrame(rows, columns=["tier", "ceiling", "model"])
+    df["biosample_a"] = "A"
+    df["biosample_b"] = "B"
+    df["experiment_a"] = "e1"
+    df["experiment_b"] = "e2"
+    df["attained"] = np.where(df["ceiling"] > 0, df["model"] / df["ceiling"],
+                              np.nan)
+    return df
+
+
+def test_ceiling_fit_excludes_non_positive_ceilings():
+    """A negative ceiling means the replicate differentials anticorrelate, so
+    the ratio is meaningless rather than small."""
+    quads = ceiling_frame([
+        ("different tissue", 0.8, 0.2),
+        ("different tissue", 0.6, 0.15),
+        ("different tissue", -0.4, 0.10),
+        ("different tissue", 0.0, 0.05),
+    ])
+    usable, slope, dropped = ccp.ceiling_fit(quads)
+    assert len(usable) == 2 and dropped == 2
+    assert set(usable["ceiling"]) == {0.8, 0.6}
+
+
+def test_ceiling_fit_uses_through_origin_slope_not_the_mean_ratio():
+    """sum(xy)/sum(x^2), not mean(y/x).
+
+    They differ materially: a ratio whose denominator is a near-zero ceiling
+    is noise, and averaging ratios lets those points dominate.
+    """
+    quads = ceiling_frame([
+        ("different tissue", 0.8, 0.20),    # ratio 0.25
+        ("different tissue", 0.4, 0.10),    # ratio 0.25
+        ("different tissue", 0.02, 0.02),   # ratio 1.00 -- noise
+    ])
+    _, slope, _ = ccp.ceiling_fit(quads)
+    x = np.array([0.8, 0.4, 0.02])
+    y = np.array([0.20, 0.10, 0.02])
+    assert slope == pytest.approx((x * y).sum() / (x * x).sum())
+    assert slope == pytest.approx(0.2506, abs=1e-3)
+    assert abs(slope - (y / x).mean()) > 0.2, "the mean ratio would be 0.5"
+
+
+def test_ceiling_fit_is_all_nan_when_nothing_is_usable():
+    quads = ceiling_frame([("different tissue", -0.2, 0.1)])
+    usable, slope, dropped = ccp.ceiling_fit(quads)
+    assert len(usable) == 0 and dropped == 1 and np.isnan(slope)
+
+
+def test_ceiling_panel_annotates_the_fitted_slope():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    quads = ceiling_frame([("different tissue", 0.8, 0.2),
+                           ("different tissue", 0.6, 0.15)])
+    fig, ax = plt.subplots()
+    slope = ccp.draw_differential_ceiling(ax, quads)
+    texts = [t.get_text() for t in ax.texts]
+    plt.close(fig)
+    assert any(f"{slope:.0%}" in t for t in texts), texts
+
+
+def test_ceiling_panel_states_how_many_quadruples_it_omitted():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    quads = ceiling_frame([("different tissue", 0.8, 0.2),
+                           ("different tissue", -0.3, 0.1),
+                           ("different tissue", 0.0, 0.1)])
+    fig, ax = plt.subplots()
+    ccp.draw_differential_ceiling(ax, quads)
+    texts = " ".join(t.get_text() for t in ax.texts)
+    plt.close(fig)
+    assert "2 of 3" in texts, texts
+
+
+def test_ceiling_panel_annotations_do_not_overlap():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rng = np.random.default_rng(0)
+    ceil = rng.uniform(0.35, 0.95, 400)
+    quads = ceiling_frame([
+        ("different tissue", float(c), float(c * 0.26 + rng.normal(0, 0.02)))
+        for c in ceil
+    ] + [("different tissue", -0.2, 0.05)])
+    fig, ax = plt.subplots(figsize=(4.0, 3.1))
+    ccp.draw_differential_ceiling(ax, quads)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    boxes = [t.get_window_extent(r) for t in ax.texts if t.get_text().strip()]
+    plt.close(fig)
+    assert len(boxes) >= 3, "expected ceiling, slope and omission labels"
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            assert not a.overlaps(b), "ceiling-panel annotations overlap"
+
+
+def test_differential_tiers_draws_one_box_per_present_tier(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    pairs = pd.DataFrame({
+        "tier": (["same biosample"] * 5 + ["same tissue"] * 5
+                 + ["different tissue"] * 5),
+        "differential_r": ([0.05] * 5 + [0.12] * 5 + [0.18] * 5),
+    })
+    summary = ccp.summarize_differential(pairs)
+    path = tmp_path / "tiers.pdf"
+    ccp.plot_differential_tiers(pairs, summary, path)
+    assert path.exists() and path.stat().st_size > 1000
+
+
+def test_differential_tiers_omits_absent_tiers(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    pairs = pd.DataFrame({
+        "tier": ["different tissue"] * 6,
+        "differential_r": [0.1, 0.2, 0.15, 0.18, 0.12, 0.19],
+    })
+    summary = ccp.summarize_differential(pairs)
+    path = tmp_path / "one.pdf"
+    ccp.plot_differential_tiers(pairs, summary, path)   # must not raise
+    assert path.exists()
+
+
+def test_differential_tiers_labels_every_box_with_n_and_median():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    pairs = pd.DataFrame({
+        "tier": ["same biosample"] * 4 + ["different tissue"] * 6,
+        "differential_r": [0.05, 0.06, 0.07, 0.08] + [0.18] * 6,
+    })
+    fig, ax = plt.subplots(figsize=(4.0, 3.1))
+    present = ccp.draw_differential_tiers(ax, pairs)
+    texts = " ".join(t.get_text() for t in ax.texts)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    boxes = [t.get_window_extent(r) for t in ax.texts if t.get_text().strip()]
+    plt.close(fig)
+    assert present == ["same biosample", "different tissue"]
+    assert "n=4" in texts and "n=6" in texts
+    assert "med 0.180" in texts
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            assert not a.overlaps(b), "tier labels overlap"
