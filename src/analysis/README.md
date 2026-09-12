@@ -171,7 +171,7 @@ derived in the section linked in the right-hand column.
 | Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.811 tissue / 0.918 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
 | Confinement is lineage, not replication | 37 single-group clusters vs 6.01 expected exactly (`p = 2.5e-20`) or 6.07 under the swap null (`p < 0.001`), over 21 tissue groups | [Concentration](#discovery-concentration) |
 | Small studies miss most of the lexicon | 6.8% of the lexicon recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
-| Tissue diversity matters, but second to count | single-tissue sampling recovers ~14–17% fewer motifs at matched k | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Tissue diversity matters, but second to count | single-tissue sampling recovers 15% fewer motifs at k=5, ~19–20% at k=10–25 | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
 | Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates | [Redundancy](#measured-results) |
 | Not an artifact of the experiment universe | the 198-only control build reproduces every figure above | [Experiment universe](#experiment-universe-224-219-198) |
 
@@ -395,9 +395,31 @@ tested, so the claim does not depend on keeping low-abundance clusters in.
 `uniform` sits close to `diverse` because a random draw from 198 experiments
 spanning 21 tissue groups is already tissue-diverse. The informative contrast
 is `redundant` against the others: a study confined to one tissue recovers
-~14–17% fewer motifs at matched experiment count. Experiment count, not tissue
-diversity, is the primary driver — state the diversity effect at that size and
-do not overclaim it.
+fewer motifs at matched experiment count, by a margin that grows with k:
+
+```text
+k        diverse  uniform  redundant   redundant below diverse
+1           24.4     23.2       23.1                     5.1%
+5           73.2     71.0       61.9                    15.4%
+10         116.0    109.5       93.6                    19.3%
+25         193.8    180.9      157.2                    18.9%
+50         258.8    246.7      222.7                    13.9%
+```
+
+The gap peaks near k=10–25 at ~20% and closes at both ends — at k=1 there is
+no diversity to differ over, and by k=50 every scheme is sampling most groups.
+Experiment count, not tissue diversity, remains the primary driver: `diverse`
+at k=5 recovers 73 clusters where `redundant` at k=10 recovers 94, so five
+more experiments beat rebalancing. State the diversity effect at a stated k
+and do not overclaim it.
+
+These numbers moved with the [haematopoietic lineage
+split](#haematopoietic-lineages-are-split-not-pooled). The earlier
+18-group map gave ~14-17%; the gap widened because `redundant` exhausts a
+single group sooner once the largest group is 31 experiments rather than 41.
+The uniform curve is unaffected by grouping (6.8% at k=1, 20.7% at k=5 before
+and after), which is the check that the change is in the scheme and not in the
+lexicon.
 
 The unmatched (non-JASPAR) class appears to be a dramatic exception — 37
 clusters, diverse 18.0 vs uniform 13.3 vs redundant 10.9 at k=25, a +65% gap —
@@ -1307,10 +1329,10 @@ Measured on the real count-head compendium, both classes are strongly
 tissue-concentrated, and the conclusion holds at both group levels:
 
 ```text
-tissue level (18 groups)
+tissue level (21 groups)
 motif_class   n    pooled_conc  n_single  expected  enrichment  p
 TF-matched    306  0.810        37        6.01      6.2x       2.5e-20
-unmatched      37  0.767        14        2.19      6.4x        2.0e-09
+unmatched      37  0.776        11        1.57      7.0x        9.3e-08
 
 biosample level (112 groups)
 TF-matched    306  0.928         8        1.24      6.5x        3.6e-05
@@ -2121,13 +2143,15 @@ Tier sizes at full scale, for reference when reading any of the tables below:
 ```text
 matched            198
 same biosample     289   (30 replicated biosamples)
-same tissue      1,666   (17 of 18 groups have >=2 experiments)
-different tissue 17,548
+same tissue      1,079   (20 of 21 groups have >=2 experiments)
+different tissue 18,135
 ```
 
-Note that `differential_ceiling` is **not implemented** — the 0.765 above was
-computed ad hoc. It is the one piece of new code the supplementary figure
-needs.
+`differential_ceiling` is implemented (Sep 2026) and gives **1,058
+quadruples** over those 30 replicated biosamples, against the single one the
+50-experiment subset supported. Measured result: 26.7% of the reproducible
+cross-tissue difference attained, IQR 22-32%. The ad hoc 0.765/28.8% above is
+superseded but sits inside that IQR.
 
 ### Units: both sides must be rescaled first
 
