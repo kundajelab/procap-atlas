@@ -590,6 +590,29 @@ def main():
                                                           n_peaks=len(cols))
             rows.append(summary_s)
         if rows:
+            # Per-stratum sign tests, not just pooled medians. The pooled
+            # version treats pairs sharing a model as independent, and the
+            # stratum is where the claim actually lives.
+            for name, cols in strata.items():
+                if len(cols) < 2:
+                    continue
+                sub_pairs = long_form(
+                    correlation_matrix(
+                        take_columns(observed, cols),
+                        take_columns(predicted, cols), args.method,
+                    ),
+                    groups, biosamples,
+                )
+                per = paired_within_model(sub_pairs)
+                valid = per[per["beats_different_tissue"].notna()]
+                if len(valid):
+                    wins = int(valid["beats_different_tissue"].sum())
+                    print(
+                        f"  {name:11s}: {wins}/{len(valid)} models beat their "
+                        f"median different-tissue pair "
+                        f"(sign test p = {sign_test(wins, len(valid)):.3g})",
+                        file=sys.stderr,
+                    )
             strat = pd.concat(rows, ignore_index=True)
             strat.to_csv(args.out_dir / "cross_celltype_by_specificity.tsv",
                          sep="\t", index=False)

@@ -1741,6 +1741,52 @@ shallow ones can leave one usable experiment and no within-group pair — the
 tier the analysis exists to measure. Groups contributing a single experiment
 are reported (`adipose`, at `--min-reads 10000000`).
 
+### Measured results (50 experiments, 99,907 peaks, held-out folds)
+
+Pooled over all peaks the tiers are nearly flat — matched 0.460, same
+biosample 0.472, same tissue 0.437, different tissue 0.423 — so the headline
+number is not a big gap. The structure is in the stratification. With the
+default 0.5 RPM signal floor, 5,092 peaks per decile:
+
+```text
+stratum      matched  same biosample  same tissue  different  matched/diff
+specific       0.087           0.149        0.046      0.010         8.6x
+ubiquitous     0.735           0.762        0.719      0.714         1.03x
+```
+
+Per-stratum sign tests over models, which is the statistic to quote since
+pooled pairs share models:
+
+```text
+specific     47/50 models beat their median different-tissue pair   p = 3.7e-11
+ubiquitous   36/50                                                  p = 0.0026
+```
+
+**The dissociation is the finding.** At ubiquitous peaks the models are
+accurate (r ~ 0.72) and entirely interchangeable — cell-type identity buys
+1.03x, so that accuracy reflects a shared core-promoter program rather than
+cell-type knowledge. At tissue-specific peaks the models are weak in absolute
+terms (r ~ 0.09) but strongly discriminating, and `same tissue` lands between
+matched and different rather than with different, so transfer degrades with
+lineage distance instead of falling off a cliff. That gradient is what
+distinguishes learned lineage-relevant sequence features from memorization of
+one sample.
+
+Note both tiers are significant by sign test even at 1.03x: the test is
+sensitive to direction, not size. Quote the ratios.
+
+**Do not compare absolute r across strata.** Within the specific stratum most
+peaks are near-zero for any given experiment, since they are specific to
+*other* tissues, so there is little variance to explain and r is compressed
+mechanically. Tier comparisons *within* a stratum are the interpretable part.
+
+Two limits on the claim as it stands. `same biosample` is only 4 pairs and
+sits *above* matched (0.149 vs 0.087), so matched and replicate-level transfer
+cannot currently be separated. And matched accuracy correlates with read depth
+at Spearman 0.366, which concerns between-model spread rather than the
+within-model tier ordering, but means a depth-matched check is needed before
+the pooled numbers are quoted.
+
 ### Confounds reported rather than assumed away
 
 - **Read depth.** Deeper experiments are predicted better and depth differs by
