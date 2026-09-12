@@ -269,6 +269,74 @@ def correlation_matrix(
     return out
 
 
+def differential_prediction(
+    observed: pd.DataFrame,
+    predicted: pd.DataFrame,
+    groups: dict[str, str],
+    biosamples: dict[str, str] | None,
+) -> pd.DataFrame:
+    """Does a model predict the *difference* between two cell types?
+
+    For each unordered pair, `corr(pred_i - pred_j, obs_i - obs_j)` across
+    peaks. Differencing cancels the shared component analytically instead of
+    by peak selection, which matters because a level correlation is dominated
+    by sequence-intrinsic promoter strength: two models can correlate at 0.61
+    across tissue-specific peaks while the deviations that encode cell type --
+    small in variance, but the entire question -- are invisible.
+
+    This is the projection that perturbation and promoter-edit experiments
+    measure, since `f(mutant) - f(reference)` within one model cancels the
+    baseline exactly. It is why matched-versus-unmatched can be decisive for
+    edits while looking modest in a level correlation, and reconciles those two
+    literatures rather than choosing between them.
+
+    Its own internal check is the tier ordering: predictability should scale
+    with how large the true difference is. On this atlas it does -- replicate
+    pairs 0.035, same tissue 0.110, different tissue 0.159 -- since replicate
+    pairs differ only by noise and so offer nothing to predict.
+    """
+    obs = np.log1p(observed.to_numpy(dtype=float))
+    pred = np.log1p(predicted.to_numpy(dtype=float))
+    exps = list(observed.index)
+
+    def corr(a, b):
+        a = a - a.mean()
+        b = b - b.mean()
+        na, nb = np.linalg.norm(a), np.linalg.norm(b)
+        return float(a @ b / (na * nb)) if na > 0 and nb > 0 else np.nan
+
+    rows = []
+    for i in range(len(exps)):
+        for j in range(i + 1, len(exps)):
+            rows.append({
+                "experiment_a": exps[i],
+                "experiment_b": exps[j],
+                "tier": tier_of(exps[i], exps[j], groups, biosamples),
+                "differential_r": round(
+                    corr(pred[i] - pred[j], obs[i] - obs[j]), 4
+                ),
+            })
+    return pd.DataFrame(rows)
+
+
+def summarize_differential(pairs: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for tier in TIERS:
+        sub = pairs[pairs["tier"] == tier]["differential_r"].dropna()
+        if not len(sub):
+            continue
+        rows.append({
+            "tier": tier,
+            "n_pairs": len(sub),
+            "median": round(float(sub.median()), 4),
+            "q25": round(float(sub.quantile(0.25)), 4),
+            "q75": round(float(sub.quantile(0.75)), 4),
+            "frac_positive": round(float((sub > 0).mean()), 4),
+            "sign_test_p": sign_test(int((sub > 0).sum()), len(sub)),
+        })
+    return pd.DataFrame(rows)
+
+
 def homogenization(
     observed: pd.DataFrame,
     predicted: pd.DataFrame,
@@ -655,6 +723,8 @@ def main():
     summary = summarize_tiers(pairs)
     per_model = paired_within_model(pairs)
     baseline = reproducibility_baseline(observed, groups, biosamples, args.method)
+    diff_pairs = differential_prediction(observed, predicted, groups, biosamples)
+    diff_summary = summarize_differential(diff_pairs)
     homog = homogenization(observed, predicted, groups, biosamples, args.method)
     homog.to_csv(args.out_dir / "cross_celltype_homogenization.tsv", sep="\t",
                  index=False) if args.out_dir.exists() else None
@@ -691,6 +761,23 @@ def main():
             args.out_dir / "cross_celltype_homogenization.tsv", sep="\t",
             index=False,
         )
+        diff_pairs.to_csv(
+            args.out_dir / "cross_celltype_differential_pairs.tsv", sep="\t",
+            index=False,
+        )
+        diff_summary.to_csv(
+            args.out_dir / "cross_celltype_differential.tsv", sep="\t",
+            index=False,
+        )
+        print(
+            "\nDifferential prediction -- corr(delta predicted, delta "
+            "observed) per pair. Differencing cancels the shared promoter "
+            "program, so this is the projection edit/perturbation experiments "
+            "measure, and predictability should scale with how large the true "
+            "difference is:",
+            file=sys.stderr,
+        )
+        print(diff_summary.to_string(index=False), file=sys.stderr)
         print(
             "\nHow much cell-type difference the models reproduce "
             "(ProCapNet's comparison): predicted-vs-predicted should be no "

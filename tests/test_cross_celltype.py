@@ -853,3 +853,77 @@ def test_cli_reports_homogenization(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "How much cell-type difference the models reproduce" in result.stderr
     assert (tmp_path / "out" / "cross_celltype_homogenization.tsv").exists()
+
+
+# --- differential prediction -----------------------------------------------
+#
+# The projection edit/perturbation experiments measure: f(mutant) - f(reference)
+# within one model cancels the shared baseline exactly. A level correlation
+# cannot see it, which is why matched-vs-unmatched can be decisive for edits
+# while looking modest in a level correlation.
+
+
+def test_differential_detects_cell_type_signal_a_level_correlation_hides():
+    rng = np.random.default_rng(0)
+    n = 2000
+    shared = np.abs(rng.normal(size=n)) * 20        # dominant shared component
+    delta = rng.normal(size=n)                      # small cell-type component
+    index = ["a", "b"]
+    cols = [f"p{i}" for i in range(n)]
+    obs = pd.DataFrame(np.vstack([shared + delta, shared - delta]),
+                       index=index, columns=cols).abs()
+    pred = pd.DataFrame(np.vstack([shared + 0.5 * delta, shared - 0.5 * delta]),
+                        index=index, columns=cols).abs()
+    groups = {"a": "blood", "b": "heart"}
+
+    level = ccp.correlation_matrix(obs, pred)
+    # the shared component makes every level correlation look alike
+    assert abs(level.at["a", "b"] - level.at["a", "a"]) < 0.1
+
+    diff = ccp.differential_prediction(obs, pred, groups, None)
+    # differencing recovers the cell-type component
+    assert diff["differential_r"].iloc[0] > 0.5
+
+
+def test_differential_is_near_zero_when_models_ignore_cell_type():
+    rng = np.random.default_rng(1)
+    n = 2000
+    shared = np.abs(rng.normal(size=n)) * 20
+    obs = pd.DataFrame(
+        np.vstack([shared + rng.normal(size=n), shared + rng.normal(size=n)]),
+        index=["a", "b"], columns=[f"p{i}" for i in range(n)],
+    ).abs()
+    pred = pd.DataFrame(np.vstack([shared, shared]), index=["a", "b"],
+                        columns=obs.columns)   # identical predictions
+    diff = ccp.differential_prediction(obs, pred, {"a": "x", "b": "y"}, None)
+    assert abs(diff["differential_r"].iloc[0]) < 0.1 or np.isnan(
+        diff["differential_r"].iloc[0]
+    )
+
+
+def test_differential_covers_unordered_pairs_once():
+    obs = counts_frame(["a", "b", "c"], n_peaks=100)
+    groups = {"a": "x", "b": "y", "c": "z"}
+    diff = ccp.differential_prediction(obs, obs, groups, None)
+    assert len(diff) == 3                            # 3 choose 2
+    assert not (diff["experiment_a"] == diff["experiment_b"]).any()
+
+
+def test_summarize_differential_reports_sign_test_and_fraction():
+    pairs = pd.DataFrame({
+        "tier": ["different tissue"] * 10,
+        "differential_r": [0.1] * 9 + [-0.05],
+    })
+    out = ccp.summarize_differential(pairs).iloc[0]
+    assert out["frac_positive"] == pytest.approx(0.9)
+    assert out["n_pairs"] == 10
+    assert 0 < out["sign_test_p"] < 0.05
+
+
+def test_cli_reports_differential_prediction(tmp_path):
+    result = run_cli(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "Differential prediction" in result.stderr
+    for name in ("cross_celltype_differential.tsv",
+                 "cross_celltype_differential_pairs.tsv"):
+        assert (tmp_path / "out" / name).exists(), name

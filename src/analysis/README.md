@@ -1741,6 +1741,48 @@ shallow ones can leave one usable experiment and no within-group pair — the
 tier the analysis exists to measure. Groups contributing a single experiment
 are reported (`adipose`, at `--min-reads 10000000`).
 
+### Differential prediction: the metric to lead with
+
+Level correlations and the homogenization comparison both say the models look
+largely cell-type-agnostic. That conflicts with work showing promoter-edit and
+cell-type-specific-locus predictions succeed in matched cell types and fail in
+unmatched ones. The conflict is one of projection, not of fact.
+
+A level correlation is dominated by sequence-intrinsic promoter strength, which
+every model learns. Two models can correlate at 0.614 across tissue-specific
+peaks because both capture that shared component, while the deviations encoding
+cell type — small in variance, but the entire question — contribute almost
+nothing to the correlation. **Edit prediction is differential**: `f(mutant) -
+f(reference)` within one model cancels the baseline exactly, leaving only the
+cell-type-specific part. So the two literatures measure different projections
+of the same model.
+
+`differential_prediction()` computes the same projection here, as
+`corr(pred_i - pred_j, obs_i - obs_j)` per pair:
+
+```text
+tier              n_pairs  median  frac > 0  sign test p
+same biosample          2  0.073        1.0         0.5
+same tissue            45  0.110        1.0       5.7e-14
+different tissue     1178  0.146        1.0         < 1e-300
+```
+
+**Every one of 1,178 cross-tissue pairs is positive.** The models do predict
+the direction of cell-type differences; the level correlation simply cannot see
+it.
+
+The tier ordering is the internal check, and it comes out right: predictability
+scales with how large the true difference is. Replicate pairs differ only by
+noise and so offer nothing to predict (0.073, and n=2 here); same tissue has
+some (0.110); different tissue has most (0.146). A metric that confused shared
+signal for cell-type signal would not produce that ordering.
+
+Magnitude remains modest — r ≈ 0.15 is ~2% of differential variance — so the
+honest summary is *direction reliably, magnitude poorly*. That is consistent
+with edits working in matched cell types (direction is what an edit's sign
+needs) and with ProCapNet's cell-type-agnostic conclusion (magnitude is what a
+level correlation sees).
+
 ### The metric ProCapNet actually uses
 
 Cochran et al. 2024 support their central claim -- "a largely cell-type-agnostic
