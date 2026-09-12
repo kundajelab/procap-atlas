@@ -167,12 +167,12 @@ derived in the section linked in the right-hand column.
 
 | Claim | Value | Where |
 | --- | --- | --- |
-| Lexicon size (prevalence ≥ 2) | 343 clusters of the 869 seen in the 198-experiment analysis universe (945 in the raw 219-experiment build) | [Rarefaction](#motif-lexicon-rarefaction) |
+| Lexicon size (prevalence ≥ 2) | 343 clusters of the 869 seen in the 198-experiment analysis universe (945 in the raw 219-experiment build); **155 distinct JASPAR names**, 118 requiring a name — quote as a bracket | [Rarefaction](#motif-lexicon-rarefaction) |
 | Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.811 tissue / 0.918 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
 | Confinement is lineage, not replication | 37 single-group clusters vs 6.01 expected exactly (`p = 2.5e-20`) or 6.07 under the swap null (`p < 0.001`), over 21 tissue groups | [Concentration](#discovery-concentration) |
-| Small studies miss most of the lexicon | 6.8% of the lexicon recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Small studies miss most of the lexicon | 6.8% recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold, and **≥47% missed even collapsed to distinct JASPAR names** | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
 | Tissue diversity matters, but second to count | single-tissue sampling recovers 15% fewer motifs at k=5, ~19–20% at k=10–25 | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
-| Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates | [Redundancy](#measured-results) |
+| Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates; collapsing to JASPAR names cuts the count but **raises** concentration enrichment 6.15×→7.73× | [Redundancy](#measured-results) |
 | Not an artifact of the experiment universe | the 198-only control build reproduces every figure above | [Experiment universe](#experiment-universe-224-219-198) |
 
 Three claims were checked and **withdrawn**; do not reintroduce them:
@@ -473,24 +473,94 @@ Measured on the canonical build (945 clusters over 219 experiments; 869 of
 them present in the 198-experiment analysis universe):
 
 ```text
-prevalence  clusters  names  families  unnamed   name units  family units
->= 1             869    160       102      294          454           396
->= 2             343    112        75       37          149           112
->= 3             239     87        61       15          102            76
+prevalence  clusters   name units  names only   family units  families only
+>= 1             869          454         160            396            102
+>= 2             343          155         118            116             79
+>= 3             239          114          99             82             67
 ```
 
 "name units"/"family units" keep unnamed clusters as their own units, which is
-the default; `--drop-unnamed` gives the bare 112 names / 75 families at
-prevalence≥2.
+the default; the "only" columns are `--drop-unnamed`.
 
-**Do not read 343 → 149 as 57% redundancy.** It is 2.3x, against a
+**Order of operations matters, and the script collapses before filtering.** A
+unit's prevalence is the union over its members, so a name seen once under
+cluster A and once under cluster B has unit prevalence 2 and belongs in a
+prevalence≥2 lexicon. Filtering clusters first would discard both
+prevalence-1 members before they could combine and undercount: 149 name units
+instead of 155 at prevalence≥2, 102 instead of 114 at ≥3. (An earlier version
+of this table reported the filter-first numbers; they were wrong for this
+purpose.)
+
+**Do not read 343 → 155 as 55% redundancy.** It is 2.2x, against a
 containment-free near-duplicate estimate of 3-6%, and the gap is JASPAR's
 resolution rather than the compendium's. The collapse is concentrated in a few
 labels — 31 clusters best-match SP9, and at family level SP alone absorbs ~40 —
 and SP/KLF family members are near-identical GC-boxes that a nearest-neighbour
 lookup cannot separate. Cluster 34, a tandem SP/KLF composite, would merge into
 the same unit as a single GC-box. Quote the two levels as a bracket (343 upper,
-~149 lower) and expect the truth nearer the upper end.
+155 lower) and expect the truth nearer the upper end.
+
+##### The reviewer question: how many of the 343 are real?
+
+Both Figure 2 panels were rerun at JASPAR-name level. The counts fall, as they
+must, but **every effect size holds or strengthens** — which is the direction
+to expect if the effects are real and cluster splitting was adding units
+without adding signal.
+
+Lexicon growth (panel a):
+
+```text
+                          lexicon   k=1    k=5    k=10   k=25   >=k5 missed
+cluster                       343  6.8%  20.7%  31.9%  52.7%      >=55%
+JASPAR name                   155 12.5%  29.2%  40.5%  59.4%      >=49%
+JASPAR name, named only       118 15.8%  35.2%  47.6%  66.7%      >=47%
+JASPAR family                 116 13.9%  29.3%  40.1%  58.9%
+```
+
+The "missed" column is the weakest-form bound: the largest k=5 recovery across
+every abundance threshold in `--sweep`, so it holds however aggressively
+low-abundance units are discarded. **Even counting only distinct JASPAR-named
+motifs under the harshest abundance floor, a five-experiment study misses at
+least 47% of the lexicon.** That is the version to quote at a reviewer, and it
+needs no position on whether the 343 clusters are each distinct.
+
+The tissue-diversity gap is essentially **invariant** to the collapse, so the
+redundancy concern does not touch it at all:
+
+```text
+                     k=5    k=10   k=25   k=50
+cluster            15.4%   19.3%  18.9%  13.9%
+JASPAR name        14.5%   18.8%  20.6%  15.9%
+names only         12.6%   16.1%  17.5%  12.9%
+```
+
+Discovery concentration (panel b), TF-matched, 21 tissue groups:
+
+```text
+                  units  single-group  expected  enrichment         p
+cluster             306            37      6.01       6.15x   2.5e-20
+JASPAR name         118            11      1.42       7.73x   3.0e-08
+```
+
+Single-group units fall 37 → 11 while enrichment **rises** 6.15x → 7.73x, and
+the swap-null concentration is unchanged (0.810 → 0.833). The weaker p is the
+smaller n, not a weaker effect. So the concentration result is not an artifact
+of counting splits of the same motif as separate lineage-restricted motifs.
+
+```bash
+# the reviewer-proof pair
+python src/analysis/plot_motif_rarefaction.py --head count \
+    --min-cluster-experiments 2 --collapse-by jaspar_name --sweep
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level tissue --collapse-by jaspar_name
+```
+
+Caveat to state alongside it: `jaspar_name` is the only identifier the
+compendium metadata carries — there is no JASPAR matrix-ID column. Collapsing
+by name is arguably the better choice regardless, since `MA0079.1/.2/.3` are
+versions of one motif and should merge, but it also merges distinct paralogues
+that share a name, which is why identity level is a lower bound rather than
+the answer.
 
 `--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
 stratified curves. Without it the script falls back to a JASPAR-match proxy
