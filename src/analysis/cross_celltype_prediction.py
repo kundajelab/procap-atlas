@@ -269,6 +269,102 @@ def correlation_matrix(
     return out
 
 
+def homogenization(
+    observed: pd.DataFrame,
+    predicted: pd.DataFrame,
+    groups: dict[str, str],
+    biosamples: dict[str, str] | None,
+    method: str = "pearson",
+) -> pd.DataFrame:
+    """Measured-vs-measured against predicted-vs-predicted, by tier.
+
+    ProCapNet's own cross-cell-type comparison (Cochran et al. 2024), and the
+    one that supports its central claim: predictions correlated across
+    cell-line pairs at r = 0.8-0.97 while the measurements correlated at only
+    r = 0.5-0.71, so the models represent cell types as far more alike than
+    they are. That is what "a largely cell-type-agnostic cis-regulatory code
+    of initiation" means quantitatively.
+
+    It answers a different question from the matched-vs-mismatched tiers.
+    Those ask whether a model carries *any* cell-type-specific information --
+    it does. This asks how much of the real cell-type difference the models
+    reproduce, and is the more demanding test: a model can beat every
+    mismatched competitor while still predicting almost the same profile
+    everywhere.
+
+    Stratified by peak specificity it becomes very stark. At tissue-specific
+    peaks on this atlas the measurements are uncorrelated across tissue groups
+    (median r = -0.009, as expected since the peaks are specific) while the
+    predictions still correlate at 0.614.
+    """
+    rows = []
+    for label, left, right in (
+        ("measured", observed, observed),
+        ("predicted", predicted, predicted),
+    ):
+        pairs = long_form(
+            correlation_matrix(left, right, method), groups, biosamples
+        )
+        pairs = pairs[pairs["tier"] != "matched"]   # 1.0 by identity
+        summary = summarize_tiers(pairs)
+        summary.insert(0, "source", label)
+        rows.append(summary)
+    out = pd.concat(rows, ignore_index=True)
+    return out[["source", "tier", "n_pairs", "median", "q25", "q75"]]
+
+
+def consensus_benchmark(
+    observed: pd.DataFrame, predicted: pd.DataFrame
+) -> pd.DataFrame:
+    """Each matched model against two cell-type-agnostic predictors.
+
+    This is the test of whether a model carries cell-type-specific
+    information, and it is self-contained: no appeal to replicate
+    reproducibility, which a sequence model could never reach anyway -- a
+    replicate shares the entire non-sequence cell state, while the genome is
+    identical across every cell type, so the model's only route to
+    cell-type-specificity is what training put in its weights.
+
+    Two agnostic predictors, and they answer different questions:
+
+    `consensus_model` is the mean prediction over all models. Beating it means
+    a model's own weights encode something cell-type-specific rather than a
+    generic promoter program. This is the comparison that licenses the claim.
+
+    `consensus_observed` is the mean observed signal over all experiments,
+    i.e. the best guess with no cell-type knowledge at all. It is a practical
+    benchmark rather than a test of the model: it tends to win, because
+    measuring anything is a strong predictor of measuring something similar.
+
+    Returns one row per experiment.
+    """
+    obs = np.log1p(observed.to_numpy(dtype=float))
+    pred = np.log1p(predicted.to_numpy(dtype=float))
+    cons_obs = obs.mean(axis=0)
+    cons_pred = pred.mean(axis=0)
+
+    def corr(a, b):
+        a = a - a.mean()
+        b = b - b.mean()
+        na, nb = np.linalg.norm(a), np.linalg.norm(b)
+        return float(a @ b / (na * nb)) if na > 0 and nb > 0 else np.nan
+
+    rows = []
+    for i, exp_id in enumerate(observed.index):
+        rows.append({
+            "experiment": exp_id,
+            "matched_model": round(corr(pred[i], obs[i]), 4),
+            "consensus_model": round(corr(cons_pred, obs[i]), 4),
+            "consensus_observed": round(corr(cons_obs, obs[i]), 4),
+        })
+    out = pd.DataFrame(rows)
+    out["beats_consensus_model"] = out["matched_model"] > out["consensus_model"]
+    out["beats_consensus_observed"] = (
+        out["matched_model"] > out["consensus_observed"]
+    )
+    return out
+
+
 def reproducibility_baseline(
     observed: pd.DataFrame,
     groups: dict[str, str],
@@ -559,6 +655,9 @@ def main():
     summary = summarize_tiers(pairs)
     per_model = paired_within_model(pairs)
     baseline = reproducibility_baseline(observed, groups, biosamples, args.method)
+    homog = homogenization(observed, predicted, groups, biosamples, args.method)
+    homog.to_csv(args.out_dir / "cross_celltype_homogenization.tsv", sep="\t",
+                 index=False) if args.out_dir.exists() else None
     baseline.to_csv(args.out_dir / "cross_celltype_baseline.tsv", sep="\t",
                     index=False) if False else None
 
@@ -586,6 +685,22 @@ def main():
         )
         print(
             baseline[["tier", "n_pairs", "median"]].to_string(index=False),
+            file=sys.stderr,
+        )
+        homog.to_csv(
+            args.out_dir / "cross_celltype_homogenization.tsv", sep="\t",
+            index=False,
+        )
+        print(
+            "\nHow much cell-type difference the models reproduce "
+            "(ProCapNet's comparison): predicted-vs-predicted should be no "
+            "more similar across cell types than measured-vs-measured is.",
+            file=sys.stderr,
+        )
+        print(
+            homog.pivot(index="tier", columns="source", values="median")
+            .reindex([t for t in TIERS if t != "matched"])
+            .to_string(),
             file=sys.stderr,
         )
 
@@ -625,6 +740,38 @@ def main():
             if len(cols) < 2:
                 continue
             oc = take_columns(observed, cols)
+            bench = consensus_benchmark(oc, take_columns(predicted, cols))
+            bench.to_csv(
+                args.out_dir / f"cross_celltype_consensus_{name}.tsv",
+                sep="\t", index=False,
+            )
+            wins = int(bench["beats_consensus_model"].sum())
+            wins_o = int(bench["beats_consensus_observed"].sum())
+            n = len(bench)
+            print(
+                f"  {name:11s}: matched {bench['matched_model'].median():.3f} vs "
+                f"consensus-model {bench['consensus_model'].median():.3f} "
+                f"(wins {wins}/{n}, p={sign_test(wins, n):.2g}) vs "
+                f"consensus-observed {bench['consensus_observed'].median():.3f} "
+                f"(wins {wins_o}/{n}, p={sign_test(wins_o, n):.2g})",
+                file=sys.stderr,
+            )
+            hom = homogenization(
+                oc, take_columns(predicted, cols), groups, biosamples, args.method
+            )
+            hom_med = hom.set_index(["source", "tier"])["median"]
+            print(
+                f"  {name:11s}: across different tissues, measured "
+                f"{hom_med.get(('measured', 'different tissue'), float('nan')):.3f} "
+                f"vs predicted "
+                f"{hom_med.get(('predicted', 'different tissue'), float('nan')):.3f}"
+                "  <- models represent cell types as more alike than they are",
+                file=sys.stderr,
+            )
+            hom.to_csv(
+                args.out_dir / f"cross_celltype_homogenization_{name}.tsv",
+                sep="\t", index=False,
+            )
             base = reproducibility_baseline(oc, groups, biosamples, args.method)
             base_med = dict(zip(base["tier"], base["median"]))
             spread = np.log1p(oc.to_numpy(dtype=float)).std(axis=1)

@@ -785,3 +785,71 @@ def test_cli_reports_the_baseline(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "Observed-vs-observed" in result.stderr
     assert (tmp_path / "out" / "cross_celltype_baseline.tsv").exists()
+
+
+# --- homogenization (ProCapNet's comparison) --------------------------------
+#
+# Cochran et al. 2024 support "a largely cell-type-agnostic cis-regulatory code
+# of initiation" by showing predictions correlate across cell-line pairs at
+# r = 0.8-0.97 while the measurements correlate at only 0.5-0.71: the models
+# represent cell types as far more alike than they are. That is a different and
+# more demanding question than matched-vs-mismatched, which a model can pass
+# while still predicting nearly the same thing everywhere.
+
+
+def homog_frames(n_peaks=400, seed=0):
+    """Measurements that differ sharply by group, predictions that do not."""
+    rng = np.random.default_rng(seed)
+    shared = np.abs(rng.normal(size=n_peaks)) * 10
+    index = ["b1", "b2", "h1", "h2"]
+    groups = {"b1": "blood", "b2": "blood", "h1": "heart", "h2": "heart"}
+    blood_only = np.abs(rng.normal(size=n_peaks)) * 10
+    heart_only = np.abs(rng.normal(size=n_peaks)) * 10
+    obs = pd.DataFrame(
+        np.vstack([blood_only, blood_only, heart_only, heart_only]),
+        index=index, columns=[f"p{i}" for i in range(n_peaks)],
+    )
+    # every model predicts the shared component, ignoring cell type
+    pred = pd.DataFrame(
+        np.vstack([shared] * 4), index=index, columns=obs.columns
+    )
+    return obs, pred, groups
+
+
+def test_homogenization_detects_models_ignoring_cell_type():
+    obs, pred, groups = homog_frames()
+    out = ccp.homogenization(obs, pred, groups, None).set_index(["source", "tier"])
+    measured = out.at[("measured", "different tissue"), "median"]
+    predicted = out.at[("predicted", "different tissue"), "median"]
+    # predictions identical across cell types, measurements unrelated
+    assert predicted > 0.99
+    assert measured < 0.2
+    assert predicted > measured
+
+
+def test_homogenization_excludes_the_matched_diagonal():
+    obs, pred, groups = homog_frames()
+    out = ccp.homogenization(obs, pred, groups, None)
+    assert "matched" not in set(out["tier"]), "self-correlation is 1.0"
+
+
+def test_homogenization_reports_both_sources():
+    obs, pred, groups = homog_frames()
+    out = ccp.homogenization(obs, pred, groups, None)
+    assert set(out["source"]) == {"measured", "predicted"}
+
+
+def test_homogenization_is_flat_when_models_do_track_cell_type():
+    obs, pred, groups = homog_frames()
+    out = ccp.homogenization(obs, obs, groups, None).set_index(["source", "tier"])
+    # predicting the measurements exactly means no homogenization gap
+    assert out.at[("predicted", "different tissue"), "median"] == pytest.approx(
+        out.at[("measured", "different tissue"), "median"]
+    )
+
+
+def test_cli_reports_homogenization(tmp_path):
+    result = run_cli(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "How much cell-type difference the models reproduce" in result.stderr
+    assert (tmp_path / "out" / "cross_celltype_homogenization.tsv").exists()

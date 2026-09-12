@@ -1741,6 +1741,55 @@ shallow ones can leave one usable experiment and no within-group pair — the
 tier the analysis exists to measure. Groups contributing a single experiment
 are reported (`adipose`, at `--min-reads 10000000`).
 
+### The metric ProCapNet actually uses
+
+Cochran et al. 2024 support their central claim -- "a largely cell-type-agnostic
+*cis*-regulatory code of initiation" -- not with matched-vs-mismatched accuracy
+but by comparing **predicted-vs-predicted against measured-vs-measured across
+cell-type pairs**, over the union of peaks from all cell lines. Their numbers:
+predictions correlate at `r = 0.8-0.97` where the measurements correlate at
+only `r = 0.5-0.71`. The models represent cell types as far more alike than
+they are.
+
+That is a more demanding question than the tiers ask, and the two are
+complementary. The tiers ask whether a model carries *any* cell-type-specific
+information; `homogenization()` asks how much of the real cell-type difference
+it reproduces. A model can beat every mismatched competitor while still
+predicting nearly the same thing everywhere.
+
+On this atlas, over all 99,907 peaks the two are nearly equal — measured 0.737
+against predicted 0.758 across different tissues — which already says the
+models do not exaggerate cell-type similarity *on average*. Stratifying shows
+that average to be hiding the entire effect:
+
+```text
+across different-tissue pairs    measured   predicted
+all peaks                           0.737       0.758
+ubiquitous peaks                    0.821       0.913
+tissue-specific peaks              -0.009       0.614
+```
+
+**At tissue-specific peaks the measurements are uncorrelated across tissue
+groups while the predictions correlate at 0.614.** Exactly where the biology
+is cell-type-specific, the models predict nearly the same thing whatever cell
+type trained them. This replicates ProCapNet's conclusion far more starkly
+than their own numbers do, because the specificity stratification isolates it
+rather than averaging it against the shared program.
+
+So the complete statement has two halves, both true:
+
+- The models **do** carry cell-type-specific information: at specific peaks a
+  matched model beats the 50-model ensemble 48/50 (`p = 2.3e-12`), 0.086
+  against 0.011.
+- The models **drastically under-represent** cell-type differences: predicted
+  cross-tissue correlation 0.614 where the measured value is 0.000.
+
+Both are what ProCapNet reports at six cell lines, reproduced at 50 and
+localized to the peaks where it matters. Note also that their measured
+cross-cell-line range (0.5-0.71) is lower than our different-tissue median
+(0.737), as expected: six deliberately distinct cell lines differ more than a
+draw across 18 tissue groups that includes many related ones.
+
 ### Measured results (50 experiments, 99,907 peaks, held-out folds)
 
 Pooled over all peaks the tiers are nearly flat — matched 0.460, same
@@ -1811,20 +1860,33 @@ ubiquitous   different tissue     0.821      0.714
 
 It gives two reference points:
 
-**The ceiling.** A sequence model can at best recover the reproducible part of
-an experiment's signal, which is replicate agreement: 0.874 at specific peaks,
-0.955 at ubiquitous ones. So matched accuracy is ~10% of the ceiling at
-specific peaks (0.086/0.874) and ~77% at ubiquitous ones (0.735/0.955). The
-data at specific peaks is highly reproducible — the models simply do not
-predict it.
+**The reproducible fraction.** Replicate agreement is 0.874 at specific peaks
+and 0.955 at ubiquitous ones, so there is ample reproducible signal at specific
+peaks that the models do not predict. Treat this as context, **not as a
+ceiling**: a replicate shares the entire non-sequence cell state, while the
+genome is identical across every cell type, so a sequence model has no route
+to that information and was never going to match it. The cell-type-agnostic
+benchmark below is the fair test.
 
-**The benchmark, and it is unflattering.** Another related experiment's own
-measurements beat the model in both strata. At specific peaks, a different
-biosample of the same tissue correlates with experiment *j* at 0.279 where the
-model manages 0.086. At ubiquitous peaks, a *different tissue's* observed data
-gives 0.821 against the model's 0.735. Any claim that the models capture
-cell-type-specific initiation has to be stated against that: they are
-directionally correct (47/50, 8.6x) but worse than a nearby measurement.
+**The cell-type-agnostic benchmark**, written by `consensus_benchmark()`, is
+the fair test of whether a model's own weights encode anything
+cell-type-specific:
+
+```text
+stratum      matched  consensus model  matched wins   consensus observed  wins
+specific       0.086            0.011  48/50 p=2e-12               0.144  18/50
+ubiquitous     0.735            0.750   9/50                       0.919   0/50
+```
+
+At specific peaks a matched model beats the mean of all 50 models 48/50 — the
+cleanest evidence that cell-type identity is in the weights. At ubiquitous
+peaks the **ensemble wins**, which is what should happen when cell identity is
+irrelevant and averaging only reduces variance.
+
+`consensus observed` -- the mean measurement across all experiments -- is a
+practical benchmark rather than a test of the model, and it wins in both
+strata. Worth knowing before claiming utility: for estimating activity in a new
+sample, measuring almost anything beats these models.
 
 The within-experiment dynamic range also differs 6.6-fold between strata
 (median log1p sd 0.225 specific vs 1.487 ubiquitous), which is the mechanical
