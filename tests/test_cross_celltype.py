@@ -105,11 +105,28 @@ def test_every_peak_lands_in_exactly_one_fold():
 # --- tiers and matrix ------------------------------------------------------
 
 
-def test_tier_of_distinguishes_all_three_cases():
-    groups = {"a": "blood", "b": "blood", "c": "heart"}
-    assert ccp.tier_of("a", "a", groups) == "matched"
+def test_tier_of_distinguishes_all_four_cases():
+    groups = {"a": "blood", "a2": "blood", "b": "blood", "c": "heart"}
+    samples = {"a": "K562", "a2": "K562", "b": "PBMC", "c": "heart LV"}
+    assert ccp.tier_of("a", "a", groups, samples) == "matched"
+    assert ccp.tier_of("a", "a2", groups, samples) == "same biosample"
+    assert ccp.tier_of("a", "b", groups, samples) == "same tissue"
+    assert ccp.tier_of("a", "c", groups, samples) == "different tissue"
+
+
+def test_replicates_are_not_counted_as_same_tissue():
+    # The atlas is heavily replicated (HCT116 n=16, PBMC n=8). Without the
+    # split, a replicate pair would land in "same tissue" and could carry that
+    # tier, reducing the claim to "models predict a rerun of their own sample".
+    groups = {"a": "blood", "a2": "blood"}
+    samples = {"a": "K562", "a2": "K562"}
+    assert ccp.tier_of("a", "a2", groups, samples) != "same tissue"
+
+
+def test_tier_of_falls_back_to_tissue_without_biosamples():
+    groups = {"a": "blood", "b": "blood"}
     assert ccp.tier_of("a", "b", groups) == "same tissue"
-    assert ccp.tier_of("a", "c", groups) == "different tissue"
+    assert ccp.tier_of("a", "b", groups, None) == "same tissue"
 
 
 def test_tier_of_treats_unknown_groups_as_different():
@@ -173,12 +190,21 @@ def test_most_variable_peaks_picks_the_discriminating_ones():
 
 def test_summarize_tiers_orders_tiers_by_relatedness():
     pairs = pd.DataFrame({
-        "tier": ["matched", "same tissue", "different tissue"] * 2,
-        "correlation": [0.9, 0.6, 0.2, 0.95, 0.65, 0.25],
+        "tier": list(ccp.TIERS) * 2,
+        "correlation": [0.95, 0.9, 0.6, 0.2, 0.97, 0.92, 0.65, 0.25],
     })
     out = ccp.summarize_tiers(pairs)
     assert list(out["tier"]) == list(ccp.TIERS)
-    assert out["delta_to_next"].iloc[0] > 0
+    assert (out["delta_to_next"].dropna() > 0).all()
+
+
+def test_summarize_tiers_skips_absent_tiers():
+    pairs = pd.DataFrame({
+        "tier": ["matched", "different tissue"],
+        "correlation": [0.9, 0.2],
+    })
+    out = ccp.summarize_tiers(pairs)
+    assert list(out["tier"]) == ["matched", "different tissue"]
 
 
 def test_paired_within_model_is_one_row_per_model():
@@ -321,6 +347,50 @@ def test_cli_points_at_the_extraction_command_when_inputs_are_missing(tmp_path):
 # --- balanced subset -------------------------------------------------------
 
 
+def test_balanced_subset_prefers_distinct_biosamples():
+    # Three K562 replicates and one PBMC: taking the three deepest would give
+    # three replicates and no same-tissue pair at all.
+    exps = {f"e{i}": {} for i in range(4)}
+    groups = {f"e{i}": "blood" for i in range(4)}
+    samples = {"e0": "K562", "e1": "K562", "e2": "K562", "e3": "PBMC"}
+    depth = {"e0": 100, "e1": 90, "e2": 80, "e3": 10}
+    got = cc.balanced_subset(exps, groups, 2, depth, biosamples=samples)
+    assert set(got) == {"e0", "e3"}, "must reach for the second biosample"
+
+
+def test_balanced_subset_backfills_when_biosamples_run_out():
+    exps = {f"e{i}": {} for i in range(3)}
+    groups = {f"e{i}": "blood" for i in range(3)}
+    samples = {f"e{i}": "K562" for i in range(3)}
+    depth = {"e0": 100, "e1": 90, "e2": 80}
+    got = cc.balanced_subset(exps, groups, 2, depth, biosamples=samples)
+    assert len(got) == 2, "one biosample available, so fill with its replicates"
+
+
+def test_balanced_subset_on_the_real_atlas_avoids_replicate_only_groups():
+    import yaml
+    from collections import Counter
+
+    cfg = yaml.safe_load(open(REPO_ROOT / "configs" / "experiment_config.yaml"))
+    sys.path.insert(0, str(REPO_ROOT / "src" / "analysis"))
+    from _biosample_groups import load_group_map
+    from plot_motif_rarefaction import load_read_counts
+
+    tissue, sample = load_group_map(cfg["experiments"], None, quiet=True)
+    depth = load_read_counts()
+    got = cc.balanced_subset(
+        cfg["experiments"], tissue, 3, depth, min_reads=10e6, biosamples=sample
+    )
+    sizes = Counter(tissue[e] for e in got)
+    distinct = Counter(
+        tissue[e] for e in {sample.get(e, e): e for e in got}.values()
+    )
+    replicate_only = [
+        g for g, n in sizes.items() if n > 1 and distinct.get(g, 0) < 2
+    ]
+    assert not replicate_only, f"replicate-only within-group pairs: {replicate_only}"
+
+
 def test_balanced_subset_takes_the_deepest_per_group():
     exps = {f"e{i}": {} for i in range(6)}
     groups = {"e0": "blood", "e1": "blood", "e2": "blood",
@@ -414,3 +484,142 @@ def test_subsampled_peaks_still_split_across_folds():
     folds = cc.split_peaks_by_fold(sub, assignment)
     assert sum(len(d) for _, d in folds) == 100
     assert len(folds) > 1, "a subsample should still span several folds"
+
+
+# --- quantitative peak specificity -----------------------------------------
+#
+# Peak *calling* breadth is not a usable specificity measure at 224
+# experiments: a promoter with modest lineage-biased activity is still called
+# nearly everywhere, so breadth is dominated by near-ubiquitous peaks and its
+# narrow tail is weak singletons. Specificity is scored from signal instead.
+
+
+def spec_frame():
+    # 4 experiments, 2 groups; three peaks with known specificity ordering
+    return pd.DataFrame({
+        "flat": [100.0, 100.0, 100.0, 100.0],       # equal everywhere
+        "blood_only": [100.0, 100.0, 0.0, 0.0],     # one group
+        "skewed": [100.0, 100.0, 30.0, 30.0],       # in between
+    }, index=["b1", "b2", "h1", "h2"])
+
+
+SPEC_GROUPS = {"b1": "blood", "b2": "blood", "h1": "heart", "h2": "heart"}
+
+
+@pytest.mark.parametrize("index", ["tau", "entropy"])
+def test_specificity_is_zero_for_a_ubiquitous_peak(index):
+    spec = ccp.peak_specificity(spec_frame(), SPEC_GROUPS, index)
+    assert spec["flat"] == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("index", ["tau", "entropy"])
+def test_specificity_is_one_for_a_single_group_peak(index):
+    spec = ccp.peak_specificity(spec_frame(), SPEC_GROUPS, index)
+    assert spec["blood_only"] == pytest.approx(1.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("index", ["tau", "entropy"])
+def test_specificity_orders_intermediate_peaks_correctly(index):
+    spec = ccp.peak_specificity(spec_frame(), SPEC_GROUPS, index)
+    assert spec["flat"] < spec["skewed"] < spec["blood_only"]
+
+
+def test_tau_matches_the_yanai_definition_by_hand():
+    # group means of log1p: blood = log(101) = 4.6151, heart = log(31) = 3.4340
+    # tau = sum(1 - x_i/x_max) / (n - 1) = (0 + 1 - 3.4340/4.6151) / 1
+    spec = ccp.peak_specificity(spec_frame(), SPEC_GROUPS, "tau")
+    expected = (1 - np.log1p(30) / np.log1p(100)) / 1
+    assert spec["skewed"] == pytest.approx(expected, abs=1e-6)
+
+
+def test_tau_discriminates_better_than_entropy_among_broad_peaks():
+    # The reason tau is the default: with 224 experiments most peaks are broadly
+    # reproduced, so the index has to separate mostly-broad peaks from each
+    # other. Entropy nearly saturates at 0 where tau still resolves.
+    frame = spec_frame()
+    tau = ccp.peak_specificity(frame, SPEC_GROUPS, "tau")["skewed"]
+    ent = ccp.peak_specificity(frame, SPEC_GROUPS, "entropy")["skewed"]
+    assert tau > 10 * ent
+
+
+def test_specificity_rejects_an_unknown_index():
+    with pytest.raises(ValueError, match="unknown specificity index"):
+        ccp.peak_specificity(spec_frame(), SPEC_GROUPS, "nope")
+
+
+def test_group_means_averages_within_group_first():
+    obs = pd.DataFrame({"p": [0.0, 0.0, 100.0]}, index=["b1", "b2", "h1"])
+    gm = ccp.group_means(obs, {"b1": "blood", "b2": "blood", "h1": "heart"})
+    assert list(gm.index) == ["blood", "heart"]
+    assert gm.at["blood", "p"] == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("index", ["tau", "entropy"])
+def test_specificity_uses_group_means_not_experiment_means_idx(index):
+    obs = pd.DataFrame(
+        {"small_group_only": [0.0] * 10 + [100.0]},
+        index=[f"b{i}" for i in range(10)] + ["s0"],
+    )
+    groups = {f"b{i}": "blood" for i in range(10)}
+    groups["s0"] = "stem"
+    assert ccp.peak_specificity(obs, groups, index)["small_group_only"] == (
+        pytest.approx(1.0, abs=1e-9)
+    )
+
+
+def test_specificity_uses_group_means_not_experiment_means():
+    # 41-vs-4 group sizes are the real case: a peak active only in the small
+    # group must still score as specific.
+    obs = pd.DataFrame(
+        {"small_group_only": [0.0] * 10 + [100.0]},
+        index=[f"b{i}" for i in range(10)] + ["s0"],
+    )
+    groups = {f"b{i}": "blood" for i in range(10)}
+    groups["s0"] = "stem"
+    spec = ccp.peak_specificity(obs, groups)
+    assert spec["small_group_only"] == pytest.approx(1.0, abs=1e-9)
+
+
+def test_specificity_is_nan_without_two_groups():
+    obs = spec_frame()
+    one = {e: "blood" for e in obs.index}
+    assert ccp.peak_specificity(obs, one).isna().all()
+    assert ccp.peak_specificity(obs, {}).isna().all()
+
+
+def test_specificity_handles_an_all_zero_peak():
+    obs = pd.DataFrame({"dead": [0.0, 0.0, 0.0, 0.0]}, index=list(SPEC_GROUPS))
+    spec = ccp.peak_specificity(obs, SPEC_GROUPS)
+    assert spec["dead"] != spec["dead"] or 0 <= spec["dead"] <= 1  # nan or valid
+
+
+def test_stratify_splits_top_and_bottom():
+    spec = pd.Series({f"p{i}": i / 100 for i in range(100)})
+    strata = ccp.stratify_by_specificity(spec, 0.1)
+    assert set(strata) == {"specific", "ubiquitous"}
+    assert "p99" in strata["specific"] and "p0" in strata["ubiquitous"]
+    assert not set(strata["specific"]) & set(strata["ubiquitous"])
+
+
+def test_stratify_rejects_a_degenerate_quantile():
+    spec = pd.Series({f"p{i}": i / 10 for i in range(10)})
+    assert ccp.stratify_by_specificity(spec, 0) == {}
+    assert ccp.stratify_by_specificity(spec, 0.6) == {}
+    assert ccp.stratify_by_specificity(pd.Series(dtype=float), 0.1) == {}
+
+
+def test_cli_reports_tiers_by_specificity_stratum(tmp_path):
+    result = run_cli(tmp_path, "--specificity-quantile", "0.2")
+    assert result.returncode == 0, result.stderr
+    assert "By observed peak specificity" in result.stderr
+    out = pd.read_csv(
+        tmp_path / "out" / "cross_celltype_by_specificity.tsv", sep="\t"
+    )
+    assert set(out["stratum"]) == {"specific", "ubiquitous"}
+    assert (tmp_path / "out" / "peak_specificity.tsv").exists()
+
+
+def test_cli_can_disable_the_specificity_stratification(tmp_path):
+    result = run_cli(tmp_path, "--specificity-quantile", "0")
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / "out" / "cross_celltype_by_specificity.tsv").exists()

@@ -59,7 +59,7 @@ N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 DEFAULT_DIR = REPO_ROOT / "figures" / "count_correlation"
 OUT_DIR = REPO_ROOT / "figures" / "cross_celltype"
 
-TIERS = ("matched", "same tissue", "different tissue")
+TIERS = ("matched", "same biosample", "same tissue", "different tissue")
 
 
 def load_counts(path: Path) -> pd.DataFrame:
@@ -100,6 +100,94 @@ def most_variable_peaks(observed: pd.DataFrame, n: int) -> list:
     return list(var.sort_values(ascending=False).head(n).index)
 
 
+def group_means(observed: pd.DataFrame, groups: dict[str, str]) -> pd.DataFrame:
+    """Mean log1p signal per tissue group, groups x peaks.
+
+    Group means rather than experiment means, so a group with 41 experiments
+    does not outvote one with 4.
+    """
+    log_obs = np.log1p(observed)
+    labelled = [e for e in log_obs.index if groups.get(e) is not None]
+    if len(labelled) < 2:
+        return pd.DataFrame()
+    return log_obs.loc[labelled].groupby([groups[e] for e in labelled]).mean()
+
+
+def peak_specificity(
+    observed: pd.DataFrame, groups: dict[str, str], index: str = "tau"
+) -> pd.Series:
+    """Per-peak tissue specificity of observed signal, in [0, 1].
+
+    `tau` (default) is Yanai et al. 2005's tissue-specificity index,
+
+        tau = sum_i (1 - x_i / x_max) / (n - 1)
+
+    over per-group mean log1p signal: 0 when a peak is equally active in every
+    tissue group, 1 when all its signal sits in one. Preferred over a bespoke
+    measure because it is the standard index in expression analysis and
+    benchmarked as the best-performing one (Kryuchkova-Mostacci &
+    Robinson-Rechavi 2017), so the threshold is citable rather than invented
+    here. Computed on log-transformed signal, as that benchmark recommends.
+
+    `entropy` is the normalized-entropy alternative, `1 - H(q)/log(G)`, the
+    same form `motif_hit_density.py` uses for motifs. It is retained for
+    consistency with that panel; tau is the more sensitive of the two at the
+    specific end.
+
+    Either way it must be quantitative, because peak *calling* is not a usable
+    specificity measure at this scale. With 224 experiments a promoter with
+    modest lineage-biased activity is still called a peak nearly everywhere, so
+    breadth of peak calls is dominated by near-ubiquitous peaks and its narrow
+    tail is weak singletons rather than strong lineage-specific promoters --
+    the same reason prevalence-1 motif clusters are noise rather than rare
+    biology.
+    """
+    by_group = group_means(observed, groups)
+    n_groups = len(by_group)
+    if n_groups < 2:
+        return pd.Series(np.nan, index=observed.columns)
+
+    if index == "tau":
+        peak_max = by_group.max(axis=0)
+        # All-zero peaks have no max to normalize by; NaN rather than a
+        # fabricated 0 or 1, and stratification drops them.
+        ratios = by_group.div(peak_max.replace(0, np.nan), axis=1)
+        spec = (1 - ratios).sum(axis=0) / (n_groups - 1)
+    elif index == "entropy":
+        totals = by_group.sum(axis=0)
+        q = by_group.div(totals.replace(0, np.nan), axis=1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            entropy = -(q * np.log(q)).sum(axis=0, skipna=True)
+        spec = 1 - entropy / np.log(n_groups)
+    else:
+        raise ValueError(f"unknown specificity index {index!r}")
+
+    spec[peak_max.isna() if index == "tau" else totals.isna()] = np.nan
+    return spec.clip(lower=0, upper=1)
+
+
+def stratify_by_specificity(
+    spec: pd.Series, quantile: float
+) -> dict[str, list]:
+    """Top and bottom `quantile` of peaks by specificity.
+
+    Returns the two strata the cross-cell-type gap should differ between: it
+    should be large among specific peaks and small among ubiquitous ones. A
+    gap of similar size in both would mean the comparison is measuring
+    something other than cell-type specificity -- read depth, say, or overall
+    model quality.
+    """
+    valid = spec.dropna()
+    if valid.empty or not 0 < quantile < 0.5:
+        return {}
+    lo = valid.quantile(quantile)
+    hi = valid.quantile(1 - quantile)
+    return {
+        "specific": list(valid[valid >= hi].index),
+        "ubiquitous": list(valid[valid <= lo].index),
+    }
+
+
 def correlation_matrix(
     observed: pd.DataFrame, predicted: pd.DataFrame, method: str = "pearson"
 ) -> pd.DataFrame:
@@ -122,16 +210,39 @@ def correlation_matrix(
     return out
 
 
-def tier_of(model: str, experiment: str, groups: dict[str, str]) -> str:
+def tier_of(
+    model: str,
+    experiment: str,
+    groups: dict[str, str],
+    biosamples: dict[str, str] | None = None,
+) -> str:
+    """Which relatedness tier a (model, experiment) pair falls in.
+
+    `same biosample` is separated from `same tissue` because the atlas is
+    heavily replicated -- HCT116 has 16 experiments, the metastatic breast
+    biosample 10, PBMC 8 -- so without the split a replicate pair would count
+    as "same tissue" and could dominate that tier. The claim of interest is
+    that a model transfers to a *different* sample of the same lineage; a
+    replicate pair only shows it transfers to a rerun of its own sample, which
+    is much weaker and closer to the matched case.
+    """
     if model == experiment:
         return "matched"
+    if biosamples is not None:
+        bm, be = biosamples.get(model), biosamples.get(experiment)
+        if bm is not None and bm == be:
+            return "same biosample"
     gm, ge = groups.get(model), groups.get(experiment)
     if gm is not None and gm == ge:
         return "same tissue"
     return "different tissue"
 
 
-def long_form(matrix: pd.DataFrame, groups: dict[str, str]) -> pd.DataFrame:
+def long_form(
+    matrix: pd.DataFrame,
+    groups: dict[str, str],
+    biosamples: dict[str, str] | None = None,
+) -> pd.DataFrame:
     rows = []
     for model in matrix.index:
         for experiment in matrix.columns:
@@ -143,7 +254,8 @@ def long_form(matrix: pd.DataFrame, groups: dict[str, str]) -> pd.DataFrame:
                 "experiment": experiment,
                 "model_group": groups.get(model),
                 "experiment_group": groups.get(experiment),
-                "tier": tier_of(model, experiment, groups),
+                "model_biosample": (biosamples or {}).get(model),
+                "tier": tier_of(model, experiment, groups, biosamples),
                 "correlation": float(value),
             })
     return pd.DataFrame(rows)
@@ -184,6 +296,7 @@ def paired_within_model(pairs: pd.DataFrame) -> pd.DataFrame:
         matched = sub[sub["tier"] == "matched"]["correlation"]
         same = sub[sub["tier"] == "same tissue"]["correlation"]
         diff = sub[sub["tier"] == "different tissue"]["correlation"]
+        repl = sub[sub["tier"] == "same biosample"]["correlation"]
         if not len(matched):
             continue
         rows.append({
@@ -195,6 +308,9 @@ def paired_within_model(pairs: pd.DataFrame) -> pd.DataFrame:
             ),
             "median_different_tissue": (
                 round(float(diff.median()), 4) if len(diff) else np.nan
+            ),
+            "median_same_biosample": (
+                round(float(repl.median()), 4) if len(repl) else np.nan
             ),
             "beats_different_tissue": (
                 bool(matched.iloc[0] > diff.median()) if len(diff) else None
@@ -278,6 +394,19 @@ def main():
                         help="curated biosample<TAB>group override table")
     parser.add_argument("--method", default="pearson",
                         choices=["pearson", "spearman"])
+    parser.add_argument(
+        "--specificity-index", default="tau", choices=["tau", "entropy"],
+        help="tissue-specificity index: Yanai et al. 2005 tau (default), or "
+             "normalized entropy as used by motif_hit_density.py",
+    )
+    parser.add_argument(
+        "--specificity-quantile", type=float, default=0.1, metavar="Q",
+        help="also report the tiers separately among the top and bottom Q of "
+             "peaks by observed tissue specificity (default: 0.1; 0 disables). "
+             "The gap should be large among specific peaks and small among "
+             "ubiquitous ones -- a similar gap in both would mean the "
+             "comparison is tracking something other than cell-type identity.",
+    )
     parser.add_argument("--variable-peaks", type=int, default=0, metavar="N",
                         help="restrict to the N most variable peaks across "
                              "experiments; 0 uses all (default: 0)")
@@ -323,11 +452,12 @@ def main():
 
     with open(CONFIG_PATH) as f:
         cfg = yaml.safe_load(f)["experiments"]
-    tissue, _ = load_group_map(cfg, args.biosample_groups, quiet=True)
+    tissue, biosample = load_group_map(cfg, args.biosample_groups, quiet=True)
     groups = {e: tissue.get(e) for e in observed.index}
+    biosamples = {e: biosample.get(e) for e in observed.index}
 
     matrix = correlation_matrix(observed, predicted, args.method)
-    pairs = long_form(matrix, groups)
+    pairs = long_form(matrix, groups, biosamples)
     summary = summarize_tiers(pairs)
     per_model = paired_within_model(pairs)
 
@@ -358,6 +488,40 @@ def main():
             f"(sign test p = {sign_test(wins, len(valid)):.3g})",
             file=sys.stderr,
         )
+
+    if args.specificity_quantile > 0:
+        spec = peak_specificity(observed, groups, args.specificity_index)
+        strata = stratify_by_specificity(spec, args.specificity_quantile)
+        spec.rename("specificity").to_csv(
+            args.out_dir / "peak_specificity.tsv", sep="\t"
+        )
+        rows = []
+        for name, cols in strata.items():
+            if len(cols) < 2:
+                continue
+            sub_pairs = long_form(
+                correlation_matrix(observed[cols], predicted[cols], args.method),
+                groups, biosamples,
+            )
+            summary_s = summarize_tiers(sub_pairs).assign(stratum=name,
+                                                          n_peaks=len(cols))
+            rows.append(summary_s)
+        if rows:
+            strat = pd.concat(rows, ignore_index=True)
+            strat.to_csv(args.out_dir / "cross_celltype_by_specificity.tsv",
+                         sep="\t", index=False)
+            with pd.option_context("display.width", 200):
+                print(
+                    "\nBy observed peak specificity "
+                    f"({args.specificity_index}, top/bottom "
+                    f"{args.specificity_quantile:.0%}):",
+                    file=sys.stderr,
+                )
+                print(
+                    strat[["stratum", "n_peaks", "tier", "n_pairs", "median"]]
+                    .to_string(index=False),
+                    file=sys.stderr,
+                )
 
     depth = load_read_depth()
     if depth and len(per_model) > 2:

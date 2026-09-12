@@ -1600,11 +1600,28 @@ Does a model predict its own cell type's initiation better than another's? The
 ProCapNet analysis (Cochran et al.) asked this across six cell lines; the atlas
 asks it across every experiment at once. Destined for a supplementary panel.
 
-Three tiers, in increasing distance — `matched` (model *i* on experiment *i*),
-`same tissue`, `different tissue`. Matched > same tissue > different tissue is
-the claim, and the middle tier is what makes it a statement about cell-type
-specificity rather than about overfitting: a model that merely memorized its
-own experiment would beat both other tiers equally.
+Four tiers, in increasing distance:
+
+```text
+matched           model i on experiment i
+same biosample    different experiment, same biosample (a replicate)
+same tissue       different biosample, same tissue group
+different tissue  different group
+```
+
+The ordering is the claim, and the two middle tiers are what make it a
+statement about cell-type specificity rather than about memorization.
+**`same biosample` is split out because the atlas is heavily replicated** —
+HCT116 has 16 experiments, the metastatic breast biosample 10, PBMC 8 — so
+without the split a replicate pair would count as "same tissue" and could carry
+that tier, reducing the claim to "models predict a rerun of their own sample".
+The informative comparison is transfer to a *different* sample of the same
+lineage.
+
+`--balanced-per-group` is biosample-aware for the same reason: it takes the
+deepest experiment from each distinct biosample in a group before a second from
+one already chosen. Without that, two groups on the current atlas come back as
+replicate-only and contribute no same-tissue pair at all.
 
 Two steps, split by where they can run.
 
@@ -1616,6 +1633,40 @@ python src/analysis/count_correlation.py --model bpnet --device cuda \
     --held-out-folds --balanced-per-group 3 --min-reads 10000000 \
     --max-peaks 100000
 ```
+
+### Thresholding on tissue specificity
+
+`--specificity-quantile` (default 0.1) also reports the tiers separately among
+the most and least tissue-specific peaks. The gap should be large among
+specific peaks and small among ubiquitous ones; a similar gap in both would
+mean the comparison is tracking something other than cell-type identity —
+read depth, or overall model quality.
+
+Specificity is **quantitative, from observed signal**, not from breadth of peak
+calls. Peak calling is too low a bar at this scale: with 224 experiments a
+promoter with modest lineage-biased activity is still called nearly
+everywhere, so call-breadth is dominated by near-ubiquitous peaks and its
+narrow tail is weak singletons rather than strong lineage-specific promoters —
+the same reason prevalence-1 motif clusters are noise rather than rare biology.
+
+The default index is **tau** (Yanai et al. 2005), `sum_i (1 - x_i/x_max) /
+(n - 1)` over per-tissue-group mean log1p signal, which benchmarks as the
+best-performing specificity index (Kryuchkova-Mostacci & Robinson-Rechavi
+2017) and so is citable rather than invented here. `--specificity-index
+entropy` gives the normalized-entropy form `1 - H(q)/log(G)` that
+`motif_hit_density.py` uses for motifs. Tau is markedly more sensitive in the
+range that matters here: for a peak twice as active in one of two groups, tau
+gives 0.26 where entropy gives 0.016, and with most peaks broadly reproduced
+the index has to separate mostly-broad peaks from each other.
+
+Both indices average **within tissue group first**, so a group with 41
+experiments does not outvote one with 4, and replicated biosamples do not
+inflate their group's weight.
+
+`count_correlation.py` also has `--peaks-max-groups` / `--peaks-min-groups`,
+which filter on breadth of peak *calls* using contributor columns that
+`make_union_peaks.py` now writes. Those are a coarse pre-filter only, for the
+reason above; the quantitative stratification is the real mechanism.
 
 **Subsample the peaks.** The atlas has 905,540 union peaks, and at 50 models
 that is 45.3M peak-predictions — several GPU-hours, and ~360 MB per output

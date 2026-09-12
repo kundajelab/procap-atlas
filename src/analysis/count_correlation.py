@@ -82,10 +82,48 @@ def extract_observed_counts(
     return X, counts * rpm_scale
 
 
+def load_peak_contributors(union_peaks_path: Path) -> list[str] | None:
+    """Experiment ids in bitset order, from make_union_peaks.py's sidecar."""
+    sidecar = union_peaks_path.parent / (
+        union_peaks_path.name.replace(".bed.gz", "") + "_experiments.txt"
+    )
+    if not sidecar.exists():
+        return None
+    return [line.strip() for line in sidecar.read_text().splitlines() if line.strip()]
+
+
+def peak_group_breadth(
+    masks: pd.Series, contributors: list[str], groups: dict[str, str]
+) -> pd.Series:
+    """Number of distinct tissue groups that called each union peak.
+
+    `masks` are the hex contributor bitsets from make_union_peaks.py. Counting
+    *groups* rather than experiments is what makes the threshold a
+    cell-type-specificity threshold: a peak called in all 41 blood experiments
+    and nowhere else is lineage-specific despite a high experiment count, and
+    would survive an experiment-count filter unchanged.
+
+    Tested by group mask rather than by iterating set bits: 19 tests per peak
+    instead of up to 224.
+    """
+    group_masks: dict[str, int] = {}
+    for bit, exp_id in enumerate(contributors):
+        group = groups.get(exp_id)
+        if group is None:
+            continue
+        group_masks[group] = group_masks.get(group, 0) | (1 << bit)
+
+    values = masks.map(lambda h: int(str(h), 16))
+    return values.map(
+        lambda m: sum(1 for gm in group_masks.values() if m & gm)
+    )
+
+
 def balanced_subset(
     experiments: dict, groups: dict[str, str], per_group: int,
     read_counts: dict[str, float], min_reads: float = 0.0,
     exclude_groups: tuple[str, ...] = ("other",),
+    biosamples: dict[str, str] | None = None,
 ) -> dict:
     """The `per_group` deepest experiments from each tissue group.
 
@@ -94,6 +132,13 @@ def balanced_subset(
     same-tissue tier mostly blood_immune, which is 41 of 198 experiments.
     Taking the deepest per group also holds model quality roughly fixed, since
     accuracy tracks read depth.
+
+    With `biosamples`, distinct biosamples are preferred within each group
+    before a second experiment from one already chosen. The atlas is heavily
+    replicated -- HCT116 has 16 experiments, PBMC 8 -- so taking a group's
+    three deepest can return three replicates of one sample, which collapses
+    the same-tissue tier into the same-biosample tier and removes the
+    comparison the analysis exists to make.
 
     `min_reads` is applied here rather than left to the caller's later filter:
     selecting the three deepest of a group and *then* dropping the shallow ones
@@ -115,7 +160,24 @@ def balanced_subset(
     keep = []
     for group, members in sorted(by_group.items()):
         members.sort(key=lambda e: read_counts.get(e, 0), reverse=True)
-        keep.extend(members[:per_group])
+        if biosamples is None:
+            keep.extend(members[:per_group])
+            continue
+        chosen, seen = [], set()
+        for exp_id in members:                    # one per biosample, deepest
+            sample = biosamples.get(exp_id, exp_id)
+            if sample in seen:
+                continue
+            seen.add(sample)
+            chosen.append(exp_id)
+            if len(chosen) == per_group:
+                break
+        for exp_id in members:                    # then backfill if short
+            if len(chosen) == per_group:
+                break
+            if exp_id not in chosen:
+                chosen.append(exp_id)
+        keep.extend(chosen)
     return {e: experiments[e] for e in keep}
 
 
@@ -377,6 +439,27 @@ def main():
         help="run only this experiment (for testing)",
     )
     parser.add_argument(
+        "--peaks-max-groups",
+        type=int,
+        default=0,
+        metavar="N",
+        help="keep only union peaks called in at most N tissue groups, i.e. "
+             "cell-type-specific ones (0 = no filter). A peak active "
+             "everywhere cannot distinguish a matched model from a mismatched "
+             "one, so this is where the cross-cell-type gap should concentrate. "
+             "Requires make_union_peaks.py to have written its contributor "
+             "columns and sidecar.",
+    )
+    parser.add_argument(
+        "--peaks-min-groups",
+        type=int,
+        default=0,
+        metavar="N",
+        help="keep only union peaks called in at least N tissue groups. The "
+             "control for --peaks-max-groups: the tier gap should be small "
+             "here and large there.",
+    )
+    parser.add_argument(
         "--max-peaks",
         type=int,
         default=0,
@@ -454,15 +537,24 @@ def main():
                 if len(parts) >= 5:
                     n_reads_map[parts[0]] = float(parts[4])
 
+    header = pd.read_csv(args.union_peaks, sep="\t", header=None, nrows=1)
+    has_breadth = header.shape[1] >= 5
     union_peaks = pd.read_csv(
         args.union_peaks,
         sep="\t",
         header=None,
-        usecols=[0, 1, 2],
-        names=["chrom", "start", "end"],
-        dtype={"chrom": str},
+        usecols=[0, 1, 2, 3, 4] if has_breadth else [0, 1, 2],
+        names=(
+            ["chrom", "start", "end", "n_experiments", "mask"] if has_breadth
+            else ["chrom", "start", "end"]
+        ),
+        dtype={"chrom": str, "mask": str},
     )
-    print(f"Loaded {len(union_peaks):,} union peaks", file=sys.stderr)
+    print(
+        f"Loaded {len(union_peaks):,} union peaks"
+        + ("" if has_breadth else " (no contributor columns)"),
+        file=sys.stderr,
+    )
 
     experiments = config["experiments"]
     if args.experiment:
@@ -470,6 +562,39 @@ def main():
             print(f"ERROR: {args.experiment!r} not in config", file=sys.stderr)
             sys.exit(1)
         experiments = {args.experiment: experiments[args.experiment]}
+
+    if args.peaks_max_groups > 0 or args.peaks_min_groups > 0:
+        contributors = load_peak_contributors(args.union_peaks)
+        if contributors is None or "mask" not in union_peaks.columns:
+            print(
+                "ERROR: peak specificity needs the contributor columns and "
+                "sidecar from make_union_peaks.py. Rerun it to regenerate "
+                f"{args.union_peaks.name}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from _biosample_groups import load_group_map
+
+        tissue_all, _ = load_group_map(config["experiments"], None, quiet=True)
+        breadth = peak_group_breadth(union_peaks["mask"], contributors, tissue_all)
+        before = len(union_peaks)
+        keep = pd.Series(True, index=union_peaks.index)
+        if args.peaks_max_groups > 0:
+            keep &= breadth <= args.peaks_max_groups
+        if args.peaks_min_groups > 0:
+            keep &= breadth >= args.peaks_min_groups
+        union_peaks = union_peaks[keep].reset_index(drop=True)
+        print(
+            f"Peak specificity filter: {len(union_peaks):,} of {before:,} peaks "
+            f"kept (groups in "
+            f"[{args.peaks_min_groups or 1}, "
+            f"{args.peaks_max_groups or len(set(tissue_all.values()))}])",
+            file=sys.stderr,
+        )
+        if union_peaks.empty:
+            print("ERROR: no peaks survived the specificity filter", file=sys.stderr)
+            sys.exit(1)
 
     if args.max_peaks > 0 and args.max_peaks < len(union_peaks):
         # Subsampled once, here, so every experiment and every fold sees the
@@ -488,11 +613,11 @@ def main():
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from _biosample_groups import load_group_map
 
-        tissue, _ = load_group_map(experiments, None, quiet=True)
+        tissue, biosample_of = load_group_map(experiments, None, quiet=True)
         before = len(experiments)
         experiments = balanced_subset(
             experiments, tissue, args.balanced_per_group, n_reads_map,
-            min_reads=args.min_reads,
+            min_reads=args.min_reads, biosamples=biosample_of,
         )
         if not experiments:
             print(
@@ -512,6 +637,17 @@ def main():
             print(
                 f"NOTE: {len(singles)} group(s) contribute one experiment and so "
                 f"no same-tissue pair: {', '.join(singles)}",
+                file=sys.stderr,
+            )
+        distinct = Counter(
+            tissue[e] for e in {biosample_of.get(e, e): e for e in experiments}.values()
+        )
+        thin = sorted(g for g, n in sizes.items() if distinct.get(g, 0) < 2)
+        if thin:
+            print(
+                f"NOTE: {len(thin)} group(s) have only one distinct biosample, so "
+                f"their within-group pairs are replicates rather than "
+                f"same-tissue: {', '.join(thin)}",
                 file=sys.stderr,
             )
 
