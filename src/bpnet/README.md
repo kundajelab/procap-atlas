@@ -378,6 +378,73 @@ motifcompendium_{head}_cluster_logo_paths.tsv            # cluster_final -> logo
 motifcompendium_{head}_clusters/{pos,neg}_cluster_NNNN.html  # per-cluster motif collection (opt-in)
 ```
 
+#### Comparing two builds' clusterings
+
+`compare_clusterings.py` quantifies how much two builds actually disagree.
+Written to decide what to do about the v1.0.19 `k_centroids` default, but it
+applies to any pair of builds.
+
+It compares `pattern_to_cluster.tsv`, **not** `cluster_metadata.tsv`.
+`cluster_final` ids are not stable across runs, so metadata rows cannot be
+joined at all; the pattern mapping keys on `(experiment,
+local_motif_name)`, which is the same MoDISco pattern in every build.
+
+```bash
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    leiden=mc_leiden/motifcompendium_count_pattern_to_cluster.tsv \
+    capped5=mc_capped5/motifcompendium_count_pattern_to_cluster.tsv \
+    uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+**Quote `frac_same_clustermates`** — the fraction of patterns whose set of
+cluster-mates is identical in both builds. It is invariant to relabelling and
+directly readable ("92% of patterns keep exactly the same cluster-mates"). ARI
+and AMI are also reported because they are standard, but at these cluster
+counts they are hard to interpret. Merge/split counts are reported
+directionally, so a cluster splitting in two is distinguishable from two
+merging.
+
+`posneg` stays in the cluster key: `cluster_final` is only unique within a
+pos/neg stratum, and collapsing them would silently merge two clusters.
+
+#### The three-way count-head comparison
+
+The controlled experiment for the `k_centroids` question. Clustering is ~4 min
+per run at count-head scale, and `--skip-svg-logos --logo-report-top-n 0`
+would be wrong here (0 means *no cap*, not "skip"); pass a small cap instead,
+or skip the logos and accept the report:
+
+```bash
+MC=src/bpnet/motifcompendium/cluster_motifs.py
+# 1. pre-v1.0.19 behaviour: Leiden only
+python $MC --head count --algorithm cpm_leiden \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_leiden
+# 2. Leiden + bounded refinement
+python $MC --head count --kmeans-iterations 5 \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_capped5
+# 3. the current uncapped build already exists in motifcompendium/bpnet/
+
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    leiden=mc_leiden/motifcompendium_count_pattern_to_cluster.tsv \
+    capped5=mc_capped5/motifcompendium_count_pattern_to_cluster.tsv \
+    uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+How to read the result:
+
+- **capped ~= uncapped** -> cap it and rebuild profile with
+  `--kmeans-iterations`. The refinement is doing real work and converges
+  quickly; only the tail is pathological.
+- **leiden ~= uncapped** -> `k_centroids` changes nothing here, and
+  `--algorithm cpm_leiden` is both the cheapest and the safest option.
+- **all three differ materially** -> this is a question about which partition
+  is correct, not which is faster, and the cluster-average logos are the
+  evidence to look at (`k_centroids` exists to make members resemble the
+  average that represents them, which is exactly what Figure 2c draws).
+
+Whichever is chosen, **both heads must use the same setting** or a
+count-vs-profile contrast confounds head with clustering algorithm.
+
 #### What a build's settings were, after the fact
 
 Nothing in a compendium's outputs records how it was produced. The cluster
