@@ -396,11 +396,14 @@ python src/bpnet/motifcompendium/compare_clusterings.py --head count \
     uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
 ```
 
-**Quote `frac_same_clustermates`** — the fraction of patterns whose set of
+`frac_same_clustermates` is the fraction of patterns whose set of
 cluster-mates is identical in both builds. It is invariant to relabelling and
-directly readable ("92% of patterns keep exactly the same cluster-mates"). ARI
-and AMI are also reported because they are standard, but at these cluster
-counts they are hard to interpret. Merge/split counts are reported
+directly readable, but **read it alongside ARI, not instead of it**: it
+amplifies. One pattern moving from cluster A to cluster B flags every member
+of both, so at the count head's mean cluster size of ~5.9 (5,639 patterns /
+950 clusters) a single reassignment marks up to ~12 patterns as changed.
+Dividing `n_patterns_moved` by the mean size of two clusters gives a lower
+bound on the number of actual reassignments. Merge/split counts are reported
 directionally, so a cluster splitting in two is distinguishable from two
 merging.
 
@@ -430,6 +433,31 @@ python src/bpnet/motifcompendium/compare_clusterings.py --head count \
     uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
 ```
 
+Measured, 2026-09-14 (count head, 5,639 patterns, `--across-threshold` 0.90):
+
+| a | b | frac_same_clustermates | n_patterns_moved | ARI | AMI |
+|---|---|---|---|---|---|
+| leiden | capped5 | 0.2451 | 4,257 | 0.7773 | 0.9013 |
+| leiden | uncapped | 0.2444 | 4,261 | 0.7657 | 0.8976 |
+| capped5 | uncapped | 0.7349 | 1,495 | 0.9601 | 0.9757 |
+
+**All three builds produced exactly 950 clusters.** `k_centroids` takes `k`
+from the Leiden partition and only reassigns members among a fixed set of
+centroids; it never creates or destroys a cluster. Two consequences:
+
+- The refinement is doing real work — Leiden-only and refined partitions
+  differ at ARI 0.77, roughly 350+ actual reassignments — and **five
+  iterations capture nearly all of it.** `leiden`-vs-`capped5` and
+  `leiden`-vs-`uncapped` are indistinguishable (0.2451 vs 0.2444), so by
+  iteration 5 the partition has already moved as far from Leiden as it ever
+  gets. The residual `capped5`-vs-`uncapped` difference (ARI 0.96, >= ~125
+  reassignments) is the slow tail.
+- It **cannot** explain the count head going from 944 to 946 clusters, which
+  this README previously attributed to it. Cluster count is invariant to the
+  stage. That drift has some other cause (most likely the
+  `--across-threshold` 0.85 -> 0.90 change, or a differing build set); it is
+  still unexplained.
+
 How to read the result:
 
 - **capped ~= uncapped** -> cap it and rebuild profile with
@@ -444,6 +472,28 @@ How to read the result:
 
 Whichever is chosen, **both heads must use the same setting** or a
 count-vs-profile contrast confounds head with clustering algorithm.
+
+#### Choosing the iteration cap
+
+The measured result is "capped is close to uncapped but not equal", so the
+open question is where the refinement actually converges. The count head is
+the cheap place to find out — uncapped converges there in ~4 min, so a cap can
+be compared against the converged partition directly:
+
+```bash
+python $MC --head count --kmeans-iterations 25 \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_capped25
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    capped25=mc_capped25/motifcompendium_count_pattern_to_cluster.tsv \
+    uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+`frac_same_clustermates == 1.0` means 25 iterations reproduce the converged
+partition exactly, and 25 is then the setting to use for both heads: it is
+identical to today's output on the count head and bounded on the profile
+head. If it is still short of 1.0, the refinement has a long tail and the
+cap is a deliberate approximation — say so in the methods rather than
+implying convergence.
 
 #### What a build's settings were, after the fact
 
@@ -473,14 +523,17 @@ the project's life, and every one of them moves the partition:
   iterations, so an oscillation never terminates). Each iteration rebuilds
   every centroid and recomputes an N x k float64 similarity on the GPU.
 
-  This is the most likely cause of the count-head compendium going from 944 to
-  946 clusters on unchanged MoDISco inputs — the refinement perturbs
-  assignments, so it is not nondeterminism.
+  This is why a profile-head build ran for 85 h having previously completed on
+  v1.0.18. The cost is invisible at count-head scale (5,639 motifs, ~4 min of
+  clustering) and ruinous at profile-head scale (14,691 motifs). Note that the
+  raw `.mc` sizes — 1.5 GB profile against 223 MB count — are *not* a linear
+  read on motif count: the `.mc` holds three N x N matrices, so its size goes
+  as n^2. 14,691 motifs predict 863 + 216 + 432 = 1,511 MB and 5,639 predict
+  127 + 32 + 64 = 223 MB, both matching what is on disk.
 
-  It is also why a profile-head build ran for 85 h having previously completed
-  on v1.0.18. The cost is invisible at count-head scale (5,639 motifs, ~4 min
-  of clustering) and ruinous at profile-head scale (~38,000 motifs — the raw
-  `.mc` is 1.5 GB against the count head's 223 MB).
+  It was **not** the cause of the count head going from 944 to 946 clusters,
+  which an earlier version of this README proposed. The three-way comparison
+  above shows `k_centroids` holds the cluster count fixed.
 
   `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour;
   `--kmeans-iterations N` bounds the refinement instead of removing it

@@ -19,9 +19,12 @@ Reported:
     patterns. These are invariant to cluster relabelling, which is required
     here since ids are arbitrary.
   * The fraction of patterns whose cluster *content* is unchanged, i.e. whose
-    co-members are identical in both builds. This is the number to quote: ARI
-    is hard to interpret at these cluster counts, while "92% of patterns keep
-    exactly the same cluster-mates" is not.
+    co-members are identical in both builds. Readable, but it amplifies, so
+    report it next to ARI rather than alone: one pattern moving from cluster
+    A to cluster B flags every member of both, so at a mean cluster size of
+    ~6 a single reassignment marks up to ~12 patterns as changed. Dividing
+    `n_patterns_moved` by the mean size of two clusters gives a lower bound
+    on the number of actual reassignments.
   * Merge/split accounting: how many reference clusters map to one versus
     several clusters in the comparison build.
 
@@ -146,12 +149,17 @@ def main():
         table.to_csv(args.out_tsv, sep="\t", index=False)
         print(f"\nSaved {args.out_tsv}")
 
+    mean_size = (
+        sum(len(s) / s.nunique() for s in labelled.values()) / len(labelled)
+    )
     print(
-        "\nfrac_same_clustermates is the number to quote: the fraction of "
-        "patterns whose set of cluster-mates is identical in both builds, "
-        "which is invariant to cluster relabelling. ARI/AMI are reported "
-        "because they are standard, but they are hard to read at these "
-        "cluster counts."
+        "\nfrac_same_clustermates is the fraction of patterns whose set of "
+        "cluster-mates is identical in both builds, invariant to cluster "
+        "relabelling. It amplifies: moving one pattern between two clusters "
+        f"flags every member of both, ~{2 * mean_size:.0f} patterns at this "
+        f"mean cluster size of {mean_size:.1f}. So n_patterns_moved / "
+        f"{2 * mean_size:.0f} is a lower bound on actual reassignments. Read "
+        "it alongside ARI, not instead of it."
     )
 
 
