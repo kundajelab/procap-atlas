@@ -556,7 +556,7 @@ near-term answer.
 
 #### Choosing the iteration cap
 
-The measured result is "capped is close to uncapped but not equal", so the
+The three-way result is "capped is close to uncapped but not equal", so the
 open question is where the refinement actually converges. The count head is
 the cheap place to find out — uncapped converges there in ~4 min, so a cap can
 be compared against the converged partition directly:
@@ -573,12 +573,31 @@ python src/bpnet/motifcompendium/compare_clusterings.py --head count \
 (see above), and `--kmeans-iterations` bounds the refinement without touching
 it.
 
-`frac_same_clustermates == 1.0` means 25 iterations reproduce the converged
-partition exactly, and 25 is then the setting to use for both heads: it is
-identical to today's output on the count head and bounded on the profile
-head. If it is still short of 1.0, the refinement has a long tail and the
-cap is a deliberate approximation — say so in the methods rather than
-implying convergence.
+Measured, 2026-09-14:
+
+| a | b | frac_same_clustermates | n_patterns_moved | ARI | AMI |
+|---|---|---|---|---|---|
+| capped25 | uncapped | **1.0** | **0** | 1.0 | 1.0 |
+
+**25 iterations reproduce the converged count-head partition exactly**, so
+`--kmeans-iterations 25` is the setting for both heads. On the count head it
+is not an approximation at all — it is byte-identical to today's uncapped
+output — and it bounds the profile head.
+
+The count head therefore converges in <= 25 iterations while the profile head
+had not converged after 24 h on an A100. Per-iteration cost only accounts for
+17.9x of that gap (see above), so the remainder is iteration *count*: the
+profile head is running hundreds of iterations where the count head needs
+tens. That is the predicted signature of the alignment-frame defect, and it
+scales with cluster count because more clusters means more chances for a
+cluster's lowest-index member to leave and re-frame the survivors.
+
+Convergence at 25 is established **only for the count head**. For the profile
+head the cap is a deliberate approximation until shown otherwise, so either
+say so in the methods, or confirm it by running the profile head at 25 and
+again at 50 and comparing — identical partitions mean iterations 26-50 changed
+nothing. Do the 25 run first and let its wall time decide whether the
+confirmation run is affordable.
 
 #### What a build's settings were, after the fact
 
