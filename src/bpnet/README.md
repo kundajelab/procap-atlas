@@ -441,9 +441,23 @@ Measured, 2026-09-14 (count head, 5,639 patterns, `--across-threshold` 0.90):
 | leiden | uncapped | 0.2444 | 4,261 | 0.7657 | 0.8976 |
 | capped5 | uncapped | 0.7349 | 1,495 | 0.9601 | 0.9757 |
 
-**All three builds produced exactly 950 clusters.** `k_centroids` takes `k`
-from the Leiden partition and only reassigns members among a fixed set of
-centroids; it never creates or destroys a cluster. Two consequences:
+**All three builds produced exactly 950 clusters.** Chained after
+`cpm_leiden`, `k_centroids` receives the Leiden partition as
+`init_membership`, and `clustering.py` then sets `k` from it:
+
+```python
+_, init_membership = np.unique(init_membership, return_inverse=True)
+k = len(np.unique(init_membership))  # Set k
+seeds = [None]      # No random seed, run once
+init_method = None  # No initialization method
+```
+
+So `k` is inherited, not chosen — and `kmeans++`/`maximin` init and the
+two-seed default (`seeds=[100, 200]`) are all bypassed on the chained path.
+`k` is an **upper bound that can only shrink**: each iteration re-runs
+`_remap_membership` first, so a cluster that gets fully emptied disappears and
+the next round builds one fewer centroid. Assignment is `argmax` over the
+surviving centroids, so nothing can ever split. Two consequences:
 
 - The refinement is doing real work — Leiden-only and refined partitions
   differ at ARI 0.77, roughly 350+ actual reassignments — and **five
@@ -453,10 +467,11 @@ centroids; it never creates or destroys a cluster. Two consequences:
   gets. The residual `capped5`-vs-`uncapped` difference (ARI 0.96, >= ~125
   reassignments) is the slow tail.
 - It **cannot** explain the count head going from 944 to 946 clusters, which
-  this README previously attributed to it. Cluster count is invariant to the
-  stage. That drift has some other cause (most likely the
-  `--across-threshold` 0.85 -> 0.90 change, or a differing build set); it is
-  still unexplained.
+  this README previously attributed to it. The stage is monotone
+  non-increasing in `k`, so it can never raise a cluster count; here it
+  emptied nothing and left all 950 standing. That drift has some other cause
+  (most likely the `--across-threshold` 0.85 -> 0.90 change, or a differing
+  build set); it is still unexplained.
 
 How to read the result:
 
@@ -473,6 +488,72 @@ How to read the result:
 Whichever is chosen, **both heads must use the same setting** or a
 count-vs-profile contrast confounds head with clustering algorithm.
 
+#### Why `k_centroids` explodes at profile-head scale
+
+Traced through MotifCompendium `7e9d1c2`. Two defects, both in the per-iteration
+centroid step, and the cost model explains the count/profile gap exactly.
+
+**1. Every iteration recomputes a full k x k similarity that is never read.**
+`k_centroids_clustering` calls `mc.cluster_averages(...)` per iteration
+(`utils/clustering.py:871`), which ends in `build(cluster_motif_avgs, metadata,
+safe=False)` (`MotifCompendium.py:1889`) — and `build` unconditionally computes
+all-pairs similarity on what it is given (`MotifCompendium.py:220`):
+
+```python
+similarity, alignment_rc, alignment_h = utils_similarity.compute_similarities(
+    [motifs], [(0, 0)]
+)[0]
+```
+
+The loop passes `compute_quality_stats=False`, so that k x k matrix is
+discarded unused. The only matrix the iteration needs is the N x k
+motif-to-centroid block computed right after.
+
+Counting motif-pair alignments, with `r = k/N`, per-iteration cost is
+`N*k + k^2 = N^2 * (r + r^2)` against a one-time `N^2` build:
+
+| head | N | k | r | per-iteration | as % of full build |
+|---|---|---|---|---|---|
+| count | 5,639 | 950 | 0.168 | 6.3 M | **19.7%** |
+| profile | 14,691 | 5,527 | 0.376 | 111.7 M | **51.8%** |
+
+A profile iteration is **17.9x** a count iteration, and each one costs about
+half of building the entire compendium from scratch. The profile head is
+punished twice: N^2 is 6.8x larger *and* its motifs are more distinct, so
+`r` more than doubles and the wasted `k^2` term quadruples relative to the
+useful term. Twenty iterations is ten full compendium builds.
+
+**2. The centroid's alignment frame is the cluster's lowest-index member, so
+the centroid step does not optimise the assignment step's objective.**
+`cluster_averages` takes the alignment vectors from row 0 of the cluster's
+submatrix (`MotifCompendium.py:1840-1846`):
+
+```python
+alignment_rc_c = self.alignment_rc[c_idxs, :][:, c_idxs][0, :]
+alignment_h_c  = self.alignment_h[c_idxs, :][:, c_idxs][0, :]
+```
+
+`average_motifs` then aligns every member to that member before averaging. So
+when a cluster's lowest-index member leaves, the survivors are re-averaged in
+a **different frame** and the centroid jumps for reasons unrelated to the
+membership change. Lloyd's algorithm only converges because the centroid step
+minimises the same objective the assignment step evaluates; that guarantee is
+void here, which is what permits a limit cycle rather than convergence.
+`n_iterations=-1` exits only on `np.array_equal(membership_old,
+membership_new)` (`utils/clustering.py:890`), so a cycle never terminates, and
+`score_old` is assigned but never read — there is no objective-based stopping
+rule to fall back on.
+
+Incidentally that indexing is itself quadratic: it materialises a `(|c|, N)`
+gather and then a `(|c|, |c|)` slice to read one row. Summed over clusters
+that is `N^2` gathered elements per iteration, per matrix, where
+`self.alignment_rc[c_idxs[0], c_idxs]` would be `O(|c|)`.
+
+Both are worth reporting upstream. Neither is worked around by `--algorithm
+cpm_leiden` alone (that drops the stage, and the measured comparison shows the
+stage changes the partition materially), so the cap below stays the
+near-term answer.
+
 #### Choosing the iteration cap
 
 The measured result is "capped is close to uncapped but not equal", so the
@@ -487,6 +568,10 @@ python src/bpnet/motifcompendium/compare_clusterings.py --head count \
     capped25=mc_capped25/motifcompendium_count_pattern_to_cluster.tsv \
     uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
 ```
+
+`k` needs no flag: on the chained path it is always inherited from Leiden
+(see above), and `--kmeans-iterations` bounds the refinement without touching
+it.
 
 `frac_same_clustermates == 1.0` means 25 iterations reproduce the converged
 partition exactly, and 25 is then the setting to use for both heads: it is
@@ -533,7 +618,7 @@ the project's life, and every one of them moves the partition:
 
   It was **not** the cause of the count head going from 944 to 946 clusters,
   which an earlier version of this README proposed. The three-way comparison
-  above shows `k_centroids` holds the cluster count fixed.
+  above shows `k_centroids` inherits `k` from Leiden and can only reduce it.
 
   `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour;
   `--kmeans-iterations N` bounds the refinement instead of removing it
