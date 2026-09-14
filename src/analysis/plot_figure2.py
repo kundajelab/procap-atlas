@@ -115,6 +115,11 @@ SHORT_GROUP_LABEL = {
 # require touching the grouping.
 CAPTION_OMIT_GROUPS: tuple[str, ...] = ()
 
+# Floor on `_logo_grid`'s row gap, as a fraction of axes height. Named because
+# `panel_exemplars` has to charge each band for its own internal gaps when
+# equalizing logo heights, and must use the same number.
+INNER_HSPACE_FLOOR = 1.05
+
 
 def lineage_caption(value, max_groups: int = 3, short: bool = True,
                     omit: tuple[str, ...] = CAPTION_OMIT_GROUPS,
@@ -155,6 +160,80 @@ def lineage_caption(value, max_groups: int = 3, short: bool = True,
     return "\n".join(text)
 
 
+# Which caption lines each block gets. Three lines (name / lineage /
+# prevalence) is right for a figure read at arm's length and too much for a
+# projected slide, so this is a presentation choice, not a property of the data.
+LABEL_FIELD_SETS = {
+    # Current manuscript behaviour, preserved byte-for-byte.
+    "default": {"ubiquitous": ("name", "prevalence"),
+                "restricted": ("name", "lineage", "prevalence"),
+                "profile": ("name",)},
+    # Two lines each: every block keeps the one field carrying its own claim --
+    # how many datasets for the ubiquitous block, which lineage for the other.
+    # Lineage on both count blocks: "21 tissues" next to "heart+muscle" makes
+    # the ubiquitous/restricted contrast legible without reading any numbers.
+    "auto": {"ubiquitous": ("name", "lineage"),
+             "restricted": ("name", "lineage"),
+             "profile": ("name",)},
+}
+
+
+def motif_display_name(r, names=None, uppercase: bool = False) -> str:
+    """A logo's display name, with a fallback for clusters JASPAR cannot name.
+
+    The core promoter motifs are exactly the unnameable set -- JASPAR2026 has
+    no Inr/TATA/DPE entries -- so the profile head is selected with
+    `--include-unmatched` and arrives with a null `jaspar_name`. Rendering
+    `str(r.jaspar_name)` put the literal string "nan" under those logos.
+    """
+    cluster = int(getattr(r, "cluster_final"))
+    # Hand-written names are used verbatim. `uppercase` exists to homogenize
+    # JASPAR gene symbols, whose mouse/human conventions mix; it must not
+    # touch a name the caller typed, where "CA-Inr" is the correct casing and
+    # "CA-INR" is wrong. Cluster-id fallbacks are ids, not symbols, so they
+    # are left alone too.
+    if names and cluster in names:
+        return names[cluster]
+    raw = getattr(r, "jaspar_name", None)
+    text = str(raw).strip()
+    if raw is None or text == "" or text.lower() == "nan":
+        return f"cl{cluster}"
+    return text.upper() if uppercase else text
+
+
+def motif_label(fields, uppercase: bool = False, names=None):
+    """Build a logo-caption renderer over a chosen subset of fields."""
+    def render(r):
+        parts = []
+        if "name" in fields:
+            parts.append(motif_display_name(r, names, uppercase))
+        if "lineage" in fields:
+            caption = lineage_caption(
+                getattr(r, "lineage", getattr(r, "sole_group", ""))
+            )
+            if caption:
+                parts.append(caption)
+        if "prevalence" in fields:
+            parts.append(f"{int(r.prevalence)} exp")
+        return "\n".join(parts)
+    return render
+
+
+def resolve_label_fields(spec):
+    """`--label-fields` -> per-block field tuples."""
+    if spec in LABEL_FIELD_SETS:
+        return LABEL_FIELD_SETS[spec]
+    chosen = tuple(f.strip() for f in str(spec).split(",") if f.strip())
+    unknown = set(chosen) - {"name", "lineage", "prevalence"}
+    if unknown:
+        raise SystemExit(
+            f"--label-fields: unknown field(s) {sorted(unknown)}; choose from "
+            "name, lineage, prevalence (or a preset: "
+            f"{', '.join(LABEL_FIELD_SETS)})"
+        )
+    return {"ubiquitous": chosen, "restricted": chosen, "profile": chosen}
+
+
 def load_cwm(h5_path: Path, cluster_id: int, posneg: str = "pos") -> np.ndarray | None:
     """A cluster's average contribution-score matrix, as (length, 4).
 
@@ -173,14 +252,54 @@ def load_cwm(h5_path: Path, cluster_id: int, posneg: str = "pos") -> np.ndarray 
 def trimmed_cwm(
     h5_path: Path, cluster_id: int, posneg: str = "pos",
     threshold: float = 0.3, min_len: int = 8, pad: int = 1,
+    pad_to: int | None = None,
 ) -> pd.DataFrame | None:
-    """Trimmed CWM as a logomaker-ready frame, or None if the cluster is absent."""
+    """Trimmed CWM as a logomaker-ready frame, or None if the cluster is absent.
+
+    `pad_to` centres the trimmed CWM in a window of that many positions,
+    padding with zeros. Trimmed lengths run 10-25bp across the atlas, and a
+    grid of equal-width axes therefore draws a 25bp motif's glyphs 2.5x
+    narrower than a 10bp one -- which makes it impossible to pick a single
+    text size on a slide. Padding equalizes the glyph scale instead of
+    equalizing the axes. Never truncates: a `pad_to` below the trimmed length
+    is ignored, so signal is not silently cropped.
+    """
     cwm = load_cwm(h5_path, cluster_id, posneg)
     if cwm is None:
         return None
     start, end = trim_cwm(cwm.T, threshold=threshold, min_len=min_len)
     start, end = max(0, start - pad), min(len(cwm), end + pad)
-    return pd.DataFrame(cwm[start:end], columns=["A", "C", "G", "T"])
+    df = pd.DataFrame(cwm[start:end], columns=["A", "C", "G", "T"])
+    if pad_to and pad_to > len(df):
+        extra = pad_to - len(df)
+        left = extra // 2
+        blank = pd.DataFrame(0.0, index=range(extra),
+                             columns=["A", "C", "G", "T"])
+        df = pd.concat([blank.iloc[:left], df, blank.iloc[left:]],
+                       ignore_index=True)
+        assert len(df) == pad_to, (len(df), pad_to)
+    return df
+
+
+def max_trimmed_len(specs, trim_kwargs) -> int:
+    """Longest trimmed CWM over (rows, h5) pairs, for a shared `pad_to`.
+
+    Computed across every block that will be drawn -- including ones going to
+    a separate file -- so glyphs are the same size in all of them.
+    """
+    kwargs = {k: v for k, v in trim_kwargs.items() if k != "pad_to"}
+    best = 0
+    for rows, h5 in specs:
+        if rows is None or not len(rows):
+            continue
+        if h5 is None:
+            continue
+        for r in rows.itertuples():
+            df = trimmed_cwm(Path(h5), int(r.cluster_final),
+                             getattr(r, "posneg", "pos") or "pos", **kwargs)
+            if df is not None:
+                best = max(best, len(df))
+    return best
 
 
 def panel_rarefaction(ax, curves: pd.DataFrame, mark_k: int = 5) -> None:
@@ -368,7 +487,8 @@ def panel_concentration(
 
 
 def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
-               per_row=6, label_fontsize=6.2):
+               per_row=6, label_fontsize=6.2, min_label_fontsize=4.0,
+               category_style="rotated", min_hspace=None):
     """A wrapped grid of logos inside `spec`, labelled down the left edge.
 
     Wraps rather than using one long row because logos stay legible when tiny:
@@ -395,9 +515,14 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
     )
     band = spec.get_position(fig)
     band_h = band.height * fig.get_size_inches()[1]
-    hspace = 1.05
+    hspace = INNER_HSPACE_FLOOR if min_hspace is None else min_hspace
     if n_sub > 1:
-        while label_fontsize > 4.0:
+        # Runs at least once even when shrinking is disallowed. As a `while
+        # label_fontsize > min_label_fontsize` loop this body was skipped
+        # entirely whenever the caller pinned the font (as --presentation
+        # does), so no clearance was computed and captions landed on the
+        # logos above -- masked until now by the 1.05 default floor.
+        while True:
             caption_h = caption_lines * label_fontsize * 1.2 / 72.0 + 0.015
             denom = band_h - caption_h * (n_sub - 1)
             if denom > 0:
@@ -408,6 +533,8 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
                 if needed <= 3.5:
                     hspace = max(hspace, needed)
                     break
+            if label_fontsize <= min_label_fontsize:
+                break
             label_fontsize -= 0.4
     inner = GridSpecFromSubplotSpec(
         n_sub, per_row, subplot_spec=spec, wspace=0.30, hspace=hspace
@@ -433,11 +560,116 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
     # Centred on the band rather than on its first sub-row. Anchored to the
     # first axis, the two category labels were both centred on a single logo
     # row and overlapped each other whenever the label was taller than one row.
-    if drew:
+    if drew and category_style == "rotated":
         fig.text(
             band.x0 - 0.018, band.y0 + band.height / 2, subtitle,
             rotation=90, ha="right", va="center", fontsize=7, color="#555555",
         )
+    elif drew and category_style == "header":
+        # Horizontal and above the band. Projected, a rotated 7pt grey label in
+        # the left margin is the least legible thing on the slide, and the
+        # ubiquitous/lineage-restricted split is the panel's entire claim.
+        #
+        # Clearing the band is not enough: each logo's caption is drawn above
+        # its axes, so a header at band.y1 lands on top of the first row's
+        # caption. Offset by the caption's own height, in figure coordinates.
+        caption_h = caption_lines * label_fontsize * 1.2 / 72.0
+        pad = caption_h / fig.get_size_inches()[1] + 0.012
+        fig.text(
+            band.x0, band.y1 + pad, subtitle, ha="left", va="bottom",
+            fontsize=label_fontsize * 1.15, color="#222222",
+            fontweight="bold",
+        )
+    return drew
+
+
+def panel_sidebar(fig, spec, ubiquitous, restricted, h5_path,
+                  profile_rows=None, profile_h5=None, trim_kwargs=None,
+                  cols=8, band_rows=2, label_fontsize=11.0,
+                  label_fields="auto", uppercase_names=True,
+                  profile_names=None, header_fontsize=None):
+    """Count bands stacked on the left, core promoter as a column on the right.
+
+    Everything sits in ONE grid rather than nested sub-grids: shared rows and
+    columns make every logo the same size by construction, instead of by
+    matching two grids' geometry after the fact.
+    """
+    import logomaker
+
+    trim_kwargs = trim_kwargs or {}
+    fields = resolve_label_fields(label_fields)
+    if "lineage" in fields["ubiquitous"] and "lineage" not in fields["profile"]:
+        fields = dict(fields, profile=fields["profile"] + ("lineage",))
+
+    ubi = rank_for_panel(ubiquitous, 0)
+    res = rank_for_panel(restricted, 0)
+    prof = profile_rows if profile_rows is not None else pd.DataFrame()
+
+    # Each band gets the column count that fills `band_rows` rows exactly --
+    # 10 ubiquitous over 2 rows is 5 wide, 15 lineage-restricted is 8. A
+    # single shared column count cannot fill both (at 8, the ubiquitous band's
+    # second row holds two logos and six blanks), and a full band reads far
+    # better than a rectangular outline with holes in it.
+    if band_rows:
+        ubi_cols = max(1, -(-len(ubi) // band_rows))
+        res_cols = max(1, -(-len(res) // band_rows))
+    else:
+        ubi_cols = res_cols = cols
+    ubi_rows = max(1, -(-len(ubi) // ubi_cols))
+    res_rows = max(1, -(-len(res) // res_cols))
+    # A blank row separates the two count bands, giving the lower band's
+    # header somewhere to sit that is not on top of the row above.
+    body_cols = max(ubi_cols, res_cols)
+    n_rows = max(ubi_rows + 1 + res_rows, len(prof))
+    n_cols = body_cols + (1 if len(prof) else 0)
+
+    inner = GridSpecFromSubplotSpec(
+        n_rows, n_cols, subplot_spec=spec, wspace=0.30,
+        hspace=INNER_HSPACE_FLOOR,
+    )
+    header_fontsize = header_fontsize or label_fontsize * 1.15
+    drew = 0
+
+    def place(rows_df, h5, row0, col0, per_row, label_fn, header):
+        nonlocal drew
+        first_ax = None
+        for i, r in enumerate(rows_df.itertuples()):
+            ax = fig.add_subplot(
+                inner[row0 + i // per_row, col0 + i % per_row])
+            first_ax = first_ax or ax
+            df = trimmed_cwm(Path(h5), int(r.cluster_final),
+                             getattr(r, "posneg", "pos") or "pos",
+                             **trim_kwargs)
+            if df is None:
+                ax.set_axis_off()
+                continue
+            logomaker.Logo(df, ax=ax, shade_below=0.0, fade_below=0.0)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
+            ax.set_title(label_fn(r), fontsize=label_fontsize, pad=1.2,
+                         linespacing=1.2)
+            drew += 1
+        if first_ax is not None and header:
+            fig.canvas.draw()
+            box = first_ax.get_position()
+            # Clear the caption, which is drawn above the axes, not inside it.
+            lines = max(str(label_fn(r)).count("\n") + 1
+                        for r in rows_df.itertuples())
+            pad = lines * label_fontsize * 1.2 / 72.0 / fig.get_size_inches()[1]
+            fig.text(box.x0, box.y1 + pad + 0.012, header, ha="left",
+                     va="bottom", fontsize=header_fontsize, color="#222222",
+                     fontweight="bold")
+
+    place(ubi, h5_path, 0, 0, ubi_cols,
+          motif_label(fields["ubiquitous"], uppercase_names), "ubiquitous")
+    place(res, h5_path, ubi_rows + 1, 0, res_cols,
+          motif_label(fields["restricted"], uppercase_names),
+          "lineage-restricted")
+    if len(prof):
+        place(prof, profile_h5, 0, body_cols, 1,
+              motif_label(fields["profile"], uppercase_names, profile_names),
+              "core promoter")
     return drew
 
 
@@ -449,58 +681,147 @@ def rank_for_panel(df: pd.DataFrame, n: int, one_per_name: bool = True):
     alphabetically -- blood_immune, every time. Re-rank by support here.
     """
     out = df.sort_values("total_seqlets", ascending=False)
+    # n <= 0 (or None) means the full set, which is what a talk slide wants:
+    # the lexicon, not a picked handful.
+    take_all = n is None or n <= 0
     if one_per_name and "jaspar_name" in out.columns:
-        out = out.drop_duplicates(subset="jaspar_name", keep="first")
-    return out.head(n)
+        # `drop_duplicates` treats nulls as equal to each other, so on the
+        # profile table -- where every core promoter cluster is unnamed -- a
+        # naive dedup kept exactly one of them. Dedup the named rows only.
+        named = out["jaspar_name"].notna() & (
+            out["jaspar_name"].astype(str).str.strip().str.lower() != "nan"
+        )
+        out = pd.concat([
+            out[named].drop_duplicates(subset="jaspar_name", keep="first"),
+            out[~named],
+        ]).sort_values("total_seqlets", ascending=False)
+    return out if take_all else out.head(n)
 
 
 def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
                     profile_rows=None, profile_h5=None, trim_kwargs=None,
-                    n_ubiquitous=12, n_restricted=12, per_row=6):
+                    n_ubiquitous=12, n_restricted=12, per_row=6,
+                    label_fontsize=6.2, min_label_fontsize=4.0,
+                    category_style="rotated", label_fields="default",
+                    uppercase_names=False, hspace=0.55,
+                    profile_names=None, n_profile=None, blocks=None,
+                    head_prefixes=True, equalize_band_heights=False,
+                    min_hspace=None):
     trim_kwargs = trim_kwargs or {}
-    rows = []
-    # The "count head:" prefix is only informative when a profile row is
-    # present to contrast with. Without one, both labels carry it, and they
-    # are then longer than the bands they label and overlap each other.
+    fields = resolve_label_fields(label_fields)
     have_profile = bool(
         profile_rows is not None and len(profile_rows) and profile_h5
     )
-    prefix = "count head: " if have_profile else ""
-    if have_profile:
-        rows.append(("profile head: initiation shape",
-                     rank_for_panel(profile_rows, n_restricted), profile_h5,
-                     lambda r: str(r.jaspar_name)))
-    rows.append((
-        f"{prefix}ubiquitous",
-        rank_for_panel(ubiquitous, n_ubiquitous),
-        h5_path,
-        lambda r: f"{r.jaspar_name}\n{int(r.prevalence)} exp",
-    ))
-    rows.append((
-        f"{prefix}lineage-restricted",
-        rank_for_panel(restricted, n_restricted),
-        h5_path,
-        lambda r: (
-            f"{r.jaspar_name}\n"
-            f"{lineage_caption(getattr(r, 'lineage', getattr(r, 'sole_group', '')))}"
-            f"\n{int(r.prevalence)} exp"
-        ),
-    ))
+    wanted = blocks or ("profile", "ubiquitous", "restricted")
+    show_profile = have_profile and "profile" in wanted
+    show_counts = any(b in wanted for b in ("ubiquitous", "restricted"))
+    # The head prefixes are only informative when both heads are on the same
+    # figure to contrast with. Alone, every label carries one, and they are
+    # then longer than the bands they label and overlap each other. A slide
+    # does not want them at all: the biological grouping is the point, and
+    # which attribution head produced it is an internal detail.
+    both = show_profile and show_counts
+    count_prefix = "count head: " if (both and head_prefixes) else ""
+
+    rows = []
+    if show_profile:
+        rows.append((
+            # Named for what it is rather than where it came from whenever the
+            # head is not the distinction being drawn.
+            "profile head: initiation shape"
+            if (both and head_prefixes) else "core promoter",
+            rank_for_panel(profile_rows, n_profile if n_profile is not None
+                           else n_restricted),
+            profile_h5,
+            motif_label(fields["profile"], uppercase_names, profile_names),
+        ))
+    if "ubiquitous" in wanted:
+        rows.append((
+            f"{count_prefix}ubiquitous",
+            rank_for_panel(ubiquitous, n_ubiquitous),
+            h5_path,
+            motif_label(fields["ubiquitous"], uppercase_names),
+        ))
+    if "restricted" in wanted:
+        rows.append((
+            f"{count_prefix}lineage-restricted",
+            rank_for_panel(restricted, n_restricted),
+            h5_path,
+            motif_label(fields["restricted"], uppercase_names),
+        ))
 
     # Height per category in proportion to how many sub-rows it needs, so a
     # 15-motif category is not squeezed into the same band as a 5-motif one.
     sub_rows = [max(1, -(-len(df) // per_row)) for _, df, _, _ in rows]
+    ratios = sub_rows
+    if equalize_band_heights:
+        # Sub-row count alone is not the right ratio: within a band of n
+        # sub-rows the axes height is band/(n + (n-1)*h), so bands of 1, 2 and
+        # 3 sub-rows came out at 0.78, 0.51 and 0.46 inches. Charging each
+        # band for its own internal gaps equalizes the logo height -- which is
+        # the whole point when one text size has to fit every band. The gap
+        # that matters is `_logo_grid`'s internal one, not the `hspace`
+        # separating the bands.
+        floor = INNER_HSPACE_FLOOR if min_hspace is None else min_hspace
+        ratios = [n + (n - 1) * floor for n in sub_rows]
     inner = GridSpecFromSubplotSpec(
-        len(rows), 1, subplot_spec=spec, hspace=0.55, height_ratios=sub_rows
+        len(rows), 1, subplot_spec=spec, hspace=hspace, height_ratios=ratios
     )
     total = 0
     for i, (subtitle, df, h5, label_fn) in enumerate(rows):
         total += _logo_grid(fig, inner[i, 0], df, h5, subtitle, label_fn,
-                            trim_kwargs, per_row=per_row)
+                            trim_kwargs, per_row=per_row,
+                            label_fontsize=label_fontsize,
+                            min_label_fontsize=min_label_fontsize,
+                            category_style=category_style,
+                            min_hspace=min_hspace)
     return total
 
 
-def save_panel(draw, path_stem: Path, figsize, exts=("pdf", "png")) -> list[str]:
+def logo_axes_size(draw, figsize) -> tuple[float, float]:
+    """(width, height) in inches of the smallest axes `draw` produces."""
+    fig = plt.figure(figsize=figsize)
+    draw(fig)
+    fig.canvas.draw()
+    fw, fh = fig.get_size_inches()
+    boxes = [(a.get_position().width * fw, a.get_position().height * fh)
+             for a in fig.axes]
+    plt.close(fig)
+    if not boxes:
+        return (0.0, 0.0)
+    return (min(w for w, _ in boxes), min(h for _, h in boxes))
+
+
+def solve_figure_height(draw, width: float, target_h: float,
+                        lo: float = 1.0, hi: float = 4.0) -> float:
+    """Figure height whose logo axes are `target_h` inches tall.
+
+    Axes height is affine in figure height -- the grid scales, while captions
+    are sized in points and do not -- so two probes determine it exactly. This
+    is solved rather than guessed because the whole point of the separate
+    files is that a base pair and a glyph are the same size in both, so one
+    text size works for the entire slide.
+    """
+    h_lo = logo_axes_size(draw, (width, lo))[1]
+    h_hi = logo_axes_size(draw, (width, hi))[1]
+    if h_hi == h_lo:
+        return hi
+    slope = (h_hi - h_lo) / (hi - lo)
+    guess = max(0.6, lo + (target_h - h_lo) / slope)
+    # The relationship is only piecewise affine: the caption font-shrink loop
+    # and caption line count move the fixed offset. One secant step from the
+    # estimate removes the residual, which is several percent otherwise.
+    h_guess = logo_axes_size(draw, (width, guess))[1]
+    if h_guess and abs(h_guess - target_h) > 1e-4:
+        span = guess - hi
+        if abs(span) > 1e-9 and abs(h_guess - h_hi) > 1e-9:
+            slope2 = (h_guess - h_hi) / span
+            guess = max(0.6, guess + (target_h - h_guess) / slope2)
+    return guess
+
+
+def save_panel(draw, path_stem: Path, figsize, exts=("pdf", "png"),
+               transparent: bool = False) -> list[str]:
     """Render one panel into its own figure.
 
     Panels are written separately as well as composited because the composite
@@ -514,7 +835,8 @@ def save_panel(draw, path_stem: Path, figsize, exts=("pdf", "png")) -> list[str]
     written = []
     for ext in exts:
         path = f"{path_stem}.{ext}"
-        fig.savefig(path, dpi=400, bbox_inches="tight")
+        fig.savefig(path, dpi=400, bbox_inches="tight",
+                    transparent=transparent)
         written.append(path)
     plt.close(fig)
     return written
@@ -581,10 +903,48 @@ def main():
     )
     parser.add_argument("--profile-exemplars", type=Path, default=None, metavar="PATH")
     parser.add_argument("--profile-h5", type=Path, default=None, metavar="PATH")
+    parser.add_argument(
+        "--profile-names", type=Path, default=None, metavar="TSV",
+        help="two-column TSV (cluster_final, name) giving display names for "
+             "profile clusters JASPAR cannot name. JASPAR2026 has no "
+             "Inr/TATA/DPE entries, so without this the core promoter motifs "
+             "render as cl<id>.",
+    )
+    parser.add_argument(
+        "--profile-cols", type=int, default=None, metavar="N",
+        help="columns in the separate core promoter figure; 1 makes it a "
+             "vertical column, which drops onto a slide beside the count "
+             "figure (default: as many columns as there are logos)",
+    )
+    parser.add_argument("--n-profile", type=int, default=None, metavar="N",
+                        help="logos in the profile block (default: "
+                             "--n-restricted)")
+    parser.add_argument(
+        "--row-gap", type=float, default=None, metavar="F",
+        help="gap between logo rows, as a fraction of logo height. The "
+             "caption height still sets a floor, so a small value means "
+             "'no more than needed' (default 1.05; 0.15 with --presentation)",
+    )
+    parser.add_argument(
+        "--band-gap", type=float, default=None, metavar="F",
+        help="gap between the ubiquitous and lineage-restricted bands, as a "
+             "fraction of logo height (default 0.55; 0.30 with "
+             "--presentation)",
+    )
+    parser.add_argument(
+        "--logo-length", type=int, default=None, metavar="BP",
+        help="pad every trimmed CWM to this many positions so all logos draw "
+             "at the same glyph size; 0 = auto (the longest motif being "
+             "drawn). Default off; auto with --presentation.",
+    )
     parser.add_argument("--trim-threshold", type=float, default=0.3, metavar="F")
     parser.add_argument("--min-trim-len", type=int, default=8, metavar="BP")
-    parser.add_argument("--n-ubiquitous", type=int, default=12, metavar="N")
-    parser.add_argument("--n-restricted", type=int, default=12, metavar="N")
+    parser.add_argument("--n-ubiquitous", type=int, default=None, metavar="N",
+                        help="logos in the ubiquitous block; 0 = every row "
+                             "(default 12; 0 with --presentation)")
+    parser.add_argument("--n-restricted", type=int, default=None, metavar="N",
+                        help="logos in the lineage-restricted block; 0 = every "
+                             "row (default 12; 0 with --presentation)")
     parser.add_argument("--logos-per-row", type=int, default=6, metavar="N",
                         help="wrap each category's logos at this width "
                              "(default: 6)")
@@ -592,6 +952,67 @@ def main():
     parser.add_argument("--figsize", type=float, nargs=2, default=(7.4, 6.2),
                         metavar=("W", "H"), help="inches (default: 7.4 6.2)")
     parser.add_argument("--out-stem", type=Path, default=None, metavar="PATH")
+    parser.add_argument(
+        "--band-rows", type=int, default=2, metavar="N",
+        help="with --layout sidebar: how many rows each count band fills. "
+             "Column count is derived per band so each fills its rows "
+             "exactly (default 2). 0 uses --logos-per-row for both.",
+    )
+    parser.add_argument(
+        "--layout", default="stacked", choices=["stacked", "sidebar"],
+        help="with --presentation --consolidate: 'stacked' puts the three "
+             "bands one above another; 'sidebar' stacks the two count bands "
+             "on the left and runs the core promoter motifs down a column on "
+             "the right, which fits a slide's aspect better.",
+    )
+    parser.add_argument(
+        "--consolidate", action="store_true",
+        help="with --presentation, draw every motif in ONE rectangular grid "
+             "instead of separate count/profile files. Category bands are "
+             "dropped, so the class shows up in each caption's second line "
+             "(core promoter / N tissues / a lineage). Column count comes "
+             "from --logos-per-row, nudged to divide the motif count evenly.",
+    )
+    parser.add_argument(
+        "--presentation", action="store_true",
+        help="write only the exemplar panel, sized and styled for a slide: "
+             "larger captions, horizontal category headers, two caption lines "
+             "per logo, uppercased names, transparent background. Bundles the "
+             "defaults of the five options below; each can still be set "
+             "explicitly to override.",
+    )
+    parser.add_argument("--label-fontsize", type=float, default=None,
+                        metavar="PT",
+                        help="logo caption size (default 6.2; 11 with "
+                             "--presentation)")
+    parser.add_argument(
+        "--label-fields", default=None, metavar="SPEC",
+        help="caption lines per logo: a comma-list of name,lineage,prevalence "
+             "applied to both blocks, or a preset -- 'default' (manuscript) "
+             "or 'auto' (two lines, each block keeping the field that carries "
+             "its claim; the --presentation default)",
+    )
+    parser.add_argument(
+        "--category-label", default=None,
+        choices=["rotated", "header", "none"],
+        help="how to label the ubiquitous/lineage-restricted blocks (default "
+             "rotated; 'header' with --presentation)",
+    )
+    parser.add_argument("--uppercase-names", action="store_true", default=None,
+                        help="uppercase motif names, so mouse- and "
+                             "human-convention JASPAR names stop mixing "
+                             "(default off; on with --presentation)")
+    parser.add_argument(
+        "--logo-size", type=float, nargs=2, default=None, metavar=("W", "H"),
+        help="physical size of ONE logo's axes, in inches (default 1.25 0.5 "
+             "with --consolidate). The figure size is then derived from the "
+             "grid, so changing --logos-per-row rearranges the layout "
+             "without resizing the motifs.",
+    )
+    parser.add_argument("--exemplar-figsize", type=float, nargs=2,
+                        default=None, metavar=("W", "H"),
+                        help="exemplar-panel size in inches (default scales "
+                             "from --figsize; 10 5 with --presentation)")
     parser.add_argument(
         "--no-split-panels", action="store_true",
         help="skip the per-panel files; by default each panel is also written "
@@ -603,6 +1024,51 @@ def main():
              "so panel c can be rearranged freely",
     )
     args = parser.parse_args()
+
+    # Each knob keeps its manuscript default unless --presentation is set and
+    # the user has not chosen a value, so an explicit flag always wins.
+    presentation_defaults = {
+        # A logo is a fixed physical size; the figure grows to fit the grid.
+        "logo_size": (1.25, 0.5),
+        # Let the caption height set the row gap, rather than a fixed floor
+        # tuned for the manuscript's three-line captions.
+        "row_gap": 0.15,
+        # The band gap has to clear the next band's header *and* its first
+        # caption (~0.58in at 11pt), while the row gap only clears a caption.
+        # Tying them together is what made the whole figure loose. Note the
+        # units differ: matplotlib measures this one against average *band*
+        # height (~1.8in here), not logo height.
+        "band_gap": 0.45,
+        # Uniform glyph size, so one text size works for the whole slide.
+        "logo_length": 0,
+        # The full lexicon, not a picked handful.
+        "n_ubiquitous": 0,
+        "n_restricted": 0,
+        "label_fontsize": 11.0,
+        "label_fields": "auto",
+        "category_label": "header",
+        "uppercase_names": True,
+        "exemplar_figsize": (10.0, 7.5),
+    }
+    manuscript_defaults = {
+        "logo_size": None,
+        "row_gap": None,
+        "band_gap": 0.55,
+        "logo_length": None,
+        "n_ubiquitous": 12,
+        "n_restricted": 12,
+        "label_fontsize": 6.2,
+        "label_fields": "default",
+        "category_label": "rotated",
+        "uppercase_names": False,
+        "exemplar_figsize": None,
+    }
+    chosen = presentation_defaults if args.presentation else manuscript_defaults
+    for key, value in chosen.items():
+        if getattr(args, key) is None:
+            setattr(args, key, value)
+    # Fails here on a typo rather than after the h5 reads.
+    resolve_label_fields(args.label_fields)
 
     h5_path = args.modisco_h5
     if str(h5_path) == "auto":
@@ -619,6 +1085,11 @@ def main():
         "ubiquitous": args.in_dir / f"motif_exemplars_{args.head}_ubiquitous.tsv",
         "restricted": args.in_dir / f"motif_exemplars_{args.head}_restricted.tsv",
     }
+    # --presentation draws only the exemplar panel, so the rarefaction and
+    # concentration tables are not inputs to it.
+    if args.presentation:
+        needed = {k: v for k, v in needed.items()
+                  if k in ("ubiquitous", "restricted")}
     missing = {k: v for k, v in needed.items() if not v.exists()}
     if missing or not Path(h5_path).exists():
         for k, v in missing.items():
@@ -643,9 +1114,206 @@ def main():
         if args.profile_exemplars and args.profile_exemplars.exists()
         else None
     )
+    profile_names = None
+    if args.profile_names:
+        if not args.profile_names.exists():
+            print(f"ERROR: missing --profile-names: {args.profile_names}",
+                  file=sys.stderr)
+            sys.exit(1)
+        names = pd.read_csv(args.profile_names, sep="\t")
+        missing_cols = {"cluster_final", "name"} - set(names.columns)
+        if missing_cols:
+            print(f"ERROR: --profile-names needs columns cluster_final, name; "
+                  f"missing {sorted(missing_cols)}", file=sys.stderr)
+            sys.exit(1)
+        profile_names = dict(
+            zip(names["cluster_final"].astype(int), names["name"].astype(str))
+        )
+    stem = args.out_stem or (args.in_dir / f"figure2_{args.head}")
+    stem.parent.mkdir(parents=True, exist_ok=True)
+    exemplar_kwargs = dict(
+        profile_rows=profile_rows, profile_h5=args.profile_h5,
+        trim_kwargs=dict(threshold=args.trim_threshold,
+                         min_len=args.min_trim_len),
+        n_ubiquitous=args.n_ubiquitous, n_restricted=args.n_restricted,
+        per_row=args.logos_per_row, label_fontsize=args.label_fontsize,
+        category_style=args.category_label,
+        label_fields=args.label_fields,
+        uppercase_names=args.uppercase_names,
+        profile_names=profile_names, n_profile=args.n_profile,
+        head_prefixes=not args.presentation,
+        equalize_band_heights=args.presentation,
+    )
+
     if args.profile_exemplars and profile_rows is None:
         print(f"WARNING: {args.profile_exemplars} not found; omitting the "
               "profile row", file=sys.stderr)
+
+    if args.presentation:
+        # Only the exemplar panel: the rarefaction and concentration panels are
+        # arguments about sampling that a talk makes verbally, and compositing
+        # them here would just shrink the logos.
+        def sub_rows_for(rows, n):
+            picked = len(rank_for_panel(rows, n)) if rows is not None else 0
+            return max(1, -(-picked // args.logos_per_row)) if picked else 0
+
+        have_profile = profile_rows is not None and args.profile_h5
+        n_prof = (args.n_profile if args.n_profile is not None
+                  else args.n_restricted)
+
+        # One `pad_to` across every band, including any going to another file,
+        # so a base pair is the same width in all of them.
+        if args.logo_length is not None:
+            specs = [
+                (rank_for_panel(tables["ubiquitous"], args.n_ubiquitous),
+                 h5_path),
+                (rank_for_panel(tables["restricted"], args.n_restricted),
+                 h5_path),
+            ]
+            if have_profile:
+                specs.append(
+                    (rank_for_panel(profile_rows, n_prof), args.profile_h5))
+            pad_to = args.logo_length or max_trimmed_len(
+                specs, exemplar_kwargs["trim_kwargs"])
+            exemplar_kwargs["trim_kwargs"]["pad_to"] = pad_to
+            print(f"padding every logo to {pad_to} bp for a uniform "
+                  "glyph size")
+
+        def make_draw(blocks, per_row=None):
+            state = {"n": 0}
+            kwargs = dict(exemplar_kwargs)
+            if per_row is not None:
+                kwargs["per_row"] = per_row
+
+            def draw(f):
+                state["n"] = panel_exemplars(
+                    f, GridSpec(1, 1, figure=f)[0, 0], tables["ubiquitous"],
+                    tables["restricted"], Path(h5_path),
+                    hspace=args.band_gap,
+                    min_hspace=args.row_gap,
+                    # Hold the requested size: the caller asked for legible
+                    # text, so if it will not fit, that is a cue to lower
+                    # --n-ubiquitous/--n-restricted, not to shrink captions.
+                    min_label_fontsize=args.label_fontsize,
+                    blocks=blocks, **kwargs,
+                )
+
+            return draw, state
+
+        def emit(draw, state, suffix, figsize):
+            for path in save_panel(draw, Path(f"{stem}_{suffix}"), figsize,
+                                   transparent=True):
+                print(f"Saved {path}")
+            return state["n"]
+
+        w, h = args.exemplar_figsize
+        # Per-logo geometry is pinned to what the default 10x7.5 layout gives,
+        # so every presentation figure shares one glyph and text size.
+        target_h = 0.5 * w / 10.0
+
+        if args.consolidate:
+            # All three bands in one file on a single column grid, so every
+            # logo lands on the same pitch -- but the bands stay separate and
+            # labelled. An undifferentiated array would lose the core
+            # promoter / ubiquitous / lineage-restricted split, which is the
+            # claim the panel exists to make.
+            if args.layout == "sidebar":
+                prof_sel = (rank_for_panel(profile_rows, n_prof)
+                            if have_profile else None)
+                state = {"n": 0}
+
+                def draw(f):
+                    state["n"] = panel_sidebar(
+                        f, GridSpec(1, 1, figure=f)[0, 0],
+                        tables["ubiquitous"], tables["restricted"],
+                        Path(h5_path), profile_rows=prof_sel,
+                        profile_h5=args.profile_h5,
+                        trim_kwargs=exemplar_kwargs["trim_kwargs"],
+                        cols=args.logos_per_row,
+                        band_rows=args.band_rows,
+                        label_fontsize=args.label_fontsize,
+                        label_fields=args.label_fields,
+                        uppercase_names=args.uppercase_names,
+                        profile_names=profile_names,
+                    )
+
+                n_sub = ((args.band_rows or 1) * 2 + 1) if args.band_rows \
+                    else 5
+            else:
+                draw, state = make_draw(
+                    ("profile", "ubiquitous", "restricted"))
+                n_sub = (
+                    sub_rows_for(tables["ubiquitous"], args.n_ubiquitous)
+                    + sub_rows_for(tables["restricted"], args.n_restricted))
+                if have_profile:
+                    n_sub += sub_rows_for(profile_rows, n_prof)
+
+            # Logo size is the invariant and the figure is derived from it, so
+            # --logos-per-row rearranges the layout instead of rescaling the
+            # motifs. Axes width is strictly proportional to figure width, so
+            # one probe fixes the width; the height is then solved.
+            want_w, want_h = args.logo_size
+            width = w
+            probe_w, _ = logo_axes_size(draw, (width, 1.6 * n_sub))
+            if probe_w > 0:
+                width *= want_w / probe_w
+            height = solve_figure_height(draw, width, want_h,
+                                         lo=1.2 * n_sub, hi=2.2 * n_sub)
+            total = emit(draw, state, "presentation_all", (width, height))
+            aw, ah = logo_axes_size(draw, (width, height))
+            print(f"figure {width:.2f} x {height:.2f} in "
+                  f"({width / height:.2f}:1); logo axes "
+                  f"{aw:.3f} x {ah:.3f} in; {total} logos drawn")
+            return
+
+        # Otherwise the count and profile lexicons go to separate files: on a
+        # slide the count lexicon is the main figure and the core promoter
+        # motifs are a different claim, so compositing only shrinks both.
+        counts_draw, counts_state = make_draw(("ubiquitous", "restricted"))
+        # Derive the figure from the logo, not the other way round: with the
+        # figure pinned, tightening the row gaps just inflated the axes (a
+        # 1.25 x 0.92in logo instead of 1.25 x 0.50in).
+        want_w, want_h = args.logo_size
+        n_sub = (sub_rows_for(tables["ubiquitous"], args.n_ubiquitous)
+                 + sub_rows_for(tables["restricted"], args.n_restricted))
+        probe_w, _ = logo_axes_size(counts_draw, (w, 1.6 * n_sub))
+        if probe_w > 0:
+            w = w * want_w / probe_w
+        h = solve_figure_height(counts_draw, w, want_h,
+                                lo=1.2 * n_sub, hi=2.2 * n_sub)
+        axes_w, axes_h = logo_axes_size(counts_draw, (w, h))
+        total = emit(counts_draw, counts_state, "presentation_counts", (w, h))
+        print(f"counts figure {w:.2f} x {h:.2f} in ({w / h:.2f}:1)")
+
+        if have_profile:
+            n_logos_prof = len(rank_for_panel(profile_rows, n_prof))
+            # Give the profile grid only the columns it fills, and a width in
+            # the same proportion, so a column -- and therefore a base pair --
+            # is exactly as wide as in the counts figure. Keeping five columns
+            # for three logos made each one 40% narrower per bp.
+            cols = args.profile_cols or max(
+                1, min(n_logos_prof, args.logos_per_row))
+            cols = max(1, min(cols, n_logos_prof))
+            prof_w = w * cols / args.logos_per_row
+            prof_draw, prof_state = make_draw(("profile",), per_row=cols)
+            # `wspace` is a fraction of axes width, so a 3-column grid does not
+            # divide its figure the way a 5-column one does -- the
+            # proportional width lands ~3% off. Axes width is strictly
+            # proportional to figure width, so one probe corrects it exactly.
+            probe_w, _ = logo_axes_size(prof_draw, (prof_w, 2.0))
+            if probe_w > 0:
+                prof_w *= axes_w / probe_w
+            prof_rows = max(1, -(-n_logos_prof // cols))
+            prof_h = solve_figure_height(prof_draw, prof_w, axes_h,
+                                         lo=1.2 * prof_rows,
+                                         hi=2.6 * prof_rows)
+            total += emit(prof_draw, prof_state, "presentation_profile",
+                          (prof_w, prof_h))
+            got_w, got_h = logo_axes_size(prof_draw, (prof_w, prof_h))
+            print(f"logo axes: counts {axes_w:.3f} x {axes_h:.3f} in, "
+                  f"profile {got_w:.3f} x {got_h:.3f} in")
+        print(f"{total} logos drawn")
+        return
 
     fig = plt.figure(figsize=tuple(args.figsize))
     gs = GridSpec(2, 2, figure=fig, height_ratios=[1.0, 1.45],
@@ -660,11 +1328,8 @@ def main():
 
     sub = gs[1, :].subgridspec(1, 1)
     n_logos = panel_exemplars(
-        fig, sub[0, 0], tables["ubiquitous"], tables["restricted"], Path(h5_path),
-        profile_rows=profile_rows, profile_h5=args.profile_h5,
-        trim_kwargs=dict(threshold=args.trim_threshold, min_len=args.min_trim_len),
-        n_ubiquitous=args.n_ubiquitous, n_restricted=args.n_restricted,
-        per_row=args.logos_per_row,
+        fig, sub[0, 0], tables["ubiquitous"], tables["restricted"],
+        Path(h5_path), **exemplar_kwargs,
     )
     # Anchored to the bottom row's own extent. A hardcoded y collided with
     # panel a's x-axis label as soon as the height ratios changed.
@@ -676,8 +1341,6 @@ def main():
         fontweight="bold", fontsize=10, ha="left", va="bottom",
     )
 
-    stem = args.out_stem or (args.in_dir / f"figure2_{args.head}")
-    stem.parent.mkdir(parents=True, exist_ok=True)
     for ext in ("pdf", "png"):
         path = f"{stem}.{ext}"
         fig.savefig(path, dpi=400, bbox_inches="tight")
@@ -701,12 +1364,7 @@ def main():
         written += save_panel(
             lambda f: panel_exemplars(
                 f, GridSpec(1, 1, figure=f)[0, 0], tables["ubiquitous"],
-                tables["restricted"], Path(h5_path),
-                profile_rows=profile_rows, profile_h5=args.profile_h5,
-                trim_kwargs=dict(threshold=args.trim_threshold,
-                                 min_len=args.min_trim_len),
-                n_ubiquitous=args.n_ubiquitous, n_restricted=args.n_restricted,
-                per_row=args.logos_per_row),
+                tables["restricted"], Path(h5_path), **exemplar_kwargs),
             Path(f"{stem}_c_exemplars"), (w, h * 0.56),
         )
         if args.collapse_concentration is not None:

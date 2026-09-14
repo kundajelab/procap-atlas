@@ -3577,6 +3577,9 @@ def exemplar_tables(n_ubiquitous=10, n_restricted=14):
         "n_groups": 21,
         "total_seqlets": np.arange(n_ubiquitous)[::-1] + 1000,
         "posneg": "pos",
+        # Real ubiquitous rows carry every group they were seen in, which
+        # `lineage_caption` collapses to "N tissues" past --max-groups.
+        "lineage": ",".join(f"tissue_{i}" for i in range(21)),
     })
     re_ = pd.DataFrame({
         "cluster_final": range(100, 100 + n_restricted),
@@ -3913,3 +3916,459 @@ def test_collapsed_concentration_is_supplementary_only(tmp_path):
         "the supplementary panel was not written"
     assert (tmp_path / "withcoll.png").read_bytes() == plain_main, \
         "collapsed tables changed the main figure; panel b must stay cluster-level"
+
+
+def test_presentation_headers_clear_the_first_row_of_captions(tmp_path):
+    """`category_style="header"` put the band label on the first logo's caption.
+
+    The header is drawn above `band.y1`, but each logo's caption is drawn
+    above its own axes, so clearing the band is not enough -- at the 11pt
+    presentation caption size "ubiquitous" landed on top of "198 exp". The
+    offset has to include the caption's own height.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(10.0, 5.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=6, n_restricted=6, per_row=3,
+        label_fontsize=11.0, min_label_fontsize=11.0,
+        category_style="header", label_fields="auto",
+        uppercase_names=True, hspace=0.72,
+    )
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    headers = [t for t in fig.texts if t.get_rotation() == 0]
+    assert len(headers) == 2, "expected one header per category"
+
+    caption_boxes = [
+        (ax.title.get_text().split("\n")[0],
+         ax.title.get_window_extent(r))
+        for ax in fig.axes if ax.title.get_text()
+    ]
+    hits = [
+        (h.get_text(), name)
+        for h in headers
+        for name, box in caption_boxes
+        if h.get_window_extent(r).overlaps(box)
+    ]
+    plt.close(fig)
+    assert not hits, f"category headers overlap logo captions: {hits}"
+
+
+def test_presentation_labels_are_two_lines_and_uppercased(tmp_path):
+    """`--presentation` trades the third caption line for legibility.
+
+    Both count blocks carry the lineage, so "21 tissues" sits beside
+    "heart+muscle" and the contrast reads without anyone parsing a count.
+    Uppercasing stops mouse- and human-convention JASPAR names
+    (`Pou5f1::Sox2` beside `POU2F3`) from mixing on a projected slide.
+    """
+    ub, re_ = exemplar_tables()
+    fields = fig2.resolve_label_fields("auto")
+    row = next(re_.assign(jaspar_name="Pou5f1::Sox2").itertuples())
+
+    label = fig2.motif_label(fields["restricted"], uppercase=True)(row)
+    assert label.split("\n")[0] == "POU5F1::SOX2"
+    assert len(label.split("\n")) == 2, f"expected two lines, got {label!r}"
+    assert "exp" not in label, "restricted captions drop the prevalence line"
+
+    ubi_row = next(ub.itertuples())
+    ubi = fig2.motif_label(fields["ubiquitous"], uppercase=True)(ubi_row)
+    assert ubi.split("\n")[1] == "21 tissues", \
+        f"ubiquitous should carry the lineage, got {ubi!r}"
+    assert "exp" not in ubi, "presentation captions drop the prevalence line"
+
+    # The manuscript preset stays three lines, so Figure 2 cannot drift.
+    default = fig2.resolve_label_fields("default")
+    assert default["restricted"] == ("name", "lineage", "prevalence")
+    assert fig2.motif_label(default["restricted"], uppercase=False)(row) \
+        .split("\n")[0] == "Pou5f1::Sox2"
+
+
+def test_unknown_label_field_is_rejected():
+    with pytest.raises(SystemExit, match="unknown field"):
+        fig2.resolve_label_fields("name,lineage,tissue")
+
+
+def profile_table():
+    """A profile-head exemplar table as `--include-unmatched` produces one.
+
+    JASPAR2026 has no Inr/TATA/DPE entries, so the core promoter clusters --
+    the whole point of the profile block -- arrive with a null `jaspar_name`.
+    """
+    import numpy as np
+    return pd.DataFrame({
+        "cluster_final": [11, 12, 13, 14],
+        "posneg": ["pos"] * 4,
+        "jaspar_name": [np.nan, np.nan, np.nan, "NFYA"],
+        "total_seqlets": [900, 800, 700, 600],
+        "prevalence": [190, 180, 120, 150],
+    })
+
+
+def test_unnamed_profile_clusters_are_not_collapsed_onto_each_other():
+    """`drop_duplicates` treats nulls as equal, so all but one was dropped."""
+    rows = profile_table()
+    kept = fig2.rank_for_panel(rows, 4)
+    assert len(kept) == 4, (
+        "unnamed core promoter clusters were deduped against each other: "
+        f"kept {sorted(kept['cluster_final'])}"
+    )
+    # Named rows are still deduped, and ordering stays by support.
+    assert list(kept["cluster_final"]) == [11, 12, 13, 14]
+
+
+def test_named_profile_rows_still_dedup_by_name():
+    rows = profile_table()
+    rows = pd.concat([rows, rows.assign(cluster_final=15, total_seqlets=10)])
+    kept = fig2.rank_for_panel(rows, 10)
+    assert (kept["jaspar_name"] == "NFYA").sum() == 1, \
+        "a repeated JASPAR name should still collapse to one logo"
+
+
+def test_unnamed_clusters_fall_back_to_a_cluster_id_not_the_string_nan():
+    rows = profile_table()
+    label = fig2.motif_label(("name",))
+    rendered = [label(r) for r in rows.itertuples()]
+    assert "nan" not in rendered, f"rendered the literal string nan: {rendered}"
+    assert rendered[:3] == ["cl11", "cl12", "cl13"]
+    assert rendered[3] == "NFYA"
+
+
+def test_profile_names_tsv_overrides_the_fallback():
+    """The core promoter motifs have to be nameable by hand."""
+    rows = profile_table()
+    names = {11: "TATA", 12: "Inr", 13: "DPE"}
+    label = fig2.motif_label(("name",), uppercase=False, names=names)
+    assert [label(r) for r in rows.itertuples()] == \
+        ["TATA", "Inr", "DPE", "NFYA"]
+    # A hand-given name wins over a JASPAR one, so a cluster can be relabelled.
+    assert fig2.motif_label(("name",), names={14: "NF-Y"})(
+        list(rows.itertuples())[3]) == "NF-Y"
+
+
+def test_three_block_panel_has_no_caption_collisions(tmp_path):
+    """The profile block makes panel c three bands; headers must still clear."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 6.5))
+    drew = fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=6, n_restricted=6, n_profile=4, per_row=3,
+        label_fontsize=11.0, min_label_fontsize=11.0,
+        category_style="header", label_fields="auto",
+        uppercase_names=True, hspace=0.72,
+        profile_names={c: n for c, n in
+                       zip(prof["cluster_final"], ["TATA", "Inr", "DPE", "NFYA"])},
+    )
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    headers = [t for t in fig.texts if t.get_rotation() == 0]
+    assert len(headers) == 3, f"expected three headers, got {len(headers)}"
+    captions = [(ax.title.get_text().split("\n")[0],
+                 ax.title.get_window_extent(r))
+                for ax in fig.axes if ax.title.get_text()]
+    hits = [(h.get_text(), name) for h in headers
+            for name, box in captions
+            if h.get_window_extent(r).overlaps(box)]
+    plt.close(fig)
+    assert drew == 16, f"expected 16 logos, drew {drew}"
+    assert not hits, f"headers overlap captions in the three-block panel: {hits}"
+
+
+def test_hand_given_names_are_not_uppercased():
+    """`--uppercase-names` homogenizes JASPAR symbols, not curated labels.
+
+    The core promoter elements are named by hand (`CA-Inr`, `TA-Inr`), and
+    `Inr` is a standard abbreviation rather than a gene symbol -- uppercasing
+    it to `CA-INR` is simply wrong. A typed name is used verbatim.
+    """
+    rows = profile_table()
+    names = {11: "CA-Inr", 12: "TATA", 13: "TA-Inr"}
+    label = fig2.motif_label(("name",), uppercase=True, names=names)
+    assert [label(r) for r in rows.itertuples()][:3] == \
+        ["CA-Inr", "TATA", "TA-Inr"]
+    # A JASPAR name in the same panel is still homogenized.
+    assert label(list(rows.itertuples())[3]) == "NFYA"
+
+
+def test_cluster_id_fallback_is_not_uppercased():
+    rows = profile_table()
+    label = fig2.motif_label(("name",), uppercase=True)
+    assert [label(r) for r in rows.itertuples()][:3] == ["cl11", "cl12", "cl13"]
+
+
+def test_non_positive_n_means_every_row():
+    """`--presentation` shows the whole lexicon, not a picked handful."""
+    ub, _ = exemplar_tables(n_ubiquitous=10)
+    assert len(fig2.rank_for_panel(ub, 0)) == 10
+    assert len(fig2.rank_for_panel(ub, None)) == 10
+    assert len(fig2.rank_for_panel(ub, -1)) == 10
+    assert len(fig2.rank_for_panel(ub, 4)) == 4
+
+
+@pytest.mark.parametrize("blocks,expected_headers", [
+    (("ubiquitous", "restricted"), ["ubiquitous", "lineage-restricted"]),
+    (("profile",), ["core promoter"]),
+])
+def test_blocks_render_independently(tmp_path, blocks, expected_headers):
+    """Counts and profile go to separate figures, so each renders alone.
+
+    A block rendered without the other head also drops the "count head:" /
+    "profile head:" prefix, which only earns its width when both are on the
+    same figure to contrast.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 5.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=0, n_restricted=0, n_profile=4, per_row=5,
+        label_fontsize=11.0, category_style="header", label_fields="auto",
+        blocks=blocks,
+    )
+    fig.canvas.draw()
+    headers = sorted(t.get_text() for t in fig.texts if t.get_rotation() == 0)
+    plt.close(fig)
+    assert headers == sorted(expected_headers)
+
+
+def test_pad_to_equalizes_logo_length_without_truncating(tmp_path):
+    """Trimmed CWMs run 10-25bp, which makes one text size impossible."""
+    ub, re_ = exemplar_tables(n_ubiquitous=3, n_restricted=3)
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    tk = dict(threshold=0.3, min_len=4)
+    raw = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos", **tk))
+           for r in ub.itertuples()]
+    padded = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos",
+                                   pad_to=30, **tk))
+              for r in ub.itertuples()]
+    assert set(padded) == {30}, f"expected one length, got {sorted(set(padded))}"
+    # A pad_to below the trimmed length is ignored rather than cropping signal.
+    tiny = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos",
+                                 pad_to=2, **tk))
+            for r in ub.itertuples()]
+    assert tiny == raw, "pad_to must never truncate a CWM"
+
+
+def test_max_trimmed_len_spans_every_block(tmp_path):
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    tk = dict(threshold=0.3, min_len=4)
+    longest = fig2.max_trimmed_len([(ub, h5), (re_, h5)], tk)
+    per_row = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos", **tk))
+               for r in pd.concat([ub, re_]).itertuples()]
+    assert longest == max(per_row)
+    # A stray pad_to in trim_kwargs must not feed back into the measurement.
+    assert fig2.max_trimmed_len([(ub, h5)], dict(tk, pad_to=99)) == \
+        fig2.max_trimmed_len([(ub, h5)], tk)
+
+
+def test_solve_figure_height_hits_the_target_axes_height(tmp_path):
+    """The two presentation files must share a glyph scale, so this is solved.
+
+    Axes height is affine in figure height -- the grid scales, captions are in
+    points and do not -- so two probes should land the target closely.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+
+    def draw(f):
+        fig2.panel_exemplars(
+            f, GridSpec(1, 1, figure=f)[0, 0], ub, re_, h5,
+            trim_kwargs=dict(threshold=0.3, min_len=4),
+            n_ubiquitous=0, n_restricted=0, per_row=5,
+            label_fontsize=11.0, category_style="header",
+            label_fields="auto", blocks=("ubiquitous",),
+        )
+
+    target = 0.5
+    h = fig2.solve_figure_height(draw, 10.0, target)
+    got = fig2.logo_axes_size(draw, (10.0, h))[1]
+    assert abs(got - target) < 0.05 * target, \
+        f"solved height gave {got:.3f} in, wanted {target:.3f} in"
+
+
+@pytest.mark.parametrize("head_prefixes,expected", [
+    # Figure 2 draws both heads on one panel, so the prefix is the only thing
+    # distinguishing the bands.
+    (True, ["profile head: initiation shape", "count head: ubiquitous",
+            "count head: lineage-restricted"]),
+    # A slide wants the biological grouping; which head produced it is an
+    # internal detail.
+    (False, ["core promoter", "ubiquitous", "lineage-restricted"]),
+])
+def test_band_headers_name_the_grouping(tmp_path, head_prefixes, expected):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 9.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=0, n_restricted=0, n_profile=3, per_row=5,
+        label_fontsize=11.0, category_style="header", label_fields="auto",
+        hspace=0.72, head_prefixes=head_prefixes,
+    )
+    fig.canvas.draw()
+    got = [t.get_text() for t in fig.texts if t.get_rotation() == 0]
+    plt.close(fig)
+    assert got == expected
+
+
+def test_all_three_bands_share_one_column_grid(tmp_path):
+    """Consolidating must not rescale a band: one pitch, one glyph size."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 9.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4, pad_to=25),
+        n_ubiquitous=0, n_restricted=0, n_profile=3, per_row=5,
+        label_fontsize=11.0, category_style="header", label_fields="auto",
+        hspace=0.72, head_prefixes=False, equalize_band_heights=True,
+    )
+    fig.canvas.draw()
+    fw, fh = fig.get_size_inches()
+    widths = {round(a.get_position().width * fw, 3) for a in fig.axes}
+    heights = [a.get_position().height * fh for a in fig.axes]
+    plt.close(fig)
+    assert len(widths) == 1, f"logo widths differ across bands: {widths}"
+    # `_logo_grid` may raise hspace above the nominal value to clear a tall
+    # caption, so allow a little slack rather than demanding exactness.
+    spread = (max(heights) - min(heights)) / max(heights)
+    assert spread < 0.05, (
+        f"logo heights differ across bands by {spread:.1%}: "
+        f"{min(heights):.3f}-{max(heights):.3f} in")
+
+
+def test_sidebar_fills_each_band_and_keeps_one_logo_size(tmp_path):
+    """Per-band column counts, core promoter as a right-hand column.
+
+    A single shared column count cannot fill both bands -- 10 ubiquitous and
+    15 lineage-restricted over two rows want 5 and 8 columns -- and a band
+    with holes in it reads worse than a ragged right edge. Everything still
+    sits in one grid, so the logos cannot drift out of size relative to
+    each other.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables(n_ubiquitous=10, n_restricted=15)
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(18.0, 6.0))
+    drew = fig2.panel_sidebar(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof.head(3), profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4, pad_to=25),
+        band_rows=2, label_fontsize=11.0, label_fields="auto",
+        profile_names={11: "CA-Inr", 12: "TATA", 13: "TA-Inr"},
+    )
+    fig.canvas.draw()
+    fw, fh = fig.get_size_inches()
+    widths = {round(a.get_position().width * fw, 3) for a in fig.axes}
+    heights = {round(a.get_position().height * fh, 3) for a in fig.axes}
+    xs = sorted({round(a.get_position().x0, 3) for a in fig.axes})
+    headers = sorted(t.get_text() for t in fig.texts if t.get_rotation() == 0)
+    plt.close(fig)
+
+    assert drew == 28
+    assert len(widths) == 1, f"logo widths drifted: {widths}"
+    assert len(heights) == 1, f"logo heights drifted: {heights}"
+    assert headers == ["core promoter", "lineage-restricted", "ubiquitous"]
+    # 8 body columns (the wider band) plus the core promoter column.
+    assert len(xs) == 9, f"expected 9 distinct columns, got {len(xs)}"
+
+
+def test_sidebar_band_rows_zero_falls_back_to_one_column_count(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables(n_ubiquitous=10, n_restricted=15)
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(14.0, 6.0))
+    fig2.panel_sidebar(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4), cols=6, band_rows=0,
+        label_fontsize=11.0, label_fields="auto",
+    )
+    fig.canvas.draw()
+    xs = {round(a.get_position().x0, 3) for a in fig.axes}
+    plt.close(fig)
+    assert len(xs) == 6, f"expected 6 columns from --logos-per-row, got {len(xs)}"
+
+
+def test_row_gap_clearance_runs_even_when_the_font_is_pinned(tmp_path):
+    """Caption clearance was skipped whenever shrinking was disallowed.
+
+    The solve lived in a `while label_fontsize > min_label_fontsize` loop, so
+    pinning the font (as --presentation does, to hold a legible size) skipped
+    the body entirely and no clearance was computed. A generous default floor
+    hid it until the floor was lowered for slides, at which point captions
+    landed on the logos above.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(10.0, 4.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=0, n_restricted=0, per_row=5,
+        # Pinned font *and* a row gap far too small to clear a caption.
+        label_fontsize=11.0, min_label_fontsize=11.0, min_hspace=0.01,
+        category_style="header", label_fields="auto", hspace=0.45,
+        equalize_band_heights=True,
+    )
+    hits = _title_collisions(fig)
+    plt.close(fig)
+    assert not hits, f"captions overlap the logos above: {hits}"

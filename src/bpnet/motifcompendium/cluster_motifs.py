@@ -65,7 +65,67 @@ def assign_jaspar_labels(mc):
         print(f"  JASPAR file not found at {JASPAR_PATH}, skipping annotation")
 
 
-def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on, weight_col):
+def resolve_algorithm(mc, algorithm=None, kmeans_iterations=None):
+    """(algorithm, algorithm_kwargs) to pass to `mc.cluster`, plus a label.
+
+    `mc.cluster`'s default changed silently between MotifCompendium releases:
+    v1.0.18 ran `"cpm_leiden"` alone, v1.0.19 changed the default to
+    `["cpm_leiden", "k_centroids"]` -- Leiden followed by an *uncapped*
+    k-means refinement (`n_iterations=-1`, exiting only on exact membership
+    equality). Nothing here passed `algorithm`, so the second stage arrived
+    with an upstream version bump and no record in any output.
+
+    It is cheap at count-head scale (5,639 motifs, ~4 min) and ruinous at
+    profile-head scale (~38,000 motifs): each iteration rebuilds every
+    centroid and recomputes an N x k float64 similarity on the GPU. A profile
+    build sat in it for 85 h having previously completed in hours on v1.0.18.
+
+    Passing `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour.
+    `--kmeans-iterations` bounds the refinement instead of removing it.
+    Returns the label so the choice can be recorded in the outputs.
+    """
+    if algorithm is None:
+        default = inspect.signature(mc.cluster).parameters["algorithm"].default
+        algorithm = list(default) if isinstance(default, (list, tuple)) else [default]
+    algorithm = list(algorithm)
+
+    algorithm_kwargs = None
+    if kmeans_iterations is not None:
+        kmeans_steps = [a for a in algorithm if a.startswith("k_")]
+        if not kmeans_steps:
+            raise ValueError(
+                f"--kmeans-iterations was given but {algorithm} has no "
+                "k-means step to bound; drop the flag or add k_centroids"
+            )
+        # keyed by algorithm name so only the k-means step is bounded
+        algorithm_kwargs = {a: {"n_iterations": kmeans_iterations}
+                            for a in kmeans_steps}
+
+    label = "+".join(algorithm)
+    if kmeans_iterations is not None:
+        label += f" (n_iterations={kmeans_iterations})"
+    return algorithm, algorithm_kwargs, label
+
+
+def cluster_with(mc, algorithm, algorithm_kwargs, **cluster_kwargs):
+    """`mc.cluster` with an explicit algorithm, tolerating older versions.
+
+    `algorithm_kwargs` only exists from v1.0.19; on an older install the
+    default was `"cpm_leiden"` alone, so there is nothing to bound and the
+    argument is dropped rather than raising.
+    """
+    params = inspect.signature(mc.cluster).parameters
+    if "algorithm" in params:
+        cluster_kwargs["algorithm"] = (
+            algorithm if len(algorithm) > 1 else algorithm[0]
+        )
+    if algorithm_kwargs is not None and "algorithm_kwargs" in params:
+        cluster_kwargs["algorithm_kwargs"] = algorithm_kwargs
+    mc.cluster(**cluster_kwargs)
+
+
+def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on,
+                        weight_col, algorithm=None, algorithm_kwargs=None):
     cluster_kwargs = {
         "similarity_threshold": similarity_threshold,
         "save_name": save_name,
@@ -75,7 +135,8 @@ def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on, weight_
         cluster_kwargs["weight_col"] = weight_col
     else:
         cluster_kwargs["cluster_on_weight"] = weight_col
-    mc.cluster(**cluster_kwargs)
+    cluster_with(mc, algorithm or ["cpm_leiden"], algorithm_kwargs,
+                 **cluster_kwargs)
 
 
 def export_pattern_to_cluster_mapping(mc, head, out_dir=MC_DIR):
@@ -118,7 +179,8 @@ def export_pattern_to_cluster_mapping(mc, head, out_dir=MC_DIR):
     return mapping_path
 
 
-def write_cluster_metadata(mc, head, logo_paths=None, out_dir=MC_DIR):
+def write_cluster_metadata(mc, head, logo_paths=None, out_dir=MC_DIR,
+                           provenance=None):
     agg = (
         mc.metadata.groupby("cluster_final")
         .agg(
@@ -149,6 +211,15 @@ def write_cluster_metadata(mc, head, logo_paths=None, out_dir=MC_DIR):
 
     if logo_paths is not None:
         agg = agg.merge(logo_paths, on="cluster_final", how="left")
+
+    # Provenance travels with the table the analyses actually read. A silent
+    # upstream default change (MotifCompendium v1.0.19 adding k_centroids to
+    # mc.cluster's default) left no trace in any output, and cost a week
+    # before it was found by reading the library's git history. Two constant
+    # columns are cheap insurance against the next one.
+    if provenance:
+        for key, value in provenance.items():
+            agg[key] = value
 
     metadata_path = out_dir / f"motifcompendium_{head}_cluster_metadata.tsv"
     agg.to_csv(metadata_path, sep="\t", index=False)
@@ -326,6 +397,8 @@ def process_head(
     export_svg_logos,
     svg_logo_batch_size,
     out_dir=MC_DIR,
+    algorithm=None,
+    kmeans_iterations=None,
 ):
     if not h5_paths:
         print(f"{head}: no modisco h5 files found, skipping")
@@ -341,7 +414,14 @@ def process_head(
 
     assign_jaspar_labels(mc)
 
-    mc.cluster(
+    algorithm, algorithm_kwargs, algorithm_label = resolve_algorithm(
+        mc, algorithm, kmeans_iterations
+    )
+    print(f"{head}: clustering with {algorithm_label} "
+          f"(MotifCompendium {getattr(MotifCompendium, '__version__', 'unknown')})")
+
+    cluster_with(
+        mc, algorithm, algorithm_kwargs,
         similarity_threshold=within_threshold,
         save_name="cluster_within_model",
         cluster_within="model",
@@ -352,6 +432,8 @@ def process_head(
         save_name="cluster_final",
         cluster_on="cluster_within_model",
         weight_col="num_seqlets",
+        algorithm=algorithm,
+        algorithm_kwargs=algorithm_kwargs,
     )
     mc.save(str(out_dir / f"motifcompendium_{head}_all_clustered.mc"))
 
@@ -388,7 +470,13 @@ def process_head(
         )
 
     cluster_metadata = write_cluster_metadata(
-        mc, head, logo_paths=logo_paths, out_dir=out_dir
+        mc, head, logo_paths=logo_paths, out_dir=out_dir,
+        provenance={
+            "mc_version": getattr(MotifCompendium, "__version__", "unknown"),
+            "cluster_algorithm": algorithm_label,
+            "within_threshold": within_threshold,
+            "across_threshold": across_threshold,
+        },
     )
 
     if logo_report_top_n > 0:
@@ -486,6 +574,38 @@ def main():
         help="Modisco head to cluster. Repeat to run both. Default: count and profile.",
     )
     parser.add_argument(
+        "--algorithm",
+        nargs="+",
+        default=None,
+        metavar="NAME",
+        help=(
+            "clustering algorithm(s) for both the within- and across-model "
+            "stages, passed to mc.cluster. Default: whatever the installed "
+            "MotifCompendium defaults to, which is NOT stable across "
+            "releases -- v1.0.18 used 'cpm_leiden' alone and v1.0.19 changed "
+            "the default to 'cpm_leiden k_centroids', adding an uncapped "
+            "k-means refinement. That second stage is ~4 min at count-head "
+            "scale and left a profile-head build running 85 h. Pass "
+            "'--algorithm cpm_leiden' to restore the pre-v1.0.19 behaviour. "
+            "The algorithm actually used is recorded in cluster_metadata.tsv."
+        ),
+    )
+    parser.add_argument(
+        "--kmeans-iterations",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "bound the k-means refinement instead of removing it. "
+            "MotifCompendium's k_centroids defaults to n_iterations=-1 and "
+            "exits only when the membership vector is exactly equal between "
+            "consecutive iterations, so a 2-cycle oscillation never "
+            "terminates. Requires MotifCompendium >= 1.0.19 (algorithm_kwargs "
+            "did not exist before it) and an algorithm list containing a "
+            "k-means step."
+        ),
+    )
+    parser.add_argument(
         "--within-threshold",
         type=float,
         default=0.95,
@@ -571,6 +691,8 @@ def main():
             not args.skip_svg_logos,
             args.svg_logo_batch_size,
             out_dir=args.out_dir,
+            algorithm=args.algorithm,
+            kmeans_iterations=args.kmeans_iterations,
         )
 
 

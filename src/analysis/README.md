@@ -911,6 +911,201 @@ numbers and trims to nonsense instead of raising, which is why
 `tests/test_motif_atlas_panels.py` checks that a synthetic 10bp core inside a
 50bp window trims back to 10bp.
 
+#### Presentation output
+
+`--presentation` writes **only** the exemplar panel, restyled for projection,
+and splits the count and profile lexicons into **separate files**:
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --logos-per-row 5 --out-stem figures/motif_atlas/talk_motifs
+# -> talk_motifs_presentation_counts.{pdf,png}    ubiquitous + lineage-restricted
+# -> talk_motifs_presentation_profile.{pdf,png}   core promoter (if --profile-* given)
+```
+
+They are separate because on a slide the count lexicon is the main figure and
+the core promoter motifs are a different claim; compositing them only forces
+both to be smaller. The profile figure's width scales to the columns actually
+filled, so three logos are not stretched to 1.7× the glyph size of every other
+logo in the deck.
+
+`--consolidate` instead writes **one** file with all three bands on a single
+column grid:
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --consolidate --logos-per-row 5 --n-profile 3 \
+    --profile-exemplars ... --profile-h5 ... \
+    --profile-names configs/core_promoter_names.tsv
+# -> talk_motifs_presentation_all.{pdf,png}
+```
+
+The bands stay separate and labelled — an undifferentiated array loses the
+core promoter / ubiquitous / lineage-restricted split, which is the claim the
+panel exists to make. Two things are specific to this layout:
+
+- **Band heights are equalized.** `height_ratios` is normally the sub-row
+  count, but within a band of `n` sub-rows the axes height is
+  `band / (n + (n-1) * INNER_HSPACE_FLOOR)`, so bands of 1, 2 and 3 sub-rows
+  came out at 0.78, 0.51 and 0.46 inches. `equalize_band_heights` charges each
+  band for its own internal gaps. It is on only under `--presentation`, so
+  Figure 2 is untouched.
+`--layout sidebar` rearranges that one file for a slide's aspect: the two
+count bands stack on the left and the core promoter motifs run down a column
+on the right.
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --consolidate --layout sidebar \
+    --profile-exemplars ... --profile-h5 ... \
+    --profile-names configs/core_promoter_names.tsv
+# -> figure 18.4 x 6.0 in (3.08:1); logo axes 1.250 x 0.500 in
+```
+
+- **Logo size is the invariant; the figure is derived from it.**
+  `--logo-size` (default 1.25 × 0.5 in) fixes one logo's axes, and the figure
+  grows to fit the grid, so `--logos-per-row` rearranges the layout instead of
+  resizing the motifs. Before this, widening the grid silently halved the
+  glyphs, because figure width was fixed and the columns divided it. The
+  chosen size and the resulting aspect are printed on every run.
+- **Each band gets its own column count.** `--band-rows` (default 2) makes
+  every count band fill exactly that many rows, deriving the column count per
+  band -- 10 ubiquitous over two rows is 5 wide, 15 lineage-restricted is 8.
+  One shared count cannot fill both (at 8, the ubiquitous band's second row
+  holds two logos and six blanks), and a full band reads better than a
+  rectangular outline with holes. `--band-rows 0` reverts to
+  `--logos-per-row` for both. The cost is a ragged right edge, and the
+  ubiquitous band being narrower than the core promoter column's position
+  leaves a gap in the top right.
+- **Everything is in one grid**, not two nested ones, so all 28 logos are the
+  same size by construction rather than by matching two grids after the fact.
+- **Band headers are named for the grouping, not the head.** The
+  `count head:` / `profile head:` prefixes exist because Figure 2 draws both
+  heads on one panel and the prefix is the only thing telling them apart. On a
+  slide the biological grouping is the point and the attribution head is an
+  internal detail, so `--presentation` drops them and the first band is simply
+  `core promoter`.
+
+It bundles defaults for seven options, each of which still wins if set
+explicitly:
+
+| Option | Manuscript | `--presentation` |
+| --- | --- | --- |
+| `--n-ubiquitous` | 12 | 0 (every row) |
+| `--n-restricted` | 12 | 0 (every row) |
+| `--label-fontsize` | 6.2 | 11 |
+| `--label-fields` | `default` (3 lines) | `auto` (2 lines) |
+| `--category-label` | `rotated` | `header` |
+| `--uppercase-names` | off | on |
+| `--exemplar-figsize` | scales from `--figsize` | 10 × 7.5 in |
+| `--logo-length` | off | 0 (auto: the longest motif drawn) |
+
+Why each differs from the figure default:
+
+- **The full lexicon.** `--n-ubiquitous 0` / `--n-restricted 0` take every row
+  of the exemplar tables. A talk slide is showing that a lexicon exists, so a
+  top-`n` cut undercuts the point; Figure 2 still defaults to 12.
+- **Two caption lines, not three, and lineage rather than prevalence.** `auto`
+  puts the lineage on both count blocks, so `21 tissues` sits beside
+  `heart+muscle` and the contrast reads without anyone parsing a count. The
+  `default` preset keeps all three lines and is what Figure 2 uses;
+  `--label-fields name,prevalence` sets both blocks explicitly.
+- **Horizontal headers.** Projected, a rotated 7pt grey label in the left
+  margin is the least legible thing on the slide, and the
+  ubiquitous/lineage-restricted split is the panel's entire claim.
+- **Uppercased names.** The compendium carries JASPAR names verbatim, so
+  mouse- and human-convention spellings mix (`Pou5f1::Sox2` beside `POU2F3`).
+  That is correct provenance in a figure caption and reads as a typo on a
+  slide.
+- **The caption font does not shrink.** The manuscript path drops the label
+  size in 0.4pt steps to resolve the spacing solve below; presentation mode
+  pins `min_label_fontsize` to the requested size instead, so an overfull
+  panel is a cue to lower `--n-ubiquitous`/`--n-restricted` rather than
+  silently shrink the text.
+- **Transparent background**, for dropping onto a slide of any colour.
+- **Tight spacing.** `--row-gap` (0.15 under `--presentation`) and
+  `--band-gap` (0.45) are separate knobs because they clear different things:
+  a row gap only has to clear a caption, while a band gap must clear the next
+  band's header *and* its first caption. A single value for both is what made
+  the figure loose. **Their units differ** — matplotlib measures the row gap
+  against logo height and the band gap against average *band* height — so
+  they are not comparable numbers.
+- **The profile figure can be a column.** `--profile-cols 1` stacks the core
+  promoter motifs vertically in their own file, to be placed beside the count
+  figure on a slide and rearranged there.
+- **One glyph size everywhere.** Trimmed CWMs run 10-25bp across the atlas, so
+  a grid of equal-width axes draws a 25bp motif's letters 2.5x narrower than a
+  10bp one, and no single text size fits the slide. `--logo-length` pads every
+  trimmed CWM to a common width (`0` = the longest motif being drawn, measured
+  across *all* blocks including the one going to the other file). Padding is
+  centred and never truncates, so a `--logo-length` below a motif's trimmed
+  length is ignored rather than cropping signal.
+
+  The two output files are then matched geometrically rather than by eye: the
+  profile grid is given only the columns it fills, its width is corrected by
+  one probe (`wspace` is a fraction of axes width, so a 3-column grid does not
+  divide its figure like a 5-column one), and its height is *solved* for the
+  counts figure's axes height. Both are reported on stderr:
+
+  ```text
+  padding every logo to 25 bp for a uniform glyph size
+  logo axes: counts 1.250 x 0.500 in, profile 1.249 x 0.501 in
+  ```
+
+  Check that line if the text on the slide ever stops matching between the two
+  figures. Both figures derive their size from `--logo-size`; with the figure
+  size pinned instead, tightening the gaps silently inflated the axes to
+  1.25 x 0.92in. Padding to the longest motif does leave whitespace around the short
+  ones; `--logo-length 14` trades exact uniformity for tighter logos, at the
+  cost of the two longest motifs (ZNF143 at 25bp, ERG at 18bp) rendering wider
+  than the rest.
+
+#### The profile / core promoter block
+
+`--profile-exemplars` adds a third band above the two count-head blocks, and
+`--presentation` styles it the same way. **It needs the profile-head
+compendium, which is not built yet** (see Pending above), so this path is
+covered by tests and synthetic fixtures only:
+
+```bash
+select_motif_exemplars.py --head profile --include-unmatched
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --profile-exemplars figures/motif_atlas/motif_exemplars_profile_restricted.tsv \
+    --profile-h5 compendium/motifcompendium_profile_cluster_averages.h5 \
+    --profile-names configs/core_promoter_names.tsv \
+    --n-profile 4 --n-ubiquitous 6 --n-restricted 6 --logos-per-row 3
+```
+
+Two things about this block are specific to the core promoter motifs, and both
+were bugs until Sep 2026:
+
+- **JASPAR cannot name them.** JASPAR2026 has no Inr/TATA/DPE entries, which is
+  why selection needs `--include-unmatched` — and it means `jaspar_name` is
+  null for exactly the motifs the block exists to show. Unnamed clusters now
+  fall back to `cl<id>` rather than rendering the literal string `nan`, and
+  `--profile-names` (a `cluster_final`/`name` TSV) gives them real labels. A
+  hand-given name also wins over a JASPAR one, so any cluster can be
+  relabelled for a figure.
+- **Nulls dedup against each other.** `rank_for_panel` calls
+  `drop_duplicates(subset="jaspar_name")`, and pandas treats nulls as equal, so
+  an all-unnamed profile table collapsed to a **single** logo. Only the named
+  rows are deduped now; the count head is unaffected because its tables are
+  TF-matched and always named.
+
+`--n-profile` sizes this block independently (default: `--n-restricted`).
+
+Rendered on its own, the block's header is simply `core promoter` — a block
+drops the `count head:` / `profile head:` prefix unless both heads share a
+figure, where the prefix is the only thing distinguishing them.
+
+Presentation mode reads only the two `motif_exemplars_{head}_*.tsv` tables and
+the cluster-average h5 — the rarefaction and concentration tables are not
+inputs to it, since those panels are arguments about sampling that a talk
+makes verbally.
+
+The manuscript path is unchanged: `figure2_count_{a,b,c}*.png` re-render
+byte-identical.
+
 #### Panel c layout: spacing has to be solved in inches
 
 `_logo_grid` sizes row spacing from the caption height in **inches**, not from

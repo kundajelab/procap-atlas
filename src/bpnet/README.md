@@ -390,11 +390,45 @@ the project's life, and every one of them moves the partition:
   in commit `31d4f24`. A build predating that commit was clustered at 0.85
   unless overridden. The manuscript methods described 0.85 because they were
   written against a pre-August build.
-- **MotifCompendium was updated mid-project.** It is installed editable
-  (`pip install -e .`), so `__version__` need not move between commits; a
-  library update can change clustering behaviour while looking identical from
-  the outside. This is the known cause of the atlas count-head compendium
-  going from 944 to 946 clusters on unchanged MoDISco inputs.
+- **MotifCompendium was updated mid-project, and one update changed
+  clustering behaviour through a default.** v1.0.19 (commit
+  [`7e9d1c2`](https://github.com/kundajelab/MotifCompendium/commit/7e9d1c2),
+  2026-08-19) changed `mc.cluster`'s signature:
+
+  ```python
+  -        algorithm: str = "cpm_leiden",
+  +        algorithm: list[str] | str = ["cpm_leiden", "k_centroids"],
+  ```
+
+  `cluster_motifs.py` passed no `algorithm`, so the update silently added a
+  second stage: an **uncapped** k-means refinement (`n_iterations=-1`, exiting
+  only when the membership vector is *exactly* equal between consecutive
+  iterations, so an oscillation never terminates). Each iteration rebuilds
+  every centroid and recomputes an N x k float64 similarity on the GPU.
+
+  This is the most likely cause of the count-head compendium going from 944 to
+  946 clusters on unchanged MoDISco inputs — the refinement perturbs
+  assignments, so it is not nondeterminism.
+
+  It is also why a profile-head build ran for 85 h having previously completed
+  on v1.0.18. The cost is invisible at count-head scale (5,639 motifs, ~4 min
+  of clustering) and ruinous at profile-head scale (~38,000 motifs — the raw
+  `.mc` is 1.5 GB against the count head's 223 MB).
+
+  `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour;
+  `--kmeans-iterations N` bounds the refinement instead of removing it
+  (requires >= v1.0.19, since `algorithm_kwargs` did not exist before it).
+  **Both heads must use the same setting** or a count-vs-profile contrast
+  confounds head with clustering algorithm.
+
+  Since Sep 2026 `cluster_metadata.tsv` carries four provenance columns —
+  `mc_version`, `cluster_algorithm`, `within_threshold`, `across_threshold` —
+  so this class of change leaves a trace in the outputs. They are constant
+  down each column and additive; the analysis scripts that read this table
+  (`motif_group_concentration.py`, `plot_motif_rarefaction.py`,
+  `select_motif_exemplars.py`) were verified to give byte-identical results
+  with and without them, and compendia built before the change simply lack
+  the columns.
 - **The build set is `filters INTERSECT h5 files present when the job ran`.**
   `collect_modisco_paths` silently skips a selected experiment whose MoDISco
   output is not on disk yet, so the experiment set can change with no change to
