@@ -418,6 +418,8 @@ would be wrong here (0 means *no cap*, not "skip"); pass a small cap instead,
 or skip the logos and accept the report:
 
 ```bash
+# Run against MotifCompendium v1.0.19; --kmeans-iterations has since been
+# removed (see below), so reproducing steps 2 and 3 needs `git show 30adbab`.
 MC=src/bpnet/motifcompendium/cluster_motifs.py
 # 1. pre-v1.0.19 behaviour: Leiden only
 python $MC --head count --algorithm cpm_leiden \
@@ -475,9 +477,10 @@ surviving centroids, so nothing can ever split. Two consequences:
 
 How to read the result:
 
-- **capped ~= uncapped** -> cap it and rebuild profile with
-  `--kmeans-iterations`. The refinement is doing real work and converges
-  quickly; only the tail is pathological.
+- **capped ~= uncapped** -> cap it and rebuild profile with a bounded
+  refinement. It is doing real work and converges quickly; only the tail is
+  pathological. (This is what happened; v1.1.0 then made the bound
+  unnecessary.)
 - **leiden ~= uncapped** -> `k_centroids` changes nothing here, and
   `--algorithm cpm_leiden` is both the cheapest and the safest option.
 - **all three differ materially** -> this is a question about which partition
@@ -556,6 +559,11 @@ near-term answer.
 
 #### Choosing the iteration cap
 
+**Superseded by v1.1.0**, which makes the refinement bound itself and led to
+`--kmeans-iterations` being removed. Kept because the measurement below is
+what established that the pre-fix refinement converges on the count head but
+not on the profile head — the evidence for the alignment-frame diagnosis.
+
 The three-way result is "capped is close to uncapped but not equal", so the
 open question is where the refinement actually converges. The count head is
 the cheap place to find out — uncapped converges there in ~4 min, so a cap can
@@ -570,8 +578,8 @@ python src/bpnet/motifcompendium/compare_clusterings.py --head count \
 ```
 
 `k` needs no flag: on the chained path it is always inherited from Leiden
-(see above), and `--kmeans-iterations` bounds the refinement without touching
-it.
+(see above), and `--kmeans-iterations` bounded the refinement without
+touching it.
 
 Measured, 2026-09-14:
 
@@ -579,10 +587,10 @@ Measured, 2026-09-14:
 |---|---|---|---|---|---|
 | capped25 | uncapped | **1.0** | **0** | 1.0 | 1.0 |
 
-**25 iterations reproduce the converged count-head partition exactly**, so
-`--kmeans-iterations 25` is the setting for both heads. On the count head it
-is not an approximation at all — it is byte-identical to today's uncapped
-output — and it bounds the profile head.
+**25 iterations reproduce the converged count-head partition exactly** — on
+that head the cap was not an approximation at all, but byte-identical to the
+uncapped output. This was the setting for both heads until v1.1.0 removed the
+need for a cap.
 
 The count head therefore converges in <= 25 iterations while the profile head
 had not converged after 24 h on an A100. Per-iteration cost only accounts for
@@ -632,9 +640,14 @@ outputs:
    `reference="first"` would reproduce the old framing, but the new default is
    the better one; the point is that it must be recorded, not avoided.
 
-**Drop `--kmeans-iterations` when running v1.1.0.** It existed to bound a loop
-that is now self-bounding, and a cap would mask whether the fix actually
-converges — which is the thing worth learning. Watch stderr for
+**`--kmeans-iterations` has been removed.** It existed to bound a loop that is
+now self-bounding, and a cap would mask whether the fix actually converges —
+which is the thing worth learning. Nothing passes `algorithm_kwargs` any
+more. `--algorithm` stays, since reproducing the pre-v1.0.19 Leiden-only
+partition is still worth being able to do. The `mc_capped5`/`mc_capped25`
+builds are therefore no longer reproducible from the CLI; their outputs on
+disk are the record, and `git show 30adbab` has the flag if it is ever needed
+again. Watch stderr for
 `membership is cycling`, `objective stopped improving`, and `did not converge
 within 100 iterations`; the first two are now warnings rather than silent
 behaviour.
@@ -695,11 +708,9 @@ the project's life, and every one of them moves the partition:
   which an earlier version of this README proposed. The three-way comparison
   above shows `k_centroids` inherits `k` from Leiden and can only reduce it.
 
-  `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour;
-  `--kmeans-iterations N` bounds the refinement instead of removing it
-  (requires >= v1.0.19, since `algorithm_kwargs` did not exist before it).
-  **Both heads must use the same setting** or a count-vs-profile contrast
-  confounds head with clustering algorithm.
+  `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour. **Both heads
+  must use the same setting** or a count-vs-profile contrast confounds head
+  with clustering algorithm.
 
   Since Sep 2026 `cluster_metadata.tsv` carries five provenance columns —
   `mc_version`, `cluster_algorithm`, `cluster_reference`, `within_threshold`,

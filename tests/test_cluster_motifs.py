@@ -51,11 +51,9 @@ def load_module(mc_version="1.0.19", default_algorithm=None):
 class FakeMC:
     """Records the kwargs mc.cluster was called with."""
 
-    def __init__(self, default_algorithm, supports_algorithm_kwargs=True,
-                 weight_col_name="weight_col"):
+    def __init__(self, default_algorithm, weight_col_name="weight_col"):
         self.calls = []
         self._default = default_algorithm
-        self._supports_kwargs = supports_algorithm_kwargs
         self._weight_col_name = weight_col_name
 
     def cluster(self, **kwargs):
@@ -63,11 +61,9 @@ class FakeMC:
 
     @property
     def _signature_params(self):
-        params = ["similarity_threshold", "save_name", "cluster_on",
-                  "cluster_within", "algorithm", self._weight_col_name]
-        if self._supports_kwargs:
-            params.append("algorithm_kwargs")
-        return params
+        return ["similarity_threshold", "save_name", "cluster_on",
+                "cluster_within", "algorithm", self._weight_col_name,
+                "algorithm_kwargs"]
 
 
 def bind_signature(fake):
@@ -95,13 +91,13 @@ def make_fake(cm=None, default_algorithm=None, **kw):
 
 
 def test_default_is_taken_from_the_installed_library_not_hardcoded():
-    """The point of the flag is that the default is version-dependent, so
-    resolve_algorithm must read it off mc.cluster rather than assume one."""
+    """The default is version-dependent, so resolve_algorithm must read it off
+    mc.cluster rather than assume one -- otherwise the next default change
+    takes effect silently, as v1.0.19's did."""
     cm = load_module()
     fake = _WithDefault(make_fake(), ["cpm_leiden", "k_centroids"])
-    alg, kwargs, label = cm.resolve_algorithm(fake, None, None)
+    alg, label = cm.resolve_algorithm(fake, None)
     assert alg == ["cpm_leiden", "k_centroids"]
-    assert kwargs is None
     assert label == "cpm_leiden+k_centroids"
 
 
@@ -135,34 +131,30 @@ class _WithDefault:
 def test_pre_1_0_19_default_resolves_to_leiden_alone():
     cm = load_module(mc_version="1.0.18")
     fake = _WithDefault(make_fake(), "cpm_leiden")
-    alg, kwargs, label = cm.resolve_algorithm(fake, None, None)
-    assert alg == ["cpm_leiden"] and kwargs is None
+    alg, label = cm.resolve_algorithm(fake, None)
+    assert alg == ["cpm_leiden"]
     assert label == "cpm_leiden"
 
 
 def test_explicit_algorithm_overrides_the_library_default():
     cm = load_module()
     fake = _WithDefault(make_fake(), ["cpm_leiden", "k_centroids"])
-    alg, kwargs, label = cm.resolve_algorithm(fake, ["cpm_leiden"], None)
+    alg, label = cm.resolve_algorithm(fake, ["cpm_leiden"])
     assert alg == ["cpm_leiden"]
     assert label == "cpm_leiden"
 
 
-def test_kmeans_iterations_bounds_only_the_kmeans_step():
+def test_the_refinement_is_never_capped():
+    """v1.1.0's k_centroids bounds itself: it stops on a repeated membership,
+    a stalled objective, or max_iterations=100 even at n_iterations=-1.
+    Capping it here would only hide whether it converges, so nothing may
+    inject n_iterations -- which is why --kmeans-iterations was removed."""
     cm = load_module()
-    fake = _WithDefault(make_fake(), ["cpm_leiden", "k_centroids"])
-    alg, kwargs, label = cm.resolve_algorithm(fake, None, 10)
-    assert kwargs == {"k_centroids": {"n_iterations": 10}}
-    assert "cpm_leiden" not in kwargs, "Leiden must not be given n_iterations"
-    assert "n_iterations=10" in label
-
-
-def test_kmeans_iterations_without_a_kmeans_step_is_an_error():
-    """Silently ignoring it would leave the user thinking it was bounded."""
-    cm = load_module()
-    fake = _WithDefault(make_fake(), ["cpm_leiden", "k_centroids"])
-    with pytest.raises(ValueError, match="no .*k-means step"):
-        cm.resolve_algorithm(fake, ["cpm_leiden"], 10)
+    fake = make_fake()
+    cm.cluster_with(fake, ["cpm_leiden", "k_centroids"],
+                    similarity_threshold=0.9)
+    assert fake.calls[0]["algorithm_kwargs"] is None
+    assert "n_iterations" not in str(fake.calls[0])
 
 
 # --- cluster_with ------------------------------------------------------------
@@ -172,25 +164,16 @@ def test_single_algorithm_is_passed_as_a_string_not_a_list():
     """Pre-1.0.19 signatures type `algorithm` as str."""
     cm = load_module()
     fake = make_fake()
-    cm.cluster_with(fake, ["cpm_leiden"], None, similarity_threshold=0.9)
+    cm.cluster_with(fake, ["cpm_leiden"], similarity_threshold=0.9)
     assert fake.calls[0]["algorithm"] == "cpm_leiden"
 
 
 def test_multiple_algorithms_are_passed_as_a_list():
     cm = load_module()
     fake = make_fake()
-    cm.cluster_with(fake, ["cpm_leiden", "k_centroids"], None,
+    cm.cluster_with(fake, ["cpm_leiden", "k_centroids"],
                     similarity_threshold=0.9)
     assert fake.calls[0]["algorithm"] == ["cpm_leiden", "k_centroids"]
-
-
-def test_algorithm_kwargs_are_dropped_on_an_older_install():
-    """v1.0.18 has no algorithm_kwargs; passing it would raise TypeError."""
-    cm = load_module(mc_version="1.0.18")
-    fake = make_fake(supports_algorithm_kwargs=False)
-    cm.cluster_with(fake, ["cpm_leiden"], {"k_centroids": {"n_iterations": 5}},
-                    similarity_threshold=0.9)
-    assert "algorithm_kwargs" not in fake.calls[0]
 
 
 def test_weighted_cluster_on_passes_the_algorithm_through():
@@ -201,7 +184,7 @@ def test_weighted_cluster_on_passes_the_algorithm_through():
     cm.weighted_cluster_on(
         fake, similarity_threshold=0.9, save_name="cluster_final",
         cluster_on="cluster_within_model", weight_col="num_seqlets",
-        algorithm=["cpm_leiden"], algorithm_kwargs=None,
+        algorithm=["cpm_leiden"],
     )
     call = fake.calls[0]
     assert call["algorithm"] == "cpm_leiden"
@@ -214,7 +197,7 @@ def test_weighted_cluster_on_uses_cluster_on_weight_when_thats_the_name():
     cm.weighted_cluster_on(
         fake, similarity_threshold=0.9, save_name="cluster_final",
         cluster_on="cluster_within_model", weight_col="num_seqlets",
-        algorithm=["cpm_leiden"], algorithm_kwargs=None,
+        algorithm=["cpm_leiden"],
     )
     assert fake.calls[0]["cluster_on_weight"] == "num_seqlets"
 
