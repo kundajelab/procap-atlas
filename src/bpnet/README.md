@@ -599,6 +599,62 @@ again at 50 and comparing — identical partitions mean iterations 26-50 changed
 nothing. Do the 25 run first and let its wall time decide whether the
 confirmation run is affordable.
 
+#### MotifCompendium v1.1.0 (`next_version`): the k_centroids fix
+
+Commit
+[`ddd279f`](https://github.com/kundajelab/MotifCompendium/commit/ddd279f) on
+the `next_version` branch fixes all three defects traced above: it adds
+`select_alignments()` so a cluster's frame comes from its membership rather
+than its row order, aligns each motif to the centroid it was assigned to
+(making the averaging step the exact spherical-k-means M-step), drops the
+throwaway `MotifCompendium` and its unread k x k similarity, and adds a
+`_ConvergenceTracker` that stops on a repeated membership, a stalled
+objective, or a `max_iterations=100` cap that applies even at
+`n_iterations=-1`. An unbounded run is no longer possible.
+
+**It is a version jump, not a patch.** `next_version` is v1.1.0 against
+v1.0.19: 1,448 insertions across five files, including a new
+`utils/composite.py` and 646 changed lines in `MotifCompendium.py`, plus a
+serial-clustering bug fix and reworked clustering-quality calculations. The
+branch is also a moving target, so **pin the commit**, do not track the
+branch.
+
+Two independent reasons "rerun with defaults" does not reproduce prior
+outputs:
+
+1. **The partition changes.** That is the fix working as intended.
+2. **`cluster_averages`' alignment frame changes even at a fixed partition.**
+   v1.1.0 adds `reference: str = "medoid"`; before it, a cluster average was
+   always framed on the cluster's lowest-indexed member.
+   `cluster_average_with_metadata` does not pass `reference`, so the default
+   applies — which moves `cluster_averages.h5`, `cluster_averages.meme`, the
+   cluster logos, Figure 2c and `select_motif_exemplars.py`. Passing
+   `reference="first"` would reproduce the old framing, but the new default is
+   the better one; the point is that it must be recorded, not avoided.
+
+**Drop `--kmeans-iterations` when running v1.1.0.** It existed to bound a loop
+that is now self-bounding, and a cap would mask whether the fix actually
+converges — which is the thing worth learning. Watch stderr for
+`membership is cycling`, `objective stopped improving`, and `did not converge
+within 100 iterations`; the first two are now warnings rather than silent
+behaviour.
+
+One thing to watch: `_ConvergenceTracker.should_stop` stops the run at the
+*first* iteration that fails to improve by more than `tol=1e-9`. Since
+averaging is lossy the objective is not guaranteed monotone, so a run can dip
+and recover; this rule would stop at the dip. It returns the best-scoring
+iteration, so the result is sound, but it may under-iterate relative to true
+convergence. Compare against a `max_iterations`-only run if the count head
+comes back materially different from `mc_capped25`.
+
+Order of operations: rebuild the **count** head first and diff it against the
+`mc_capped25` baseline with `compare_clusterings.py`. That is ~4 min and
+sizes the change before committing the profile head to it. Then rebuild both
+heads on the same pinned commit, and re-run everything downstream
+(`plot_motif_rarefaction.py`, `motif_group_concentration.py`,
+`select_motif_exemplars.py`, Figure 2, hit calling) — cluster ids are not
+stable across builds, so nothing downstream carries over.
+
 #### What a build's settings were, after the fact
 
 Nothing in a compendium's outputs records how it was produced. The cluster
@@ -645,9 +701,15 @@ the project's life, and every one of them moves the partition:
   **Both heads must use the same setting** or a count-vs-profile contrast
   confounds head with clustering algorithm.
 
-  Since Sep 2026 `cluster_metadata.tsv` carries four provenance columns —
-  `mc_version`, `cluster_algorithm`, `within_threshold`, `across_threshold` —
-  so this class of change leaves a trace in the outputs. They are constant
+  Since Sep 2026 `cluster_metadata.tsv` carries five provenance columns —
+  `mc_version`, `cluster_algorithm`, `cluster_reference`, `within_threshold`,
+  `across_threshold` —
+  so this class of change leaves a trace in the outputs. `mc_version` reads
+  the installed distribution metadata, not `MotifCompendium.__version__`,
+  which does not exist on any branch — stamping it via `getattr` recorded
+  `"unknown"` on every build until this was fixed. `cluster_reference`
+  records `cluster_averages`' alignment frame, which v1.1.0 made
+  configurable. They are constant
   down each column and additive; the analysis scripts that read this table
   (`motif_group_concentration.py`, `plot_motif_rarefaction.py`,
   `select_motif_exemplars.py`) were verified to give byte-identical results

@@ -260,3 +260,52 @@ def test_metadata_is_unchanged_when_no_provenance_is_given(tmp_path):
         tmp_path / "motifcompendium_count_cluster_metadata.tsv", sep="\t")
     assert "mc_version" not in written.columns
     assert "cluster_algorithm" not in written.columns
+
+
+# --- provenance: version and cluster-average alignment frame ---
+#
+# MotifCompendium defines no __version__ on any branch (verified on v1.0.19
+# and v1.1.0), so the original getattr(MotifCompendium, "__version__") always
+# recorded "unknown" -- defeating the column added to catch version-driven
+# default changes. The version lives only in setup.py, i.e. in the installed
+# distribution metadata.
+
+
+def test_mc_version_reads_distribution_metadata(monkeypatch):
+    cluster_motifs = load_module()
+    monkeypatch.setattr(
+        cluster_motifs.importlib.metadata, "version", lambda name: "1.1.0"
+    )
+    assert cluster_motifs.mc_version() == "1.1.0"
+
+
+def test_mc_version_survives_an_uninstalled_distribution(monkeypatch):
+    """The stub sets __version__; a real install does not. Neither may raise."""
+    cluster_motifs = load_module(mc_version="1.0.19")
+
+    def missing(name):
+        raise cluster_motifs.importlib.metadata.PackageNotFoundError(name)
+
+    monkeypatch.setattr(cluster_motifs.importlib.metadata, "version", missing)
+    assert cluster_motifs.mc_version() == "1.0.19"
+
+
+def test_cluster_reference_reports_the_v1_1_0_default():
+    cluster_motifs = load_module()
+
+    class AveragesMC:
+        def cluster_averages(self, clustering, reference="medoid"):
+            pass
+
+    assert cluster_motifs.cluster_reference(AveragesMC()) == "medoid"
+
+
+def test_cluster_reference_flags_the_pre_v1_1_0_frame():
+    """Before v1.1.0 the frame was the cluster's lowest-indexed member."""
+    cluster_motifs = load_module()
+
+    class OldMC:
+        def cluster_averages(self, clustering, weight_col=None, aggregations=None):
+            pass
+
+    assert cluster_motifs.cluster_reference(OldMC()) == "first (pre-v1.1.0)"

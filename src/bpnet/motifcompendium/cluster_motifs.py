@@ -1,5 +1,6 @@
 import argparse
 import html
+import importlib.metadata
 import inspect
 from pathlib import Path
 
@@ -63,6 +64,36 @@ def assign_jaspar_labels(mc):
         )
     else:
         print(f"  JASPAR file not found at {JASPAR_PATH}, skipping annotation")
+
+
+def mc_version():
+    """The installed MotifCompendium version.
+
+    `MotifCompendium` exposes no `__version__` — neither v1.0.19 nor v1.1.0
+    defines one — so `getattr(MotifCompendium, "__version__", "unknown")`
+    always recorded `"unknown"`, which defeats the point of stamping it. The
+    version only exists in `setup.py`, so read it from the installed
+    distribution metadata instead.
+    """
+    try:
+        return importlib.metadata.version("MotifCompendium")
+    except importlib.metadata.PackageNotFoundError:
+        return getattr(MotifCompendium, "__version__", "unknown")
+
+
+def cluster_reference(mc):
+    """`cluster_averages`' alignment-frame setting, or None before v1.1.0.
+
+    v1.1.0 added a `reference` parameter defaulting to `"medoid"`; before it,
+    a cluster average was always framed on the cluster's lowest-indexed
+    member. We never pass it, so this records whichever default applied —
+    the cluster-average motifs in the h5, the MEME export and the logos
+    differ between the two even at an identical partition.
+    """
+    params = inspect.signature(mc.cluster_averages).parameters
+    if "reference" not in params:
+        return "first (pre-v1.1.0)"
+    return params["reference"].default
 
 
 def resolve_algorithm(mc, algorithm=None, kmeans_iterations=None):
@@ -418,7 +449,8 @@ def process_head(
         mc, algorithm, kmeans_iterations
     )
     print(f"{head}: clustering with {algorithm_label} "
-          f"(MotifCompendium {getattr(MotifCompendium, '__version__', 'unknown')})")
+          f"(MotifCompendium {mc_version()}, "
+          f"cluster-average frame {cluster_reference(mc)})")
 
     cluster_with(
         mc, algorithm, algorithm_kwargs,
@@ -472,8 +504,9 @@ def process_head(
     cluster_metadata = write_cluster_metadata(
         mc, head, logo_paths=logo_paths, out_dir=out_dir,
         provenance={
-            "mc_version": getattr(MotifCompendium, "__version__", "unknown"),
+            "mc_version": mc_version(),
             "cluster_algorithm": algorithm_label,
+            "cluster_reference": cluster_reference(mc),
             "within_threshold": within_threshold,
             "across_threshold": across_threshold,
         },
