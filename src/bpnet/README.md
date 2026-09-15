@@ -378,105 +378,94 @@ motifcompendium_{head}_cluster_logo_paths.tsv            # cluster_final -> logo
 motifcompendium_{head}_clusters/{pos,neg}_cluster_NNNN.html  # per-cluster motif collection (opt-in)
 ```
 
-#### Grouping clusters into motif families
+#### Cluster redundancy: measured, not corrected
 
-`group_cluster_families.py` emits
-`motifcompendium_{head}_cluster_family.tsv`, mapping each `cluster_final` to
-a family representative.
+Compendium clusters include near-duplicate variants of one motif. This is
+measured and stated rather than corrected; a similarity-based collapse was
+built, tested and rejected. Recorded here so it is not re-litigated.
 
-The compendium **relabels** Fi-NeMo hits
+**What redundancy costs.** The compendium *relabels* Fi-NeMo hits
 ([`../hitcall/link_hits_to_compendium.py`](../hitcall/link_hits_to_compendium.py))
-rather than serving as the scan set, so near-duplicate clusters never compete
-for a site and no hit is suppressed. What redundancy costs is **prevalence**:
-if one experiment's TATA links to cluster 8 and another's to cluster 21, then
-"cluster 8" is not the same motif atlas-wide, and any count of how many
-experiments share a motif splits across the family. Measured on the profile
-head, TATA spans >= 8 clusters and AP-1 >= 7, so a raw cluster count
-overstates the number of distinct motifs.
+rather than serving as the scan set, so near-duplicate CWMs never compete for
+a site and no hit is suppressed. The cost is to **prevalence**: if one
+experiment's TATA links to cluster 8 and another's to cluster 21, "cluster 8"
+is not the same motif atlas-wide, and a count of how many experiments share a
+motif splits across the family.
 
-**The rarefaction analysis is count-head only.** The profile head is where
-the redundancy was characterised, because its families are the ones that were
-spotted by eye, but no manuscript number comes from it. The count head is
-where a family roll-up changes a reported figure, and its threshold has to be
-derived separately -- see below.
+**How large it is.** On the profile head (v1.1.0, within 0.95 / across 0.90),
+families identified by eye span far more clusters than they appear to. Taking
+mean motif-to-motif similarity between clusters and comparing it to each
+cluster's own internal similarity
+(`gap = min(within_a, within_b) - cross_ab`), TATA spans >= 8 clusters
+(gaps -0.001..+0.034 among 8/21/48 alone) and AP-1 >= 7 (+0.005..+0.046).
+CA-Inr is the counter-example: clusters 15 and 17 sit at gap +0.155 and are
+genuinely separable, so not every visually similar pair is redundant.
 
-That makes this a sequence-similarity answer to "how many of the clusters are
-actually real", and it **supersedes the JASPAR-name collapse** that answered
-it before.
+**Lowering the thresholds does not fix it.** Sweeping `--across-threshold`
+with `--within-threshold` held at 0.95, tracking where each family's motifs
+land and how many foreign motifs join them:
 
-JASPAR names are the wrong granularity for this, rather than simply wrong. A
-name is a TF-identity label; redundancy here is a question about CWM
-similarity, and the two disagree in both directions. Names **split what
-similarity fuses**: the ETV family is cluster 13 (ETV7) plus 35 and 10 (both
-ELF2), two names but gaps of +0.030 and +0.007. Names **fuse what similarity
-separates**: clusters 4 and 17 are both Hand1::Tcf3 yet sit at gap +0.053,
-and are correctly kept apart at t=0.05. Some elements also have no JASPAR
-entry at all -- CA-Inr is a core promoter initiator, so its clusters come
-back as Hand1::Tcf3, ISL2 and Hand1::Tcf3 at 0.83-0.86 because the lookup
-must return some TF. Where a canonical entry exists the names are right (TBP
-for TATA, ETS for ETV), and distinguishing e.g. CRE from TRE variants is the
-lookup working, not failing -- they are simply not the distinctions that
-measure redundancy.
+| across | clusters | prev>=2 | TATA | AP-1 | ETV | CA-Inr |
+|---|---|---|---|---|---|---|
+| **0.90** | 5529 | **987** | **3c (+0)** | **4c (+0)** | **3c (+0)** | **3c (+0)** |
+| 0.8875 | 5097 | 975 | 5c (+38) | 7c (+35) | 3c (+11) | 5c (+34) |
+| 0.875 | 4718 | 945 | 4c (+64) | 6c (+20) | 5c (+86) | 4c (+38) |
+| 0.85 | 4016 | 936 | 3c (+37) | 5c (+30) | 3c (+95) | 5c (+51) |
 
-The output is a mapping, never a filter. Every cluster gets a row; clusters
-below `--min-prevalence` map to themselves with `grouped=False`. An analysis
-wanting non-redundant labels rolls up to `family_rep`; one wanting full
-granularity ignores the column. Some redundancy is acceptable where motifs
-genuinely differ, which is why nothing is deleted.
+The total falls (5529 -> 4016) but the target families go *up* and
+non-monotonically -- TATA 3->5->4->3, AP-1 4->7->6->5 -- while absorbing
+foreign motifs and losing reproducible clusters (987 -> 936 at prevalence
+>= 2). The threshold only decides which **edges exist**; `cpm_leiden`'s
+`resolution_parameter` (fixed at 1.0) decides how aggressively communities
+form. Lowering the threshold hands Leiden a different graph, so it returns a
+different partition rather than a coarser one. **0.90 is the best of the four
+on every measure**, and lowering `--within-threshold` is worse still: it
+changes *what* the across stage clusters, so the comparison is confounded
+(0.925/0.8875 gave TATA 5c(+107), CA-Inr 6c(+51)).
 
-```bash
-# derive the threshold first, from families identified by eye
-python src/bpnet/motifcompendium/group_cluster_families.py --head profile \
-    --check TATA=21,8,48 --check AP-1=22,28,45,39 --check CA-Inr=4,15,17
-# then apply it
-python src/bpnet/motifcompendium/group_cluster_families.py --head profile \
-    --threshold 0.05
-```
+`--within-threshold` is also close to a no-op at these values: 0.925 leaves
+13,956 within-clusters from 14,691 motifs.
 
-**The threshold is head-specific and must be derived, not assumed.** Profile
-head: admissible values are pinned between AP-1's worst internal pair
-(+0.046) and CA-Inr's tightest separable pair (+0.053), so 0.05 was used,
-giving 987 -> 564 families with 43% of clusters absorbed. The count head's
-`within` values and family gaps differ, so re-derive it there with `--check`.
+**Why not a post-hoc collapse.** One was implemented and discarded:
 
-Four choices, each forced by a measurement:
+- Its threshold was **fitted and then validated on the same families**,
+  pinned between AP-1's worst internal pair (+0.046) and CA-Inr's tightest
+  separable pair (+0.053). "AP-1 merges, CA-Inr does not" at t=0.05 is
+  arithmetic, not evidence.
+- Single-linkage **percolates** on these families, which are gradients rather
+  than cliques: the largest connected component grew 4 -> 15 -> 48 -> 70 ->
+  137 as the gap threshold went 0.00 -> 0.05, and the group *count* peaked at
+  79 (t=0.03) then fell to 58 (t=0.05) while coverage kept rising, i.e.
+  groups fusing. Greedy representative selection avoids chaining but is
+  order-dependent.
+- Even at its best it only took TATA 7 -> 2, because no threshold in the
+  admissible window fuses a gradient without merging something distinct.
 
-- **Motif-to-motif similarity, never similarity between cluster averages.**
-  A label-permutation null on the count head had randomly-composed clusters
-  scoring *higher* pairwise than real ones (60.6% vs 58.1% of nearest
-  neighbours above 0.90), because averaging blurs toward a bland consensus
-  and bland averages resemble each other. Similarity between averages is not
-  calibrated.
-- **`gap = min(within_a, within_b) - cross_ab`**, judging each pair against
-  its own clusters' coherence. A flat similarity ceiling cannot work when
-  TATA's clusters alone span within 0.966..0.985.
-- **Greedy representatives, not connected components.** These families are
-  continua, so single-linkage percolates: the largest component grew
-  4 -> 15 -> 48 -> 70 -> 137 over thresholds 0.00 -> 0.05, and the group
-  *count* peaked at 79 (t=0.03) then fell to 58 (t=0.05) while coverage kept
-  rising — groups fusing into each other. Greedy cannot chain, since an
-  absorbed cluster never absorbs others.
-- **Prevalence-descending order.** Greedy is order-dependent, but the two
-  principled orders agree to within one cluster (564 by prevalence, 563 by
-  size, against 600 random), and prevalence maximises absorption for the same
-  guarantee.
+**Two traps for anyone revisiting this.** Do not measure redundancy on
+similarity between *cluster averages*: a label-permutation null on the count
+head had randomly-composed clusters scoring **higher** pairwise than real
+ones (60.6% vs 58.1% of nearest neighbours above 0.90), because averaging
+blurs toward a bland consensus and bland averages resemble each other. And do
+not group candidate duplicates by JASPAR name; see below.
 
-Validation at t=0.05 on families picked independently of the threshold:
-AP-1 7 -> 1, ETV 3 -> 1, TATA 7 -> 2, and **CA-Inr 3 -> 3** — the negative
-control, the one family the numbers call separable (15 vs 17 at +0.155),
-survives intact.
+**What is reported instead.** Raw cluster counts, with JASPAR-name collapse
+as a **lower bound** -- names can only merge clusters, never split them, so
+the distinct-name count bounds the number of distinct motifs from below and
+the raw count from above. Rarefaction is count-head only. Manual
+refinement of annotations into a consensus set, for both the report and
+Fi-NeMo labelling, is deferred until after the preprint.
 
-Known limitation: **TATA collapses 7 -> 2, not 7 -> 1.** Its two
-representatives are more than 0.05 apart, and nothing in the admissible
-window fuses them without also merging CA-Inr's 4/15/17, which are distinct.
-These families are gradients, so any single threshold leaves part of one
-split. Redundancy can be cut substantially, not eliminated.
-
-`--check` also reports clusters *outside* a named family that fall within its
-own worst gap. Every family picked by eye off the report's first page
-undercounted, because the rest of it sits further down: TATA went 3 -> >=8,
-AP-1 4 -> >=13, ETV 2 -> >=6 this way. Curating families by eye does not
-work at 987 clusters.
+JASPAR names are the wrong granularity for *measuring* redundancy, which is
+why they bound rather than correct it. A name is a TF-identity label, and the
+two disagree in both directions: names **split what similarity fuses** (the
+ETV family is cluster 13/ETV7 plus 35 and 10, both ELF2, at gaps +0.030 and
++0.007) and **fuse what similarity separates** (clusters 4 and 17 are both
+Hand1::Tcf3 at gap +0.053). Some elements have no JASPAR entry at all --
+CA-Inr is a core promoter initiator, so its clusters come back as
+Hand1::Tcf3, ISL2 and Hand1::Tcf3 at 0.83-0.86, since the lookup must return
+some TF. Where a canonical entry exists the names are right (TBP for TATA,
+ETS for ETV), and distinguishing CRE from TRE variants is the lookup working
+rather than failing.
 
 #### Comparing two builds' clusterings
 
