@@ -756,6 +756,16 @@ Note also that this run does not yet demonstrate the 85 h problem is fixed:
 the count head converged before the fix too (`capped25 == uncapped`). **The
 profile head is the discriminating test.**
 
+**It passed.** On v1.1.0 the profile head cleared clustering and reached
+`cluster_averages.h5` and report generation in a fraction of the time, against
+85 h on an L40S and 24 h on an A100 without finishing under v1.0.19. Per the
+cost model, removing the unread `k x k` similarity only accounts for ~27% of
+a per-iteration saving, so the rest is iteration *count* — which confirms the
+alignment-frame defect, not raw scale, was what the profile head was stuck on.
+That asymmetry between heads is the strongest evidence for the diagnosis and
+belongs in the upstream report: 950-cluster count head converged either way,
+5,527-cluster profile head only after the fix.
+
 Note that this understates the change to the *outputs*, because
 `cluster_averages`' frame moved from row-0 to medoid for **all 950** clusters,
 including the ones whose membership is unchanged. The cluster-average h5, the
