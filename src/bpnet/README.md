@@ -407,8 +407,16 @@ bound on the number of actual reassignments. Merge/split counts are reported
 directionally, so a cluster splitting in two is distinguishable from two
 merging.
 
-`posneg` stays in the cluster key: `cluster_final` is only unique within a
-pos/neg stratum, and collapsing them would silently merge two clusters.
+`posneg` is **not** in the cluster key. `cluster_final` is a global label —
+clustering runs `cluster_within="model"` then `cluster_on`, neither of which
+stratifies on `posneg` — so a cluster may hold both pos and neg motifs. An
+earlier version keyed on `f"{posneg}:{cluster_final}"` and split those,
+reporting the count head as 950 clusters where `cluster_metadata.tsv` has
+945 rows (exactly the 5 mixed clusters). Every cluster count this README
+attributes to `compare_clusterings.py` output — the three-way table, the
+capped25 table, the v1.1.0 table — is therefore 950 where the build's own
+metadata says 945. The ARI/AMI figures compared both builds under the same
+inflated key, so their ordering stands, but the counts do not.
 
 #### The three-way count-head comparison
 

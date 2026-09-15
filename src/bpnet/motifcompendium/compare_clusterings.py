@@ -50,18 +50,24 @@ def load_assignments(path: Path) -> pd.Series:
     """cluster id per (experiment, local_motif_name), from a pattern mapping.
 
     `compendium_motif_name` is `f"{posneg}_patterns.pattern_{cluster_final}"`,
-    so the cluster id is recovered from its suffix. posneg is kept in the key
-    rather than discarded: a pos and a neg pattern can carry the same
-    `cluster_final`, and collapsing them would silently merge two clusters.
+    so the cluster id is recovered from its suffix.
+
+    `posneg` is deliberately *not* part of the key. An earlier version keyed
+    on `f"{posneg}:{cluster_final}"`, believing `cluster_final` to be unique
+    only within a pos/neg stratum. It is not: `cluster_motifs.py` clusters
+    with `cluster_within="model"` then `cluster_on`, neither of which
+    stratifies on `posneg`, so `cluster_final` is a global label and a
+    cluster may hold both pos and neg motifs. Including posneg split those
+    clusters in two, which inflated the reported cluster count (950 against
+    the count head's true 945, i.e. 5 mixed clusters) and compared a finer
+    partition than the one the build actually produced.
     """
     df = pd.read_csv(path, sep="\t")
     missing = set(KEY + ["compendium_motif_name"]) - set(df.columns)
     if missing:
         raise ValueError(f"{path} is missing columns {sorted(missing)}")
     name = df["compendium_motif_name"].astype(str)
-    posneg = name.str.split("_patterns", n=1).str[0]
-    cluster = name.str.rsplit("_", n=1).str[-1]
-    df["_cluster"] = posneg + ":" + cluster
+    df["_cluster"] = name.str.rsplit("_", n=1).str[-1]
     dup = df.duplicated(KEY).sum()
     if dup:
         raise ValueError(f"{path} has {dup} duplicate {KEY} rows")

@@ -66,9 +66,16 @@ def test_a_split_is_reported_directionally(tmp_path):
     assert out["b_clusters_split_in_a"] == 0
 
 
-def test_pos_and_neg_patterns_sharing_a_cluster_id_are_not_merged(tmp_path):
-    """cluster_final is only unique within a posneg stratum; collapsing them
-    would silently merge two distinct clusters."""
+def test_a_mixed_cluster_stays_one_cluster(tmp_path):
+    """cluster_final is a *global* label: clustering runs cluster_within on
+    "model" then cluster_on, neither of which stratifies on posneg, so one
+    cluster may hold both pos and neg motifs.
+
+    Keying on f"{posneg}:{cluster_final}" split those in two, which reported
+    the count head as 950 clusters when cluster_metadata.tsv has 945 rows --
+    exactly the 5 mixed clusters -- and compared a finer partition than the
+    build produced.
+    """
     p = tmp_path / "mixed.tsv"
     pd.DataFrame([
         {"experiment": "E1", "local_motif_name": "pos_patterns.pattern_0",
@@ -77,7 +84,8 @@ def test_pos_and_neg_patterns_sharing_a_cluster_id_are_not_merged(tmp_path):
          "compendium_motif_name": "neg_patterns.pattern_5"},
     ]).to_csv(p, sep="\t", index=False)
     s = cc.load_assignments(p)
-    assert s.nunique() == 2, "pos:5 and neg:5 must stay distinct"
+    assert s.nunique() == 1, "cluster_final 5 is one cluster, not two"
+    assert set(s) == {"5"}
 
 
 def test_only_shared_patterns_are_compared(tmp_path):
