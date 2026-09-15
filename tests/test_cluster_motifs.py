@@ -13,6 +13,7 @@ change arrived with a version bump and left no trace in any output.
 
 import sys
 import types
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -366,3 +367,74 @@ def test_algorithm_kwarg_reaches_mc_cluster():
     assert fake.calls[0]["algorithm_kwargs"] == {
         "k_centroids": {"tol": float("-inf")}
     }
+
+
+# --- convergence accounting --------------------------------------------------
+#
+# k_centroids warns via warnings.warn, whose default filter prints once per
+# code location. mc.cluster invokes k_centroids once per cluster_within group
+# (one per experiment, ~219) plus once for cluster_on, so the single line seen
+# in a real run means "at least one of ~220 calls", at an unknown stage. The
+# stage is what matters: cluster_on produces cluster_final directly.
+
+
+def _warn(message):
+    warnings.warn(message, UserWarning)
+
+
+def test_repeated_stalls_are_counted_not_deduplicated():
+    """The whole point: the default filter would report this once."""
+    cm = load_module()
+    tally = {}
+    with cm.record_convergence("within-model", tally):
+        for _ in range(7):
+            _warn("k_centroids: objective stopped improving; returning the "
+                  "best-scoring iteration.")
+    assert tally["within-model"]["stalled"] == 7
+
+
+def test_each_warning_kind_is_counted_separately():
+    cm = load_module()
+    tally = {}
+    with cm.record_convergence("across-model", tally):
+        _warn("k_centroids: membership is cycling; returning the best.")
+        _warn("k_centroids: objective stopped improving; returning the best.")
+        _warn("k_centroids: did not converge within 100 iterations.")
+        _warn("k_centroids: returning 948 clusters rather than the "
+              "requested 950, as clusters left empty are dropped.")
+    counts = tally["across-model"]
+    assert (counts["cycling"], counts["stalled"]) == (1, 1)
+    assert (counts["exhausted"], counts["emptied"]) == (1, 1)
+
+
+def test_stages_are_tallied_separately():
+    """A stall in one within-model group perturbs only that experiment; a
+    stall in the across-model stage moves the atlas partition."""
+    cm = load_module()
+    tally = {}
+    with cm.record_convergence("within-model", tally):
+        _warn("k_centroids: objective stopped improving.")
+    with cm.record_convergence("across-model", tally):
+        pass
+    assert tally["within-model"]["stalled"] == 1
+    assert not tally["across-model"]
+    assert cm.format_convergence(tally) == (
+        "within-model: 1 stalled; across-model: converged"
+    )
+
+
+def test_unrelated_warnings_are_not_swallowed():
+    cm = load_module()
+    tally = {}
+    with pytest.warns(DeprecationWarning, match="unrelated"):
+        with cm.record_convergence("within-model", tally):
+            warnings.warn("an unrelated deprecation", DeprecationWarning)
+    assert not tally["within-model"]
+
+
+def test_a_clean_run_says_so():
+    cm = load_module()
+    tally = {}
+    with cm.record_convergence("within-model", tally):
+        pass
+    assert cm.format_convergence(tally) == "within-model: converged"

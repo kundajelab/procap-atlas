@@ -716,6 +716,26 @@ failing to improve by more than `tol=1e-9`. Knowing the objective can dip
 calls for a patience counter (stop after *p* consecutive non-improvements),
 not an immediate exit. Worth reporting upstream.
 
+**One printed warning does not say how much stalled.** `mc.cluster` invokes
+`k_centroids` once per `cluster_within` group — one per experiment, so 219
+times for the within-model stage — plus once for the `cluster_on` stage, and
+`warnings.warn`'s default filter prints a given warning once per code
+location. A single line therefore means "at least one of ~220 calls", at an
+unknown stage.
+
+The stage is what matters. `cluster_on` produces `cluster_final` directly, so
+a stall there moves the atlas partition; a stall inside one `cluster_within`
+group perturbs only that experiment's own pre-clustering. `cluster_motifs.py`
+now counts them per stage with `simplefilter("always")`, prints
+
+```
+count: clustering convergence -- within-model: 3 stalled; across-model: converged
+```
+
+and stamps that string into `cluster_metadata.tsv`'s `cluster_convergence`,
+so a build records whether its own partition converged. Unrelated warnings
+are re-emitted at their original location rather than swallowed.
+
 To separate the two effects, re-run with the stall rule disabled and only the
 cycle and `max_iterations` guards active. `tol=-inf` makes
 `score <= previous + tol` unsatisfiable for any finite score:
@@ -795,8 +815,8 @@ the project's life, and every one of them moves the partition:
   with clustering algorithm.
 
   Since Sep 2026 `cluster_metadata.tsv` carries five provenance columns —
-  `mc_version`, `cluster_algorithm`, `cluster_reference`, `within_threshold`,
-  `across_threshold` —
+  `mc_version`, `cluster_algorithm`, `cluster_reference`,
+  `cluster_convergence`, `within_threshold`, `across_threshold` —
   so this class of change leaves a trace in the outputs. `mc_version` reads
   the installed distribution metadata, not `MotifCompendium.__version__`,
   which does not exist on any branch — stamping it via `getattr` recorded

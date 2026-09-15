@@ -1,7 +1,10 @@
 import argparse
+import collections
+import contextlib
 import html
 import importlib.metadata
 import inspect
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -94,6 +97,64 @@ def cluster_reference(mc):
     if "reference" not in params:
         return "first (pre-v1.1.0)"
     return params["reference"].default
+
+
+# MotifCompendium's k_centroids raises these through `warnings.warn`, whose
+# default filter prints a given warning once per code location. `mc.cluster`
+# invokes k_centroids once per `cluster_within` group -- one per experiment,
+# so 219 times for the within-model stage -- plus once for the `cluster_on`
+# stage. A single printed line therefore means "at least one of ~220 calls",
+# at an unknown stage, which is not enough to act on.
+CONVERGENCE_WARNINGS = {
+    "cycling": "membership is cycling",
+    "stalled": "objective stopped improving",
+    "exhausted": "did not converge within",
+    "emptied": "clusters rather than the requested",
+}
+
+
+@contextlib.contextmanager
+def record_convergence(stage, tally):
+    """Count k_centroids convergence warnings raised by one clustering stage.
+
+    `simplefilter("always")` defeats the once-per-location deduplication, so
+    every invocation is counted rather than only the first. Warnings that are
+    not k_centroids convergence warnings are re-emitted at their original
+    location, so nothing is swallowed.
+
+    The stage matters as much as the count: the `cluster_on` stage produces
+    `cluster_final` directly, so a stall there moves the atlas partition,
+    whereas a stall inside one `cluster_within` group perturbs only that
+    experiment's own pre-clustering.
+    """
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        yield
+    counts = collections.Counter()
+    for entry in caught:
+        message = str(entry.message)
+        for kind, needle in CONVERGENCE_WARNINGS.items():
+            if needle in message:
+                counts[kind] += 1
+                break
+        else:
+            warnings.warn_explicit(
+                entry.message, entry.category, entry.filename, entry.lineno
+            )
+    tally[stage] = counts
+
+
+def format_convergence(tally):
+    """One line per stage, or a single clean line when nothing was raised."""
+    parts = []
+    for stage, counts in tally.items():
+        if counts:
+            detail = ", ".join(f"{counts[k]} {k}" for k in CONVERGENCE_WARNINGS
+                               if counts[k])
+            parts.append(f"{stage}: {detail}")
+        else:
+            parts.append(f"{stage}: converged")
+    return "; ".join(parts)
 
 
 def parse_algorithm_kwargs(specs):
@@ -499,21 +560,26 @@ def process_head(
           f"(MotifCompendium {mc_version()}, "
           f"cluster-average frame {cluster_reference(mc)})")
 
-    cluster_with(
-        mc, algorithm, algorithm_kwargs,
-        similarity_threshold=within_threshold,
-        save_name="cluster_within_model",
-        cluster_within="model",
-    )
-    weighted_cluster_on(
-        mc,
-        similarity_threshold=across_threshold,
-        save_name="cluster_final",
-        cluster_on="cluster_within_model",
-        weight_col="num_seqlets",
-        algorithm=algorithm,
-        algorithm_kwargs=algorithm_kwargs,
-    )
+    convergence = {}
+    with record_convergence("within-model", convergence):
+        cluster_with(
+            mc, algorithm, algorithm_kwargs,
+            similarity_threshold=within_threshold,
+            save_name="cluster_within_model",
+            cluster_within="model",
+        )
+    with record_convergence("across-model", convergence):
+        weighted_cluster_on(
+            mc,
+            similarity_threshold=across_threshold,
+            save_name="cluster_final",
+            cluster_on="cluster_within_model",
+            weight_col="num_seqlets",
+            algorithm=algorithm,
+            algorithm_kwargs=algorithm_kwargs,
+        )
+    convergence_label = format_convergence(convergence)
+    print(f"{head}: clustering convergence -- {convergence_label}")
     mc.save(str(out_dir / f"motifcompendium_{head}_all_clustered.mc"))
 
     n_final = max(mc["cluster_final"]) + 1
@@ -554,6 +620,7 @@ def process_head(
             "mc_version": mc_version(),
             "cluster_algorithm": algorithm_label,
             "cluster_reference": cluster_reference(mc),
+            "cluster_convergence": convergence_label,
             "within_threshold": within_threshold,
             "across_threshold": across_threshold,
         },
