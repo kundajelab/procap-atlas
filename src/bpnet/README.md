@@ -642,9 +642,15 @@ outputs:
 
 **`--kmeans-iterations` has been removed.** It existed to bound a loop that is
 now self-bounding, and a cap would mask whether the fix actually converges —
-which is the thing worth learning. Nothing passes `algorithm_kwargs` any
-more. `--algorithm` stays, since reproducing the pre-v1.0.19 Leiden-only
-partition is still worth being able to do. The `mc_capped5`/`mc_capped25`
+which is the thing worth learning. `--algorithm` stays, since reproducing the
+pre-v1.0.19 Leiden-only partition is still worth being able to do, and
+`--algorithm-kwarg ALGORITHM.KEY=VALUE` (repeatable) replaces it as a
+*diagnostic* escape hatch onto any per-step clustering argument — it sets no
+defaults, so omitting it leaves the library's own defaults alone. It targets
+a step by name and raises if that step is not in the algorithm list, since a
+silently ignored kwarg looks like it applied. The resulting setting lands in
+`cluster_metadata.tsv`'s `cluster_algorithm`, so a tuned build is not
+indistinguishable from an untuned one. The `mc_capped5`/`mc_capped25`
 builds are therefore no longer reproducible from the CLI; their outputs on
 disk are the record, and `git show 30adbab` has the flag if it is ever needed
 again. Watch stderr for
@@ -683,13 +689,52 @@ v1.1.0's correction is roughly **a tenth the size of adding `k_centroids` at
 all**, which is what a genuine bug fix should look like rather than a
 different algorithm. Count-head downstream numbers should move very little.
 
-That run emitted **no convergence warnings**, so the loop exited on exact
-membership equality rather than on the cycle, stall or `max_iterations`
-guard — the count head reaches a genuine fixed point, and the aggressive
-`tol=1e-9` stall rule did not fire. It also means this run does not yet
-demonstrate the 85 h problem is fixed: the count head converged before the
-fix too (`capped25 == uncapped`). **The profile head is the discriminating
-test.**
+**That run stopped early, so the comparison above confounds two changes.**
+It emitted `k_centroids: objective stopped improving; returning the
+best-scoring iteration`. In the v1.1.0 loop the membership-equality check
+runs *before* `should_stop`, so a true fixed point breaks without warning:
+
+```python
+if np.array_equal(membership, membership_new):
+    break                      # true fixed point, no warning
+membership_next = _remap_membership(membership_new)
+if tracker.should_stop(membership_next, score):
+    break                      # the stall warning fires here
+```
+
+The warning therefore means membership was **still changing** when the run
+quit. The v1.1.0 count-head partition is `tracker.best_membership` — the
+best-scoring iteration — not a fixed point, whereas `mc_capped25` was a
+genuine one (it equals the uncapped v1.0.19 build exactly). So the ARI 0.9963
+gap mixes the alignment-frame fix with early stopping and cannot be
+attributed to either.
+
+The stall rule is too aggressive, and by the authors' own rationale: the
+tracker exists *because* lossy averaging makes the objective non-monotone, so
+a run can dip and recover — but `should_stop` exits at the **first** iteration
+failing to improve by more than `tol=1e-9`. Knowing the objective can dip
+calls for a patience counter (stop after *p* consecutive non-improvements),
+not an immediate exit. Worth reporting upstream.
+
+To separate the two effects, re-run with the stall rule disabled and only the
+cycle and `max_iterations` guards active. `tol=-inf` makes
+`score <= previous + tol` unsatisfiable for any finite score:
+
+```bash
+python $MC --head count --algorithm-kwarg k_centroids.tol=-inf \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_v110_notol
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    v110=mc_v110/motifcompendium_count_pattern_to_cluster.tsv \
+    v110_notol=mc_v110_notol/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+If those agree, early stopping cost nothing and ARI 0.9963 is the frame fix
+alone. If they differ, `mc_v110` is under-iterated and the no-stall build is
+the one to keep.
+
+Note also that this run does not yet demonstrate the 85 h problem is fixed:
+the count head converged before the fix too (`capped25 == uncapped`). **The
+profile head is the discriminating test.**
 
 Note that this understates the change to the *outputs*, because
 `cluster_averages`' frame moved from row-0 to medoid for **all 950** clusters,

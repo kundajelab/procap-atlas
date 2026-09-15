@@ -96,7 +96,50 @@ def cluster_reference(mc):
     return params["reference"].default
 
 
-def resolve_algorithm(mc, algorithm=None):
+def parse_algorithm_kwargs(specs):
+    """`["k_centroids.tol=-inf"]` -> `{"k_centroids": {"tol": -inf}}`.
+
+    A diagnostic escape hatch for MotifCompendium's per-step clustering
+    arguments, keyed by algorithm name so only the intended step is touched.
+    Nothing here sets a default, so an absent flag leaves the library's own
+    defaults in place.
+
+    The motivating case: v1.1.0's `_ConvergenceTracker` stops at the first
+    iteration whose objective fails to improve by more than `tol=1e-9`, even
+    though the tracker exists because lossy averaging makes that objective
+    non-monotone. `k_centroids.tol=-inf` disables that rule -- leaving the
+    cycle and `max_iterations` guards to terminate the run -- so an
+    early-stopped build can be compared against one that is not.
+    """
+    if not specs:
+        return None
+    kwargs = {}
+    for spec in specs:
+        if "=" not in spec or "." not in spec.split("=", 1)[0]:
+            raise ValueError(
+                f"expected ALGORITHM.KEY=VALUE, got {spec!r} "
+                "(e.g. k_centroids.tol=-inf)"
+            )
+        target, raw = spec.split("=", 1)
+        step, key = target.split(".", 1)
+        kwargs.setdefault(step, {})[key] = _parse_scalar(raw)
+    return kwargs
+
+
+def _parse_scalar(raw):
+    """int, float (including +-inf), bool, None, or the string as given."""
+    literals = {"True": True, "False": False, "None": None}
+    if raw in literals:
+        return literals[raw]
+    for cast in (int, float):
+        try:
+            return cast(raw)
+        except ValueError:
+            continue
+    return raw
+
+
+def resolve_algorithm(mc, algorithm=None, algorithm_kwargs=None):
     """The algorithm list to pass to `mc.cluster`, plus a label for the record.
 
     `mc.cluster`'s default changed silently between MotifCompendium releases:
@@ -122,25 +165,45 @@ def resolve_algorithm(mc, algorithm=None):
         default = inspect.signature(mc.cluster).parameters["algorithm"].default
         algorithm = list(default) if isinstance(default, (list, tuple)) else [default]
     algorithm = list(algorithm)
-    return algorithm, "+".join(algorithm)
+
+    if algorithm_kwargs:
+        unknown = sorted(set(algorithm_kwargs) - set(algorithm))
+        if unknown:
+            raise ValueError(
+                f"--algorithm-kwarg targets {unknown}, which {algorithm} does "
+                "not run; a silently ignored kwarg would look like it applied"
+            )
+
+    label = "+".join(algorithm)
+    if algorithm_kwargs:
+        tuning = ",".join(
+            f"{step}.{key}={value}"
+            for step in algorithm
+            for key, value in sorted(algorithm_kwargs.get(step, {}).items())
+        )
+        label += f" ({tuning})"
+    return algorithm, label
 
 
-def cluster_with(mc, algorithm, **cluster_kwargs):
+def cluster_with(mc, algorithm, algorithm_kwargs=None, **cluster_kwargs):
     """`mc.cluster` with an explicit algorithm, tolerating older versions.
 
-    Pre-v1.0.19 installs take a bare string and have no `algorithm` list, so
-    a single-element list is unwrapped.
+    Pre-v1.0.19 installs take a bare string, have no `algorithm` list and no
+    `algorithm_kwargs`, so a single-element list is unwrapped and per-step
+    kwargs are dropped rather than raising.
     """
     params = inspect.signature(mc.cluster).parameters
     if "algorithm" in params:
         cluster_kwargs["algorithm"] = (
             algorithm if len(algorithm) > 1 else algorithm[0]
         )
+    if algorithm_kwargs and "algorithm_kwargs" in params:
+        cluster_kwargs["algorithm_kwargs"] = algorithm_kwargs
     mc.cluster(**cluster_kwargs)
 
 
 def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on,
-                        weight_col, algorithm=None):
+                        weight_col, algorithm=None, algorithm_kwargs=None):
     cluster_kwargs = {
         "similarity_threshold": similarity_threshold,
         "save_name": save_name,
@@ -150,7 +213,8 @@ def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on,
         cluster_kwargs["weight_col"] = weight_col
     else:
         cluster_kwargs["cluster_on_weight"] = weight_col
-    cluster_with(mc, algorithm or ["cpm_leiden"], **cluster_kwargs)
+    cluster_with(mc, algorithm or ["cpm_leiden"], algorithm_kwargs,
+                 **cluster_kwargs)
 
 
 def export_pattern_to_cluster_mapping(mc, head, out_dir=MC_DIR):
@@ -412,6 +476,7 @@ def process_head(
     svg_logo_batch_size,
     out_dir=MC_DIR,
     algorithm=None,
+    algorithm_kwargs=None,
 ):
     if not h5_paths:
         print(f"{head}: no modisco h5 files found, skipping")
@@ -427,13 +492,15 @@ def process_head(
 
     assign_jaspar_labels(mc)
 
-    algorithm, algorithm_label = resolve_algorithm(mc, algorithm)
+    algorithm, algorithm_label = resolve_algorithm(
+        mc, algorithm, algorithm_kwargs
+    )
     print(f"{head}: clustering with {algorithm_label} "
           f"(MotifCompendium {mc_version()}, "
           f"cluster-average frame {cluster_reference(mc)})")
 
     cluster_with(
-        mc, algorithm,
+        mc, algorithm, algorithm_kwargs,
         similarity_threshold=within_threshold,
         save_name="cluster_within_model",
         cluster_within="model",
@@ -445,6 +512,7 @@ def process_head(
         cluster_on="cluster_within_model",
         weight_col="num_seqlets",
         algorithm=algorithm,
+        algorithm_kwargs=algorithm_kwargs,
     )
     mc.save(str(out_dir / f"motifcompendium_{head}_all_clustered.mc"))
 
@@ -605,6 +673,23 @@ def main():
         ),
     )
     parser.add_argument(
+        "--algorithm-kwarg",
+        action="append",
+        default=None,
+        metavar="ALGORITHM.KEY=VALUE",
+        dest="algorithm_kwarg",
+        help=(
+            "pass a per-step argument to a clustering algorithm, e.g. "
+            "'k_centroids.tol=-inf'. Repeatable. Diagnostic: nothing here "
+            "sets a default, so omitting it leaves MotifCompendium's own "
+            "defaults alone. k_centroids.tol=-inf disables v1.1.0's stall "
+            "rule, which exits at the first iteration whose objective fails "
+            "to improve by more than 1e-9 even though that objective is "
+            "known to be non-monotone; the cycle and max_iterations guards "
+            "still terminate the run. Recorded in cluster_metadata.tsv."
+        ),
+    )
+    parser.add_argument(
         "--within-threshold",
         type=float,
         default=0.95,
@@ -691,6 +776,7 @@ def main():
             args.svg_logo_batch_size,
             out_dir=args.out_dir,
             algorithm=args.algorithm,
+            algorithm_kwargs=parse_algorithm_kwargs(args.algorithm_kwarg),
         )
 
 

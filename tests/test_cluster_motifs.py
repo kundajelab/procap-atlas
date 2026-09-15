@@ -292,3 +292,77 @@ def test_cluster_reference_flags_the_pre_v1_1_0_frame():
             pass
 
     assert cluster_motifs.cluster_reference(OldMC()) == "first (pre-v1.1.0)"
+
+
+# --- --algorithm-kwarg -------------------------------------------------------
+#
+# v1.1.0's _ConvergenceTracker stops at the first iteration whose objective
+# fails to improve by more than tol=1e-9, even though the tracker exists
+# because lossy averaging makes that objective non-monotone. The count-head
+# build hit that rule, so its partition is the best-scoring iteration rather
+# than a fixed point; k_centroids.tol=-inf is how that gets measured.
+
+
+def test_algorithm_kwarg_parses_into_a_per_step_dict():
+    cm = load_module()
+    assert cm.parse_algorithm_kwargs(["k_centroids.tol=-inf"]) == {
+        "k_centroids": {"tol": float("-inf")}
+    }
+
+
+def test_algorithm_kwarg_parses_scalar_types():
+    cm = load_module()
+    parsed = cm.parse_algorithm_kwargs([
+        "k_centroids.max_iterations=250",
+        "k_centroids.tol=1e-6",
+        "k_centroids.reference=first",
+    ])["k_centroids"]
+    assert parsed["max_iterations"] == 250
+    assert isinstance(parsed["max_iterations"], int)
+    assert parsed["tol"] == pytest.approx(1e-6)
+    assert parsed["reference"] == "first"
+
+
+def test_no_algorithm_kwarg_leaves_library_defaults_alone():
+    """Absent flag must mean "pass nothing", not "pass an empty dict"."""
+    cm = load_module()
+    assert cm.parse_algorithm_kwargs(None) is None
+    assert cm.parse_algorithm_kwargs([]) is None
+
+
+def test_malformed_algorithm_kwarg_is_an_error():
+    cm = load_module()
+    with pytest.raises(ValueError, match="ALGORITHM.KEY=VALUE"):
+        cm.parse_algorithm_kwargs(["tol=-inf"])  # no algorithm prefix
+    with pytest.raises(ValueError, match="ALGORITHM.KEY=VALUE"):
+        cm.parse_algorithm_kwargs(["k_centroids.tol"])  # no value
+
+
+def test_algorithm_kwarg_for_an_unrun_step_is_an_error():
+    """Silently ignoring it would look like the setting had applied."""
+    cm = load_module()
+    fake = _WithDefault(make_fake(), ["cpm_leiden", "k_centroids"])
+    with pytest.raises(ValueError, match="does not run"):
+        cm.resolve_algorithm(fake, ["cpm_leiden"], {"k_centroids": {"tol": 0}})
+
+
+def test_algorithm_kwarg_is_recorded_in_the_label():
+    """The label becomes cluster_algorithm in cluster_metadata.tsv, so a
+    tuned build must not be indistinguishable from an untuned one."""
+    cm = load_module()
+    fake = _WithDefault(make_fake(), ["cpm_leiden", "k_centroids"])
+    _, label = cm.resolve_algorithm(
+        fake, None, {"k_centroids": {"tol": float("-inf")}}
+    )
+    assert label == "cpm_leiden+k_centroids (k_centroids.tol=-inf)"
+
+
+def test_algorithm_kwarg_reaches_mc_cluster():
+    cm = load_module()
+    fake = make_fake()
+    cm.cluster_with(fake, ["cpm_leiden", "k_centroids"],
+                    {"k_centroids": {"tol": float("-inf")}},
+                    similarity_threshold=0.9)
+    assert fake.calls[0]["algorithm_kwargs"] == {
+        "k_centroids": {"tol": float("-inf")}
+    }
