@@ -660,6 +660,35 @@ iteration, so the result is sound, but it may under-iterate relative to true
 convergence. Compare against a `max_iterations`-only run if the count head
 comes back materially different from `mc_capped25`.
 
+Measured, 2026-09-14 (count head, v1.1.0 defaults, no cap):
+
+| a | b | frac_same_clustermates | n_patterns_moved | ARI | AMI |
+|---|---|---|---|---|---|
+| capped25 | v110 | 0.8837 | 656 | 0.9963 | 0.9950 |
+
+**The fix is a refinement, not a re-partitioning.** 950 clusters again, ARI
+0.9963, and ~55 actual reassignments (656 / ~12 amplification) out of 5,639
+patterns, with splits near-symmetric in both directions (16 vs 15) — local
+reshuffling, not systematic merging or splitting. In context on the
+count head:
+
+| comparison | ARI |
+|---|---|
+| leiden vs uncapped v1.0.19 | 0.766 |
+| capped5 vs uncapped v1.0.19 | 0.960 |
+| capped25 vs uncapped v1.0.19 | 1.000 |
+| capped25 vs v1.1.0 | 0.996 |
+
+v1.1.0's correction is roughly **a tenth the size of adding `k_centroids` at
+all**, which is what a genuine bug fix should look like rather than a
+different algorithm. Count-head downstream numbers should move very little.
+
+Note that this understates the change to the *outputs*, because
+`cluster_averages`' frame moved from row-0 to medoid for **all 950** clusters,
+including the ones whose membership is unchanged. The cluster-average h5, the
+MEME export and the Figure 2c logos therefore change more broadly than the
+partition does.
+
 Order of operations: rebuild the **count** head first and diff it against the
 `mc_capped25` baseline with `compare_clusterings.py`. That is ~4 min and
 sizes the change before committing the profile head to it. Then rebuild both
