@@ -683,6 +683,14 @@ v1.1.0's correction is roughly **a tenth the size of adding `k_centroids` at
 all**, which is what a genuine bug fix should look like rather than a
 different algorithm. Count-head downstream numbers should move very little.
 
+That run emitted **no convergence warnings**, so the loop exited on exact
+membership equality rather than on the cycle, stall or `max_iterations`
+guard — the count head reaches a genuine fixed point, and the aggressive
+`tol=1e-9` stall rule did not fire. It also means this run does not yet
+demonstrate the 85 h problem is fixed: the count head converged before the
+fix too (`capped25 == uncapped`). **The profile head is the discriminating
+test.**
+
 Note that this understates the change to the *outputs*, because
 `cluster_averages`' frame moved from row-0 to medoid for **all 950** clusters,
 including the ones whose membership is unchanged. The cluster-average h5, the
