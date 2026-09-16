@@ -52,6 +52,7 @@ Usage:
 
 import argparse
 import sys
+import gzip
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -63,6 +64,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bpnet" / "hitcall"))
 from _biosample_groups import load_group_map, write_group_tsv  # noqa: E402
+import compressed_io  # noqa: E402
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -125,10 +127,14 @@ def count_peaks(exp_dir: Path, hits: pd.DataFrame) -> tuple[int, str]:
     spotted in the output rather than silently skewing that experiment's
     densities upward.
     """
-    narrowpeak = exp_dir / "peaks.narrowPeak"
-    if narrowpeak.exists():
-        with open(narrowpeak) as f:
-            return sum(1 for line in f if line.strip()), "peaks.narrowPeak"
+    # bgzipped since Sep 2026; older caches are plain, so resolve either.
+    narrowpeak = compressed_io.resolve(
+        exp_dir / "peaks.narrowPeak", missing_ok=True
+    )
+    if narrowpeak is not None:
+        opener = gzip.open if narrowpeak.name.endswith(".gz") else open
+        with opener(narrowpeak, "rt") as f:
+            return sum(1 for line in f if line.strip()), narrowpeak.name
     if "peak_id" in hits.columns and len(hits):
         return int(hits["peak_id"].max()) + 1, "max(peak_id)+1 [underestimate]"
     return 0, "unavailable"
@@ -151,8 +157,10 @@ def collect_densities(
     info_rows = []
     for experiment in experiments:
         exp_dir, hits_dir = resolve_dirs(experiment, head, min_trim_len, hitcall_dir)
-        hits_path = hits_dir / "hits_linked.tsv"
-        if not hits_path.exists():
+        hits_path = compressed_io.resolve(
+            hits_dir / "hits_linked.tsv", missing_ok=True
+        )
+        if hits_path is None:
             if not quiet:
                 print(f"  {experiment}: no hits_linked.tsv, skipping", file=sys.stderr)
             continue

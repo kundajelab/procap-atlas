@@ -64,6 +64,7 @@ import polars as pl
 from finemo.data_io import load_mapping_tuple, load_modisco_motifs, load_regions_npz
 from finemo.evaluation import get_cwms
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 from filter_by_seqlet_importance import build_peak_row_index
 
@@ -362,9 +363,7 @@ def main():
         out_df["in_scope"] = out_df["rank"] <= n_in_scope
         out_df["experiment"] = args.experiment
         out_df["head"] = args.head
-        out_path = Path(args.out_tsv)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_df.to_csv(out_path, sep="\t", index=False)
+        out_path = compressed_io.write_tsv(out_df, Path(args.out_tsv))
         print(f"Wrote {out_path}")
 
 

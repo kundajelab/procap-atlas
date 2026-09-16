@@ -28,6 +28,8 @@ from pathlib import Path
 
 import pandas as pd
 
+import compressed_io
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
@@ -48,11 +50,11 @@ def main():
         if args.mapping_tsv
         else REPO_ROOT / "motifcompendium" / "bpnet" / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
     )
-    if not mapping_path.exists():
+    if not compressed_io.exists(mapping_path):
         print(f"Error: {mapping_path} not found -- run src/bpnet/motifcompendium/cluster_motifs.py first", file=sys.stderr)
         sys.exit(1)
 
-    mapping = pd.read_csv(mapping_path, sep="\t")
+    mapping = pd.read_csv(compressed_io.resolve(mapping_path), sep="\t")
 
     resolved = []
     clusters_seen = set()

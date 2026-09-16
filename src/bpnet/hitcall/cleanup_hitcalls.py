@@ -81,6 +81,8 @@ ALWAYS_SAFE_DELETE_NAMES = {
     "hits_flank_filtered.tsv",
     "hits_seqlet_filtered.tsv",
 }
+# hits.bed is bgzipped by call-hits now, so this only catches files from
+# builds predating that. Kept for those.
 COMPRESS_NAMES = {"hits.bed"}
 PROTECTED_BASE_DIR_NAMES = {"peaks.narrowPeak", "regions.npz", "regions.tmp.npz"}
 NEVER_TOUCH_NAMES = {
@@ -90,6 +92,17 @@ NEVER_TOUCH_NAMES = {
     "hits_filtered.tsv",
     "hits_linked.tsv",
 } | PROTECTED_BASE_DIR_NAMES
+
+
+def logical_name(path):
+    """`path.name` with any `.gz` stripped.
+
+    The name sets below are keyed on logical names, so a compressed tree must
+    still match them -- otherwise hits_unique.tsv.gz is not recognised as
+    NEVER_TOUCH and hits.tsv.gz is not recognised as safe to delete, and
+    cleanup silently changes behaviour the moment a tree is compressed.
+    """
+    return path.name[:-3] if path.name.endswith(".gz") else path.name
 
 
 def human_bytes(n):
@@ -122,7 +135,7 @@ def find_stale_regions_tmp(exp_head_dir, min_age_hours):
 def find_always_safe_deletes(exp_head_dir, min_age_hours):
     found = []
     for path in exp_head_dir.rglob("*"):
-        if path.is_file() and path.name in ALWAYS_SAFE_DELETE_NAMES and is_old_enough(path, min_age_hours):
+        if path.is_file() and logical_name(path) in ALWAYS_SAFE_DELETE_NAMES and is_old_enough(path, min_age_hours):
             found.append(path)
     stale_tmp = find_stale_regions_tmp(exp_head_dir, min_age_hours)
     if stale_tmp is not None:
@@ -133,7 +146,8 @@ def find_always_safe_deletes(exp_head_dir, min_age_hours):
 def find_compress_candidates(exp_head_dir, min_age_hours):
     found = []
     for path in exp_head_dir.rglob("*"):
-        if path.is_file() and path.name in COMPRESS_NAMES and is_old_enough(path, min_age_hours):
+        if (path.is_file() and path.name in COMPRESS_NAMES
+                and is_old_enough(path, min_age_hours)):
             found.append(path)
     return found
 
@@ -152,7 +166,7 @@ def find_abandoned_trim_dirs(exp_head_dir, min_age_hours):
     for path in exp_head_dir.iterdir():
         if path.is_dir() and path.name.startswith("trim"):
             continue
-        if path.name in PROTECTED_BASE_DIR_NAMES:
+        if logical_name(path) in PROTECTED_BASE_DIR_NAMES:
             continue
         if path.is_file():
             if is_old_enough(path, min_age_hours):

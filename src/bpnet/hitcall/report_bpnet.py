@@ -91,6 +91,7 @@ from finemo.visualization import (
     plot_peak_motif_indicator_heatmap,
 )
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -307,7 +308,7 @@ def main():
     )
 
     motif_report_path = report_dir / "motif_report.tsv"
-    motif_report = pl.read_csv(motif_report_path, separator="\t")
+    motif_report = pl.read_csv(compressed_io.resolve(motif_report_path), separator="\t")
     low_similarity = motif_report.filter(
         pl.col("cwm_similarity") <= args.cwm_similarity_threshold
     )

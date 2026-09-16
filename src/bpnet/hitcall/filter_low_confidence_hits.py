@@ -223,6 +223,7 @@ from finemo.data_io import load_regions_npz
 from scipy.signal import find_peaks
 from tangermeme.seqlet import recursive_seqlets
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 from diagnose_background_energy_ratio import detect_elbow_count, load_and_compute_background_excess
 from diagnose_hit_summit_distance import (
@@ -997,7 +998,7 @@ def main():
         restricted_motifs = None
         if args.seqlet_low_similarity_only:
             motif_report_path = hits_dir / "report" / "motif_report.tsv"
-            if not motif_report_path.exists():
+            if not compressed_io.exists(motif_report_path):
                 print(
                     f"Error: --seqlet-low-similarity-only needs {motif_report_path} "
                     "from a prior report_bpnet.py run (against hits from *before* "
@@ -1006,7 +1007,7 @@ def main():
                     file=sys.stderr,
                 )
                 sys.exit(1)
-            motif_report = pd.read_csv(motif_report_path, sep="\t")
+            motif_report = pd.read_csv(compressed_io.resolve(motif_report_path), sep="\t")
             restricted_motifs = set(
                 motif_report.loc[
                     motif_report["cwm_similarity"] <= args.seqlet_similarity_threshold,
@@ -1035,14 +1036,14 @@ def main():
                 if args.compendium_mapping_tsv
                 else REPO_ROOT / "motifcompendium" / "bpnet" / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
             )
-            if not mapping_path.exists():
+            if not compressed_io.exists(mapping_path):
                 print(
                     f"Error: --seqlet-compendium-clusters needs {mapping_path} "
                     "(run src/bpnet/motifcompendium/cluster_motifs.py first)",
                     file=sys.stderr,
                 )
                 sys.exit(1)
-            mapping = pd.read_csv(mapping_path, sep="\t")
+            mapping = pd.read_csv(compressed_io.resolve(mapping_path), sep="\t")
             mapping = mapping[mapping["experiment"] == args.experiment]
             compendium_motifs = set(
                 mapping.loc[
@@ -1204,7 +1205,7 @@ def main():
             )
 
     out_path = hits_dir / "hits_confidence_filtered.tsv"
-    kept.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(kept, out_path)
     print(
         f"\nKept {len(kept)}/{len(hits)} hits "
         f"({len(hits) - len(kept)} dropped from {len(filtered_motifs)} motifs)"

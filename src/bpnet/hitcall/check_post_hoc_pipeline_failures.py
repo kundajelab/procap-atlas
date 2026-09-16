@@ -52,6 +52,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -169,7 +170,7 @@ def main():
             hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
             hits_unique = hits_dir / "hits_unique.tsv"
-            if not hits_unique.exists():
+            if not compressed_io.exists(hits_unique):
                 continue
 
             job_name = f"bpnet_hitcall_post_hoc_pipeline_{exp_id}_{head}{suffix}"
@@ -184,8 +185,8 @@ def main():
             hits_filtered = hits_dir / "hits_filtered.tsv"
             hits_confidence_filtered = hits_dir / "hits_confidence_filtered.tsv"
             already_done = (
-                hits_filtered.exists()
-                and hits_confidence_filtered.exists()
+                compressed_io.exists(hits_filtered)
+                and compressed_io.exists(hits_confidence_filtered)
                 and hits_filtered.stat().st_mtime >= hits_confidence_filtered.stat().st_mtime
             )
             if already_done:

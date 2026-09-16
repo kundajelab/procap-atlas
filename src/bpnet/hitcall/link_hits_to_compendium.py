@@ -31,6 +31,7 @@ from pathlib import Path
 
 import pandas as pd
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -121,7 +122,7 @@ def main():
         print(f"Error: no hits found in {hits_dir}", file=sys.stderr)
         print("Run call_hits_bpnet.py first.", file=sys.stderr)
         sys.exit(1)
-    if not mapping_path.exists():
+    if not compressed_io.exists(mapping_path):
         print(f"Error: pattern-to-cluster mapping not found: {mapping_path}", file=sys.stderr)
         print("Run src/bpnet/motifcompendium/cluster_motifs.py first.", file=sys.stderr)
         sys.exit(1)
@@ -131,7 +132,7 @@ def main():
         print(f"Reading mapping from {mapping_path}")
 
     hits = pd.read_csv(hits_path, sep="\t")
-    mapping = pd.read_csv(mapping_path, sep="\t")
+    mapping = pd.read_csv(compressed_io.resolve(mapping_path), sep="\t")
     mapping = mapping[mapping["experiment"] == args.experiment][
         ["local_motif_name", "compendium_motif_name"]
     ]
@@ -157,7 +158,7 @@ def main():
         )
 
     out_path = hits_dir / "hits_linked.tsv"
-    linked.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(linked, out_path)
 
     n_compendium_motifs = linked["compendium_motif_name"].nunique()
     print(

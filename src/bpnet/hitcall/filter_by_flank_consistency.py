@@ -66,6 +66,7 @@ import pandas as pd
 import yaml
 from finemo.data_io import load_modisco_motifs, load_regions_npz
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 from filter_by_seqlet_importance import build_peak_row_index, project_contribs
 
@@ -256,7 +257,7 @@ def main():
     cwm_lookup, motif_width = build_cwm_lookup(modisco_h5)
 
     hits = pd.read_csv(hits_path, sep="\t")
-    seqlets = pd.read_csv(seqlets_path, sep="\t")
+    seqlets = pd.read_csv(compressed_io.resolve(seqlets_path), sep="\t")
 
     hit_scores = compute_flank_similarity(
         hits, contribs, sequences, peak_row_index, peak_region_starts, cwm_lookup, motif_width
@@ -279,8 +280,8 @@ def main():
     # motifs with low cwm_similarity should show a lower/wider-spread mean
     # hit-level full-window similarity too.
     motif_report_path = hits_dir / "report" / "motif_report.tsv"
-    if args.verbose and motif_report_path.exists():
-        motif_report = pd.read_csv(motif_report_path, sep="\t").set_index("motif_name")
+    if args.verbose and compressed_io.exists(motif_report_path):
+        motif_report = pd.read_csv(compressed_io.resolve(motif_report_path), sep="\t").set_index("motif_name")
         print("\nSanity check vs. existing report/motif_report.tsv (not a hard gate):")
         print(f"  {'motif_name':<24} {'cwm_similarity':>14} {'mean_flank_sim':>14}")
         for motif_name, group in hits.groupby("motif_name"):
@@ -346,7 +347,7 @@ def main():
         )
 
     out_path = hits_dir / "hits_flank_filtered.tsv"
-    kept.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(kept, out_path)
     print(
         f"\nKept {len(kept)}/{len(hits)} hits "
         f"({len(hits) - len(kept)} dropped from {len(filtered_motifs)} motifs)"

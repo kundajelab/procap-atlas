@@ -64,6 +64,7 @@ import numpy as np
 import pandas as pd
 from finemo.data_io import load_regions_npz
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -189,7 +190,9 @@ def main():
         (regions_npz, "regions.npz", "Run call_hits_bpnet.py first."),
         (seqlets_path, "report/seqlets.tsv", "Run report_bpnet.py first (writes seqlets.tsv as a side effect even with cwm_similarity QC enabled)."),
     ]:
-        if not path.exists():
+        # seqlets.tsv may be gzipped; regions.npz is never compressed, and
+        # compressed_io.exists() handles both.
+        if not compressed_io.exists(path):
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             print(hint, file=sys.stderr)
             sys.exit(1)
@@ -209,7 +212,7 @@ def main():
     peak_region_starts = peaks_df["peak_region_start"].to_numpy()
 
     hits = pd.read_csv(hits_path, sep="\t")
-    seqlets = pd.read_csv(seqlets_path, sep="\t")
+    seqlets = pd.read_csv(compressed_io.resolve(seqlets_path), sep="\t")
 
     # Self-check: recompute hit_importance for the existing hits directly
     # from regions.npz and compare against Fi-NeMo's own recorded value.
@@ -308,7 +311,7 @@ def main():
         )
 
     out_path = hits_dir / "hits_seqlet_filtered.tsv"
-    kept.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(kept, out_path)
     print(
         f"\nKept {len(kept)}/{len(hits)} hits "
         f"({len(hits) - len(kept)} dropped from {len(filtered_motifs)} motifs)"

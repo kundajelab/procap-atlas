@@ -973,6 +973,57 @@ to disable it, or `--svg-logo-batch-size` to tune rendering batch size.
 
 ## Hit Calling
 
+### Outputs are compressed
+
+Hit-call tables are stored compressed: **gzip for `.tsv`, bgzip for `.bed`
+and `.narrowPeak`**. Hit calling runs over all 224 experiments (198 is the
+minimum-quality filtered set used for the integrative analyses, not the
+hit-call set), with one output set per experiment x head x trim
+configuration, so this is a large amount of disk.
+
+`compressed_io.py` holds the three things every script needs:
+
+- `resolve(path)` — takes the *logical* (uncompressed) path and returns
+  whichever of it and its `.gz` sibling exists, preferring the compressed
+  one. It warns when both exist, since that state follows an interrupted
+  compression pass and the two can disagree; it raises naming **both**
+  candidates when neither does.
+- `write_tsv(frame, path)` — always writes `path.gz`, returning the path
+  actually written so the caller's log line names the real file.
+- `write_bgzip(frame, path)` — bgzip via the `bgzip` binary (`htslib`, already
+  in `environment.yml`). It **raises** rather than falling back to plain gzip:
+  a plain-gzip file named `.bed.gz` is indistinguishable until something tries
+  to tabix-index it, and then fails far from here.
+
+**Reads accept either form**, so a partially compressed tree still works —
+builds predating compression, Fi-NeMo output compressed after the fact, and
+freshly written `.gz` all coexist. `resolve_hits_path` resolves every stage
+through it, which covers most consumers; `cleanup_hitcalls.py` compares
+against `logical_name(path)` so its name sets still match compressed files.
+
+This is the hazard `cleanup_hitcalls.py` originally called out: it compressed
+only `hits.bed` because nothing read that back by exact filename, "so
+gzipping it can't break any downstream script's file resolution the way
+gzipping `hits_unique.tsv` would." `resolve()` is what removes that
+constraint.
+
+Two notes:
+
+- **bgzip is a valid gzip stream**, so `gzip`, `pandas` and `polars` all read
+  it transparently. Nothing tabix-indexes these yet; bgzip is used so that
+  compressing them now does not foreclose it.
+- **`peaks.narrowPeak` is ours but is *input* to `finemo extract-regions`**,
+  which reads it with `polars.scan_csv`. That handles gzip (verified on
+  polars 1.44.2), so a compressed cache works — but confirm the cluster's
+  polars is recent, because the failure mode is breakage at region
+  extraction rather than at write time.
+
+Fi-NeMo's own writers are untouched: it writes `hits.tsv`, `hits_unique.tsv`,
+`hits.bed` and `motif_report.tsv` uncompressed, and those are compressed
+afterward.
+
+### Calling hits
+
 [Fi-NeMo](https://github.com/kundajelab/Fi-NeMo) calls individual motif
 instances from attributions. By default it runs per experiment against that
 experiment's own `modisco/bpnet/{experiment}_{head}.modisco.h5` (the same

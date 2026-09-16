@@ -34,6 +34,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -102,8 +103,8 @@ def main():
     print(f"Before (pre-filter):  {before_path}")
     print(f"After (post-filter):  {after_path}\n")
 
-    before_counts = pd.read_csv(before_path, sep="\t", usecols=["motif_name"])["motif_name"].value_counts()
-    after_counts = pd.read_csv(after_path, sep="\t", usecols=["motif_name"])["motif_name"].value_counts()
+    before_counts = pd.read_csv(compressed_io.resolve(before_path), sep="\t", usecols=["motif_name"])["motif_name"].value_counts()
+    after_counts = pd.read_csv(compressed_io.resolve(after_path), sep="\t", usecols=["motif_name"])["motif_name"].value_counts()
 
     all_motifs = before_counts.index.union(after_counts.index)
     before_counts = before_counts.reindex(all_motifs, fill_value=0)

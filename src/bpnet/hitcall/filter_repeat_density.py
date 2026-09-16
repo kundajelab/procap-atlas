@@ -46,6 +46,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -191,7 +192,7 @@ def main():
         print("No dense same-motif clusters found; nothing dropped.")
 
     out_path = hits_dir / "hits_dedensified.tsv"
-    kept.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(kept, out_path)
     print(f"\nWrote {len(kept)} hits to {out_path}")
 
 

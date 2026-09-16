@@ -33,6 +33,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -130,12 +131,12 @@ def main():
 
             hits_dedensified = hits_dir / "hits_dedensified.tsv"
             hits_unique = hits_dir / "hits_unique.tsv"
-            if not hits_dedensified.exists() and not hits_unique.exists():
+            if not compressed_io.exists(hits_dedensified) and not compressed_io.exists(hits_unique):
                 skipped_missing += 1
                 continue
 
             hits_confidence_filtered = hits_dir / "hits_confidence_filtered.tsv"
-            if hits_confidence_filtered.exists():
+            if compressed_io.exists(hits_confidence_filtered):
                 skipped_done += 1
                 continue
 

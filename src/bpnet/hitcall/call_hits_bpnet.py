@@ -67,6 +67,8 @@ import pandas as pd
 import yaml
 from tangermeme.io import extract_loci
 
+import compressed_io
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 CHROM_SPLITS_PATH = REPO_ROOT / "configs" / "chrom_splits.yaml"
@@ -109,12 +111,18 @@ def resolve_hits_path(hits_dir, stages=HITS_FILE_STAGES, verbose=False):
     looks preferable by name alone -- report_bpnet.py and friends would keep
     reading it and never see the rerun's effect at all.
     """
-    paths = [hits_dir / name for name in stages]
+    # Resolve each stage to whichever of its plain/.gz forms is present, so a
+    # partially compressed tree still resolves. Staleness is then compared on
+    # the files that actually exist, which is the same check as before.
+    paths = [
+        compressed_io.resolve(hits_dir / name, missing_ok=True) for name in stages
+    ]
     for i, path in enumerate(paths):
-        if not path.exists():
+        if path is None:
             continue
         stale_against = next(
-            (later for later in paths[i + 1 :] if later.exists() and later.stat().st_mtime > path.stat().st_mtime),
+            (later for later in paths[i + 1 :]
+             if later is not None and later.stat().st_mtime > path.stat().st_mtime),
             None,
         )
         if stale_against is not None:
@@ -181,7 +189,7 @@ def build_peaks_narrowpeak(peaks_path, chrom_splits, out_path):
             "summit": 0,
         }
     )
-    narrowpeak.to_csv(out_path, sep="\t", header=False, index=False)
+    compressed_io.write_bgzip(narrowpeak, out_path)
     return len(narrowpeak)
 
 
@@ -359,7 +367,9 @@ def main():
     out_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    peaks_narrowpeak = out_dir / "peaks.narrowPeak"
+    # bgzipped. `finemo extract-regions` reads this with polars.scan_csv,
+    # which decompresses gzip transparently; bgzip is a valid gzip stream.
+    peaks_narrowpeak = compressed_io.compressed_name(out_dir / "peaks.narrowPeak")
     regions_npz = out_dir / "regions.npz"
     if regions_npz.exists() and zipfile.is_zipfile(regions_npz):
         print(f"Reusing existing {regions_npz}")
