@@ -20,7 +20,10 @@ import pybigtools
 import torch
 import yaml
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
-from src.bpnet.attribute.attribute_bpnet import DEEPLIFT_NONLINEAR_OPS
+from src.bpnet.attribute.attribute_bpnet import (
+    DEEPLIFT_NONLINEAR_OPS,
+    nucleotide_frequency_references,
+)
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
 from tangermeme.annotate import annotate_seqlets
@@ -195,6 +198,30 @@ def region_input(resources: dict, region: str) -> tuple[str, int, int, int, torc
     return chrom, start, end, center, X.float()
 
 
+def best_device() -> str:
+    """The fastest available torch device: CUDA, then Apple Metal, then CPU.
+
+    MPS is a real speedup over CPU on Apple silicon and gives attributions
+    matching CPU to float32 rounding (~1e-7 on this path). It has no float64,
+    but nothing here needs it on-device -- the fold accumulators are numpy,
+    on the host.
+    """
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+def free_device_memory() -> None:
+    """Drop a fold model's cached allocations between folds."""
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    elif torch.backends.mps.is_available():
+        torch.mps.empty_cache()
+
+
 def region_inputs(
     resources: dict, regions: list[str]
 ) -> tuple[pd.DataFrame, torch.Tensor]:
@@ -242,12 +269,6 @@ def region_inputs(
             "or more fall off a chromosome end or contain N"
         )
     return records, X.float()
-
-
-def nucleotide_frequency_references(X: torch.Tensor) -> torch.Tensor:
-    """Create one soft reference from the input-wide A/C/G/T frequencies."""
-    frequencies = X.float().mean(dim=-1, keepdim=True)
-    return frequencies.expand_as(X).unsqueeze(1).clone()
 
 
 def logo_offsets_for_locus(
@@ -304,9 +325,7 @@ def ensemble_predictions(
         logits_sum += logits
         log_counts_sum += log_counts
         del model
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        free_device_memory()
     mean_logits = logits_sum / n_folds
     mean_log_counts = log_counts_sum / n_folds
     return count_scaled_profile(mean_logits, mean_log_counts).astype(np.float32)
@@ -816,7 +835,6 @@ def deeplift_attributions_batch(
     use `region_inputs` and group by width, or pass the widest window and
     slice afterwards.
     """
-    references = nucleotide_frequency_references(X)
     attributions = {"profile": [], "count": []}
     for fold, path in enumerate(resources["model_paths"][:n_folds]):
         print(f"DeepLIFT fold {fold + 1}/{n_folds} "
@@ -827,7 +845,14 @@ def deeplift_attributions_batch(
             attr = deep_lift_shap(
                 model=wrapper,
                 X=X,
-                references=references,
+                # Passed as a *callable*, not a prebuilt tensor.
+                # tangermeme only one-hot-validates Tensor references, so a
+                # soft PFM tensor is rejected outright ("references must be
+                # one-hot encoded"); a callable is invoked internally and
+                # skips that check. This is what c3cbb07 fixed in production,
+                # which is why the local soft-reference fork of
+                # deep_lift_shap could be deleted.
+                references=nucleotide_frequency_references,
                 n_shuffles=1,
                 batch_size=batch_size,
                 hypothetical=True,
@@ -843,9 +868,7 @@ def deeplift_attributions_batch(
             observed = as_numpy(attr * X)[:, :, logo_offsets[0] : logo_offsets[1]]
             attributions[head].append(observed)
         del model, wrappers
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        free_device_memory()
     return {head: np.mean(values, axis=0) for head, values in attributions.items()}
 
 

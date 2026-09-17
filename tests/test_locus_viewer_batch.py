@@ -244,9 +244,72 @@ def test_single_region_attributions_return_example_zero(resources, monkeypatch):
         assert np.allclose(single[head], batch[head][0])
 
 
-def test_references_are_built_per_example(resources):
-    """A batch must not share one reference across regions with different
-    base composition."""
+
+
+# --- device selection --------------------------------------------------------
+#
+# The notebook previously hardcoded `"cuda" if torch.cuda.is_available() else
+# "cpu"`, so an Apple-silicon machine fell back to CPU despite MPS being
+# available. Attributions on MPS match CPU to float32 rounding (~1e-7 on this
+# path), so there is no accuracy reason to skip it.
+
+
+def test_best_device_prefers_cuda(monkeypatch):
+    monkeypatch.setattr(lv.torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(lv.torch.backends.mps, "is_available", lambda: True)
+    assert lv.best_device() == "cuda"
+
+
+def test_best_device_falls_back_to_metal(monkeypatch):
+    monkeypatch.setattr(lv.torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(lv.torch.backends.mps, "is_available", lambda: True)
+    assert lv.best_device() == "mps"
+
+
+def test_best_device_falls_back_to_cpu(monkeypatch):
+    monkeypatch.setattr(lv.torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(lv.torch.backends.mps, "is_available", lambda: False)
+    assert lv.best_device() == "cpu"
+
+
+def test_free_device_memory_uses_the_matching_backend(monkeypatch):
+    """Calling torch.cuda.empty_cache() on an MPS box frees nothing, so a
+    long sweep would accumulate fold allocations."""
+    calls = []
+    monkeypatch.setattr(lv.torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(lv.torch.backends.mps, "is_available", lambda: True)
+    monkeypatch.setattr(lv.torch.cuda, "empty_cache", lambda: calls.append("cuda"))
+    monkeypatch.setattr(lv.torch.mps, "empty_cache", lambda: calls.append("mps"))
+    lv.free_device_memory()
+    assert calls == ["mps"]
+
+
+# --- soft PFM references -----------------------------------------------------
+
+
+def test_references_are_passed_as_a_callable_not_a_tensor():
+    """tangermeme only one-hot-validates *Tensor* references, and the soft PFM
+    baseline this viewer exists for is not one-hot -- passing a prebuilt
+    tensor raises "references must be one-hot encoded". A callable skips that
+    check. This is what c3cbb07 fixed in production, letting the local
+    soft-reference fork of deep_lift_shap be deleted."""
+    import inspect
+
+    source = inspect.getsource(lv.deeplift_attributions_batch)
+    assert "references=nucleotide_frequency_references," in source
+    assert "nucleotide_frequency_references(X)" not in source
+
+
+def test_reference_callable_matches_production():
+    """The viewer must not keep a divergent copy of the baseline."""
+    from src.bpnet.attribute.attribute_bpnet import (
+        nucleotide_frequency_references as production,
+    )
+
+    assert lv.nucleotide_frequency_references is production
+
+
+def test_reference_callable_is_per_example_and_soft():
     X = torch.zeros(3, 4, 8)
     X[0, 0] = 1.0
     X[1, 1] = 1.0

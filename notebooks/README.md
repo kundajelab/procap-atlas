@@ -14,7 +14,11 @@ plus/minus BigWigs, metadata, and hg38, then:
 - computes profile-head and count-head DeepLIFT/SHAP logos using the production
   observed-nucleotide-frequency soft reference and places the logos in the same
   summary figure as the tracks. All panels share the same genomic x tick
-  positions.
+  positions. The baseline is imported from
+  [`attribute_bpnet.py`](../src/bpnet/attribute/attribute_bpnet.py) and passed
+  to `deep_lift_shap` as a **callable**: tangermeme only one-hot-validates
+  *Tensor* references, so a prebuilt soft PFM tensor is rejected outright,
+  while a callable is invoked internally and skips that check.
 - optionally calls seqlets in the displayed logo window and annotates them
   against a MEME motif database with tangermeme and memelite.
 
@@ -27,6 +31,15 @@ controls display-only symmetric clipping of observed and predicted tracks, for
 example `200` for `[-200, 200]` or `None` for the full range. `SHOW_SEQLETS`
 overlays called seqlets on the logo panels and annotates them when
 `SEQLET_MOTIF_PATH` points to an available MEME motif file.
+
+### Device selection
+
+`DEVICE = best_device()` picks CUDA, then **Apple Metal (`mps`)**, then CPU.
+MPS is a real speedup over CPU on Apple silicon, and attributions there match
+CPU to float32 rounding (~1e-7 on this path), so there is no accuracy reason
+to avoid it. MPS has no float64, but nothing here needs it on-device — the
+fold accumulators are numpy, on the host. Override `DEVICE` by hand in the
+configuration cell if you want to force one.
 
 ### Sweeping many regions
 
