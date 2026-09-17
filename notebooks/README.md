@@ -28,6 +28,30 @@ example `200` for `[-200, 200]` or `None` for the full range. `SHOW_SEQLETS`
 overlays called seqlets on the logo panels and annotates them when
 `SEQLET_MOTIF_PATH` points to an available MEME motif file.
 
+### Sweeping many regions
+
+The cells above run one region at a time. The final **Multi-region sweep**
+section batches instead, for comparisons across many regions — alternate TSSs
+of a gene, for instance:
+
+- `region_inputs(resources, regions)` extracts all inputs in one
+  `extract_loci` call and returns a record frame aligned row-for-row with the
+  `(N, 4, 2114)` batch, so predictions and attributions index the same way;
+- `ensemble_predictions(...)` returns `(N, ...)` and
+  `deeplift_attributions_batch(...)` returns `{head: (N, 4, W)}`.
+
+Both make the fold model the **outer** loop, so all seven load once for the
+whole batch rather than once per region: a sweep over N regions costs 7 model
+loads, not 7N. Peak memory is unchanged — still one model resident at a time.
+The single-region `ensemble_prediction`/`deeplift_attributions` now delegate to
+these and return example 0, so existing cells behave identically.
+
+Every region in one call must share a width, since `logo_offsets` is shared
+across the batch; group by width and call once per group otherwise. To sweep
+experiments as well, loop over `EXP_ID` and call `setup_experiment` per
+experiment — downloads are cached in `WORK_DIR`, so only the first pass pays
+for them.
+
 Open the notebook through the Colab badge in the first cell for the default
 workflow. The setup cell detects Colab, clones this repository into
 `/content/procap-atlas`, installs the notebook runtime dependencies with `pip`,

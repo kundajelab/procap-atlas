@@ -20,6 +20,7 @@ import pybigtools
 import torch
 import yaml
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
+from src.bpnet.attribute.attribute_bpnet import DEEPLIFT_NONLINEAR_OPS
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
 from tangermeme.annotate import annotate_seqlets
@@ -28,7 +29,7 @@ from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
 from tangermeme.seqlet import recursive_seqlets
 
-from src.bpnet.attribute.deeplift import deep_lift_shap
+from tangermeme.deep_lift_shap import deep_lift_shap
 from src.bpnet.attribute.locus_diagnostics import (
     as_numpy,
     genomic_offsets,
@@ -194,6 +195,55 @@ def region_input(resources: dict, region: str) -> tuple[str, int, int, int, torc
     return chrom, start, end, center, X.float()
 
 
+def region_inputs(
+    resources: dict, regions: list[str]
+) -> tuple[pd.DataFrame, torch.Tensor]:
+    """Extract model inputs for many regions at once.
+
+    Returns a frame of one row per region (`region`, `chrom`, `start`, `end`,
+    `center`, `logo_start`, `logo_end`, `logo_offsets`) aligned row-for-row
+    with the returned `(N, 4, IN_WINDOW)` batch, so downstream results index
+    the same way.
+
+    `extract_loci` is called once for the whole set rather than per region,
+    and the batch then feeds `ensemble_predictions`/`deeplift_attributions_batch`,
+    which load each fold model once for the entire batch instead of once per
+    region. That is the difference between 7 model loads and 7N.
+    """
+    rows = []
+    for region in regions:
+        chrom, start, end = parse_interval(region)
+        _, logo_start, logo_end, offsets = logo_offsets_for_region(region)
+        rows.append({
+            "region": region,
+            "chrom": chrom,
+            "start": start,
+            "end": end,
+            "center": interval_center(start, end),
+            "logo_start": logo_start,
+            "logo_end": logo_end,
+            "logo_offsets": offsets,
+        })
+    records = pd.DataFrame(rows)
+    loci = pd.DataFrame({
+        "chrom": records["chrom"],
+        "start": records["center"],
+        "end": records["center"] + 1,
+    })
+    X = extract_loci(
+        loci,
+        sequences=str(resources["fasta"]),
+        in_window=IN_WINDOW,
+        ignore=["N", "n"],
+    )
+    if len(X) != len(records):
+        raise ValueError(
+            f"extract_loci returned {len(X)} of {len(records)} regions; one "
+            "or more fall off a chromosome end or contain N"
+        )
+    return records, X.float()
+
+
 def nucleotide_frequency_references(X: torch.Tensor) -> torch.Tensor:
     """Create one soft reference from the input-wide A/C/G/T frequencies."""
     frequencies = X.float().mean(dim=-1, keepdim=True)
@@ -219,27 +269,35 @@ def logo_offsets_for_region(region: str) -> tuple[str, int, int, tuple[int, int]
     return chrom, start, end, offsets
 
 
-def model_outputs(
-    model: torch.nn.Module, X: torch.Tensor, device: str
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return profile logits and log-count predictions for one model."""
-    logits, log_counts = predict(model=model, X=X, batch_size=1, device=device)
-    return as_numpy(logits).astype(np.float32), as_numpy(log_counts).astype(np.float32)
-
-
-def ensemble_prediction(
+def ensemble_predictions(
     resources: dict,
     X: torch.Tensor,
     n_folds: int,
     device: str,
+    batch_size: int = 8,
 ) -> np.ndarray:
-    """Average fold model outputs before converting to count-scaled predictions."""
+    """Fold-averaged count-scaled profiles for a batch of inputs, `(N, ...)`.
+
+    Folds are the outer loop and regions the inner one, so each fold model is
+    loaded exactly once for the whole batch. Peak memory is unchanged -- still
+    one model resident at a time -- but a sweep over N regions costs 7 loads
+    rather than 7N.
+
+    Averaging happens on logits and log-counts *before* `count_scaled_profile`,
+    matching the single-region path: averaging count-scaled profiles instead
+    would weight folds by their predicted depth.
+    """
     logits_sum = None
     log_counts_sum = None
     for fold, path in enumerate(resources["model_paths"][:n_folds]):
-        print(f"Predicting fold {fold + 1}/{n_folds}: {path.name}")
+        print(f"Predicting fold {fold + 1}/{n_folds} "
+              f"({len(X)} region(s)): {path.name}")
         model = torch.load(path, map_location="cpu", weights_only=False).eval()
-        logits, log_counts = model_outputs(model, X, device)
+        logits, log_counts = predict(
+            model=model, X=X, batch_size=batch_size, device=device
+        )
+        logits = as_numpy(logits).astype(np.float32)
+        log_counts = as_numpy(log_counts).astype(np.float32)
         if logits_sum is None:
             logits_sum = np.zeros_like(logits, dtype=np.float64)
             log_counts_sum = np.zeros_like(log_counts, dtype=np.float64)
@@ -251,7 +309,17 @@ def ensemble_prediction(
             torch.cuda.empty_cache()
     mean_logits = logits_sum / n_folds
     mean_log_counts = log_counts_sum / n_folds
-    return count_scaled_profile(mean_logits, mean_log_counts).astype(np.float32)[0]
+    return count_scaled_profile(mean_logits, mean_log_counts).astype(np.float32)
+
+
+def ensemble_prediction(
+    resources: dict,
+    X: torch.Tensor,
+    n_folds: int,
+    device: str,
+) -> np.ndarray:
+    """Fold-averaged count-scaled profile for a single-region input."""
+    return ensemble_predictions(resources, X, n_folds, device, batch_size=1)[0]
 
 
 def bigwig_values(path: Path, chrom: str, start: int, end: int) -> np.ndarray:
@@ -721,10 +789,38 @@ def deeplift_attributions(
     device: str,
 ) -> dict[str, np.ndarray]:
     """Compute fold-averaged profile/count DeepLIFT with a soft reference."""
+    return {
+        head: values[0]
+        for head, values in deeplift_attributions_batch(
+            resources, X, logo_offsets, n_folds, batch_size, device
+        ).items()
+    }
+
+
+def deeplift_attributions_batch(
+    resources: dict,
+    X: torch.Tensor,
+    logo_offsets: tuple[int, int],
+    n_folds: int,
+    batch_size: int,
+    device: str,
+) -> dict[str, np.ndarray]:
+    """Fold-averaged profile/count DeepLIFT for a batch, `{head: (N, 4, W)}`.
+
+    Folds outer, regions inner, so each fold model is loaded once for the
+    whole batch rather than once per region.
+
+    `logo_offsets` is shared across the batch: every input is centred on its
+    own region, so a fixed window on the input maps to each region's own
+    coordinates. Regions of differing widths therefore need separate calls --
+    use `region_inputs` and group by width, or pass the widest window and
+    slice afterwards.
+    """
     references = nucleotide_frequency_references(X)
     attributions = {"profile": [], "count": []}
     for fold, path in enumerate(resources["model_paths"][:n_folds]):
-        print(f"DeepLIFT fold {fold + 1}/{n_folds}: {path.name}")
+        print(f"DeepLIFT fold {fold + 1}/{n_folds} "
+              f"({len(X)} region(s)): {path.name}")
         model = torch.load(path, map_location="cpu", weights_only=False).eval()
         wrappers = {"profile": ProfileWrapper(model), "count": CountWrapper(model)}
         for head, wrapper in wrappers.items():
@@ -736,9 +832,15 @@ def deeplift_attributions(
                 batch_size=batch_size,
                 hypothetical=True,
                 warning_threshold=0.01,
+                # BPNet's wrappers contain _ProfileLogitScaling/_Log/_Exp,
+                # which DeepLIFT cannot decompose unless told they are
+                # nonlinearities. attribute_bpnet.py passes the same map, so
+                # notebook attributions match the production ones rather than
+                # silently differing.
+                additional_nonlinear_ops=DEEPLIFT_NONLINEAR_OPS,
                 device=device,
             )
-            observed = as_numpy(attr * X)[0, :, logo_offsets[0] : logo_offsets[1]]
+            observed = as_numpy(attr * X)[:, :, logo_offsets[0] : logo_offsets[1]]
             attributions[head].append(observed)
         del model, wrappers
         gc.collect()
