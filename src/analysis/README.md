@@ -123,7 +123,10 @@ the table is which script produces which piece of evidence.
 **All reported results are from the `count` head.** Both
 `plot_motif_rarefaction.py` and `motif_group_concentration.py` default to
 `--head profile`, so every manuscript command below passes `--head count`
-explicitly. The profile head is not yet built (see Pending below).
+explicitly. The profile head is built as of Sep 2026 (MotifCompendium
+v1.1.0); before running a count-vs-profile contrast, confirm both heads agree
+on `mc_version` and `cluster_reference` in `cluster_metadata.tsv`, or the
+contrast confounds head with clustering algorithm.
 
 | Proposed panel | Script | Status |
 | --- | --- | --- |
@@ -133,7 +136,7 @@ explicitly. The profile head is not yet built (see Pending below).
 | Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
 | Supp — concentration at JASPAR-name level | `plot_figure2.py --collapse-concentration` | done, `figure2_count_s_concentration_jaspar_name.pdf` |
 | Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
-| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; 3 of 4 panel plotters unwritten |
+| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure** |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
 
 Figure 1e already shows a neuron-specific gene carrying neuron-specific
@@ -209,10 +212,12 @@ Three claims were checked and **withdrawn**; do not reintroduce them:
 
 #### Pending
 
-- **Profile-head compendium.** The count-vs-profile concentration contrast is
-  the falsifiable test of the manuscript's two-lexicon claim, and it needs no
-  Fi-NeMo output. Build it with the same `--min-reads` default (0, all 219
-  experiments) so the contrast compares *heads*, not experiment sets.
+- **Count-vs-profile concentration contrast.** The falsifiable test of the
+  manuscript's two-lexicon claim, and it needs no Fi-NeMo output. Both heads
+  are now built, so this is unblocked — but check that they share
+  `mc_version`, `cluster_reference` and both thresholds first, and that they
+  cover the same experiment set, so the contrast compares *heads* rather
+  than clustering settings or inputs.
 - **`motif_hit_density.py` has never been run on real data.** It is tested
   against synthetic fixtures only. It reads per-experiment `hits_linked.tsv`,
   which requires `hitcall/launch_link.py --head count` first.
