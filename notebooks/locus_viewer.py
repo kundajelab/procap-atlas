@@ -1104,7 +1104,7 @@ def plot_dual_locus_summary(
     ticks = shared_ticks(x_limits)
     width, unit_height = SUMMARY_FIGURE_SIZE_IN
     fig, axes = plt.subplots(
-        8, 1, figsize=(width, unit_height * 2.4),
+        8, 1, figsize=(width, unit_height * 4.8),
         gridspec_kw={"height_ratios": [1.1, 1.1, 1.0, 1.0] * 2},
     )
 
