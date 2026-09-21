@@ -427,3 +427,104 @@ def test_deeplift_attributions_never_scales_the_returned_dict(
     out = lv.deeplift_attributions(resources, X, (0, 10), 7, 4, "cpu")
     assert np.allclose(out["count"], 1.0)
     assert np.allclose(out["profile"], 1.0)
+
+
+def test_n_reads_path_is_independent_of_cwd():
+    """The bug this guards: Path("configs/n_reads.txt") resolves against the
+    process cwd, and Jupyter on Sherlock/OnDemand opens with cwd set to the
+    notebook's own directory (notebooks/), not the repo root -- silently
+    missing the file there while working fine after Colab's clone-and-chdir.
+    Resolving off __file__ must be correct regardless of caller cwd."""
+    assert lv.N_READS_PATH.is_absolute()
+    assert lv.N_READS_PATH == (
+        Path(lv.__file__).resolve().parent.parent / "configs" / "n_reads.txt"
+    )
+
+
+# --- DeepLIFT y-axis clipping -------------------------------------------------
+#
+# Only observed/predicted coverage had an adjustable max (TRACK_VALUE_CLIP);
+# DeepLIFT panels always autoscaled to their own data, which silently erases
+# a genuine difference in attribution magnitude when comparing two
+# independently-rendered panels side by side.
+
+
+def test_plot_logo_panel_sets_a_symmetric_ylim(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    fig, ax = plt.subplots()
+    lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10, value_clip=0.05)
+    assert ax.get_ylim() == pytest.approx((-0.05, 0.05))
+    plt.close(fig)
+
+
+def test_plot_logo_panel_default_does_not_touch_ylim(monkeypatch):
+    """No value_clip must reproduce the pre-existing autoscale behaviour."""
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    fig, ax = plt.subplots()
+    before = ax.get_ylim()
+    lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10)
+    assert ax.get_ylim() == before
+    plt.close(fig)
+
+
+def test_plot_logo_panel_rejects_a_non_positive_clip(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="positive"):
+        lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10, value_clip=0.0)
+    plt.close(fig)
+
+
+def test_plot_logo_panel_never_mutates_the_matrix(monkeypatch):
+    """Unlike clip_track_values, a logo clip only moves the axes boundary --
+    the underlying attribution values are never truncated."""
+    import matplotlib.pyplot as plt
+
+    captured = {}
+    monkeypatch.setattr(
+        lv, "plot_logo",
+        lambda tensor, ax=None, **kw: captured.setdefault("matrix", tensor.numpy()),
+    )
+    fig, ax = plt.subplots()
+    matrix = np.full((4, 10), 5.0)
+    lv.plot_logo_panel(ax, matrix, "t", 0, 10, value_clip=0.01)
+    assert np.allclose(captured["matrix"], 5.0)
+    plt.close(fig)
+
+
+def test_deeplift_logos_clip_independently_per_head(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "oriented_logo_matrix", lambda m, rc: m)
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    attributions = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
+    fig, axes = lv.plot_deeplift_logos(
+        attributions, "EXP", "chr1:1-10", 0, 10,
+        logo_value_clip={"profile": 0.02, "count": 0.5},
+    )
+    assert axes[0].get_ylim() == pytest.approx((-0.02, 0.02))
+    assert axes[1].get_ylim() == pytest.approx((-0.5, 0.5))
+    plt.close(fig)
+
+
+def test_deeplift_logos_missing_head_in_clip_dict_autoscales(monkeypatch):
+    """A dict giving only one head's clip must leave the other on autoscale,
+    not error or fall back to some shared default."""
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "oriented_logo_matrix", lambda m, rc: m)
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    attributions = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
+    fig, axes = lv.plot_deeplift_logos(
+        attributions, "EXP", "chr1:1-10", 0, 10,
+        logo_value_clip={"count": 0.5},
+    )
+    assert axes[1].get_ylim() == pytest.approx((-0.5, 0.5))
+    assert axes[0].get_ylim() != pytest.approx((-0.5, 0.5))
+    plt.close(fig)

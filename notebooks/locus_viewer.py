@@ -49,9 +49,13 @@ REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysi
 IN_WINDOW = 2114
 OUT_WINDOW = 1000
 # Checked into git (unlike experiment_config.yaml, which is fetched from
-# HuggingFace because it can be regenerated); a local relative path works both
-# after the Colab setup cell's git clone and on a Sherlock/OnDemand checkout.
-N_READS_PATH = Path("configs/n_reads.txt")
+# HuggingFace because it can be regenerated), so it is resolved off __file__
+# rather than cwd -- this module always lives at <repo_root>/notebooks/, but
+# the *process* cwd is not reliably the repo root. A bare "configs/n_reads.txt"
+# would resolve fine after the Colab setup cell's clone-and-chdir, but Jupyter
+# on Sherlock/OnDemand opens with cwd set to the notebook's own directory
+# (notebooks/), not the repo root, which would silently miss the file.
+N_READS_PATH = Path(__file__).resolve().parent.parent / "configs" / "n_reads.txt"
 POINTS_PER_INCH = 72
 SUMMARY_FIGURE_SIZE_PT = (570, 120)
 SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
@@ -738,8 +742,21 @@ def plot_logo_panel(
     show_tick_labels: bool = False,
     show_title: bool = True,
     seqlet_annotations: pd.DataFrame | None = None,
+    value_clip: float | None = None,
 ) -> None:
-    """Draw one DeepLIFT logo panel with genomic coordinate ticks."""
+    """Draw one DeepLIFT logo panel with genomic coordinate ticks.
+
+    `value_clip` fixes the y-axis to `(-value_clip, value_clip)` instead of
+    autoscaling to this panel's own data. It does not touch `matrix` -- a
+    letter taller than the clip is drawn in full and cut off by the axes
+    boundary (standard matplotlib clip-to-axes behaviour), not numerically
+    truncated -- so unlike `clip_track_values` this never changes what was
+    computed, only what window of it is visible. That matters for comparing
+    two independently-rendered logo panels (e.g. two experiments at the same
+    locus): each autoscales to its own max by default, which visually erases
+    a real difference in attribution magnitude between them unless both are
+    pinned to the same range.
+    """
     plot_kwargs = {}
     if seqlet_annotations is not None and not seqlet_annotations.empty:
         plot_kwargs = {
@@ -756,6 +773,10 @@ def plot_logo_panel(
         ax.set_xlim(*x_limits)
         if ticks is not None:
             apply_shared_ticks(ax, ticks, show_labels=show_tick_labels)
+    if value_clip is not None:
+        if value_clip <= 0:
+            raise ValueError("value_clip must be positive or None")
+        ax.set_ylim(-value_clip, value_clip)
     emphasize_left_y_axis(ax)
 
 
@@ -773,6 +794,7 @@ def plot_locus_summary(
     track_value_clip: float | None = None,
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
     cpm_scale: float | None = None,
+    logo_value_clip: dict[str, float] | None = None,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure.
 
@@ -782,7 +804,13 @@ def plot_locus_summary(
     in raw units for `save_locus_viewer_outputs` to persist unchanged.
     Profile DeepLIFT explains a softmax output (depth-independent by
     construction) and is never scaled.
+
+    `logo_value_clip` is `{"profile": clip_or_None, "count": clip_or_None}`,
+    fixing each DeepLIFT panel's y-axis instead of autoscaling it to this
+    figure's own data -- see `plot_logo_panel`. Each head needs its own value
+    since profile and count DeepLIFT are on unrelated scales.
     """
+    logo_value_clip = logo_value_clip or {}
     tracks = track_arrays(
         prediction, resources, point_region, view_region, reverse_complement,
         cpm_scale,
@@ -866,6 +894,7 @@ def plot_locus_summary(
             show_tick_labels=ax is axes[-1],
             show_title=False,
             seqlet_annotations=annotations,
+            value_clip=logo_value_clip.get(head),
         )
     for ax in axes[:-1]:
         apply_compact_summary_axis_style(ax)
@@ -980,12 +1009,19 @@ def plot_deeplift_logos(
     reverse_complement: bool = False,
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
     cpm_scale: float | None = None,
+    logo_value_clip: dict[str, float] | None = None,
 ):
     """Plot profile/count DeepLIFT logos for the selected logo interval.
 
     `cpm_scale` scales the drawn count-head matrix only, matching
     `plot_locus_summary`; `attributions` itself is left untouched.
+
+    `logo_value_clip` is `{"profile": clip_or_None, "count": clip_or_None}`,
+    i.e. one value per head rather than a single shared value -- profile and
+    count DeepLIFT are on unrelated scales (see `cpm_scale_for`), so a shared
+    clip would either do nothing on one head or hide everything on the other.
     """
+    logo_value_clip = logo_value_clip or {}
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.5), sharex=True)
     for ax, head in zip(axes, ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
@@ -1002,6 +1038,7 @@ def plot_deeplift_logos(
             logo_end,
             reverse_complement,
             seqlet_annotations=annotations,
+            value_clip=logo_value_clip.get(head),
         )
     fig.suptitle(f"{exp_id} {logo_region}")
     fig.tight_layout()
@@ -1023,14 +1060,15 @@ def save_locus_viewer_outputs(
     track_value_clip: float | None = None,
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
     cpm_scale: float | None = None,
+    logo_value_clip: dict[str, float] | None = None,
 ) -> None:
     """Save the current viewer figures and arrays for offline inspection.
 
     `prediction` and `attributions` are saved to `locus_viewer_arrays.npz` in
-    their original (raw) units regardless of `cpm_scale` -- only the rendered
-    figure is scaled -- matching `clip_track_arrays`, which also never
-    mutates the arrays it is given. Raw values stay reproducible even when
-    the figure is display-scaled.
+    their original (raw) units regardless of `cpm_scale`/`logo_value_clip` --
+    only the rendered figure is scaled/clipped -- matching
+    `clip_track_arrays`, which also never mutates the arrays it is given. Raw
+    values stay reproducible even when the figure is display-scaled.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_locus_summary(
@@ -1047,6 +1085,7 @@ def save_locus_viewer_outputs(
         track_value_clip,
         seqlet_annotations,
         cpm_scale,
+        logo_value_clip,
     )[0].savefig(
         output_dir / "locus_viewer_summary.pdf",
         bbox_inches=None,

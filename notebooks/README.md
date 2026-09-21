@@ -64,6 +64,28 @@ holds raw values regardless of how a figure was rendered -- matching
 warns and returns `None`, which every scaling call site treats as "leave
 this raw" rather than failing the cell.
 
+### Adjustable DeepLIFT y-axis
+
+`LOGO_VALUE_CLIP` fixes each DeepLIFT panel's y-axis instead of letting it
+autoscale to that run's own data, mirroring `TRACK_VALUE_CLIP` for the
+coverage tracks. It is one value per head --
+`{"profile": 0.05, "count": 0.03}` -- rather than a single shared value,
+since profile and count DeepLIFT are on unrelated scales (see CPM scaling
+above); a head absent from the dict, or `None`, autoscales as before.
+
+This matters specifically when comparing two independently-rendered panels
+-- two experiments at the same locus, say. Each figure autoscales its
+DeepLIFT axes to its own data by default, which can visually erase a real
+difference in attribution magnitude between them unless both are pinned to
+the same range.
+
+Unlike `TRACK_VALUE_CLIP`, this never touches the underlying values. A
+letter taller than the clip is drawn in full and cut off by the axes
+boundary (ordinary matplotlib clip-to-axes behaviour) rather than
+numerically truncated, so a logo's shape past the clip is simply not shown
+-- nothing is corrupted the way clipping a stacked value before drawing it
+would be.
+
 ### Sweeping many regions
 
 The cells above run one region at a time. The final **Multi-region sweep**
