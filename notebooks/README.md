@@ -41,6 +41,29 @@ to avoid it. MPS has no float64, but nothing here needs it on-device — the
 fold accumulators are numpy, on the host. Override `DEVICE` by hand in the
 configuration cell if you want to force one.
 
+### CPM scaling
+
+Observed/predicted coverage and counts-head DeepLIFT are all on a raw-count
+scale that a library's sequencing depth moves directly, so comparing two
+experiments (a differential-locus panel, say) needs them on a common CPM
+footing first -- otherwise a difference in depth looks like a difference in
+biology. `cpm_scale_for(exp_id)` reads `configs/n_reads.txt` and returns
+`1e6 / total_reads`; the config cell computes it once as `cpm_scale` and
+passes it through to `save_locus_viewer_outputs`, which threads it into
+`plot_locus_summary`/`plot_deeplift_logos`.
+
+**Profile-head DeepLIFT is exempt.** It explains a softmax output -- a shape
+distribution, depth-independent by construction -- so scaling it by a
+depth-based factor would be meaningless, not merely unnecessary.
+
+Scaling happens only on the copy each plotting function draws, never on
+`prediction`/`attributions` themselves, so `locus_viewer_arrays.npz` always
+holds raw values regardless of how a figure was rendered -- matching
+`clip_track_arrays`, which makes the same choice for display clipping. If
+`configs/n_reads.txt` is missing or lacks the experiment, `cpm_scale_for`
+warns and returns `None`, which every scaling call site treats as "leave
+this raw" rather than failing the cell.
+
 ### Sweeping many regions
 
 The cells above run one region at a time. The final **Multi-region sweep**

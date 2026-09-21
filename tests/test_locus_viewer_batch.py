@@ -318,3 +318,112 @@ def test_reference_callable_is_per_example_and_soft():
     assert references.shape == (3, 1, 4, 8)
     assert references[0, 0, 0, 0] == 1.0
     assert references[1, 0, 0, 0] == 0.0
+
+
+# --- CPM scaling -------------------------------------------------------------
+#
+# Observed/predicted coverage and counts-head DeepLIFT are all on a raw-count
+# scale that library depth moves directly, so a cross-experiment comparison
+# needs them on a common CPM footing. Profile-head DeepLIFT explains a
+# softmax output -- a shape distribution, depth-independent by construction
+# -- and must never be scaled. Scaling happens only on the locally drawn
+# copies inside the plotting functions, never on the arrays saved to
+# locus_viewer_arrays.npz, so raw values stay reproducible regardless of how
+# a figure was rendered.
+
+
+def test_cpm_scale_for_reads_total_reads(tmp_path):
+    n_reads = tmp_path / "n_reads.txt"
+    n_reads.write_text("experiment\tbiosample\ttotal_reads\n"
+                       "ENCSR342WAR\tneuron\t50000000\n")
+    assert lv.cpm_scale_for("ENCSR342WAR", n_reads) == pytest.approx(1e6 / 5e7)
+
+
+def test_cpm_scale_for_missing_file_warns_and_returns_none(tmp_path):
+    with pytest.warns(UserWarning, match="not found"):
+        result = lv.cpm_scale_for("ENCSR342WAR", tmp_path / "missing.txt")
+    assert result is None
+
+
+def test_cpm_scale_for_missing_experiment_warns_and_returns_none(tmp_path):
+    n_reads = tmp_path / "n_reads.txt"
+    n_reads.write_text("experiment\tbiosample\ttotal_reads\n"
+                       "ENCSR342WAR\tneuron\t50000000\n")
+    with pytest.warns(UserWarning, match="ENCSR083AMN"):
+        result = lv.cpm_scale_for("ENCSR083AMN", n_reads)
+    assert result is None
+
+
+def test_track_arrays_scales_all_four_tracks(resources, monkeypatch):
+    monkeypatch.setattr(
+        lv, "extract_loci", lambda loci, **kw: torch.zeros(1, 4, IN_WINDOW)
+    )
+    monkeypatch.setattr(
+        lv, "bigwig_values",
+        lambda path, chrom, start, end: np.full(end - start, 2.0),
+    )
+    prediction = np.full((2, lv.OUT_WINDOW), 3.0)
+    region = "chr1:1000-1099"
+    resources_local = dict(resources, fasta="x")
+    resources_local["observed"] = {"plus": "p.bw", "minus": "m.bw"}
+
+    raw = lv.track_arrays(prediction, resources_local, region, region)
+    scaled = lv.track_arrays(prediction, resources_local, region, region,
+                             cpm_scale=10.0)
+    for key in ("observed_plus", "observed_minus", "predicted_plus",
+               "predicted_minus"):
+        assert np.allclose(scaled[key], raw[key] * 10.0)
+
+
+def test_track_arrays_default_is_unscaled(resources, monkeypatch):
+    """No cpm_scale given must reproduce the pre-existing raw behaviour."""
+    monkeypatch.setattr(
+        lv, "bigwig_values",
+        lambda path, chrom, start, end: np.full(end - start, 5.0),
+    )
+    prediction = np.full((2, lv.OUT_WINDOW), 7.0)
+    region = "chr1:1000-1099"
+    resources_local = dict(resources)
+    resources_local["observed"] = {"plus": "p.bw", "minus": "m.bw"}
+    tracks = lv.track_arrays(prediction, resources_local, region, region)
+    assert np.allclose(tracks["predicted_plus"], 7.0)
+    assert np.allclose(tracks["observed_plus"], 5.0)
+
+
+def test_count_logo_is_scaled_profile_logo_is_not(monkeypatch):
+    """The one rule this whole feature exists to enforce."""
+    monkeypatch.setattr(lv, "oriented_logo_matrix", lambda m, rc: m.copy())
+    drawn = {}
+
+    def fake_panel(ax, matrix, title, *a, **kw):
+        drawn[title.split()[0]] = matrix
+
+    monkeypatch.setattr(lv, "plot_logo_panel", fake_panel)
+    attributions = {
+        "profile": np.ones((4, 20)),
+        "count": np.ones((4, 20)),
+    }
+    fig, axes = lv.plot_deeplift_logos(
+        attributions, "EXP", "chr1:1-20", 0, 20, cpm_scale=10.0
+    )
+    assert np.allclose(drawn["profile"], 1.0)
+    assert np.allclose(drawn["count"], 10.0)
+
+
+def test_deeplift_attributions_never_scales_the_returned_dict(
+    resources, monkeypatch
+):
+    """attributions themselves stay raw; only the drawn copy is scaled.
+    save_locus_viewer_outputs persists this dict verbatim to
+    locus_viewer_arrays.npz, so scaling it here would corrupt the saved
+    raw record."""
+    monkeypatch.setattr(lv.torch, "load", CountingLoader(lambda name: 0.0))
+    monkeypatch.setattr(lv, "ProfileWrapper", lambda model: model)
+    monkeypatch.setattr(lv, "CountWrapper", lambda model: model)
+    monkeypatch.setattr(
+        lv, "deep_lift_shap", lambda model=None, X=None, **kw: torch.ones_like(X)
+    )
+    X = torch.ones(1, 4, IN_WINDOW)
+    out = lv.deeplift_attributions(resources, X, (0, 10), 7, 4, "cpu")
+    assert np.allclose(out["count"], 1.0)
+    assert np.allclose(out["profile"], 1.0)

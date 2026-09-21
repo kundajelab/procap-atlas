@@ -6,6 +6,7 @@ import gc
 import gzip
 import os
 import shutil
+import warnings
 import urllib.request
 from pathlib import Path
 
@@ -47,6 +48,10 @@ METADATA_REPO_ID = "adamyhe/procap-atlas-metadata"
 REFERENCE_FASTA_URL = "https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz"
 IN_WINDOW = 2114
 OUT_WINDOW = 1000
+# Checked into git (unlike experiment_config.yaml, which is fetched from
+# HuggingFace because it can be regenerated); a local relative path works both
+# after the Colab setup cell's git clone and on a Sherlock/OnDemand checkout.
+N_READS_PATH = Path("configs/n_reads.txt")
 POINTS_PER_INCH = 72
 SUMMARY_FIGURE_SIZE_PT = (570, 120)
 SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
@@ -222,6 +227,42 @@ def free_device_memory() -> None:
         torch.mps.empty_cache()
 
 
+def cpm_scale_for(exp_id: str, n_reads_path: Path = N_READS_PATH) -> float | None:
+    """1e6 / total_reads for `exp_id`, or None (with a warning) if unavailable.
+
+    Every track this notebook reads or predicts -- observed/predicted PRO-cap
+    coverage, and counts-head DeepLIFT -- is on a raw-count scale that a
+    library's sequencing depth moves directly. Comparing two experiments (a
+    differential-locus panel) without this is comparing depth as much as
+    biology; two libraries at similar depth make it look harmless, but that
+    is a coincidence of which experiments were picked, not something to rely
+    on. Profile-head DeepLIFT is exempt: it explains a softmax output, a
+    shape/probability distribution that is depth-independent by
+    construction, so multiplying it by a depth-based factor would be
+    meaningless rather than merely unnecessary.
+
+    Returns None rather than raising so a locus can still be viewed (in raw
+    units, with a clear warning) if the read-depth table is missing --
+    matches the graceful-degradation style already used for
+    SEQLET_MOTIF_PATH.
+    """
+    if not n_reads_path.exists():
+        warnings.warn(
+            f"{n_reads_path} not found; showing raw (non-CPM) values. Depth "
+            "differences between experiments are not accounted for."
+        )
+        return None
+    table = pd.read_csv(n_reads_path, sep="\t")
+    row = table.loc[table["experiment"] == exp_id]
+    if not len(row):
+        warnings.warn(
+            f"{exp_id} has no entry in {n_reads_path}; showing raw "
+            "(non-CPM) values."
+        )
+        return None
+    return 1e6 / float(row["total_reads"].iloc[0])
+
+
 def region_inputs(
     resources: dict, regions: list[str]
 ) -> tuple[pd.DataFrame, torch.Tensor]:
@@ -353,8 +394,15 @@ def track_arrays(
     center_region: str,
     view_region: str,
     reverse_complement: bool = False,
+    cpm_scale: float | None = None,
 ) -> dict[str, np.ndarray]:
-    """Return observed and predicted plus/minus tracks for the view interval."""
+    """Return observed and predicted plus/minus tracks for the view interval.
+
+    `cpm_scale` (from `cpm_scale_for`) is applied to all four tracks, since
+    both observed coverage and predicted coverage are on the same raw-count
+    scale. `None` (the default) leaves values raw, for callers that have not
+    opted in.
+    """
     chrom, center = region_center(center_region)
     view_chrom, start, end = parse_interval(view_region)
     if view_chrom != chrom:
@@ -373,6 +421,11 @@ def track_arrays(
     observed_minus = -np.abs(
         bigwig_values(resources["observed"]["minus"], chrom, start, end)
     )
+    if cpm_scale is not None:
+        predicted_plus = predicted_plus * cpm_scale
+        predicted_minus = predicted_minus * cpm_scale
+        observed_plus = observed_plus * cpm_scale
+        observed_minus = observed_minus * cpm_scale
     x = np.arange(start + 1, end + 1)
     lengths = {
         len(x),
@@ -439,12 +492,18 @@ def format_track_axis(
     track_value_clip: float | None = None,
     show_title: bool = True,
     show_legend: bool = True,
+    cpm_scaled: bool = False,
 ) -> None:
-    """Apply shared formatting to one plus/minus signal track axis."""
+    """Apply shared formatting to one plus/minus signal track axis.
+
+    `cpm_scaled` only changes the label -- the caller is responsible for
+    having actually multiplied the plotted values by `cpm_scale_for(...)`.
+    A mismatch between the two would mislabel raw counts as RPM.
+    """
     ax.set_xlim(x[0], x[-1])
     if show_title:
         ax.set_title(title)
-    ylabel = "PRO-cap signal"
+    ylabel = "PRO-cap signal (RPM)" if cpm_scaled else "PRO-cap signal"
     if track_value_clip is not None:
         ylabel = f"{ylabel} (clipped at {track_value_clip:g})"
     ax.set_ylabel(ylabel)
@@ -585,10 +644,12 @@ def plot_tracks(
     view_region: str,
     reverse_complement: bool = False,
     track_value_clip: float | None = None,
+    cpm_scale: float | None = None,
 ):
     """Plot observed and predicted PRO-cap signal on separate y scales."""
     tracks = track_arrays(
-        prediction, resources, point_region, view_region, reverse_complement
+        prediction, resources, point_region, view_region, reverse_complement,
+        cpm_scale,
     )
     tracks = clip_track_arrays(tracks, track_value_clip)
     x = tracks["x"]
@@ -608,7 +669,8 @@ def plot_tracks(
         linewidth=TRACK_SIGNAL_LINEWIDTH,
         label="observed minus",
     )
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}", track_value_clip)
+    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}",
+                      track_value_clip, cpm_scaled=cpm_scale is not None)
     axes[1].plot(
         x,
         tracks["predicted_plus"],
@@ -625,7 +687,8 @@ def plot_tracks(
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}", track_value_clip)
+    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}",
+                      track_value_clip, cpm_scaled=cpm_scale is not None)
     apply_shared_ticks(axes[0], ticks)
     apply_shared_ticks(axes[1], ticks, show_labels=True)
     axes[1].set_xlabel("Genomic position")
@@ -709,10 +772,20 @@ def plot_locus_summary(
     reverse_complement: bool = False,
     track_value_clip: float | None = None,
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
+    cpm_scale: float | None = None,
 ):
-    """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure."""
+    """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure.
+
+    `cpm_scale` (from `cpm_scale_for`) scales the observed/predicted coverage
+    tracks and the counts-DeepLIFT logo. It is applied only to the locally
+    drawn copies, not to `prediction`/`attributions` themselves, so those stay
+    in raw units for `save_locus_viewer_outputs` to persist unchanged.
+    Profile DeepLIFT explains a softmax output (depth-independent by
+    construction) and is never scaled.
+    """
     tracks = track_arrays(
-        prediction, resources, point_region, view_region, reverse_complement
+        prediction, resources, point_region, view_region, reverse_complement,
+        cpm_scale,
     )
     tracks = clip_track_arrays(tracks, track_value_clip)
     x = tracks["x"]
@@ -745,6 +818,7 @@ def plot_locus_summary(
         track_value_clip,
         show_title=False,
         show_legend=False,
+        cpm_scaled=cpm_scale is not None,
     )
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
@@ -770,10 +844,13 @@ def plot_locus_summary(
         track_value_clip,
         show_title=False,
         show_legend=False,
+        cpm_scaled=cpm_scale is not None,
     )
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
+        if head == "count" and cpm_scale is not None:
+            matrix = matrix * cpm_scale
         annotations = None
         if seqlet_annotations is not None:
             annotations = seqlet_annotations.get(head)
@@ -902,11 +979,18 @@ def plot_deeplift_logos(
     logo_end: int,
     reverse_complement: bool = False,
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
+    cpm_scale: float | None = None,
 ):
-    """Plot profile/count DeepLIFT logos for the selected logo interval."""
+    """Plot profile/count DeepLIFT logos for the selected logo interval.
+
+    `cpm_scale` scales the drawn count-head matrix only, matching
+    `plot_locus_summary`; `attributions` itself is left untouched.
+    """
     fig, axes = plt.subplots(2, 1, figsize=(14, 5.5), sharex=True)
     for ax, head in zip(axes, ["profile", "count"]):
         matrix = oriented_logo_matrix(attributions[head], reverse_complement)
+        if head == "count" and cpm_scale is not None:
+            matrix = matrix * cpm_scale
         annotations = None
         if seqlet_annotations is not None:
             annotations = seqlet_annotations.get(head)
@@ -938,8 +1022,16 @@ def save_locus_viewer_outputs(
     reverse_complement: bool = False,
     track_value_clip: float | None = None,
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
+    cpm_scale: float | None = None,
 ) -> None:
-    """Save the current viewer figures and arrays for offline inspection."""
+    """Save the current viewer figures and arrays for offline inspection.
+
+    `prediction` and `attributions` are saved to `locus_viewer_arrays.npz` in
+    their original (raw) units regardless of `cpm_scale` -- only the rendered
+    figure is scaled -- matching `clip_track_arrays`, which also never
+    mutates the arrays it is given. Raw values stay reproducible even when
+    the figure is display-scaled.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_locus_summary(
         prediction,
@@ -954,6 +1046,7 @@ def save_locus_viewer_outputs(
         reverse_complement,
         track_value_clip,
         seqlet_annotations,
+        cpm_scale,
     )[0].savefig(
         output_dir / "locus_viewer_summary.pdf",
         bbox_inches=None,
