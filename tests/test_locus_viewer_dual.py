@@ -293,3 +293,29 @@ def test_save_raw_arrays_round_trip(tmp_path):
     loaded = np.load(tmp_path / "locus_viewer_arrays.npz")
     assert np.allclose(loaded["prediction"], prediction)
     assert np.allclose(loaded["count_deeplift"], 2.0)
+
+
+# --- show_row_labels / show_seqlet_annotations --------------------------------
+
+
+def test_show_row_labels_false_suppresses_all_corner_labels(stub_tracks):
+    fig, axes = draw(show_row_labels=False)
+    for ax in axes:
+        assert row_label(ax) == ""
+
+
+def test_show_row_labels_true_is_the_default(stub_tracks):
+    fig, axes = draw()
+    for ax in axes:
+        assert row_label(ax) != ""
+
+
+def test_show_seqlet_annotations_false_does_not_affect_labels_or_scale(
+    stub_tracks,
+):
+    """The two toggles are independent: turning off seqlet drawing must not
+    also turn off row labels or change the computed axis scale."""
+    fig, axes = draw(show_seqlet_annotations=False)
+    for ax in axes:
+        assert row_label(ax) != ""
+    assert axes[0].get_ylim() == pytest.approx((-25.0 * 0.25, 25.0))

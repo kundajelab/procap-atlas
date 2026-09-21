@@ -661,3 +661,43 @@ def test_plot_locus_summary_track_ylim_is_independent_per_row(
     assert axes[0].get_ylim() == pytest.approx((-3.0 * 0.25, 3.0))
     assert axes[1].get_ylim() == pytest.approx((-40.0 * 0.25, 40.0))
     plt.close(fig)
+
+
+# --- show_seqlet_annotations --------------------------------------------------
+#
+# Independent of whether seqlet_annotations was computed at all: seqlets can
+# be called and exported to locus_viewer_seqlets.tsv without being drawn on a
+# particular render.
+
+
+def test_show_seqlet_annotations_false_suppresses_drawn_annotations(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    captured = {}
+    monkeypatch.setattr(
+        lv, "plot_logo",
+        lambda tensor, **kw: captured.update(kw),
+    )
+    fig, ax = plt.subplots()
+    annotations = pd.DataFrame({"start": [1], "end": [5], "attribution": [0.1]})
+    lv.plot_logo_panel(
+        ax, np.ones((4, 10)), "t", 0, 10,
+        seqlet_annotations=annotations, show_seqlet_annotations=False,
+    )
+    assert "annotations" not in captured
+    plt.close(fig)
+
+
+def test_show_seqlet_annotations_true_draws_them_by_default(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    captured = {}
+    monkeypatch.setattr(
+        lv, "plot_logo",
+        lambda tensor, **kw: captured.update(kw),
+    )
+    fig, ax = plt.subplots()
+    annotations = pd.DataFrame({"start": [1], "end": [5], "attribution": [0.1]})
+    lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10, seqlet_annotations=annotations)
+    assert "annotations" in captured
+    plt.close(fig)

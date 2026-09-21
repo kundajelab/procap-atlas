@@ -6,8 +6,8 @@ import gc
 import gzip
 import os
 import shutil
-import warnings
 import urllib.request
+import warnings
 from pathlib import Path
 
 cache_root = Path(os.environ.get("SCRATCH", "/tmp")) / ".cache"
@@ -21,19 +21,19 @@ import pybigtools
 import torch
 import yaml
 from bpnetlite.bpnet import CountWrapper, ProfileWrapper
-from src.bpnet.attribute.attribute_bpnet import (
-    DEEPLIFT_NONLINEAR_OPS,
-    nucleotide_frequency_references,
-)
 from huggingface_hub import hf_hub_download
 from pyfaidx import Fasta
 from tangermeme.annotate import annotate_seqlets
+from tangermeme.deep_lift_shap import deep_lift_shap
 from tangermeme.io import extract_loci, read_meme
 from tangermeme.plot import plot_logo
 from tangermeme.predict import predict
 from tangermeme.seqlet import recursive_seqlets
 
-from tangermeme.deep_lift_shap import deep_lift_shap
+from src.bpnet.attribute.attribute_bpnet import (
+    DEEPLIFT_NONLINEAR_OPS,
+    nucleotide_frequency_references,
+)
 from src.bpnet.attribute.locus_diagnostics import (
     as_numpy,
     genomic_offsets,
@@ -58,12 +58,16 @@ OUT_WINDOW = 1000
 N_READS_PATH = Path(__file__).resolve().parent.parent / "configs" / "n_reads.txt"
 POINTS_PER_INCH = 72
 SUMMARY_FIGURE_SIZE_PT = (570, 120)
-SUMMARY_FIGURE_SIZE_IN = tuple(value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT)
+SUMMARY_FIGURE_SIZE_IN = tuple(
+    value / POINTS_PER_INCH for value in SUMMARY_FIGURE_SIZE_PT
+)
 SUMMARY_LABEL_SIZE = 6
 SUMMARY_TICK_SIZE = 5
 TRACK_SIGNAL_COLOR = "#4C72B0"
 TRACK_SIGNAL_LINEWIDTH = 0.7
-DEFAULT_MOTIF_PATH = Path("data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt")
+DEFAULT_MOTIF_PATH = Path(
+    "data/JASPAR2026_CORE_vertebrates_non-redundant_pfms_meme.txt"
+)
 SUMMARY_SUBPLOT_ADJUST = {
     "left": 0.055,
     "right": 0.995,
@@ -191,7 +195,9 @@ def locus_input(resources: dict, point_region: str) -> tuple[str, int, torch.Ten
     return chrom, center, X.float()
 
 
-def region_input(resources: dict, region: str) -> tuple[str, int, int, int, torch.Tensor]:
+def region_input(
+    resources: dict, region: str
+) -> tuple[str, int, int, int, torch.Tensor]:
     """Extract model input centered on a region of interest."""
     chrom, start, end = parse_interval(region)
     center = interval_center(start, end)
@@ -260,8 +266,7 @@ def cpm_scale_for(exp_id: str, n_reads_path: Path = N_READS_PATH) -> float | Non
     row = table.loc[table["experiment"] == exp_id]
     if not len(row):
         warnings.warn(
-            f"{exp_id} has no entry in {n_reads_path}; showing raw "
-            "(non-CPM) values."
+            f"{exp_id} has no entry in {n_reads_path}; showing raw (non-CPM) values."
         )
         return None
     return 1e6 / float(row["total_reads"].iloc[0])
@@ -286,22 +291,26 @@ def region_inputs(
     for region in regions:
         chrom, start, end = parse_interval(region)
         _, logo_start, logo_end, offsets = logo_offsets_for_region(region)
-        rows.append({
-            "region": region,
-            "chrom": chrom,
-            "start": start,
-            "end": end,
-            "center": interval_center(start, end),
-            "logo_start": logo_start,
-            "logo_end": logo_end,
-            "logo_offsets": offsets,
-        })
+        rows.append(
+            {
+                "region": region,
+                "chrom": chrom,
+                "start": start,
+                "end": end,
+                "center": interval_center(start, end),
+                "logo_start": logo_start,
+                "logo_end": logo_end,
+                "logo_offsets": offsets,
+            }
+        )
     records = pd.DataFrame(rows)
-    loci = pd.DataFrame({
-        "chrom": records["chrom"],
-        "start": records["center"],
-        "end": records["center"] + 1,
-    })
+    loci = pd.DataFrame(
+        {
+            "chrom": records["chrom"],
+            "start": records["center"],
+            "end": records["center"] + 1,
+        }
+    )
     X = extract_loci(
         loci,
         sequences=str(resources["fasta"]),
@@ -356,8 +365,7 @@ def ensemble_predictions(
     logits_sum = None
     log_counts_sum = None
     for fold, path in enumerate(resources["model_paths"][:n_folds]):
-        print(f"Predicting fold {fold + 1}/{n_folds} "
-              f"({len(X)} region(s)): {path.name}")
+        print(f"Predicting fold {fold + 1}/{n_folds} ({len(X)} region(s)): {path.name}")
         model = torch.load(path, map_location="cpu", weights_only=False).eval()
         logits, log_counts = predict(
             model=model, X=X, batch_size=batch_size, device=device
@@ -472,11 +480,7 @@ def clip_track_arrays(
 ) -> dict[str, np.ndarray]:
     """Return tracks with optional display clipping applied to signal arrays."""
     return {
-        key: (
-            clip_track_values(value, track_value_clip)
-            if key != "x"
-            else value
-        )
+        key: (clip_track_values(value, track_value_clip) if key != "x" else value)
         for key, value in tracks.items()
     }
 
@@ -617,9 +621,7 @@ def call_and_annotate_seqlets(
     """
     motif_path = Path(motif_path) if motif_path is not None else None
     motif_names = (
-        motif_names_from_meme(motif_path)
-        if motif_path and motif_path.exists()
-        else []
+        motif_names_from_meme(motif_path) if motif_path and motif_path.exists() else []
     )
     sequence = _seqlet_sequence_tensor(X, logo_offsets, reverse_complement)
     annotations: dict[str, pd.DataFrame] = {}
@@ -690,7 +692,11 @@ def plot_tracks(
     """
     track_ylim = track_ylim or {}
     tracks = track_arrays(
-        prediction, resources, point_region, view_region, reverse_complement,
+        prediction,
+        resources,
+        point_region,
+        view_region,
+        reverse_complement,
         cpm_scale,
     )
     tracks = clip_track_arrays(tracks, track_value_clip)
@@ -711,9 +717,14 @@ def plot_tracks(
         linewidth=TRACK_SIGNAL_LINEWIDTH,
         label="observed minus",
     )
-    format_track_axis(axes[0], x, f"{exp_id} observed {view_region}",
-                      track_value_clip, cpm_scaled=cpm_scale is not None,
-                      ylim=track_ylim.get("observed"))
+    format_track_axis(
+        axes[0],
+        x,
+        f"{exp_id} observed {view_region}",
+        track_value_clip,
+        cpm_scaled=cpm_scale is not None,
+        ylim=track_ylim.get("observed"),
+    )
     axes[1].plot(
         x,
         tracks["predicted_plus"],
@@ -730,9 +741,14 @@ def plot_tracks(
         linestyle="--",
         label="predicted minus",
     )
-    format_track_axis(axes[1], x, f"{exp_id} predicted {view_region}",
-                      track_value_clip, cpm_scaled=cpm_scale is not None,
-                      ylim=track_ylim.get("predicted"))
+    format_track_axis(
+        axes[1],
+        x,
+        f"{exp_id} predicted {view_region}",
+        track_value_clip,
+        cpm_scaled=cpm_scale is not None,
+        ylim=track_ylim.get("predicted"),
+    )
     apply_shared_ticks(axes[0], ticks)
     apply_shared_ticks(axes[1], ticks, show_labels=True)
     axes[1].set_xlabel("Genomic position")
@@ -747,6 +763,7 @@ def shift_logo_to_genomic_axis(
     reverse_complement: bool = False,
 ) -> None:
     """Move logo glyphs from logo-local x positions to genomic coordinates."""
+
     def shift_x(values):
         if reverse_complement:
             return logo_end - values
@@ -784,8 +801,15 @@ def plot_logo_panel(
     seqlet_annotations: pd.DataFrame | None = None,
     value_clip: float | None = None,
     negative_fraction: float = 0.25,
+    show_seqlet_annotations: bool = True,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks.
+
+    `show_seqlet_annotations` is independent of whether `seqlet_annotations`
+    was computed at all: seqlets can be called and exported (e.g. to
+    `locus_viewer_seqlets.tsv`) without being drawn on a particular render,
+    for a clean figure. Set `False` to suppress drawing without having to
+    pass `None` and lose the export.
 
     `value_clip` fixes the y-axis to `(-value_clip * negative_fraction,
     value_clip)` instead of autoscaling to this panel's own data. The
@@ -806,7 +830,11 @@ def plot_logo_panel(
     pinned to the same range.
     """
     plot_kwargs = {}
-    if seqlet_annotations is not None and not seqlet_annotations.empty:
+    if (
+        show_seqlet_annotations
+        and seqlet_annotations is not None
+        and not seqlet_annotations.empty
+    ):
         plot_kwargs = {
             "annotations": seqlet_annotations,
             "score_key": "attribution",
@@ -846,6 +874,9 @@ def plot_locus_summary(
     cpm_scale: float | None = None,
     logo_value_clip: dict[str, float] | None = None,
     track_ylim: dict[str, float] | None = None,
+    track_negative_fraction: float = 0.25,
+    logo_negative_fraction: float = 0.25,
+    show_seqlet_annotations: bool = True,
 ):
     """Stack observed tracks, predicted tracks, and DeepLIFT logos in one figure.
 
@@ -867,11 +898,22 @@ def plot_locus_summary(
     rendered runs (two experiments at one locus) comparable: matching
     `track_value_clip` between them does nothing if both curves fall well
     under that ceiling, since each still autoscales to its own smaller max.
+
+    `track_negative_fraction`/`logo_negative_fraction` are the
+    `negative_fraction` passed to `format_track_axis`/`plot_logo_panel`
+    respectively -- two separate knobs, not one, since coverage strand
+    balance and DeepLIFT sign balance are unrelated properties of unrelated
+    data. Both default to 0.25 (a 4:1 positive:negative split); pass `1.0`
+    for a symmetric range.
     """
     logo_value_clip = logo_value_clip or {}
     track_ylim = track_ylim or {}
     tracks = track_arrays(
-        prediction, resources, point_region, view_region, reverse_complement,
+        prediction,
+        resources,
+        point_region,
+        view_region,
+        reverse_complement,
         cpm_scale,
     )
     tracks = clip_track_arrays(tracks, track_value_clip)
@@ -907,6 +949,7 @@ def plot_locus_summary(
         show_legend=False,
         cpm_scaled=cpm_scale is not None,
         ylim=track_ylim.get("observed"),
+        negative_fraction=track_negative_fraction,
     )
     apply_shared_ticks(axes[0], ticks)
     axes[1].plot(
@@ -934,6 +977,7 @@ def plot_locus_summary(
         show_legend=False,
         cpm_scaled=cpm_scale is not None,
         ylim=track_ylim.get("predicted"),
+        negative_fraction=track_negative_fraction,
     )
     apply_shared_ticks(axes[1], ticks)
     for ax, head in zip(axes[2:], ["profile", "count"]):
@@ -956,6 +1000,8 @@ def plot_locus_summary(
             show_title=False,
             seqlet_annotations=annotations,
             value_clip=logo_value_clip.get(head),
+            negative_fraction=logo_negative_fraction,
+            show_seqlet_annotations=show_seqlet_annotations,
         )
     for ax in axes[:-1]:
         apply_compact_summary_axis_style(ax)
@@ -1011,6 +1057,7 @@ def paired_track_ylim(tracks_a: dict, tracks_b: dict) -> dict[str, float | None]
     A combined peak of exactly zero returns None (autoscale) rather than 0,
     since `format_track_axis` rejects a non-positive ylim.
     """
+
     def peak(tracks, keys):
         return max(float(np.max(np.abs(tracks[k]))) for k in keys)
 
@@ -1069,10 +1116,29 @@ def plot_dual_locus_summary(
     cpm_scale_b: float | None = None,
     logo_value_clip: dict[str, float] | None = None,
     track_ylim: dict[str, float] | None = None,
+    track_negative_fraction: float = 0.25,
+    logo_negative_fraction: float = 0.25,
+    show_row_labels: bool = True,
+    show_seqlet_annotations: bool = True,
 ):
     """Two experiments at one locus, grouped by experiment: each experiment's
     own four rows (observed, predicted, counts DeepLIFT, profile DeepLIFT)
     stay together, A first then B.
+
+    `show_row_labels=False` suppresses the `"{exp_id} ({biosample})\\n{kind}"`
+    corner label on every row -- useful once the row order is known, for a
+    clean figure without per-row identification text.
+    `show_seqlet_annotations=False` suppresses drawn seqlets independent of
+    whether `seqlet_annotations_a`/`_b` were computed at all; the raw
+    seqlets are still exported by `save_dual_locus_viewer_outputs`
+    regardless, via `save_raw_locus_arrays`.
+
+    `track_negative_fraction`/`logo_negative_fraction` are the
+    `negative_fraction` passed to `format_track_axis`/`plot_logo_panel`
+    respectively -- two separate knobs, since coverage strand balance and
+    DeepLIFT sign balance are unrelated properties of unrelated data. Both
+    default to 0.25 (a 4:1 positive:negative split); pass `1.0` for a
+    symmetric range.
 
     `track_ylim`/`logo_value_clip` default to `None`, which auto-computes a
     *shared* scale across both experiments via `paired_track_ylim`/
@@ -1102,13 +1168,25 @@ def plot_dual_locus_summary(
     auto_logo_clip = logo_value_clip is None
 
     tracks_a = clip_track_arrays(
-        track_arrays(prediction_a, resources_a, point_region, view_region,
-                    reverse_complement, cpm_scale_a),
+        track_arrays(
+            prediction_a,
+            resources_a,
+            point_region,
+            view_region,
+            reverse_complement,
+            cpm_scale_a,
+        ),
         track_value_clip,
     )
     tracks_b = clip_track_arrays(
-        track_arrays(prediction_b, resources_b, point_region, view_region,
-                    reverse_complement, cpm_scale_b),
+        track_arrays(
+            prediction_b,
+            resources_b,
+            point_region,
+            view_region,
+            reverse_complement,
+            cpm_scale_b,
+        ),
         track_value_clip,
     )
     if auto_track_ylim:
@@ -1123,21 +1201,41 @@ def plot_dual_locus_summary(
     ticks = shared_ticks(x_limits)
     width, unit_height = SUMMARY_FIGURE_SIZE_IN
     fig, axes = plt.subplots(
-        8, 1, figsize=(width, unit_height * 4.8),
+        8,
+        1,
+        figsize=(width, unit_height * 2.0),
         gridspec_kw={"height_ratios": [1.1, 1.1, 1.0, 1.0] * 2},
     )
 
     # (kind, which) per row, in the order requested: each experiment's own
     # four rows stay together rather than grouped by track type.
     row_specs = [
-        ("observed", "a"), ("predicted", "a"), ("count", "a"), ("profile", "a"),
-        ("observed", "b"), ("predicted", "b"), ("count", "b"), ("profile", "b"),
+        ("observed", "a"),
+        ("predicted", "a"),
+        ("count", "a"),
+        ("profile", "a"),
+        ("observed", "b"),
+        ("predicted", "b"),
+        ("count", "b"),
+        ("profile", "b"),
     ]
     by_which = {
-        "a": (exp_id_a, resources_a, tracks_a, attributions_a, cpm_scale_a,
-             seqlet_annotations_a),
-        "b": (exp_id_b, resources_b, tracks_b, attributions_b, cpm_scale_b,
-             seqlet_annotations_b),
+        "a": (
+            exp_id_a,
+            resources_a,
+            tracks_a,
+            attributions_a,
+            cpm_scale_a,
+            seqlet_annotations_a,
+        ),
+        "b": (
+            exp_id_b,
+            resources_b,
+            tracks_b,
+            attributions_b,
+            cpm_scale_b,
+            seqlet_annotations_b,
+        ),
     }
     row_labels = {}
     for ax, (kind, which) in zip(axes, row_specs):
@@ -1147,26 +1245,54 @@ def plot_dual_locus_summary(
         biosample = resources["config"].get("biosample", exp_id)
         if kind in ("observed", "predicted"):
             style = {} if kind == "observed" else {"linestyle": "--"}
-            ax.plot(x, tracks[f"{kind}_plus"], color=TRACK_SIGNAL_COLOR,
-                   linewidth=TRACK_SIGNAL_LINEWIDTH, **style)
-            ax.plot(x, tracks[f"{kind}_minus"], color=TRACK_SIGNAL_COLOR,
-                   linewidth=TRACK_SIGNAL_LINEWIDTH, **style)
+            ax.plot(
+                x,
+                tracks[f"{kind}_plus"],
+                color=TRACK_SIGNAL_COLOR,
+                linewidth=TRACK_SIGNAL_LINEWIDTH,
+                **style,
+            )
+            ax.plot(
+                x,
+                tracks[f"{kind}_minus"],
+                color=TRACK_SIGNAL_COLOR,
+                linewidth=TRACK_SIGNAL_LINEWIDTH,
+                **style,
+            )
             format_track_axis(
-                ax, x, "", track_value_clip, show_title=False, show_legend=False,
-                cpm_scaled=cpm_scale is not None, ylim=track_ylim.get(kind),
+                ax,
+                x,
+                "",
+                track_value_clip,
+                show_title=False,
+                show_legend=False,
+                cpm_scaled=cpm_scale is not None,
+                ylim=track_ylim.get(kind),
+                negative_fraction=track_negative_fraction,
             )
             apply_shared_ticks(ax, ticks)
         else:
             matrix = oriented_logo_matrix(attributions[kind], reverse_complement)
             if kind == "count" and cpm_scale is not None:
                 matrix = matrix * cpm_scale
-            annotations = (seqlet_annotations.get(kind)
-                          if seqlet_annotations is not None else None)
+            annotations = (
+                seqlet_annotations.get(kind) if seqlet_annotations is not None else None
+            )
             plot_logo_panel(
-                ax, matrix, "", logo_start, logo_end, reverse_complement,
-                x_limits, ticks, show_tick_labels=False, show_title=False,
+                ax,
+                matrix,
+                "",
+                logo_start,
+                logo_end,
+                reverse_complement,
+                x_limits,
+                ticks,
+                show_tick_labels=False,
+                show_title=False,
                 seqlet_annotations=annotations,
                 value_clip=logo_value_clip.get(kind),
+                negative_fraction=logo_negative_fraction,
+                show_seqlet_annotations=show_seqlet_annotations,
             )
         label_kind = f"{kind} DeepLIFT" if kind in ("profile", "count") else kind
         row_labels[ax] = f"{exp_id} ({biosample})\n{label_kind}"
@@ -1185,10 +1311,20 @@ def plot_dual_locus_summary(
     # unconditionally -- see the docstring above -- though ax.text is
     # unaffected by that call either way.
     label_box = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.85)
+    row_labels = row_labels if show_row_labels else {}
     for ax, label in row_labels.items():
-        ax.text(0.005, 0.95, label, transform=ax.transAxes,
-                fontsize=SUMMARY_LABEL_SIZE, va="top", ha="left",
-                linespacing=1.1, bbox=label_box, zorder=5)
+        ax.text(
+            0.005,
+            0.95,
+            label,
+            transform=ax.transAxes,
+            fontsize=SUMMARY_LABEL_SIZE,
+            va="top",
+            ha="left",
+            linespacing=1.1,
+            bbox=label_box,
+            zorder=5,
+        )
     fig.subplots_adjust(**SUMMARY_SUBPLOT_ADJUST)
     return fig, axes
 
@@ -1216,33 +1352,71 @@ def save_dual_locus_viewer_outputs(
     cpm_scale_b: float | None = None,
     logo_value_clip: dict[str, float] | None = None,
     track_ylim: dict[str, float] | None = None,
+    track_negative_fraction: float = 0.25,
+    logo_negative_fraction: float = 0.25,
+    show_row_labels: bool = True,
+    show_seqlet_annotations: bool = True,
 ) -> None:
     """Save the combined dual-locus figure, plus each experiment's raw arrays.
 
     Raw prediction/attributions land in `output_dir/{exp_id}/locus_viewer_arrays.npz`
     -- the same filename `save_locus_viewer_outputs` uses, just one directory
     per experiment, so nothing new has to know two naming schemes.
+
+    `track_negative_fraction`/`logo_negative_fraction`/`show_row_labels`/
+    `show_seqlet_annotations` -- see `plot_dual_locus_summary`. The raw
+    seqlets are exported to each experiment's own `locus_viewer_seqlets.tsv`
+    regardless of `show_seqlet_annotations`, via `save_raw_locus_arrays`.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_dual_locus_summary(
-        prediction_a, attributions_a, resources_a, exp_id_a,
-        prediction_b, attributions_b, resources_b, exp_id_b,
-        point_region, view_region, logo_region, logo_start, logo_end,
-        reverse_complement, track_value_clip,
-        seqlet_annotations_a, seqlet_annotations_b,
-        cpm_scale_a, cpm_scale_b, logo_value_clip, track_ylim,
+        prediction_a,
+        attributions_a,
+        resources_a,
+        exp_id_a,
+        prediction_b,
+        attributions_b,
+        resources_b,
+        exp_id_b,
+        point_region,
+        view_region,
+        logo_region,
+        logo_start,
+        logo_end,
+        reverse_complement,
+        track_value_clip,
+        seqlet_annotations_a,
+        seqlet_annotations_b,
+        cpm_scale_a,
+        cpm_scale_b,
+        logo_value_clip,
+        track_ylim,
+        track_negative_fraction,
+        logo_negative_fraction,
+        show_row_labels,
+        show_seqlet_annotations,
     )[0].savefig(
         output_dir / "locus_viewer_dual_summary.pdf",
         bbox_inches=None,
         pad_inches=0,
     )
     save_raw_locus_arrays(
-        output_dir / exp_id_a, prediction_a, attributions_a,
-        point_region, view_region, logo_region, seqlet_annotations_a,
+        output_dir / exp_id_a,
+        prediction_a,
+        attributions_a,
+        point_region,
+        view_region,
+        logo_region,
+        seqlet_annotations_a,
     )
     save_raw_locus_arrays(
-        output_dir / exp_id_b, prediction_b, attributions_b,
-        point_region, view_region, logo_region, seqlet_annotations_b,
+        output_dir / exp_id_b,
+        prediction_b,
+        attributions_b,
+        point_region,
+        view_region,
+        logo_region,
+        seqlet_annotations_b,
     )
     plt.close("all")
 
@@ -1285,8 +1459,7 @@ def deeplift_attributions_batch(
     """
     attributions = {"profile": [], "count": []}
     for fold, path in enumerate(resources["model_paths"][:n_folds]):
-        print(f"DeepLIFT fold {fold + 1}/{n_folds} "
-              f"({len(X)} region(s)): {path.name}")
+        print(f"DeepLIFT fold {fold + 1}/{n_folds} ({len(X)} region(s)): {path.name}")
         model = torch.load(path, map_location="cpu", weights_only=False).eval()
         wrappers = {"profile": ProfileWrapper(model), "count": CountWrapper(model)}
         for head, wrapper in wrappers.items():
@@ -1352,6 +1525,8 @@ def plot_deeplift_logos(
     seqlet_annotations: dict[str, pd.DataFrame] | None = None,
     cpm_scale: float | None = None,
     logo_value_clip: dict[str, float] | None = None,
+    negative_fraction: float = 0.25,
+    show_seqlet_annotations: bool = True,
 ):
     """Plot profile/count DeepLIFT logos for the selected logo interval.
 
@@ -1381,6 +1556,8 @@ def plot_deeplift_logos(
             reverse_complement,
             seqlet_annotations=annotations,
             value_clip=logo_value_clip.get(head),
+            negative_fraction=negative_fraction,
+            show_seqlet_annotations=show_seqlet_annotations,
         )
     fig.suptitle(f"{exp_id} {logo_region}")
     fig.tight_layout()
@@ -1404,6 +1581,9 @@ def save_locus_viewer_outputs(
     cpm_scale: float | None = None,
     logo_value_clip: dict[str, float] | None = None,
     track_ylim: dict[str, float] | None = None,
+    track_negative_fraction: float = 0.25,
+    logo_negative_fraction: float = 0.25,
+    show_seqlet_annotations: bool = True,
 ) -> None:
     """Save the current viewer figures and arrays for offline inspection.
 
@@ -1412,6 +1592,11 @@ def save_locus_viewer_outputs(
     `track_ylim` -- only the rendered figure is scaled/clipped -- matching
     `clip_track_arrays`, which also never mutates the arrays it is given. Raw
     values stay reproducible even when the figure is display-scaled.
+
+    `track_negative_fraction`/`logo_negative_fraction` -- see
+    `plot_locus_summary`. `show_seqlet_annotations=False` only suppresses
+    them on the figure; `locus_viewer_seqlets.tsv` is written from the raw
+    `seqlet_annotations` regardless, via `save_raw_locus_arrays`.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_locus_summary(
@@ -1430,13 +1615,21 @@ def save_locus_viewer_outputs(
         cpm_scale,
         logo_value_clip,
         track_ylim,
+        track_negative_fraction,
+        logo_negative_fraction,
+        show_seqlet_annotations,
     )[0].savefig(
         output_dir / "locus_viewer_summary.pdf",
         bbox_inches=None,
         pad_inches=0,
     )
     save_raw_locus_arrays(
-        output_dir, prediction, attributions,
-        point_region, view_region, logo_region, seqlet_annotations,
+        output_dir,
+        prediction,
+        attributions,
+        point_region,
+        view_region,
+        logo_region,
+        seqlet_annotations,
     )
     plt.close("all")

@@ -96,18 +96,32 @@ to flat. `format_track_axis`'s `ylim` (the coverage-track equivalent of
 reason a divergent promoter's dominant strand otherwise loses half its
 panel to a near-flat minus strand.
 
-Pass `negative_fraction=1.0` to a direct `plot_logo_panel`/`format_track_axis`
-call to restore a symmetric range. This matters more for coverage than for
+Pass `1.0` for a symmetric range. This matters more for coverage than for
 logos: DeepLIFT's positive-dominance is a general property of the
 attribution method, but plus/minus-strand balance is locus-specific -- a
 genuinely divergent promoter can have real, comparable bidirectional
 signal, and the default 4:1 split would visually suppress that. Check
 against a locus with known strong antisense signal before trusting it
-blindly. `LOGO_VALUE_CLIP`/`TRACK_YLIM` in the notebooks do not expose
-`negative_fraction` separately, since it is a display convention rather
-than something to choose per locus in the config cell -- override it by
-calling `plot_locus_summary`/`plot_dual_locus_summary`/`plot_logo_panel`/
-`format_track_axis` directly if a specific locus needs it.
+blindly.
+
+Both are exposed as separate config-cell variables --
+`TRACK_NEGATIVE_FRACTION` and `LOGO_NEGATIVE_FRACTION` -- rather than one
+shared value, threaded through `plot_locus_summary`/`plot_dual_locus_summary`
+as `track_negative_fraction`/`logo_negative_fraction`.
+
+### Optional labels and seqlet annotations
+
+`SHOW_SEQLET_ANNOTATIONS` (both notebooks) controls whether called seqlets
+are drawn on the DeepLIFT panels, independent of whether `SHOW_SEQLETS`
+computes them at all -- seqlets can still be called and exported to
+`locus_viewer_seqlets.tsv` with `SHOW_SEQLET_ANNOTATIONS = False`, just not
+drawn on that particular figure.
+
+The dual notebook also has `SHOW_ROW_LABELS`, which draws or suppresses the
+`"{exp_id} ({biosample})\n{kind}"` corner label on every row (see
+`plot_dual_locus_summary`'s docstring for why that label exists at all).
+Useful once the row order and identity are known and a clean figure is
+wanted for the manuscript rather than for checking which row is which.
 
 ### Sweeping many regions
 
@@ -163,7 +177,8 @@ of those unconditionally, since the single-locus figure never shows either.
 An earlier version set the label before that call and it was silently
 wiped on every row -- with eight otherwise-identical rows there was then no
 way to tell which experiment or track a given row was, which is what
-looked like the rows being "misordered").
+looked like the rows being "misordered"). Set `SHOW_ROW_LABELS = False`
+once the row order is known, for a clean figure with no per-row text.
 
 **The shared axis is computed automatically by default**, and this is the
 entire reason the notebook exists rather than running the single-locus
