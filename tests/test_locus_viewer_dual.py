@@ -7,9 +7,20 @@ together autoscales each panel to its own data, which erases a genuine
 difference in magnitude between conditions instead of displaying it (this is
 exactly what CPM scaling and the fixed-axis (`track_ylim`/`logo_value_clip`)
 features exist to fix -- see test_locus_viewer_batch.py). This function
-grouping by track type, computing a shared axis automatically by default, so
-that fix does not depend on the two runs being manually eyeballed and
-matched by hand.
+groups rows by experiment (each experiment's own four rows stay together),
+computing a shared axis automatically by default so the fix does not depend
+on the two runs being eyeballed and matched by hand.
+
+Row-label content is tested deliberately, not just axis limits. An earlier
+version set each row's label via `ax.set_ylabel(...)` *before*
+`apply_compact_summary_axis_style`, which clears `ylabel`/`title`
+unconditionally -- every row's label was silently wiped, and with eight
+otherwise-identical, unlabelled rows there was no way to tell which
+experiment or track a given row was. That shipped because every test here
+checked `ax.get_ylim()` and none checked what a row actually said. Labels
+are now drawn as an `ax.text(...)` inside the axes (never touched by
+`apply_compact_summary_axis_style`) rather than a rotated `ylabel`, since a
+rotated two-line label does not fit an eight-row figure's per-row height.
 """
 
 import sys
@@ -25,6 +36,13 @@ import notebooks.locus_viewer as lv  # noqa: E402
 
 IN_WINDOW = lv.IN_WINDOW
 
+# Row index -> (experiment, kind), for the order plot_dual_locus_summary
+# actually draws: each experiment's own four rows together, A then B.
+ROW_ORDER = [
+    ("a", "observed"), ("a", "predicted"), ("a", "count"), ("a", "profile"),
+    ("b", "observed"), ("b", "predicted"), ("b", "count"), ("b", "profile"),
+]
+
 
 def make_resources(exp_id, biosample):
     return {"exp_id": exp_id, "config": {"biosample": biosample}}
@@ -38,6 +56,12 @@ def make_tracks(observed_peak, predicted_peak, n=10):
         "predicted_plus": np.full(n, predicted_peak),
         "predicted_minus": np.full(n, -predicted_peak / 2),
     }
+
+
+def row_label(ax):
+    """The text of the in-axes corner label, or "" if none was drawn."""
+    texts = [t.get_text() for t in ax.texts]
+    return texts[0] if texts else ""
 
 
 # --- paired_track_ylim --------------------------------------------------------
@@ -115,41 +139,75 @@ def stub_tracks(monkeypatch):
     return data
 
 
-def test_eight_rows_in_track_type_order(stub_tracks):
-    """Grouped by type (obs A, obs B, pred A, pred B, ...), not by experiment
-    (all of A then all of B) -- the whole point is putting what should be
-    compared next to each other."""
-    attrs = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
-    fig, axes = lv.plot_dual_locus_summary(
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("a", "neuron"), "a",
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("b", "B cell"), "b",
-        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
+def draw(resources_a=None, resources_b=None, attrs_a=None, attrs_b=None, **kw):
+    resources_a = resources_a or make_resources("a", "neuron")
+    resources_b = resources_b or make_resources("b", "B cell")
+    attrs = attrs_a or {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
+    attrs_b = attrs_b or attrs
+    return lv.plot_dual_locus_summary(
+        np.zeros((2, lv.OUT_WINDOW)), attrs, resources_a, "a",
+        np.zeros((2, lv.OUT_WINDOW)), attrs_b, resources_b, "b",
+        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10, **kw,
     )
+
+
+def test_eight_rows_grouped_by_experiment_not_by_track_type(stub_tracks):
+    """The order requested: each experiment's own four rows together (A's
+    observed/predicted/count/profile, then B's), not grouped by track type
+    (both observed rows, then both predicted, ...)."""
+    fig, axes = draw()
     assert len(axes) == 8
+    for ax, (which, kind) in zip(axes, ROW_ORDER):
+        exp_id = "a" if which == "a" else "b"
+        assert exp_id in row_label(ax)
+        assert kind.split()[0] in row_label(ax)  # "count"/"profile" or the raw kind
 
 
-def test_auto_scale_matches_both_rows_to_the_larger_experiment(stub_tracks):
-    """The default (track_ylim=None) behaviour: both experiments' observed
-    rows share one axis sized to the larger of the two."""
-    attrs = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
-    fig, axes = lv.plot_dual_locus_summary(
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("a", "neuron"), "a",
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("b", "B cell"), "b",
-        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
+def test_every_row_has_a_nonempty_label(stub_tracks):
+    """The bug this whole file exists to catch: every row must say which
+    experiment and which track it is, or eight rows are indistinguishable."""
+    fig, axes = draw()
+    for ax in axes:
+        assert row_label(ax) != ""
+
+
+def test_labels_name_the_correct_experiment_and_biosample(stub_tracks):
+    """resources' exp_id is what stub_tracks keys on ("a"/"b"), independent
+    of the exp_id string plot_dual_locus_summary is told to use for its
+    labels -- draw()'s two exp_id args are always "a"/"b", so this checks
+    the biosample threads through correctly rather than duplicating the
+    exp_id check above."""
+    fig, axes = draw(
+        resources_a=make_resources("a", "neuron"),
+        resources_b=make_resources("b", "B cell"),
     )
-    # rows 0, 1 are observed A, observed B
-    assert axes[0].get_ylim() == pytest.approx(axes[1].get_ylim())
+    assert "a" in row_label(axes[0]) and "neuron" in row_label(axes[0])
+    assert "b" in row_label(axes[4]) and "B cell" in row_label(axes[4])
+
+
+def test_labels_survive_apply_compact_summary_axis_style(stub_tracks):
+    """Regression for the exact bug: apply_compact_summary_axis_style clears
+    ylabel/title unconditionally, so a label set before it (or via
+    set_ylabel/set_title at all) would be wiped. Labels must be drawn as
+    ax.text, which that function does not touch."""
+    fig, axes = draw()
+    for ax in axes:
+        assert ax.get_title() == ""
+        assert ax.get_ylabel() == ""
+        assert row_label(ax) != ""
+
+
+def test_auto_scale_matches_both_experiments_observed_rows(stub_tracks):
+    """The default (track_ylim=None) behaviour: both experiments' observed
+    rows share one axis sized to the larger of the two, even though they are
+    four rows apart in this ordering."""
+    fig, axes = draw()
+    assert axes[0].get_ylim() == pytest.approx(axes[4].get_ylim())
     assert axes[0].get_ylim() == pytest.approx((-25.0, 25.0))
 
 
 def test_explicit_track_ylim_overrides_the_auto_default(stub_tracks):
-    attrs = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
-    fig, axes = lv.plot_dual_locus_summary(
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("a", "neuron"), "a",
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("b", "B cell"), "b",
-        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
-        track_ylim={"observed": 100.0, "predicted": 100.0},
-    )
+    fig, axes = draw(track_ylim={"observed": 100.0, "predicted": 100.0})
     assert axes[0].get_ylim() == pytest.approx((-100.0, 100.0))
 
 
@@ -157,40 +215,28 @@ def test_explicit_none_per_key_autoscales_independently(stub_tracks):
     """A caller-supplied dict is honoured key-for-key, including an explicit
     None -- opting a specific row out of shared scaling without losing the
     others."""
-    attrs = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
-    fig, axes = lv.plot_dual_locus_summary(
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("a", "neuron"), "a",
-        np.zeros((2, lv.OUT_WINDOW)), attrs, make_resources("b", "B cell"), "b",
-        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
-        track_ylim={"observed": None, "predicted": 100.0},
-    )
+    fig, axes = draw(track_ylim={"observed": None, "predicted": 100.0})
     assert axes[0].get_ylim() != pytest.approx((-25.0, 25.0))
-    assert axes[2].get_ylim() == pytest.approx((-100.0, 100.0))
+    assert axes[1].get_ylim() == pytest.approx((-100.0, 100.0))
 
 
 def test_logo_rows_scale_independently_per_head(stub_tracks):
     attrs_a = {"profile": np.full((4, 10), 0.5), "count": np.full((4, 10), 10.0)}
     attrs_b = {"profile": np.full((4, 10), 0.2), "count": np.full((4, 10), 1.0)}
-    fig, axes = lv.plot_dual_locus_summary(
-        np.zeros((2, lv.OUT_WINDOW)), attrs_a, make_resources("a", "neuron"), "a",
-        np.zeros((2, lv.OUT_WINDOW)), attrs_b, make_resources("b", "B cell"), "b",
-        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
-        cpm_scale_a=1.0, cpm_scale_b=1.0,
-    )
-    # rows 4,5 = profile A,B; rows 6,7 = count A,B
-    assert axes[4].get_ylim() == pytest.approx((-0.5, 0.5))
-    assert axes[6].get_ylim() == pytest.approx((-10.0, 10.0))
+    fig, axes = draw(attrs_a=attrs_a, attrs_b=attrs_b, cpm_scale_a=1.0, cpm_scale_b=1.0)
+    # row 2 = A's count, row 3 = A's profile
+    assert axes[2].get_ylim() == pytest.approx((-10.0, 10.0))
+    assert axes[3].get_ylim() == pytest.approx((-0.5, 0.5))
 
 
 def test_neither_prediction_nor_attributions_are_mutated(stub_tracks):
     """save_dual_locus_viewer_outputs persists these verbatim; scaling them
     here would corrupt the saved raw record."""
     attrs_a = {"profile": np.full((4, 10), 1.0), "count": np.full((4, 10), 1.0)}
-    attrs_b = {"profile": np.full((4, 10), 1.0), "count": np.full((4, 10), 1.0)}
     pred_a = np.zeros((2, lv.OUT_WINDOW))
     lv.plot_dual_locus_summary(
         pred_a, attrs_a, make_resources("a", "neuron"), "a",
-        np.zeros((2, lv.OUT_WINDOW)), attrs_b, make_resources("b", "B cell"), "b",
+        np.zeros((2, lv.OUT_WINDOW)), attrs_a, make_resources("b", "B cell"), "b",
         "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
         cpm_scale_a=5.0, cpm_scale_b=5.0,
     )
@@ -202,9 +248,7 @@ def test_neither_prediction_nor_attributions_are_mutated(stub_tracks):
 # --- save_dual_locus_viewer_outputs --------------------------------------------
 
 
-def test_save_writes_one_pdf_and_per_experiment_raw_arrays(
-    tmp_path, stub_tracks
-):
+def test_save_writes_one_pdf_and_per_experiment_raw_arrays(tmp_path, stub_tracks):
     """Each experiment's raw arrays land under its own subdirectory, using
     the same locus_viewer_arrays.npz filename save_locus_viewer_outputs
     uses -- so nothing downstream needs a second naming convention."""

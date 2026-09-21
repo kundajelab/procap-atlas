@@ -1051,12 +1051,9 @@ def plot_dual_locus_summary(
     logo_value_clip: dict[str, float] | None = None,
     track_ylim: dict[str, float] | None = None,
 ):
-    """Two experiments at one locus, grouped by track type for direct comparison.
-
-    Eight rows: observed (A, B), predicted (A, B), profile DeepLIFT (A, B),
-    counts DeepLIFT (A, B) -- grouped this way rather than all four of A then
-    all four of B, so the two curves a reader actually wants to compare sit
-    adjacent, not four rows apart.
+    """Two experiments at one locus, grouped by experiment: each experiment's
+    own four rows (observed, predicted, counts DeepLIFT, profile DeepLIFT)
+    stay together, A first then B.
 
     `track_ylim`/`logo_value_clip` default to `None`, which auto-computes a
     *shared* scale across both experiments via `paired_track_ylim`/
@@ -1072,6 +1069,15 @@ def plot_dual_locus_summary(
     `_b` counterparts) are never mutated -- only the locally drawn copies are
     scaled/clipped -- so `save_dual_locus_viewer_outputs` can persist both
     experiments' raw arrays unchanged.
+
+    Each row's y-axis label is set to `"{exp_id} ({biosample})\n{kind}"`
+    *after* `apply_compact_summary_axis_style`, since that style clears
+    `ylabel`/`title` unconditionally as part of keeping single-locus figures
+    (which never show either) legible at small size. An earlier version set
+    the label before that call and it was silently wiped on every row --
+    with eight otherwise-unlabelled rows there was then no way to tell which
+    experiment or track a given row was, which is what "the plots are
+    misordered" actually was.
     """
     auto_track_ylim = track_ylim is None
     auto_logo_clip = logo_value_clip is None
@@ -1099,63 +1105,71 @@ def plot_dual_locus_summary(
     width, unit_height = SUMMARY_FIGURE_SIZE_IN
     fig, axes = plt.subplots(
         8, 1, figsize=(width, unit_height * 2.4),
-        gridspec_kw={"height_ratios": [1.1, 1.1, 1.1, 1.1, 1.0, 1.0, 1.0, 1.0]},
+        gridspec_kw={"height_ratios": [1.1, 1.1, 1.0, 1.0] * 2},
     )
 
-    def draw_coverage(ax, tracks, exp_id, resources, kind, ylim, show_xlabels):
-        style = {} if kind == "observed" else {"linestyle": "--"}
-        ax.plot(x, tracks[f"{kind}_plus"], color=TRACK_SIGNAL_COLOR,
-               linewidth=TRACK_SIGNAL_LINEWIDTH, label=f"{kind} plus", **style)
-        ax.plot(x, tracks[f"{kind}_minus"], color=TRACK_SIGNAL_COLOR,
-               linewidth=TRACK_SIGNAL_LINEWIDTH, label=f"{kind} minus", **style)
-        biosample = resources["config"].get("biosample", exp_id)
-        format_track_axis(
-            ax, x, f"{exp_id} ({biosample}) {kind} {view_region}",
-            track_value_clip, show_legend=False,
-            cpm_scaled=(cpm_scale_a if resources is resources_a
-                       else cpm_scale_b) is not None,
-            ylim=ylim,
+    # (kind, which) per row, in the order requested: each experiment's own
+    # four rows stay together rather than grouped by track type.
+    row_specs = [
+        ("observed", "a"), ("predicted", "a"), ("count", "a"), ("profile", "a"),
+        ("observed", "b"), ("predicted", "b"), ("count", "b"), ("profile", "b"),
+    ]
+    by_which = {
+        "a": (exp_id_a, resources_a, tracks_a, attributions_a, cpm_scale_a,
+             seqlet_annotations_a),
+        "b": (exp_id_b, resources_b, tracks_b, attributions_b, cpm_scale_b,
+             seqlet_annotations_b),
+    }
+    row_labels = {}
+    for ax, (kind, which) in zip(axes, row_specs):
+        exp_id, resources, tracks, attributions, cpm_scale, seqlet_annotations = (
+            by_which[which]
         )
-        apply_shared_ticks(ax, ticks, show_labels=show_xlabels)
-
-    draw_coverage(axes[0], tracks_a, exp_id_a, resources_a, "observed",
-                 track_ylim.get("observed"), False)
-    draw_coverage(axes[1], tracks_b, exp_id_b, resources_b, "observed",
-                 track_ylim.get("observed"), False)
-    draw_coverage(axes[2], tracks_a, exp_id_a, resources_a, "predicted",
-                 track_ylim.get("predicted"), False)
-    draw_coverage(axes[3], tracks_b, exp_id_b, resources_b, "predicted",
-                 track_ylim.get("predicted"), False)
-
-    def draw_logo(ax, attributions, exp_id, resources, head, cpm_scale,
-                 seqlet_annotations, show_xlabels):
-        matrix = oriented_logo_matrix(attributions[head], reverse_complement)
-        if head == "count" and cpm_scale is not None:
-            matrix = matrix * cpm_scale
-        annotations = (seqlet_annotations.get(head)
-                      if seqlet_annotations is not None else None)
         biosample = resources["config"].get("biosample", exp_id)
-        plot_logo_panel(
-            ax, matrix,
-            f"{exp_id} ({biosample}) {head} DeepLIFT/SHAP ({logo_region})",
-            logo_start, logo_end, reverse_complement, x_limits, ticks,
-            show_tick_labels=show_xlabels, seqlet_annotations=annotations,
-            value_clip=logo_value_clip.get(head),
-        )
-
-    draw_logo(axes[4], attributions_a, exp_id_a, resources_a, "profile",
-             None, seqlet_annotations_a, False)
-    draw_logo(axes[5], attributions_b, exp_id_b, resources_b, "profile",
-             None, seqlet_annotations_b, False)
-    draw_logo(axes[6], attributions_a, exp_id_a, resources_a, "count",
-             cpm_scale_a, seqlet_annotations_a, False)
-    draw_logo(axes[7], attributions_b, exp_id_b, resources_b, "count",
-             cpm_scale_b, seqlet_annotations_b, True)
+        if kind in ("observed", "predicted"):
+            style = {} if kind == "observed" else {"linestyle": "--"}
+            ax.plot(x, tracks[f"{kind}_plus"], color=TRACK_SIGNAL_COLOR,
+                   linewidth=TRACK_SIGNAL_LINEWIDTH, **style)
+            ax.plot(x, tracks[f"{kind}_minus"], color=TRACK_SIGNAL_COLOR,
+                   linewidth=TRACK_SIGNAL_LINEWIDTH, **style)
+            format_track_axis(
+                ax, x, "", track_value_clip, show_title=False, show_legend=False,
+                cpm_scaled=cpm_scale is not None, ylim=track_ylim.get(kind),
+            )
+            apply_shared_ticks(ax, ticks)
+        else:
+            matrix = oriented_logo_matrix(attributions[kind], reverse_complement)
+            if kind == "count" and cpm_scale is not None:
+                matrix = matrix * cpm_scale
+            annotations = (seqlet_annotations.get(kind)
+                          if seqlet_annotations is not None else None)
+            plot_logo_panel(
+                ax, matrix, "", logo_start, logo_end, reverse_complement,
+                x_limits, ticks, show_tick_labels=False, show_title=False,
+                seqlet_annotations=annotations,
+                value_clip=logo_value_clip.get(kind),
+            )
+        label_kind = f"{kind} DeepLIFT" if kind in ("profile", "count") else kind
+        row_labels[ax] = f"{exp_id} ({biosample})\n{label_kind}"
 
     for ax in axes[:-1]:
         apply_compact_summary_axis_style(ax)
     apply_compact_summary_axis_style(axes[-1], show_x_labels=True)
     axes[-1].set_xlabel("Genomic position", fontsize=SUMMARY_LABEL_SIZE, labelpad=2)
+    # An in-axes corner label, not ax.set_ylabel: a rotated y-axis label has
+    # to fit its full character length into one row's *height*, and an
+    # eight-row figure does not have the vertical room for a two-line
+    # rotated string without it bleeding into neighbouring rows. A
+    # horizontal label drawn inside the plot area avoids that entirely and
+    # does not compete with tick labels for the left margin. Set after
+    # apply_compact_summary_axis_style, which clears ylabel/title
+    # unconditionally -- see the docstring above -- though ax.text is
+    # unaffected by that call either way.
+    label_box = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.85)
+    for ax, label in row_labels.items():
+        ax.text(0.005, 0.95, label, transform=ax.transAxes,
+                fontsize=SUMMARY_LABEL_SIZE, va="top", ha="left",
+                linespacing=1.1, bbox=label_box, zorder=5)
     fig.subplots_adjust(**SUMMARY_SUBPLOT_ADJUST)
     return fig, axes
 

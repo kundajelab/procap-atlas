@@ -131,11 +131,16 @@ in another, say. It reuses every single-locus building block
 one new drawing function, `plot_dual_locus_summary`, plus its saver
 `save_dual_locus_viewer_outputs`.
 
-**Rows are grouped by track type, not by experiment**: observed (A, B),
-predicted (A, B), profile DeepLIFT (A, B), counts DeepLIFT (A, B) -- eight
-rows total. Grouping this way puts the two curves a reader actually wants to
-compare adjacent to each other, rather than four rows apart in a
-sequential A-then-B layout.
+**Rows are grouped by experiment**: each experiment's own four rows stay
+together -- observed, predicted, counts DeepLIFT, profile DeepLIFT -- A
+first, then B the same way. Eight rows total, each labelled directly on the
+panel with its experiment ID and biosample (`ax.text` in the corner, not
+`ax.set_ylabel`/`set_title`: `apply_compact_summary_axis_style` clears both
+of those unconditionally, since the single-locus figure never shows either.
+An earlier version set the label before that call and it was silently
+wiped on every row -- with eight otherwise-identical rows there was then no
+way to tell which experiment or track a given row was, which is what
+looked like the rows being "misordered").
 
 **The shared axis is computed automatically by default**, and this is the
 entire reason the notebook exists rather than running the single-locus
