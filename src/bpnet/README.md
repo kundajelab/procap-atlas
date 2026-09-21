@@ -1086,6 +1086,21 @@ take the same `--cwm-trim-threshold`/`--cwm-trim-thresholds`/
 `--cwm-trim-coords`/`--min-trim-len` values purely to resolve this same
 directory layout, not to re-derive trimming themselves.
 
+If `regions.npz` itself goes missing (e.g. deleted directly, or removed by a
+disk cleanup) while `hits.tsv` and every later-stage file are still there,
+don't rerun `call_hits_bpnet.py` to get it back: `finemo call-hits` has no
+skip-if-unchanged logic, so that would unconditionally recall hits and
+require redoing every downstream filter/report stage just to regenerate one
+cache file. `extract_regions_bpnet.py` calls `call_hits_bpnet.py`'s own
+`ensure_regions_npz` directly instead, rebuilding only `peaks.narrowPeak`/
+`regions.npz` from the experiment's filtered peaks and saved OHE/attribution
+arrays, with `finemo call-hits` never invoked:
+
+```bash
+python src/bpnet/hitcall/extract_regions_bpnet.py -e ENCSR882DWM
+python src/bpnet/hitcall/extract_regions_bpnet.py -e ENCSR882DWM --force  # rebuild even if a valid regions.npz is already there
+```
+
 `call_hits_bpnet.py` first rebuilds the peak coordinates behind the saved
 `{experiment}_ohe.npz`/attribution arrays: `extract_loci` (used by
 `save_ohe.py`/`attribute_bpnet.py`) silently drops peaks that fall off a

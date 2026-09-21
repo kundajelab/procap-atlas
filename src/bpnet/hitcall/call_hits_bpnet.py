@@ -199,6 +199,60 @@ def run(cmd, verbose):
     subprocess.run(cmd, check=True)
 
 
+def ensure_regions_npz(peaks_path, chrom_splits, ohe_path, attr_path, out_dir,
+                        region_width, verbose=False):
+    """Return out_dir/regions.npz, reusing it if present and valid, else
+    rebuilding it (and its peaks.narrowPeak input) from the experiment's own
+    filtered peaks + saved OHE/attribution arrays.
+
+    Factored out of call_hits_bpnet.py's main() so extract_regions_bpnet.py
+    can rebuild just this cache -- e.g. after regions.npz was deleted
+    directly while hits.tsv and every downstream filter/report stage were
+    left alone -- without also unconditionally re-running finemo call-hits,
+    which has no skip-if-unchanged logic of its own and would overwrite
+    those later stages for no reason.
+    """
+    peaks_narrowpeak = compressed_io.compressed_name(out_dir / "peaks.narrowPeak")
+    regions_npz = out_dir / "regions.npz"
+    if regions_npz.exists() and zipfile.is_zipfile(regions_npz):
+        print(f"Reusing existing {regions_npz}")
+        return regions_npz
+
+    if regions_npz.exists():
+        print(
+            f"WARNING: existing {regions_npz} is not a valid .npz file "
+            "(likely left behind by an interrupted run, e.g. a "
+            "pre-empted/OOM-killed SLURM job) -- regenerating it.",
+            file=sys.stderr,
+        )
+    n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
+    print(f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}")
+    # Write to a temporary path and rename into place only once finemo
+    # finishes successfully, so a job killed mid-write (pre-emption, OOM,
+    # walltime) can never leave a truncated/corrupt regions.npz at the
+    # canonical cache path for a later run to silently "reuse".
+    tmp_regions_npz = out_dir / "regions.tmp.npz"
+    run(
+        [
+            "finemo",
+            "extract-regions-modisco-fmt",
+            "-s",
+            str(ohe_path),
+            "-a",
+            str(attr_path),
+            "-p",
+            str(peaks_narrowpeak),
+            "-o",
+            str(tmp_regions_npz),
+            "-w",
+            str(region_width),
+        ],
+        verbose,
+    )
+    tmp_regions_npz.rename(regions_npz)
+    return regions_npz
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -369,45 +423,10 @@ def main():
 
     # bgzipped. `finemo extract-regions` reads this with polars.scan_csv,
     # which decompresses gzip transparently; bgzip is a valid gzip stream.
-    peaks_narrowpeak = compressed_io.compressed_name(out_dir / "peaks.narrowPeak")
-    regions_npz = out_dir / "regions.npz"
-    if regions_npz.exists() and zipfile.is_zipfile(regions_npz):
-        print(f"Reusing existing {regions_npz}")
-    else:
-        if regions_npz.exists():
-            print(
-                f"WARNING: existing {regions_npz} is not a valid .npz file "
-                "(likely left behind by an interrupted run, e.g. a "
-                "pre-empted/OOM-killed SLURM job) -- regenerating it.",
-                file=sys.stderr,
-            )
-        n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
-        print(
-            f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}"
-        )
-        # Write to a temporary path and rename into place only once finemo
-        # finishes successfully, so a job killed mid-write (pre-emption, OOM,
-        # walltime) can never leave a truncated/corrupt regions.npz at the
-        # canonical cache path for a later run to silently "reuse".
-        tmp_regions_npz = out_dir / "regions.tmp.npz"
-        run(
-            [
-                "finemo",
-                "extract-regions-modisco-fmt",
-                "-s",
-                str(ohe_path),
-                "-a",
-                str(attr_path),
-                "-p",
-                str(peaks_narrowpeak),
-                "-o",
-                str(tmp_regions_npz),
-                "-w",
-                str(args.region_width),
-            ],
-            args.verbose,
-        )
-        tmp_regions_npz.rename(regions_npz)
+    regions_npz = ensure_regions_npz(
+        peaks_path, chrom_splits, ohe_path, attr_path, out_dir,
+        args.region_width, args.verbose,
+    )
 
     suffix = trim_suffix(
         args.cwm_trim_threshold, args.cwm_trim_thresholds, args.cwm_trim_coords
