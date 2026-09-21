@@ -528,3 +528,83 @@ def test_deeplift_logos_missing_head_in_clip_dict_autoscales(monkeypatch):
     assert axes[1].get_ylim() == pytest.approx((-0.5, 0.5))
     assert axes[0].get_ylim() != pytest.approx((-0.5, 0.5))
     plt.close(fig)
+
+
+# --- fixed track y-axis -------------------------------------------------------
+#
+# TRACK_VALUE_CLIP truncates outlier values via clip_track_values, but never
+# touches the axis itself: two curves both well under the clip ceiling still
+# each autoscale to their own (different) max, which erases a genuine
+# difference between two independently-rendered experiments rather than
+# displaying it. track_ylim is the fix, mirroring logo_value_clip.
+
+
+def test_format_track_axis_sets_a_symmetric_ylim():
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    x = np.arange(10, dtype=float)
+    lv.format_track_axis(ax, x, "t", ylim=25.0)
+    assert ax.get_ylim() == pytest.approx((-25.0, 25.0))
+    plt.close(fig)
+
+
+def test_format_track_axis_default_autoscales():
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    x = np.arange(10, dtype=float)
+    ax.plot(x, x)
+    before = ax.get_ylim()
+    lv.format_track_axis(ax, x, "t")
+    assert ax.get_ylim() == before
+    plt.close(fig)
+
+
+def test_format_track_axis_rejects_a_non_positive_ylim():
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    x = np.arange(10, dtype=float)
+    with pytest.raises(ValueError, match="positive"):
+        lv.format_track_axis(ax, x, "t", ylim=0.0)
+    plt.close(fig)
+
+
+def test_ylim_is_independent_of_track_value_clip():
+    """The two are different concerns: one truncates values, the other only
+    moves the axes boundary. Both must be settable at once."""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    x = np.arange(10, dtype=float)
+    lv.format_track_axis(ax, x, "t", track_value_clip=200, ylim=5.0)
+    assert ax.get_ylim() == pytest.approx((-5.0, 5.0))
+    assert "clipped at 200" in ax.get_ylabel()
+    plt.close(fig)
+
+
+def test_plot_locus_summary_track_ylim_is_independent_per_row(
+    resources, monkeypatch
+):
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(
+        lv, "track_arrays",
+        lambda *a, **kw: {
+            "x": np.arange(10, dtype=float),
+            "observed_plus": np.ones(10), "observed_minus": -np.ones(10),
+            "predicted_plus": np.ones(10), "predicted_minus": -np.ones(10),
+        },
+    )
+    monkeypatch.setattr(lv, "oriented_logo_matrix", lambda m, rc: m)
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    attributions = {"profile": np.ones((4, 10)), "count": np.ones((4, 10))}
+    fig, axes = lv.plot_locus_summary(
+        np.zeros((2, lv.OUT_WINDOW)), attributions, resources, "EXP",
+        "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
+        track_ylim={"observed": 3.0, "predicted": 40.0},
+    )
+    assert axes[0].get_ylim() == pytest.approx((-3.0, 3.0))
+    assert axes[1].get_ylim() == pytest.approx((-40.0, 40.0))
+    plt.close(fig)

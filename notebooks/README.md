@@ -121,6 +121,51 @@ registered `PRO-cap Atlas (uv)` kernel described below and set
 `RUN_ONDEMAND_ENV_CHECK = True` in the optional notebook check cell if you want
 to verify that Open OnDemand's injected Python paths have been removed.
 
+## Dual-Locus Viewer
+
+`procap_atlas_bpnet_differential_locus_viewer.ipynb` compares **two
+experiments at one locus** -- a gene shown active in one cell type and quiet
+in another, say. It reuses every single-locus building block
+(`setup_experiment`, `region_input`, `ensemble_prediction`,
+`deeplift_attributions`, `cpm_scale_for`) called once per experiment, and adds
+one new drawing function, `plot_dual_locus_summary`, plus its saver
+`save_dual_locus_viewer_outputs`.
+
+**Rows are grouped by track type, not by experiment**: observed (A, B),
+predicted (A, B), profile DeepLIFT (A, B), counts DeepLIFT (A, B) -- eight
+rows total. Grouping this way puts the two curves a reader actually wants to
+compare adjacent to each other, rather than four rows apart in a
+sequential A-then-B layout.
+
+**The shared axis is computed automatically by default**, and this is the
+entire reason the notebook exists rather than running the single-locus
+notebook twice and pasting the results together. Two independently rendered
+figures each autoscale to their own data, which erases a genuine difference
+in magnitude between conditions -- exactly the failure `CPM scaling` and
+`Adjustable DeepLIFT y-axis` above exist to prevent, and exactly what
+happens again if two such figures are then assembled by hand without
+matching axes. `LOGO_VALUE_CLIP`/`TRACK_YLIM` default to `None`, which
+computes the shared scale from both experiments' actual (already
+CPM-scaled) values via `paired_track_ylim`/`paired_logo_clip`: the larger
+experiment sets the ceiling, so the smaller one is drawn at its true
+relative scale instead of independently filling its own row. Pass an
+explicit dict -- even one with some values still `None` -- to take manual
+control of specific rows instead.
+
+`REGION` (and hence the model input window) is shared between the two
+experiments, since a differential-locus comparison is inherently about the
+same genomic window under two conditions.
+
+Output lands under
+`plots/bpnet/locus_viewer_dual/{EXP_ID_A}_vs_{EXP_ID_B}/{REGION}/`: one
+combined `locus_viewer_dual_summary.pdf`, and each experiment's raw
+prediction/attributions in its own `{exp_id}/locus_viewer_arrays.npz` --
+the same filename and array layout `save_locus_viewer_outputs` already
+uses in the single-locus notebook, one directory per experiment, so nothing
+downstream needs a second format to read. Raw arrays are always saved in
+their original units regardless of any display scaling/clipping used above,
+matching `clip_track_arrays`.
+
 ## BPNet Locus Diagnostics
 
 `procap_atlas_bpnet_locus_diagnostics.py` generates locus predictions and
