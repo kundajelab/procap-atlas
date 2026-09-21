@@ -498,6 +498,7 @@ def format_track_axis(
     show_legend: bool = True,
     cpm_scaled: bool = False,
     ylim: float | None = None,
+    negative_fraction: float = 0.25,
 ) -> None:
     """Apply shared formatting to one plus/minus signal track axis.
 
@@ -505,18 +506,26 @@ def format_track_axis(
     having actually multiplied the plotted values by `cpm_scale_for(...)`.
     A mismatch between the two would mislabel raw counts as RPM.
 
-    `ylim` fixes the axis to `(-ylim, ylim)` instead of autoscaling to this
-    panel's own data -- the same role `value_clip` plays for
-    `plot_logo_panel`, and a distinct concern from `track_value_clip`:
-    `track_value_clip` truncates outlier *values* (e.g. one artifact spike
-    dominating an otherwise-informative track) via `clip_track_values`
-    upstream of this call, while `ylim` only moves the axes boundary and
-    never touches the plotted values. Comparing two independently-rendered
-    runs (two experiments at one locus) needs `ylim`: matching
-    `track_value_clip` between them does nothing if both curves fall well
-    under that ceiling, since each still autoscales to its own smaller max --
-    which visually erases a genuine difference in magnitude rather than
-    displaying it.
+    `ylim` fixes the axis to `(-ylim * negative_fraction, ylim)` instead of
+    autoscaling to this panel's own data -- the same role `value_clip`/
+    `negative_fraction` play for `plot_logo_panel`, and a distinct concern
+    from `track_value_clip`: `track_value_clip` truncates outlier *values*
+    (e.g. one artifact spike dominating an otherwise-informative track) via
+    `clip_track_values` upstream of this call, while `ylim` only moves the
+    axes boundary and never touches the plotted values. Comparing two
+    independently-rendered runs (two experiments at one locus) needs
+    `ylim`: matching `track_value_clip` between them does nothing if both
+    curves fall well under that ceiling, since each still autoscales to its
+    own smaller max -- which visually erases a genuine difference in
+    magnitude rather than displaying it.
+
+    Unlike `plot_logo_panel`, where positive-dominance is a general property
+    of DeepLIFT attributions, plus/minus-strand balance is locus-specific --
+    a divergent promoter can have real, comparable bidirectional signal, so
+    the default here is still asymmetric (4:1, matching the logo default)
+    but is worth checking against a locus known to have strong antisense
+    signal before trusting it blindly; pass `negative_fraction=1.0` for a
+    symmetric range there.
     """
     ax.set_xlim(x[0], x[-1])
     if show_title:
@@ -530,7 +539,9 @@ def format_track_axis(
     if ylim is not None:
         if ylim <= 0:
             raise ValueError("ylim must be positive or None")
-        ax.set_ylim(-ylim, ylim)
+        if negative_fraction <= 0:
+            raise ValueError("negative_fraction must be positive")
+        ax.set_ylim(-ylim * negative_fraction, ylim)
     emphasize_left_y_axis(ax)
 
 
@@ -772,16 +783,24 @@ def plot_logo_panel(
     show_title: bool = True,
     seqlet_annotations: pd.DataFrame | None = None,
     value_clip: float | None = None,
+    negative_fraction: float = 0.25,
 ) -> None:
     """Draw one DeepLIFT logo panel with genomic coordinate ticks.
 
-    `value_clip` fixes the y-axis to `(-value_clip, value_clip)` instead of
-    autoscaling to this panel's own data. It does not touch `matrix` -- a
-    letter taller than the clip is drawn in full and cut off by the axes
-    boundary (standard matplotlib clip-to-axes behaviour), not numerically
-    truncated -- so unlike `clip_track_values` this never changes what was
-    computed, only what window of it is visible. That matters for comparing
-    two independently-rendered logo panels (e.g. two experiments at the same
+    `value_clip` fixes the y-axis to `(-value_clip * negative_fraction,
+    value_clip)` instead of autoscaling to this panel's own data. The
+    default `negative_fraction=0.25` (a 4:1 positive:negative split) rather
+    than a symmetric range, because DeepLIFT motifs are overwhelmingly
+    positive-contribution in practice -- a symmetric `(-value_clip,
+    value_clip)` spends half the panel's height on a negative region that is
+    normally close to flat. Pass `1.0` to restore a symmetric range.
+
+    `value_clip` does not touch `matrix` -- a letter taller than the clip is
+    drawn in full and cut off by the axes boundary (standard matplotlib
+    clip-to-axes behaviour), not numerically truncated -- so unlike
+    `clip_track_values` this never changes what was computed, only what
+    window of it is visible. That matters for comparing two
+    independently-rendered logo panels (e.g. two experiments at the same
     locus): each autoscales to its own max by default, which visually erases
     a real difference in attribution magnitude between them unless both are
     pinned to the same range.
@@ -805,7 +824,9 @@ def plot_logo_panel(
     if value_clip is not None:
         if value_clip <= 0:
             raise ValueError("value_clip must be positive or None")
-        ax.set_ylim(-value_clip, value_clip)
+        if negative_fraction <= 0:
+            raise ValueError("negative_fraction must be positive")
+        ax.set_ylim(-value_clip * negative_fraction, value_clip)
     emphasize_left_y_axis(ax)
 
 
@@ -977,28 +998,26 @@ def save_raw_locus_arrays(
 
 
 def paired_track_ylim(tracks_a: dict, tracks_b: dict) -> dict[str, float | None]:
-    """Symmetric y-limit per row, from the true max magnitude across both
-    experiments' already-scaled, already-clipped track arrays.
+    """One shared, uniform y-limit for every observed/predicted row.
 
-    This is what `plot_dual_locus_summary` falls back to when `track_ylim`
-    is not given: the larger experiment sets the shared ceiling, so the
-    smaller one is drawn at its true relative scale rather than
-    independently autoscaling to fill its own row -- which is the entire
-    point of a dual view. A row whose combined peak is exactly zero returns
-    None (autoscale) rather than 0, since `format_track_axis` rejects a
-    non-positive ylim.
+    The same value is used for "observed" and "predicted", not just matched
+    between the two experiments within each track type -- from the true max
+    magnitude across all four coverage arrays. Observed and predicted are
+    not guaranteed to share a natural scale (prediction error, not only
+    depth, can separate them), so a per-track-type limit would still let a
+    reader misjudge how much of the observed signal the model actually
+    recovered; a uniform axis is what makes that comparison direct.
+
+    A combined peak of exactly zero returns None (autoscale) rather than 0,
+    since `format_track_axis` rejects a non-positive ylim.
     """
     def peak(tracks, keys):
         return max(float(np.max(np.abs(tracks[k]))) for k in keys)
 
-    result = {}
-    for row, keys in [
-        ("observed", ("observed_plus", "observed_minus")),
-        ("predicted", ("predicted_plus", "predicted_minus")),
-    ]:
-        value = max(peak(tracks_a, keys), peak(tracks_b, keys))
-        result[row] = value if value > 0 else None
-    return result
+    keys = ("observed_plus", "observed_minus", "predicted_plus", "predicted_minus")
+    value = max(peak(tracks_a, keys), peak(tracks_b, keys))
+    value = value if value > 0 else None
+    return {"observed": value, "predicted": value}
 
 
 def paired_logo_clip(

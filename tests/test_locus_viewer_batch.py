@@ -449,13 +449,39 @@ def test_n_reads_path_is_independent_of_cwd():
 # independently-rendered panels side by side.
 
 
-def test_plot_logo_panel_sets_a_symmetric_ylim(monkeypatch):
+def test_plot_logo_panel_defaults_to_a_4_to_1_asymmetric_ylim(monkeypatch):
+    """DeepLIFT motifs are overwhelmingly positive-contribution in practice,
+    so a symmetric range wastes half the panel's height on a negative region
+    that is normally close to flat. Default negative_fraction=0.25 gives a
+    4:1 positive:negative split."""
     import matplotlib.pyplot as plt
 
     monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
     fig, ax = plt.subplots()
     lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10, value_clip=0.05)
+    assert ax.get_ylim() == pytest.approx((-0.0125, 0.05))
+    plt.close(fig)
+
+
+def test_plot_logo_panel_negative_fraction_1_restores_symmetric(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    fig, ax = plt.subplots()
+    lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10, value_clip=0.05,
+                       negative_fraction=1.0)
     assert ax.get_ylim() == pytest.approx((-0.05, 0.05))
+    plt.close(fig)
+
+
+def test_plot_logo_panel_rejects_a_non_positive_negative_fraction(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    monkeypatch.setattr(lv, "plot_logo", lambda *a, **kw: None)
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="negative_fraction"):
+        lv.plot_logo_panel(ax, np.ones((4, 10)), "t", 0, 10, value_clip=0.05,
+                           negative_fraction=0.0)
     plt.close(fig)
 
 
@@ -493,7 +519,8 @@ def test_plot_logo_panel_never_mutates_the_matrix(monkeypatch):
     )
     fig, ax = plt.subplots()
     matrix = np.full((4, 10), 5.0)
-    lv.plot_logo_panel(ax, matrix, "t", 0, 10, value_clip=0.01)
+    lv.plot_logo_panel(ax, matrix, "t", 0, 10, value_clip=0.01,
+                       negative_fraction=0.5)
     assert np.allclose(captured["matrix"], 5.0)
     plt.close(fig)
 
@@ -508,8 +535,8 @@ def test_deeplift_logos_clip_independently_per_head(monkeypatch):
         attributions, "EXP", "chr1:1-10", 0, 10,
         logo_value_clip={"profile": 0.02, "count": 0.5},
     )
-    assert axes[0].get_ylim() == pytest.approx((-0.02, 0.02))
-    assert axes[1].get_ylim() == pytest.approx((-0.5, 0.5))
+    assert axes[0].get_ylim() == pytest.approx((-0.02 * 0.25, 0.02))
+    assert axes[1].get_ylim() == pytest.approx((-0.5 * 0.25, 0.5))
     plt.close(fig)
 
 
@@ -525,8 +552,8 @@ def test_deeplift_logos_missing_head_in_clip_dict_autoscales(monkeypatch):
         attributions, "EXP", "chr1:1-10", 0, 10,
         logo_value_clip={"count": 0.5},
     )
-    assert axes[1].get_ylim() == pytest.approx((-0.5, 0.5))
-    assert axes[0].get_ylim() != pytest.approx((-0.5, 0.5))
+    assert axes[1].get_ylim() == pytest.approx((-0.5 * 0.25, 0.5))
+    assert axes[0].get_ylim() != pytest.approx((-0.5 * 0.25, 0.5))
     plt.close(fig)
 
 
@@ -539,13 +566,38 @@ def test_deeplift_logos_missing_head_in_clip_dict_autoscales(monkeypatch):
 # displaying it. track_ylim is the fix, mirroring logo_value_clip.
 
 
-def test_format_track_axis_sets_a_symmetric_ylim():
+def test_format_track_axis_defaults_to_a_4_to_1_asymmetric_ylim():
+    """Matches plot_logo_panel's default: plus-strand/positive space gets 4x
+    the minus-strand/negative space, rather than a symmetric range."""
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots()
     x = np.arange(10, dtype=float)
     lv.format_track_axis(ax, x, "t", ylim=25.0)
+    assert ax.get_ylim() == pytest.approx((-6.25, 25.0))
+    plt.close(fig)
+
+
+def test_format_track_axis_negative_fraction_1_restores_symmetric():
+    """Plus/minus-strand balance is locus-specific, unlike DeepLIFT's
+    general positive-dominance, so a symmetric override has to be available
+    for a locus with real bidirectional signal."""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    x = np.arange(10, dtype=float)
+    lv.format_track_axis(ax, x, "t", ylim=25.0, negative_fraction=1.0)
     assert ax.get_ylim() == pytest.approx((-25.0, 25.0))
+    plt.close(fig)
+
+
+def test_format_track_axis_rejects_a_non_positive_negative_fraction():
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    x = np.arange(10, dtype=float)
+    with pytest.raises(ValueError, match="negative_fraction"):
+        lv.format_track_axis(ax, x, "t", ylim=25.0, negative_fraction=0.0)
     plt.close(fig)
 
 
@@ -578,7 +630,8 @@ def test_ylim_is_independent_of_track_value_clip():
 
     fig, ax = plt.subplots()
     x = np.arange(10, dtype=float)
-    lv.format_track_axis(ax, x, "t", track_value_clip=200, ylim=5.0)
+    lv.format_track_axis(ax, x, "t", track_value_clip=200, ylim=5.0,
+                         negative_fraction=1.0)
     assert ax.get_ylim() == pytest.approx((-5.0, 5.0))
     assert "clipped at 200" in ax.get_ylabel()
     plt.close(fig)
@@ -605,6 +658,6 @@ def test_plot_locus_summary_track_ylim_is_independent_per_row(
         "chr1:1-10", "chr1:1-10", "chr1:1-10", 0, 10,
         track_ylim={"observed": 3.0, "predicted": 40.0},
     )
-    assert axes[0].get_ylim() == pytest.approx((-3.0, 3.0))
-    assert axes[1].get_ylim() == pytest.approx((-40.0, 40.0))
+    assert axes[0].get_ylim() == pytest.approx((-3.0 * 0.25, 3.0))
+    assert axes[1].get_ylim() == pytest.approx((-40.0 * 0.25, 40.0))
     plt.close(fig)

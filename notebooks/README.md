@@ -86,6 +86,29 @@ numerically truncated, so a logo's shape past the clip is simply not shown
 -- nothing is corrupted the way clipping a stacked value before drawing it
 would be.
 
+The clip is also **asymmetric by default**: `plot_logo_panel`'s
+`negative_fraction=0.25` sets the y-axis to `(-clip * 0.25, clip)`, a 4:1
+positive:negative split, rather than `(-clip, clip)`. DeepLIFT motifs are
+overwhelmingly positive-contribution in practice, so a symmetric range
+spends half the panel's height on a negative region that is normally close
+to flat. `format_track_axis`'s `ylim` (the coverage-track equivalent of
+`value_clip`) takes the same `negative_fraction=0.25` default, for the same
+reason a divergent promoter's dominant strand otherwise loses half its
+panel to a near-flat minus strand.
+
+Pass `negative_fraction=1.0` to a direct `plot_logo_panel`/`format_track_axis`
+call to restore a symmetric range. This matters more for coverage than for
+logos: DeepLIFT's positive-dominance is a general property of the
+attribution method, but plus/minus-strand balance is locus-specific -- a
+genuinely divergent promoter can have real, comparable bidirectional
+signal, and the default 4:1 split would visually suppress that. Check
+against a locus with known strong antisense signal before trusting it
+blindly. `LOGO_VALUE_CLIP`/`TRACK_YLIM` in the notebooks do not expose
+`negative_fraction` separately, since it is a display convention rather
+than something to choose per locus in the config cell -- override it by
+calling `plot_locus_summary`/`plot_dual_locus_summary`/`plot_logo_panel`/
+`format_track_axis` directly if a specific locus needs it.
+
 ### Sweeping many regions
 
 The cells above run one region at a time. The final **Multi-region sweep**
@@ -153,9 +176,14 @@ matching axes. `LOGO_VALUE_CLIP`/`TRACK_YLIM` default to `None`, which
 computes the shared scale from both experiments' actual (already
 CPM-scaled) values via `paired_track_ylim`/`paired_logo_clip`: the larger
 experiment sets the ceiling, so the smaller one is drawn at its true
-relative scale instead of independently filling its own row. Pass an
-explicit dict -- even one with some values still `None` -- to take manual
-control of specific rows instead.
+relative scale instead of independently filling its own row.
+`paired_track_ylim` goes further and applies **one uniform limit across all
+four coverage rows** -- both experiments' observed *and* predicted -- not
+just matching each track type between the two experiments, since observed
+and predicted are not guaranteed to share a natural scale and a per-type
+limit would still hide how much of the observed signal the model actually
+recovered. Pass an explicit dict -- even one with some values still `None`
+-- to take manual control of specific rows instead.
 
 `REGION` (and hence the model input window) is shared between the two
 experiments, since a differential-locus comparison is inherently about the

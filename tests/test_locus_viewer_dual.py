@@ -67,19 +67,34 @@ def row_label(ax):
 # --- paired_track_ylim --------------------------------------------------------
 
 
-def test_paired_track_ylim_takes_the_larger_of_the_two():
+def test_paired_track_ylim_is_uniform_across_observed_and_predicted():
+    """Not just matched between the two experiments per track type: the
+    same single value is used for both "observed" and "predicted", since
+    the two are not guaranteed to share a natural scale and a per-type
+    limit would still hide how much observed signal the model recovered."""
     tracks_a = make_tracks(observed_peak=25.0, predicted_peak=20.0)
     tracks_b = make_tracks(observed_peak=2.0, predicted_peak=1.5)
     ylim = lv.paired_track_ylim(tracks_a, tracks_b)
     assert ylim["observed"] == pytest.approx(25.0)
-    assert ylim["predicted"] == pytest.approx(20.0)
+    assert ylim["predicted"] == pytest.approx(25.0)
 
 
-def test_paired_track_ylim_the_smaller_side_can_set_it_too():
+def test_paired_track_ylim_the_smaller_experiment_can_set_it_too():
     tracks_a = make_tracks(observed_peak=2.0, predicted_peak=1.5)
     tracks_b = make_tracks(observed_peak=25.0, predicted_peak=20.0)
     ylim = lv.paired_track_ylim(tracks_a, tracks_b)
     assert ylim["observed"] == pytest.approx(25.0)
+    assert ylim["predicted"] == pytest.approx(25.0)
+
+
+def test_paired_track_ylim_the_predicted_side_can_set_it_too():
+    """The uniform value is a max over all four arrays, so a large
+    *predicted* peak must be able to set the ceiling too, not just observed."""
+    tracks_a = make_tracks(observed_peak=2.0, predicted_peak=40.0)
+    tracks_b = make_tracks(observed_peak=3.0, predicted_peak=1.0)
+    ylim = lv.paired_track_ylim(tracks_a, tracks_b)
+    assert ylim["observed"] == pytest.approx(40.0)
+    assert ylim["predicted"] == pytest.approx(40.0)
 
 
 def test_paired_track_ylim_zero_peak_returns_none_not_zero():
@@ -197,18 +212,20 @@ def test_labels_survive_apply_compact_summary_axis_style(stub_tracks):
         assert row_label(ax) != ""
 
 
-def test_auto_scale_matches_both_experiments_observed_rows(stub_tracks):
-    """The default (track_ylim=None) behaviour: both experiments' observed
-    rows share one axis sized to the larger of the two, even though they are
-    four rows apart in this ordering."""
+def test_auto_scale_is_uniform_across_all_four_coverage_rows(stub_tracks):
+    """The default (track_ylim=None) behaviour: all four coverage rows --
+    both experiments' observed *and* predicted, four rows apart in this
+    ordering -- share one axis sized to the largest peak among all four."""
     fig, axes = draw()
-    assert axes[0].get_ylim() == pytest.approx(axes[4].get_ylim())
-    assert axes[0].get_ylim() == pytest.approx((-25.0, 25.0))
+    # format_track_axis's default 4:1 positive:negative split applies here too.
+    expected = pytest.approx((-25.0 * 0.25, 25.0))
+    for i in (0, 1, 4, 5):  # A observed, A predicted, B observed, B predicted
+        assert axes[i].get_ylim() == expected
 
 
 def test_explicit_track_ylim_overrides_the_auto_default(stub_tracks):
     fig, axes = draw(track_ylim={"observed": 100.0, "predicted": 100.0})
-    assert axes[0].get_ylim() == pytest.approx((-100.0, 100.0))
+    assert axes[0].get_ylim() == pytest.approx((-100.0 * 0.25, 100.0))
 
 
 def test_explicit_none_per_key_autoscales_independently(stub_tracks):
@@ -216,17 +233,18 @@ def test_explicit_none_per_key_autoscales_independently(stub_tracks):
     None -- opting a specific row out of shared scaling without losing the
     others."""
     fig, axes = draw(track_ylim={"observed": None, "predicted": 100.0})
-    assert axes[0].get_ylim() != pytest.approx((-25.0, 25.0))
-    assert axes[1].get_ylim() == pytest.approx((-100.0, 100.0))
+    assert axes[0].get_ylim() != pytest.approx((-25.0 * 0.25, 25.0))
+    assert axes[1].get_ylim() == pytest.approx((-100.0 * 0.25, 100.0))
 
 
 def test_logo_rows_scale_independently_per_head(stub_tracks):
     attrs_a = {"profile": np.full((4, 10), 0.5), "count": np.full((4, 10), 10.0)}
     attrs_b = {"profile": np.full((4, 10), 0.2), "count": np.full((4, 10), 1.0)}
     fig, axes = draw(attrs_a=attrs_a, attrs_b=attrs_b, cpm_scale_a=1.0, cpm_scale_b=1.0)
-    # row 2 = A's count, row 3 = A's profile
-    assert axes[2].get_ylim() == pytest.approx((-10.0, 10.0))
-    assert axes[3].get_ylim() == pytest.approx((-0.5, 0.5))
+    # row 2 = A's count, row 3 = A's profile. plot_logo_panel's default 4:1
+    # positive:negative split applies here too (negative_fraction=0.25).
+    assert axes[2].get_ylim() == pytest.approx((-10.0 * 0.25, 10.0))
+    assert axes[3].get_ylim() == pytest.approx((-0.5 * 0.25, 0.5))
 
 
 def test_neither_prediction_nor_attributions_are_mutated(stub_tracks):
