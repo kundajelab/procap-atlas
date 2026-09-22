@@ -65,7 +65,11 @@ from finemo.data_io import load_mapping_tuple, load_modisco_motifs, load_regions
 from finemo.evaluation import get_cwms
 
 import compressed_io
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+from call_hits_bpnet import (
+    DEFAULT_CWM_TRIM_THRESHOLD,
+    resolve_experiment_paths,
+    resolve_hits_path,
+)
 from region_utils import build_peak_row_index
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -217,16 +221,9 @@ def load_and_compute_background_excess(
     the process on missing files, matching every other script in this
     directory's error handling -- these are all standalone CLI tools first.
     """
-    model_dir_name = Path(model_dir).name if model_dir else experiment
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords_path = (
-        modisco_dir / f"{experiment}_{head}_trim_coords_min{min_trim_len}bp.tsv"
-        if min_trim_len is not None
-        else None
+    exp_dir, hits_dir, trim_coords_path, _ = resolve_experiment_paths(
+        experiment, head, min_trim_len, model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords_path)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = resolve_hits_path(hits_dir, verbose=verbose)
     if hits_path is None:
@@ -238,7 +235,7 @@ def load_and_compute_background_excess(
         sys.exit(1)
     modisco_h5 = (
         Path(modisco_h5_override) if modisco_h5_override
-        else modisco_dir / f"{experiment}_{head}.modisco.h5"
+        else REPO_ROOT / "modisco" / "bpnet" / f"{experiment}_{head}.modisco.h5"
     )
     if not modisco_h5.exists():
         print(f"Error: modisco h5 not found: {modisco_h5}", file=sys.stderr)

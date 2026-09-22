@@ -47,7 +47,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src" / "metaplot"))
@@ -137,16 +137,9 @@ def main():
         print(f"Error: {args.experiment} not found in {N_READS_PATH}", file=sys.stderr)
         sys.exit(1)
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    _, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = resolve_hits_path(hits_dir, verbose=args.verbose)
     if hits_path is None:

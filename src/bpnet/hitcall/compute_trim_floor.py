@@ -36,7 +36,6 @@ import sys
 from pathlib import Path
 
 import h5py
-import numpy as np
 from finemo.data_io import trim_motif
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent

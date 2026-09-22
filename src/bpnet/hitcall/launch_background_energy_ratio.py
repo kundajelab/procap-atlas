@@ -39,7 +39,7 @@ import pandas as pd
 import yaml
 
 import compressed_io
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -96,8 +96,6 @@ def main():
     read_counts_df = pd.read_csv(N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"])
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
-    hitcalls_dir = REPO_ROOT / "hitcalls" / "bpnet"
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_background_excess"
     log_dir.mkdir(parents=True, exist_ok=True)
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -113,14 +111,9 @@ def main():
             continue
 
         for head in heads:
-            cwm_trim_coords = (
-                modisco_dir / f"{exp_id}_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
-                if args.min_trim_len is not None
-                else None
+            exp_dir, hits_dir, _, suffix = resolve_experiment_paths(
+                exp_id, head, args.min_trim_len
             )
-            suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, cwm_trim_coords)
-            exp_dir = hitcalls_dir / f"{exp_id}_{head}"
-            hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
             regions_npz = exp_dir / "regions.npz"
             if not regions_npz.exists() or resolve_hits_path(hits_dir) is None:
                 skipped_missing += 1

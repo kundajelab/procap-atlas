@@ -32,7 +32,7 @@ from pathlib import Path
 import pandas as pd
 
 import compressed_io
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -86,18 +86,9 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir
-        / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    _, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     # Prefer the most-processed hits available: cwm_similarity-filtered
     # (report_bpnet.py, which itself already reads hits_confidence_filtered.tsv/

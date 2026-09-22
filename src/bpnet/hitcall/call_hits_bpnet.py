@@ -97,6 +97,34 @@ def trim_suffix(cwm_trim_threshold, cwm_trim_thresholds, cwm_trim_coords):
     return ("_" + "_".join(parts)) if parts else ""
 
 
+def resolve_experiment_paths(experiment, head, min_trim_len=None, model_dir=None):
+    """Resolve (exp_dir, hits_dir, trim_coords, suffix) from --min-trim-len
+    alone -- the block every hitcall/ script otherwise duplicated by hand.
+
+    model_dir_name defaults to `experiment` when model_dir is None. exp_dir
+    is regions.npz/peaks.narrowPeak's trim-independent home; hits_dir is its
+    trim-suffixed subdirectory (or exp_dir itself for default trimming)
+    where hits/report/ actually live. trim_coords is the modisco/bpnet
+    trim-coords TSV path this --min-trim-len implies, or None -- existence
+    isn't checked here; resolve_hits_path/compressed_io.exists() do that
+    where it matters. Scripts driven by the full --cwm-trim-threshold/
+    --cwm-trim-thresholds/--cwm-trim-coords flag surface directly (this
+    module, report_bpnet.py) call trim_suffix() themselves instead, since
+    --min-trim-len is just one convenience layered on top of that surface.
+    """
+    model_dir_name = Path(model_dir).name if model_dir else experiment
+    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
+    trim_coords = (
+        modisco_dir / f"{experiment}_{head}_trim_coords_min{min_trim_len}bp.tsv"
+        if min_trim_len is not None
+        else None
+    )
+    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
+    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{head}"
+    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
+    return exp_dir, hits_dir, trim_coords, suffix
+
+
 def resolve_hits_path(hits_dir, stages=HITS_FILE_STAGES, verbose=False):
     """Find the most-processed hits file in `stages` (most- to
     least-processed order) that actually exists in `hits_dir`, treating a

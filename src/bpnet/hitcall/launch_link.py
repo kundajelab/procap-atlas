@@ -36,7 +36,7 @@ import pandas as pd
 import yaml
 
 import compressed_io
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+from call_hits_bpnet import resolve_experiment_paths
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -101,8 +101,6 @@ def main():
     )
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
-    hitcalls_dir = REPO_ROOT / "hitcalls" / "bpnet"
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_link"
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -116,18 +114,10 @@ def main():
             skipped_reads += 1
             continue
 
-        model_dir_name = exp_id
-
         for head in heads:
-            cwm_trim_coords = (
-                modisco_dir
-                / f"{exp_id}_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
-                if args.min_trim_len is not None
-                else None
+            _, hits_dir, _, suffix = resolve_experiment_paths(
+                exp_id, head, args.min_trim_len
             )
-            suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, cwm_trim_coords)
-            exp_dir = hitcalls_dir / f"{model_dir_name}_{head}"
-            hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
             hits_filtered = hits_dir / "hits_filtered.tsv"
             hits_unique = hits_dir / "hits_unique.tsv"

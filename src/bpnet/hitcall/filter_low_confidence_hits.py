@@ -205,7 +205,7 @@ from scipy.signal import find_peaks
 from tangermeme.seqlet import recursive_seqlets
 
 import compressed_io
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
 from diagnose_background_energy_ratio import detect_elbow_count, load_and_compute_background_excess
 from diagnose_hit_summit_distance import (
     build_summit_lookup,
@@ -756,18 +756,9 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir
-        / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    exp_dir, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = resolve_hits_path(
         hits_dir,
