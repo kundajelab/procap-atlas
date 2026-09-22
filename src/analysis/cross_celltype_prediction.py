@@ -822,10 +822,9 @@ def load_read_depth() -> dict[str, float]:
     return dict(zip(d["experiment"], d["total_reads"]))
 
 
-def plot_matrix(matrix: pd.DataFrame, groups: dict[str, str], path: Path) -> None:
+def draw_matrix(ax, matrix: pd.DataFrame, groups: dict[str, str]) -> None:
     order = sorted(matrix.index, key=lambda e: (groups.get(e) or "", e))
     m = matrix.loc[order, order]
-    fig, ax = plt.subplots(figsize=(max(4, 0.09 * len(order) + 2),) * 2)
     im = ax.imshow(m.to_numpy(dtype=float), cmap="viridis", aspect="equal")
     ax.set_xlabel("observed in experiment")
     ax.set_ylabel("predicted by model")
@@ -839,8 +838,13 @@ def plot_matrix(matrix: pd.DataFrame, groups: dict[str, str], path: Path) -> Non
     for e in edges:
         ax.axhline(e - 0.5, color="white", lw=0.4)
         ax.axvline(e - 0.5, color="white", lw=0.4)
-    fig.colorbar(im, ax=ax, fraction=0.046, label="Pearson r (log1p counts)")
+    ax.figure.colorbar(im, ax=ax, fraction=0.046, label="Pearson r (log1p counts)")
     ax.set_title("Cross-experiment prediction accuracy", fontsize=10)
+
+
+def plot_matrix(matrix: pd.DataFrame, groups: dict[str, str], path: Path) -> None:
+    fig, ax = plt.subplots(figsize=(max(4, 0.09 * len(matrix.index) + 2),) * 2)
+    draw_matrix(ax, matrix, groups)
     fig.savefig(path, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
