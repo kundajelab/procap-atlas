@@ -131,17 +131,30 @@ def ensure_plain(path):
 
 
 def write_tsv(frame, path, **kwargs):
-    """Write a DataFrame as gzipped TSV, returning the path written.
+    """Write a pandas or polars DataFrame as gzipped TSV, returning the path
+    written.
 
     `path` may be given with or without `.gz`; the output is always
-    compressed. Separator and `index=False` are applied unless overridden, so
-    call sites do not repeat them.
+    compressed. Separator (and, for pandas, `index=False`) are applied
+    unless overridden, so call sites do not repeat them.
+
+    Dispatches on `write_csv` (polars) vs `to_csv` (pandas) rather than an
+    isinstance check, so this doesn't need either library importable when
+    the other one is all a given caller has installed. polars has no
+    extension-based compression inference on write the way `read_csv`/
+    `scan_csv` have on read, so its branch gzips explicitly via a file
+    handle rather than relying on the `.gz`-suffixed path alone.
     """
     out = compressed_name(path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    kwargs.setdefault("sep", "\t")
-    kwargs.setdefault("index", False)
-    frame.to_csv(out, **kwargs)
+    if hasattr(frame, "write_csv"):
+        kwargs.setdefault("separator", "\t")
+        with gzip.open(out, "wb") as handle:
+            frame.write_csv(handle, **kwargs)
+    else:
+        kwargs.setdefault("sep", "\t")
+        kwargs.setdefault("index", False)
+        frame.to_csv(out, **kwargs)
     return out
 
 

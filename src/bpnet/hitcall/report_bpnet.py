@@ -346,8 +346,7 @@ def main():
 
     hits = pl.read_csv(hits_tsv, separator="\t")
     hits_filtered = hits.filter(~pl.col("motif_name").is_in(drop_motifs))
-    hits_filtered_path = hits_dir / "hits_filtered.tsv"
-    hits_filtered.write_csv(hits_filtered_path, separator="\t")
+    hits_filtered_path = compressed_io.write_tsv(hits_filtered, hits_dir / "hits_filtered.tsv")
 
     print(
         f"\nKept {hits_filtered.height}/{hits.height} hits "
