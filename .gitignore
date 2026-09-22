@@ -6,6 +6,7 @@ tmp/
 hitcalls/
 figures/
 compendium/
+notebooks/plots/
 
 # Local working copy of the manuscript draft
 procap_atlas.pdf
@@ -192,3 +193,4 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+configs/core_promoter_names.tsv
