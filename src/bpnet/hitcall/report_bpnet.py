@@ -77,6 +77,7 @@ Usage:
 import argparse
 import subprocess
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 
 import matplotlib
@@ -286,26 +287,38 @@ def main():
     # instead (deprecated but functional Fi-NeMo behavior) is the only way
     # to have it recompute cwm_similarity against filter_repeat_density.py's/
     # filter_low_confidence_hits.py's cleaned-up hits, so only take that path
-    # when one of those has actually been run.
-    hits_arg = str(hits_tsv) if hits_tsv.name != "hits_unique.tsv" else str(hits_dir)
-    run(
-        [
-            "finemo",
-            "report",
-            "-r",
-            str(regions_npz),
-            "-H",
-            hits_arg,
-            "-m",
-            str(modisco_h5),
-            "-o",
-            str(report_dir),
-            "-t",
-            str(args.cwm_trim_threshold),
-            "-n",
-        ],
-        args.verbose,
-    )
+    # when one of those has actually been run. Compare against the logical
+    # (uncompressed) name, since hits_tsv may resolve to hits_unique.tsv.gz.
+    is_hits_unique = compressed_io.plain_name(hits_tsv).name == "hits_unique.tsv"
+    with ExitStack() as stack:
+        if is_hits_unique:
+            hits_arg = str(hits_dir)
+        else:
+            # finemo's deprecated single-file -H mode dispatches on a
+            # literal ".tsv" suffix; a ".tsv.gz" path fails that check and
+            # gets silently treated as a directory instead. Decompress to a
+            # real .tsv first rather than relying on finemo's own reader to
+            # handle gzip, the same reasoning as compressed_io.ensure_plain's
+            # other callers.
+            hits_arg = str(stack.enter_context(compressed_io.ensure_plain(hits_tsv)))
+        run(
+            [
+                "finemo",
+                "report",
+                "-r",
+                str(regions_npz),
+                "-H",
+                hits_arg,
+                "-m",
+                str(modisco_h5),
+                "-o",
+                str(report_dir),
+                "-t",
+                str(args.cwm_trim_threshold),
+                "-n",
+            ],
+            args.verbose,
+        )
 
     motif_report_path = report_dir / "motif_report.tsv"
     motif_report = pl.read_csv(compressed_io.resolve(motif_report_path), separator="\t")

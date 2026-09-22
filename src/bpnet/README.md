@@ -1138,6 +1138,10 @@ compute against the atlas-wide compendium instead, for use with
 python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head profile
 python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head count --min-len 8
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords modisco/bpnet/ENCSR882DWM_profile_trim_coords_min6bp.tsv
+
+python src/bpnet/hitcall/launch_trim_floor.py --dry-run
+python src/bpnet/hitcall/launch_trim_floor.py --head profile --head count
+python src/bpnet/hitcall/launch_trim_floor.py --min-len 8
 ```
 
 Pass either the plain `.tsv` or a manually-gzipped `.tsv.gz` — `--cwm-trim-thresholds`/`--cwm-trim-coords`
@@ -1147,12 +1151,11 @@ and, unlike `peaks.narrowPeak` (read by `finemo extract-regions` via
 `.gz` mapping file to a temp file first (`compressed_io.ensure_plain()`)
 before handing it to Fi-NeMo's own `-T`/`-R` CLI args, since that reader
 isn't confirmed to handle gzip itself. `diagnose_background_energy_ratio.py`
-does the same before its own direct `load_mapping_tuple` call.
-
-python src/bpnet/hitcall/launch_trim_floor.py --dry-run
-python src/bpnet/hitcall/launch_trim_floor.py --head profile --head count
-python src/bpnet/hitcall/launch_trim_floor.py --min-len 8
-```
+does the same before its own direct `load_mapping_tuple` call, and
+`report_bpnet.py` does it for its deprecated single-file `-H` mode too --
+that dispatches on a literal `.tsv` suffix, so a `.tsv.gz` hits path (e.g.
+`hits_dedensified.tsv.gz` after `filter_repeat_density.py`) was silently
+misread as a directory instead of failing loudly.
 
 `launch_trim_floor.py` submits one cheap CPU-only job per (experiment, head)
 to generate these atlas-wide, skipping any experiment/head whose per-experiment
