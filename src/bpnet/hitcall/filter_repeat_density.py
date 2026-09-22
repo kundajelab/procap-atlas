@@ -145,10 +145,11 @@ def main():
     hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = hits_dir / "hits_unique.tsv"
-    if not hits_path.exists():
+    if not compressed_io.exists(hits_path):
         print(f"Error: hits not found: {hits_path}", file=sys.stderr)
         print("Run call_hits_bpnet.py first.", file=sys.stderr)
         sys.exit(1)
+    hits_path = compressed_io.resolve(hits_path)
 
     if args.verbose:
         print(f"Reading hits from {hits_path}")

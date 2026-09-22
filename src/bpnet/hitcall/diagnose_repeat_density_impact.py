@@ -96,7 +96,7 @@ def main():
     before_path = hits_dir / "hits_unique.tsv"
     after_path = hits_dir / "hits_dedensified.tsv"
     for path, label in [(before_path, "hits_unique.tsv"), (after_path, "hits_dedensified.tsv")]:
-        if not path.exists():
+        if not compressed_io.exists(path):
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 

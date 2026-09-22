@@ -235,7 +235,7 @@ def main():
         (seqlets_path, "report/seqlets.tsv", "Run report_bpnet.py first (writes seqlets.tsv as a side effect even with cwm_similarity QC enabled)."),
         (modisco_h5, "motif CWMs (.modisco.h5)", "Run MoDISco first."),
     ]:
-        if not path.exists():
+        if not compressed_io.exists(path):
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             print(hint, file=sys.stderr)
             sys.exit(1)
