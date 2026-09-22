@@ -8,8 +8,8 @@ sbatch job per (experiment, head) pair via link_hits_to_compendium.py.
 Jobs are skipped if hits_linked.tsv already exists or if neither
 hits_filtered.tsv nor hits_unique.tsv exists yet (run
 call_hits_bpnet.py/hitcall/launch.py, and optionally
-report_bpnet.py/hitcall/launch_report.py, first). This step does not use a
-GPU, so it runs as its own cheap CPU-only launcher, like launch_report.py.
+report_bpnet.py/hitcall/launch_post_hoc_pipeline.py, first). This step does
+not use a GPU, so it runs as its own cheap CPU-only launcher.
 
 Jobs are submitted with --requeue, matching launch_post_hoc_pipeline.py's
 reasoning: the default --partition includes `owners`, which is preemptible

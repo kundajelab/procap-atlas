@@ -4,8 +4,8 @@ motif-trim-length floor per experiment.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
 sbatch job per (experiment, head) pair via compute_trim_floor.py -e, so
-hitcall/launch.py --min-trim-len and hitcall/launch_report.py/launch_link.py
---min-trim-len have a per-experiment trim-coords file to find.
+hitcall/launch.py --min-trim-len and hitcall/launch_post_hoc_pipeline.py/
+launch_link.py --min-trim-len have a per-experiment trim-coords file to find.
 
 Jobs are skipped if the output TSV already exists or if the per-experiment
 modisco.h5 is missing (run modisco/launch.py first).

@@ -57,8 +57,6 @@ from pathlib import Path
 # available" the same way.
 HITS_FILE_STAGES = [
     "hits_filtered.tsv",
-    "hits_flank_filtered.tsv",
-    "hits_seqlet_filtered.tsv",
     "hits_confidence_filtered.tsv",
     "hits_dedensified.tsv",
     "hits_unique.tsv",

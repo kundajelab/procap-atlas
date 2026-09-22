@@ -40,7 +40,7 @@ import pandas as pd
 from finemo.data_io import load_regions_npz
 
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
-from filter_by_seqlet_importance import build_peak_row_index, project_contribs
+from region_utils import build_peak_row_index, project_contribs
 from filter_low_confidence_hits import (
     DEFAULT_SEQLET_ADDITIONAL_FLANKS,
     DEFAULT_SEQLET_CLIP_PERCENTILE,

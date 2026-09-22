@@ -22,24 +22,6 @@ distribution (e.g. TA-Inr in the case above) are left untouched -- there's no
 data-driven cutoff to apply, and filtering them anyway would just be an
 arbitrary top-K cut with no principled justification.
 
---score-column hit_flank_similarity computes a score not natively present in
-hits.tsv: filter_by_flank_consistency.py's per-hit cosine similarity between
-the observed contribution track over a hit's *full* (untrimmed) CWM window
-and the motif's full CWM -- unlike hit_correlation/hit_importance, which are
-computed only over the trimmed core and so can't see a real-motif-in-the-
-wrong-flanking-context problem (see that script's docstring). Anchoring that
-score's drop floor to TF-MoDISco discovery seqlets (filter_by_
-seqlet_importance.py's approach) turned out to be the wrong reference
-population for it: real per-hit data (K562 ENCSR220XSM) showed seqlets
-scoring systematically *lower* than hits on this metric for every motif
-checked, including clearly healthy ones -- expected, since MoDISco seqlets
-are an intentionally diverse cluster of variant/degenerate instances
-averaged into one consensus CWM, while Fi-NeMo hit-calling's sparse
-regression explicitly searches for windows maximizing fit to that one
-template. Detecting bimodality within the hit population itself (this
-script's existing machinery) is the right level to look for a real/noise
-split on this score, the same way it already is for hit_correlation.
-
 --score-column hit_summit_proximity is a different, non-attribution-based
 axis entirely: diagnose_hit_summit_distance.py's signed distance from each
 hit to the real PRO-cap TSS summit (not Fi-NeMo's synthetic peak-midpoint
@@ -51,7 +33,7 @@ reason to respect that offset. Checks for a genuine narrow near-summit mode
 sitting on top of an otherwise diffuse/background spread, the same
 find_peaks-based logic as every other score here, just applied to this
 different signal in case it's separable even where attribution-based scores
-(hit_correlation/hit_importance/hit_flank_similarity) weren't.
+(hit_correlation/hit_importance) weren't.
 
 --score-column hit_seq_complexity is a third, sequence-intrinsic axis --
 independent of attribution magnitude, shape, and position entirely. Direct
@@ -202,7 +184,6 @@ Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_similarity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_importance --log-scale
-    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_flank_similarity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_summit_proximity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seq_complexity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence
@@ -232,13 +213,11 @@ from diagnose_hit_summit_distance import (
     infer_coordinate_mode,
     load_filtered_peaks,
 )
-from filter_by_flank_consistency import build_cwm_lookup, compute_flank_similarity
-from filter_by_seqlet_importance import build_peak_row_index, project_contribs
+from region_utils import build_peak_row_index, project_contribs
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_SCORE_COLUMN = "hit_correlation"
-FLANK_SIMILARITY_COLUMN = "hit_flank_similarity"
 SUMMIT_PROXIMITY_COLUMN = "hit_summit_proximity"
 SEQ_COMPLEXITY_COLUMN = "hit_seq_complexity"
 DEFAULT_COMPLEXITY_WINDOW = 100
@@ -431,8 +410,8 @@ def detect_low_confidence_cutoff(
     column's own natural bound (e.g. a cosine similarity near 1.0, or a
     proximity score near 0) would otherwise collapse into that undetectable
     edge bin and silently vanish -- found by hand while validating
-    hit_summit_proximity/hit_flank_similarity on synthetic data shaped
-    exactly like this. One bin of padding isn't enough on its own:
+    hit_summit_proximity on synthetic data shaped exactly like this. One
+    bin of padding isn't enough on its own:
     `smoothing_window`'s convolution spreads a sharp edge spike's mass back
     outward by its own radius, refilling the padding and erasing the
     prominence cliff that padding is supposed to create, so padding scales
@@ -537,9 +516,7 @@ def main():
             f"per-hit score column to check for bimodality (default: "
             f"{DEFAULT_SCORE_COLUMN}). Any existing Fi-NeMo hits.tsv column "
             f"works, plus three special values that aren't native columns "
-            f"and are computed on the fly: {FLANK_SIMILARITY_COLUMN!r} "
-            "(requires regions.npz and the .modisco.h5 -- filter_by_flank_"
-            f"consistency.py's per-hit full-window CWM similarity), "
+            f"and are computed on the fly: "
             f"{SUMMIT_PROXIMITY_COLUMN!r} (requires filtered_peaks.bed.gz -- "
             "diagnose_hit_summit_distance.py's -abs(distance to the real "
             f"PRO-cap TSS summit)), {SEQ_COMPLEXITY_COLUMN!r} (requires "
@@ -549,15 +526,6 @@ def main():
             "tangermeme.seqlet.recursive_seqlets call overlapping the hit, "
             "or 0.0 if none overlap; see module docstring for details on "
             "all of these"
-        ),
-    )
-    parser.add_argument(
-        "--modisco-h5",
-        type=str,
-        default=None,
-        help=(
-            f"override path to the .modisco.h5 file, default derived from "
-            f"config -- only used when --score-column {FLANK_SIMILARITY_COLUMN}"
         ),
     )
     parser.add_argument(
@@ -817,42 +785,7 @@ def main():
     hits = pd.read_csv(hits_path, sep="\t")
     original_columns = list(hits.columns)
 
-    if args.score_column == FLANK_SIMILARITY_COLUMN:
-        regions_npz = exp_dir / "regions.npz"
-        modisco_h5 = (
-            Path(args.modisco_h5) if args.modisco_h5
-            else modisco_dir / f"{args.experiment}_{args.head}.modisco.h5"
-        )
-        for path, label, hint in [
-            (regions_npz, "regions.npz", "Run call_hits_bpnet.py first."),
-            (modisco_h5, "motif CWMs (.modisco.h5)", "Run MoDISco first."),
-        ]:
-            if not path.exists():
-                print(f"Error: {label} not found: {path}", file=sys.stderr)
-                print(hint, file=sys.stderr)
-                sys.exit(1)
-
-        if args.verbose:
-            print(f"Computing {FLANK_SIMILARITY_COLUMN} from {regions_npz} and {modisco_h5}")
-
-        sequences, contribs, peaks_df, _ = load_regions_npz(str(regions_npz))
-        contribs = project_contribs(contribs, sequences)
-        peak_row_index = build_peak_row_index(peaks_df)
-        peak_region_starts = peaks_df["peak_region_start"].to_numpy()
-        cwm_lookup, motif_width = build_cwm_lookup(modisco_h5)
-
-        hits[FLANK_SIMILARITY_COLUMN] = compute_flank_similarity(
-            hits, contribs, sequences, peak_row_index, peak_region_starts, cwm_lookup, motif_width
-        )
-        n_unscoreable = int(hits[FLANK_SIMILARITY_COLUMN].isna().sum())
-        if args.verbose or n_unscoreable:
-            print(
-                f"{n_unscoreable}/{len(hits)} hits ({n_unscoreable / max(len(hits), 1):.1%}) "
-                "could not be scored (untrimmed span outside the saved contribution "
-                "track, e.g. near a peak edge) -- excluded from bimodality detection "
-                "and never dropped by this score"
-            )
-    elif args.score_column == SUMMIT_PROXIMITY_COLUMN:
+    if args.score_column == SUMMIT_PROXIMITY_COLUMN:
         with open(CONFIG_PATH) as f:
             config = yaml.safe_load(f)
         if args.experiment not in config["experiments"]:
@@ -1150,9 +1083,9 @@ def main():
                 )
             )
 
-    # Drop any synthetic column this run added (hit_flank_similarity/
-    # hit_summit_proximity/hit_seq_complexity/hit_seqlet_confidence aren't
-    # part of Fi-NeMo's fixed hits.tsv schema) before writing output --
+    # Drop any synthetic column this run added (hit_summit_proximity/
+    # hit_seq_complexity/hit_seqlet_confidence aren't part of Fi-NeMo's
+    # fixed hits.tsv schema) before writing output --
     # finemo's own downstream `report` subcommand hard-codes an expected
     # column count and errors on a mismatch (polars.exceptions.SchemaError:
     # "provided schema does not match number of columns in file"), found by

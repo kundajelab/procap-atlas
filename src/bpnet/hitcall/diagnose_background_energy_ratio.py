@@ -66,7 +66,7 @@ from finemo.evaluation import get_cwms
 
 import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
-from filter_by_seqlet_importance import build_peak_row_index
+from region_utils import build_peak_row_index
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_MIN_HITS = 20

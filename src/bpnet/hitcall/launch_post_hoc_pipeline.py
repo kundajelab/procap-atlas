@@ -4,17 +4,17 @@ post-hoc, CPU-only Fi-NeMo filtering/reporting pipeline sequentially, so
 there's no need to submit each stage separately and wait for the previous
 one to finish across the whole atlas before starting the next.
 
-Consolidates extract_regions_bpnet.py, launch_filter_repeat_density.py,
-launch_report.py (run twice), and launch_low_confidence_hits.py into one
-job per experiment. All four underlying scripts are already CPU-only
-(`#SBATCH -C NO_GPU` in each of their own launchers), individually fast,
-and -- critically -- fully self-contained per experiment (each one only
-ever reads/writes that one experiment's own hits.tsv/regions.npz/
-modisco.h5), so running them sequentially inside a single job is simpler
-and more robust than SLURM `--dependency` chaining across separate
-per-stage launchers, at the cost of some parallelism (a slow experiment
-in one stage blocks that same job's later stages, but not other
-experiments' jobs).
+Consolidates extract_regions_bpnet.py, filter_repeat_density.py,
+report_bpnet.py (run twice), and filter_low_confidence_hits.py into one
+job per experiment, rather than submitting each as its own separately-
+launched, SLURM-`--dependency`-chained job. All four scripts are CPU-only
+and individually fast, and -- critically -- fully self-contained per
+experiment (each one only ever reads/writes that one experiment's own
+hits.tsv/regions.npz/modisco.h5), so running them sequentially inside a
+single job is simpler and more robust than dependency-chaining separate
+per-stage jobs, at the cost of some parallelism (a slow experiment in one
+stage blocks that same job's later stages, but not other experiments'
+jobs).
 
 Deliberately excludes launch_link.py/link_hits_to_compendium.py: unlike
 the five stages above, it depends on the atlas-wide MotifCompendium

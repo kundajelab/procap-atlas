@@ -2,9 +2,9 @@
 relative to the peak's real PRO-cap TSS summit, or are scattered across the
 peak window like repeat noise.
 
-filter_by_seqlet_importance.py established that TATA's overcalled hits in
-K562 ENCSR220XSM aren't weak-magnitude noise -- they carry real
-hit_importance, comparable to genuine discovery seqlets. The problem is CWM
+TATA's overcalled hits in K562 ENCSR220XSM aren't weak-magnitude noise --
+they carry real hit_importance, comparable to genuine discovery seqlets
+(checked directly against seqlet-derived floors). The problem is CWM
 *shape* mismatch (what cwm_similarity/hit_correlation measure), not signal
 weakness, and no magnitude-based threshold can fix a problem with no
 magnitude gap to exploit. This script checks a different, motif-identity-

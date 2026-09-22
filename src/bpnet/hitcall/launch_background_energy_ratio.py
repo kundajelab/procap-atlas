@@ -11,8 +11,8 @@ sbatch job per (experiment, head) pair. Jobs are skipped if the per-
 experiment/head output TSV already exists (see --out-dir) or if
 regions.npz/a resolvable hits file is missing (run call_hits_bpnet.py/
 hitcall/launch.py first). This step does not use a GPU and doesn't run
-tangermeme's recursive_seqlets, so it's cheap -- similar resource needs to
-report_bpnet.py's own launcher (launch_report.py), which this mirrors.
+tangermeme's recursive_seqlets, so it's cheap, matching this directory's
+other CPU-only launchers' SLURM conventions (partition/skip-logic/requeue).
 
 Jobs are submitted with --requeue: the default --partition includes
 `owners`, which is preemptible (`normal`/`akundaje`/`gpu` are not), and

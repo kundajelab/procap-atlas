@@ -10,16 +10,12 @@ Three categories, in increasing order of judgment call:
      hits_unique.tsv (deduplicated by chr/start/motif_name/strand) is the
      canonical file every downstream script actually reads; hits.tsv is
      pure duplicate bloat, generally larger than hits_unique.tsv itself.
-   - hits_flank_filtered.tsv / hits_seqlet_filtered.tsv: leftover stage
-     names from the hit_flank_similarity / unscoped hit_seqlet_confidence
-     experiments that got rejected while root-causing TATA/TA-Inr
-     overcalling (see filter_low_confidence_hits.py's module docstring).
-     The locked-in pipeline never writes these anymore. Worse than dead
-     weight: HITS_FILE_STAGES (call_hits_bpnet.py) still lists them ahead
-     of hits_confidence_filtered.tsv/hits_dedensified.tsv for staleness
-     detection, so a leftover file here that happens to be *newer* than
-     the real current output would make resolve_hits_path silently prefer
-     the stale abandoned file instead.
+   - hits_flank_filtered.tsv / hits_seqlet_filtered.tsv: output of
+     filter_by_flank_consistency.py / filter_by_seqlet_importance.py,
+     both rejected as null results while root-causing TATA/TA-Inr
+     overcalling and since deleted from the codebase entirely -- nothing
+     can write or (via HITS_FILE_STAGES) prefer these anymore, so any
+     that still exist are pure leftovers from before that deletion.
    - regions.tmp.npz: call_hits_bpnet.py's atomic-write temp file for
      regions.npz, left behind only if a job died between writing it and
      renaming it into place. Only ever flagged if a valid regions.npz
@@ -40,8 +36,8 @@ Three categories, in increasing order of judgment call:
    the same experiment/head. That sibling means call_hits_bpnet.py was
    rerun with --cwm-trim-coords/--min-trim-len (the min-length floor added
    to fix over-trimming of short core-promoter motifs like Inr), which is
-   what every current launcher (launch_report.py, launch_low_confidence_hits.py,
-   launch_link.py, ...) selects via --min-trim-len. The base-level files
+   what every current launcher (launch_post_hoc_pipeline.py, launch_link.py,
+   ...) selects via --min-trim-len. The base-level files
    predate that switch. regions.npz/peaks.narrowPeak are NEVER included in
    this category even here -- they're trim-independent and reused by every
    trim configuration for that (experiment, head), including the current
