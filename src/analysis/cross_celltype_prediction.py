@@ -972,16 +972,30 @@ def draw_differential_ceiling(ax, quads: pd.DataFrame) -> float:
     """
     q, slope, dropped = ceiling_fit(quads)
     tier_totals = quads["tier"].value_counts()
-    for tier in TIERS:
+    # different tissue outnumbers same tissue ~20:1 here, so plotting both
+    # with the same marker/alpha/z-order in TIERS order (same tissue first,
+    # different tissue drawn on top last) buried the sparse tier entirely.
+    # Draw the denser tier first at low alpha/small size, then the sparser
+    # tier last, larger, more opaque, with an edge and a distinct marker, so
+    # it survives on top regardless of how much overplotting sits under it.
+    present = [t for t in TIERS if len(q[q["tier"] == t])]
+    by_density = sorted(present, key=lambda t: -len(q[q["tier"] == t]))
+    MARKERS = {"same tissue": "^", "different tissue": "o"}
+    for rank, tier in enumerate(by_density):
         sub = q[q["tier"] == tier]
-        if not len(sub):
-            continue
+        sparse = rank > 0  # only true for tiers after the densest one
         # n is quadruples *after* the ceiling<=0 drop below, out of that
         # tier's raw total -- stated as a fraction so the legend is
         # self-contained rather than requiring the dropped-count footnote to
         # be read first.
-        ax.scatter(sub["ceiling"], sub["model"], s=7, alpha=0.35, lw=0,
+        ax.scatter(sub["ceiling"], sub["model"],
+                   s=16 if sparse else 6,
+                   alpha=0.85 if sparse else 0.22,
+                   lw=0.4 if sparse else 0,
+                   edgecolors="white" if sparse else "none",
+                   marker=MARKERS.get(tier, "o"),
                    color=TIER_COLOR.get(tier, "#888888"),
+                   zorder=3 + rank,
                    label=f"{tier} (n={len(sub):,}/{tier_totals[tier]:,} quadruples)")
 
     hi = float(max(q["ceiling"].max(), q["model"].max())) * 1.05
