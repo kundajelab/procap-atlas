@@ -1537,7 +1537,27 @@ before starting the next one:
 python src/bpnet/hitcall/launch_post_hoc_pipeline.py --dry-run
 python src/bpnet/hitcall/launch_post_hoc_pipeline.py --min-trim-len 6
 python src/bpnet/hitcall/launch_post_hoc_pipeline.py --low-confidence-args '--score-column hit_seqlet_confidence --seqlet-low-similarity-only --seqlet-similarity-threshold 0.85'
+python src/bpnet/hitcall/launch_post_hoc_pipeline.py --min-trim-len 6 --force  # reprocess with CA_INR_COMPENDIUM_ARGS added below
 ```
+
+For profile head only, `filter_low_confidence_hits.py` also always gets
+`--seqlet-compendium-clusters` for CA-Inr's 8 hand-identified MotifCompendium
+clusters (`CA_INR_COMPENDIUM_ARGS`, both `pos_patterns.N`/`neg_patterns.N`
+since `cluster_final` doesn't stratify by posneg) -- independent of
+`--low-confidence-args`, so overriding that flag for an unrelated reason
+(e.g. a different `--seqlet-similarity-threshold`) can't silently drop CA-Inr
+coverage. This exists because `cwm_similarity` is structurally blind to
+CA-Inr's overcalling (~4bp trimmed core scores >0.9 regardless of real
+background contamination), so `--seqlet-low-similarity-only`'s QC-failure
+scoping never brings it into scope at any threshold, and neither
+`lookup_compendium_cluster.py`'s automatic JASPAR-based identity check nor
+`diagnose_background_energy_ratio.py`'s identity-agnostic elbow detection
+reliably substitutes for it (see `filter_low_confidence_hits.py`'s module
+docstring). Count head is untouched: these cluster ids come from
+`motifcompendium_profile_pattern_to_cluster.tsv` specifically and would be
+meaningless -- or wrongly matched to an unrelated motif -- against count
+head's separate clustering. Already-complete experiments need `--force` to
+be reprocessed with this added.
 
 Jobs are submitted with `--requeue` (the default `--partition` includes
 `owners`, which is preemptible -- `normal`/`akundaje`/`gpu` are not), which

@@ -39,7 +39,12 @@ module docstring and src/bpnet/README.md for the full investigation):
    filter runs, not after.
 3. filter_low_confidence_hits.py -- hit_seqlet_confidence, scoped to only
    the motifs step 2 flagged as failing (the locked-in configuration; see
-   --low-confidence-args below to override).
+   --low-confidence-args below to override). For profile head specifically,
+   also unconditionally scoped to CA-Inr's hand-identified MotifCompendium
+   clusters (CA_INR_COMPENDIUM_ARGS below), independent of
+   --low-confidence-args -- cwm_similarity is structurally blind to that
+   motif's overcalling (its trimmed core is only ~4bp), so step 2's QC-
+   failure scoping never brings it into scope no matter the threshold.
 4. report_bpnet.py (final pass) -- now prefers hits_confidence_filtered.tsv
    from step 3, and defaults to --cwm-similarity-threshold 0.8 (not 0.9) to
    retain the substantially-improved-but-not-quite-0.9 core-promoter
@@ -124,6 +129,26 @@ LOW_CONFIDENCE_SCRIPT = HITCALL_DIR / "filter_low_confidence_hits.py"
 REPORT_SCRIPT = HITCALL_DIR / "report_bpnet.py"
 
 DEFAULT_LOW_CONFIDENCE_ARGS = "--score-column hit_seqlet_confidence --seqlet-low-similarity-only"
+
+# CA-Inr's MotifCompendium cluster_final ids (profile-head build, within
+# 0.95 / across 0.90), hand-identified by browsing the compendium's cluster
+# logo report -- neither cwm_similarity (its ~4bp trimmed core scores >0.9
+# regardless of real background contamination) nor detect_elbow_count's
+# identity-agnostic scoping reliably catches this motif, and JASPAR has no
+# core-promoter entry to bridge cluster_final's raw fragmentation into a
+# verifiable identity the way lookup_compendium_cluster.py's automatic check
+# does for named TFs (see filter_low_confidence_hits.py's module docstring).
+# cluster_final doesn't stratify by posneg, so both pos_patterns.N and
+# neg_patterns.N are passed for every id. Profile-head only: these ids come
+# from motifcompendium_profile_pattern_to_cluster.tsv specifically and would
+# be meaningless -- or wrongly matched to an unrelated motif -- against
+# count head's separate clustering.
+CA_INR_COMPENDIUM_CLUSTERS = [1, 6, 8, 81, 139, 144, 173, 194]
+CA_INR_COMPENDIUM_ARGS = " ".join(
+    f"--seqlet-compendium-clusters {posneg}_patterns.{cluster_id}"
+    for cluster_id in CA_INR_COMPENDIUM_CLUSTERS
+    for posneg in ("pos", "neg")
+)
 
 
 def main():
@@ -284,9 +309,14 @@ def main():
                 f"{run_prefix} {REPORT_SCRIPT} -e {exp_id} --head {head} -v"
                 f"{cwm_trim_coords_flag} {args.report_args}"
             )
+            # Always applied for profile head, independent of --low-confidence-args
+            # (whether default or overridden) -- see CA_INR_COMPENDIUM_ARGS above.
+            low_confidence_extra_args = args.low_confidence_args
+            if head == "profile":
+                low_confidence_extra_args += " " + CA_INR_COMPENDIUM_ARGS
             low_confidence_cmd = (
                 f"{run_prefix} {LOW_CONFIDENCE_SCRIPT} -e {exp_id} --head {head} -v"
-                f"{min_trim_flag} {args.low_confidence_args}"
+                f"{min_trim_flag} {low_confidence_extra_args}"
             )
 
             sbatch_script = textwrap.dedent(f"""\
