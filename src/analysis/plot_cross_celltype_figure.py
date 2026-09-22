@@ -73,7 +73,7 @@ def main():
         help="curated biosample<TAB>group override table, must match whatever "
         "cross_celltype_prediction.py was run with",
     )
-    parser.add_argument("--figsize", type=float, nargs=2, default=(9.0, 11.0),
+    parser.add_argument("--figsize", type=float, nargs=2, default=(14.0, 17.0),
                         metavar=("W", "H"))
     args = parser.parse_args()
 
@@ -97,12 +97,16 @@ def main():
     groups = load_groups(list(matrix.index), args.biosample_groups)
 
     fig = plt.figure(figsize=tuple(args.figsize))
-    gs = fig.add_gridspec(3, 2, height_ratios=(1, 1, 1.3), hspace=0.45, wspace=0.35)
+    # Each draw_*() helper was tuned for its own standalone axes size (roughly
+    # 4x3in for a/b1/b2, 3.3x2.9in per homogenization sub-panel); giving the
+    # composite generous absolute inches per cell -- rather than shrinking
+    # fonts to fit -- is what keeps their legends/annotations from colliding.
+    gs = fig.add_gridspec(3, 2, height_ratios=(1, 1, 1.4), hspace=0.65, wspace=0.4)
 
     ax_a = fig.add_subplot(gs[0, 0])
     ax_b1 = fig.add_subplot(gs[0, 1])
     ax_b2 = fig.add_subplot(gs[1, 0])
-    gs_c = gs[1, 1].subgridspec(1, 2, wspace=0.1)
+    gs_c = gs[1, 1].subgridspec(1, 2, wspace=0.2)
     ax_c1 = fig.add_subplot(gs_c[0, 0])
     ax_c2 = fig.add_subplot(gs_c[0, 1], sharey=ax_c1)
     ax_d = fig.add_subplot(gs[2, :])
@@ -118,9 +122,10 @@ def main():
         legend.remove()
     draw_matrix(ax_d, matrix, groups)
 
+    # Above each panel's own title (loc="left", y~1.0), not overlapping it.
     for ax, label in ((ax_a, "a"), (ax_b1, "b1"), (ax_b2, "b2"), (ax_c1, "c"), (ax_d, "d")):
-        ax.text(-0.12, 1.08, label, transform=ax.transAxes, fontsize=13,
-                fontweight="bold", va="top")
+        ax.text(-0.15, 1.18, label, transform=ax.transAxes, fontsize=13,
+                fontweight="bold", va="bottom")
 
     out_stem = args.out_stem or (args.in_dir / "cross_celltype_figure")
     out_stem.parent.mkdir(parents=True, exist_ok=True)

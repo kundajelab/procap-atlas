@@ -971,33 +971,31 @@ def draw_differential_ceiling(ax, quads: pd.DataFrame) -> float:
     ratio is meaningless rather than small.
     """
     q, slope, dropped = ceiling_fit(quads)
+    tier_totals = quads["tier"].value_counts()
     for tier in TIERS:
         sub = q[q["tier"] == tier]
         if not len(sub):
             continue
+        # n is quadruples *after* the ceiling<=0 drop below, out of that
+        # tier's raw total -- stated as a fraction so the legend is
+        # self-contained rather than requiring the dropped-count footnote to
+        # be read first.
         ax.scatter(sub["ceiling"], sub["model"], s=7, alpha=0.35, lw=0,
                    color=TIER_COLOR.get(tier, "#888888"),
-                   label=f"{tier} (n={len(sub):,})")
+                   label=f"{tier} (n={len(sub):,}/{tier_totals[tier]:,} quadruples)")
 
     hi = float(max(q["ceiling"].max(), q["model"].max())) * 1.05
-    # Labels sit on a white box: both annotations have to cross the point
-    # cloud or the fitted line to reach the space they belong in.
     box = dict(boxstyle="round,pad=0.18", fc="white", ec="none", alpha=0.85)
+    # Diagonal = ceiling (perfect prediction); labelled inline along the line
+    # rather than with an arrow annotation, which crowded this panel badly.
     ax.plot([0, hi], [0, hi], color="#555555", lw=0.9, ls="--", zorder=1)
-    # Below the legend (upper left) and above the point cloud: the empty
-    # triangle between the diagonal and the data is the only free space.
-    ax.annotate("ceiling (perfect prediction)", xy=(hi * 0.52, hi * 0.52),
-                xytext=(hi * 0.16, hi * 0.66), fontsize=6.5, color="#555555",
-                bbox=box, zorder=6,
-                arrowprops=dict(arrowstyle="-", lw=0.5, color="#555555"))
+    ax.text(hi * 0.62, hi * 0.66, "ceiling", fontsize=6.5, color="#555555",
+            rotation=45, rotation_mode="anchor", ha="center", va="center",
+            bbox=box, zorder=6)
 
     ax.plot([0, hi], [0, hi * slope], color="black", lw=1.4, zorder=3)
-    ax.annotate(f"{slope:.0%} of reproducible\ndifference recovered",
-                xy=(hi * 0.90, hi * 0.90 * slope),
-                xytext=(hi * 0.97, hi * 0.42), fontsize=7, ha="right",
-                bbox=box, zorder=6,
-                arrowprops=dict(arrowstyle="-", lw=0.5, color="black"))
-
+    ax.text(hi * 0.98, hi * 0.30, f"{slope:.0%} attained", fontsize=7,
+            ha="right", color="black", bbox=box, zorder=6)
 
     ax.set_xlim(0, hi)
     ax.set_ylim(0, hi)
@@ -1008,9 +1006,9 @@ def draw_differential_ceiling(ax, quads: pd.DataFrame) -> float:
                  loc="left", fontweight="bold")
     if dropped:
         # Bottom right, below the fitted line -- the only region free of both
-        # the point cloud and the two other annotations. Stating the drop on
-        # the panel matters: a reader counting points against the reported
-        # quadruple total would otherwise find them missing.
+        # the point cloud and the legend. States the drop in terms of the
+        # same n's the legend uses (per tier), not just the pooled total, so
+        # the two don't need to be reconciled by hand.
         ax.text(hi * 0.98, hi * 0.045,
                 f"{dropped} of {len(quads):,} quadruples omitted "
                 "(ceiling \u2264 0)",
