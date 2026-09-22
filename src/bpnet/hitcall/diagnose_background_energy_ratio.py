@@ -328,8 +328,8 @@ def main():
     report_df = None
     if args.report_tsv:
         report_path = Path(args.report_tsv)
-        if report_path.exists():
-            report_df = pd.read_csv(report_path, sep="\t").set_index("motif_name")["cwm_similarity"]
+        if compressed_io.exists(report_path):
+            report_df = pd.read_csv(compressed_io.resolve(report_path), sep="\t").set_index("motif_name")["cwm_similarity"]
         else:
             print(f"Warning: --report-tsv {report_path} not found, skipping", file=sys.stderr)
     if report_df is not None:

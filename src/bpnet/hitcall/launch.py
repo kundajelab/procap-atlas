@@ -33,6 +33,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -148,7 +149,7 @@ def main():
                 if args.min_trim_len is not None
                 else None
             )
-            if trim_coords is not None and not trim_coords.exists():
+            if trim_coords is not None and not compressed_io.exists(trim_coords):
                 skipped_no_trim_floor += 1
                 continue
 

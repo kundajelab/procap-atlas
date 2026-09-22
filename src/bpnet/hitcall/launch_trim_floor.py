@@ -27,6 +27,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import compressed_io
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
@@ -109,7 +111,7 @@ def main():
             out_path = (
                 modisco_dir / f"{exp_id}_{head}_trim_coords_min{args.min_len}bp.tsv"
             )
-            if out_path.exists():
+            if compressed_io.exists(out_path):
                 skipped_done += 1
                 continue
 

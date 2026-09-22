@@ -125,7 +125,7 @@ def main():
             exp_dir = hitcalls_dir / f"{model_dir_name}_{head}"
             hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
             hits_tsv = hits_dir / "hits_unique.tsv"
-            if not hits_tsv.exists():
+            if not compressed_io.exists(hits_tsv):
                 skipped_missing += 1
                 continue
 
