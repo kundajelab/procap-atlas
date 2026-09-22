@@ -1523,15 +1523,16 @@ overrides from `compute_trim_floor.py` can't be exactly reproduced at report
 time, and `cwm_similarity` for those specific motifs may be computed against
 a slightly different template width than was actually used to call hits.
 
-`filter_repeat_density.py` -> `report_bpnet.py` (baseline, needed for
-`--seqlet-low-similarity-only`'s scoping) -> `filter_low_confidence_hits.py`
--> `report_bpnet.py` (final) is the whole locked-in post-hoc pipeline, and
-all four stages are fully self-contained per experiment (each only ever
-reads/writes that one experiment's own files) and individually fast.
-`launch_post_hoc_pipeline.py` consolidates them into one SLURM job per
-experiment that runs all four in sequence, so there's no need to submit
-each stage separately and wait for it to finish across the whole atlas
-before starting the next one:
+`extract_regions_bpnet.py` (rebuilds `regions.npz` only if missing/corrupt,
+without recalling hits) -> `filter_repeat_density.py` -> `report_bpnet.py`
+(baseline, needed for `--seqlet-low-similarity-only`'s scoping) ->
+`filter_low_confidence_hits.py` -> `report_bpnet.py` (final) is the whole
+locked-in post-hoc pipeline, and all five stages are fully self-contained
+per experiment (each only ever reads/writes that one experiment's own
+files) and individually fast. `launch_post_hoc_pipeline.py` consolidates
+them into one SLURM job per experiment that runs all five in sequence, so
+there's no need to submit each stage separately and wait for it to finish
+across the whole atlas before starting the next one:
 
 ```bash
 python src/bpnet/hitcall/launch_post_hoc_pipeline.py --dry-run
@@ -1562,7 +1563,7 @@ be reprocessed with this added.
 Jobs are submitted with `--requeue` (the default `--partition` includes
 `owners`, which is preemptible -- `normal`/`akundaje`/`gpu` are not), which
 is safe here since there's no per-stage
-skip logic inside the job itself -- a requeued job just reruns all four
+skip logic inside the job itself -- a requeued job just reruns all five
 stages from scratch, and each one overwrites its own output
 deterministically, so redoing an already-succeeded stage can't corrupt
 anything. `--requeue` doesn't help with a genuine failure though (a real
@@ -1582,7 +1583,7 @@ resubmits only the flagged experiments, since it uses the same completion
 check.
 
 `link_hits_to_compendium.py` below is deliberately excluded from this
-consolidated job: unlike the four stages above, it depends on the
+consolidated job: unlike the five stages above, it depends on the
 atlas-wide MotifCompendium cluster-average h5, built separately by
 aggregating motifs across *every* experiment, so it isn't safe to fold
 into each experiment's own independent job -- run it as its own later,

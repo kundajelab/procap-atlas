@@ -4,19 +4,20 @@ post-hoc, CPU-only Fi-NeMo filtering/reporting pipeline sequentially, so
 there's no need to submit each stage separately and wait for the previous
 one to finish across the whole atlas before starting the next.
 
-Consolidates launch_filter_repeat_density.py, launch_report.py (run
-twice), and launch_low_confidence_hits.py into one job per experiment.
-All three underlying scripts are already CPU-only (`#SBATCH -C NO_GPU` in
-each of their own launchers), individually fast, and -- critically --
-fully self-contained per experiment (each one only ever reads/writes that
-one experiment's own hits.tsv/regions.npz/modisco.h5), so running them
-sequentially inside a single job is simpler and more robust than SLURM
-`--dependency` chaining across separate per-stage launchers, at the cost
-of some parallelism (a slow experiment in one stage blocks that same
-job's later stages, but not other experiments' jobs).
+Consolidates extract_regions_bpnet.py, launch_filter_repeat_density.py,
+launch_report.py (run twice), and launch_low_confidence_hits.py into one
+job per experiment. All four underlying scripts are already CPU-only
+(`#SBATCH -C NO_GPU` in each of their own launchers), individually fast,
+and -- critically -- fully self-contained per experiment (each one only
+ever reads/writes that one experiment's own hits.tsv/regions.npz/
+modisco.h5), so running them sequentially inside a single job is simpler
+and more robust than SLURM `--dependency` chaining across separate
+per-stage launchers, at the cost of some parallelism (a slow experiment
+in one stage blocks that same job's later stages, but not other
+experiments' jobs).
 
 Deliberately excludes launch_link.py/link_hits_to_compendium.py: unlike
-the four stages above, it depends on the atlas-wide MotifCompendium
+the five stages above, it depends on the atlas-wide MotifCompendium
 cluster-average h5 (built separately by motifcompendium/cluster_motifs.py,
 which aggregates motifs across *every* experiment in the atlas, not just
 this one). That compendium has to be built/updated once, after all (or
@@ -30,25 +31,33 @@ Order within each job, matching the real dependency chain established
 while root-causing TATA/TA-Inr overcalling (see filter_low_confidence_hits.py's
 module docstring and src/bpnet/README.md for the full investigation):
 
-1. filter_repeat_density.py -- drops dense same-motif repeat clusters.
-2. report_bpnet.py (baseline pass) -- REQUIRED before step 3, even though
-   its own output gets overwritten by step 4: --seqlet-low-similarity-only
+1. extract_regions_bpnet.py -- rebuilds peaks.narrowPeak/regions.npz if
+   missing or corrupt (e.g. deleted by hand to save disk space -- it's a
+   large, deterministically-rebuildable cache, and this is routine), from
+   the experiment's own filtered peaks and saved OHE/attribution arrays.
+   A no-op, printing "Reusing existing regions.npz", whenever a valid one
+   is already there. Deliberately never calls finemo call-hits itself
+   (unlike call_hits_bpnet.py's own regeneration path), so it can't
+   recall hits or disturb any of the stages below.
+2. filter_repeat_density.py -- drops dense same-motif repeat clusters.
+3. report_bpnet.py (baseline pass) -- REQUIRED before step 4, even though
+   its own output gets overwritten by step 5: --seqlet-low-similarity-only
    (the default --low-confidence-args below) reads *this* pass's
    report/motif_report.tsv to decide which motifs are already failing
    cwm_similarity QC, so it must reflect hits from before the corroboration
    filter runs, not after.
-3. filter_low_confidence_hits.py -- hit_seqlet_confidence, scoped to only
-   the motifs step 2 flagged as failing (the locked-in configuration; see
+4. filter_low_confidence_hits.py -- hit_seqlet_confidence, scoped to only
+   the motifs step 3 flagged as failing (the locked-in configuration; see
    --low-confidence-args below to override). For profile head specifically,
    also unconditionally scoped to CA-Inr's hand-identified MotifCompendium
    clusters (CA_INR_COMPENDIUM_ARGS below), independent of
    --low-confidence-args -- cwm_similarity is structurally blind to that
-   motif's overcalling (its trimmed core is only ~4bp), so step 2's QC-
+   motif's overcalling (its trimmed core is only ~4bp), so step 3's QC-
    failure scoping never brings it into scope no matter the threshold.
-4. report_bpnet.py (final pass) -- now prefers hits_confidence_filtered.tsv
-   from step 3, and defaults to --cwm-similarity-threshold 0.8 (not 0.9) to
+5. report_bpnet.py (final pass) -- now prefers hits_confidence_filtered.tsv
+   from step 4, and defaults to --cwm-similarity-threshold 0.8 (not 0.9) to
    retain the substantially-improved-but-not-quite-0.9 core-promoter
-   motifs from step 3 instead of dropping them wholesale.
+   motifs from step 4 instead of dropping them wholesale.
 
 `set -e` in the generated sbatch script aborts the whole job if any stage
 fails, rather than continuing on to a later stage against a broken/missing
@@ -67,16 +76,20 @@ already-succeeded earlier stage on retry can't corrupt anything, just costs
 some wasted recompute. check_post_hoc_pipeline_failures.py scans for jobs
 that started but never reached this genuinely-complete state (including
 non-preemption failures --requeue doesn't help with, e.g. a real bug or
-bad data in one of the four scripts) without you having to check SLURM
+bad data in one of the five scripts) without you having to check SLURM
 job states or `.err` logs by hand -- text-scanning stderr for a generic
 "did this fail" signal isn't reliable here the way it is for e.g.
 modisco/relaunch_timeout.py's specific TIME_LIMIT text match, since this
 pipeline's own dependencies (finemo, numpy, matplotlib) routinely print
 non-fatal warnings to stderr even on a fully successful run.
 
-Resource defaults are a rough sum across all four stages' own launcher
-defaults (repeat-density 30min/16G/1cpu, report 2h/64G/4cpu x2,
-low-confidence 30min/16G/1cpu) -- hit_seqlet_confidence specifically is
+Resource defaults are a rough sum across the other four stages' own
+launcher defaults (repeat-density 30min/16G/1cpu, report 2h/64G/4cpu x2,
+low-confidence 30min/16G/1cpu); extract_regions_bpnet.py has no separate
+launcher to cite a budget from, but it's a no-op when regions.npz is
+already valid and otherwise only re-extracts already-computed OHE/
+attribution arrays (no model inference), so it doesn't meaningfully add
+to this total. hit_seqlet_confidence specifically is
 noted as more compute-intensive than filter_low_confidence_hits.py's other
 --score-column options (a full, single-threaded tangermeme.seqlet.
 recursive_seqlets pass per region, no GPU/parallelism support), so this is
@@ -124,6 +137,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 HITCALL_DIR = REPO_ROOT / "src" / "bpnet" / "hitcall"
+EXTRACT_REGIONS_SCRIPT = HITCALL_DIR / "extract_regions_bpnet.py"
 REPEAT_DENSITY_SCRIPT = HITCALL_DIR / "filter_repeat_density.py"
 LOW_CONFIDENCE_SCRIPT = HITCALL_DIR / "filter_low_confidence_hits.py"
 REPORT_SCRIPT = HITCALL_DIR / "report_bpnet.py"
@@ -170,7 +184,8 @@ def main():
         help="attribution/motif head(s) to run; repeatable (default: profile)",
     )
     # SLURM resource flags -- see module docstring for how these defaults
-    # were chosen (a sum across all four stages' own individual defaults).
+    # were chosen (a sum across the other four stages' own individual
+    # defaults; extract_regions_bpnet.py doesn't meaningfully add to it).
     parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
     parser.add_argument("--cpus-per-task", type=int, default=4)
     parser.add_argument("--mem", type=str, default="64G")
@@ -301,6 +316,10 @@ def main():
             min_trim_flag = f" --min-trim-len {args.min_trim_len}" if args.min_trim_len is not None else ""
             cwm_trim_coords_flag = f" --cwm-trim-coords {cwm_trim_coords}" if cwm_trim_coords is not None else ""
 
+            # regions.npz is trim-independent, so no min_trim_flag here.
+            extract_regions_cmd = (
+                f"{run_prefix} {EXTRACT_REGIONS_SCRIPT} -e {exp_id} --head {head} -v"
+            )
             repeat_density_cmd = (
                 f"{run_prefix} {REPEAT_DENSITY_SCRIPT} -e {exp_id} --head {head} -v"
                 f"{min_trim_flag} {args.repeat_density_args}"
@@ -341,16 +360,19 @@ def main():
 
                 mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
 
-                echo "=== [1/4] filter_repeat_density.py ==="
+                echo "=== [1/5] extract_regions_bpnet.py (rebuilds regions.npz only if missing/corrupt) ==="
+                {extract_regions_cmd}
+
+                echo "=== [2/5] filter_repeat_density.py ==="
                 {repeat_density_cmd}
 
-                echo "=== [2/4] report_bpnet.py (baseline pass, for --seqlet-low-similarity-only scoping) ==="
+                echo "=== [3/5] report_bpnet.py (baseline pass, for --seqlet-low-similarity-only scoping) ==="
                 {report_cmd}
 
-                echo "=== [3/4] filter_low_confidence_hits.py ==="
+                echo "=== [4/5] filter_low_confidence_hits.py ==="
                 {low_confidence_cmd}
 
-                echo "=== [4/4] report_bpnet.py (final pass) ==="
+                echo "=== [5/5] report_bpnet.py (final pass) ==="
                 {report_cmd}
             """)
 
