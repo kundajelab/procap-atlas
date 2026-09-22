@@ -1138,6 +1138,16 @@ compute against the atlas-wide compendium instead, for use with
 python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head profile
 python src/bpnet/hitcall/compute_trim_floor.py -e ENCSR882DWM --head count --min-len 8
 python src/bpnet/hitcall/call_hits_bpnet.py -e ENCSR882DWM --cwm-trim-coords modisco/bpnet/ENCSR882DWM_profile_trim_coords_min6bp.tsv
+```
+
+Pass either the plain `.tsv` or a manually-gzipped `.tsv.gz` — `--cwm-trim-thresholds`/`--cwm-trim-coords`
+accept both. `call_hits_bpnet.py` checks existence via `compressed_io.exists()`
+and, unlike `peaks.narrowPeak` (read by `finemo extract-regions` via
+`polars.scan_csv`, which decompresses gzip transparently), decompresses a
+`.gz` mapping file to a temp file first (`compressed_io.ensure_plain()`)
+before handing it to Fi-NeMo's own `-T`/`-R` CLI args, since that reader
+isn't confirmed to handle gzip itself. `diagnose_background_energy_ratio.py`
+does the same before its own direct `load_mapping_tuple` call.
 
 python src/bpnet/hitcall/launch_trim_floor.py --dry-run
 python src/bpnet/hitcall/launch_trim_floor.py --head profile --head count

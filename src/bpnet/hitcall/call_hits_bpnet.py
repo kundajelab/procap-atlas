@@ -47,6 +47,7 @@ import argparse
 import subprocess
 import sys
 import zipfile
+from contextlib import ExitStack
 from itertools import chain
 from pathlib import Path
 
@@ -407,7 +408,10 @@ def main():
         (args.cwm_trim_thresholds, "cwm-trim-thresholds mapping"),
         (args.cwm_trim_coords, "cwm-trim-coords mapping"),
     ]:
-        if path is not None and not Path(path).exists():
+        # compressed_io.exists() accepts either a path's plain or .gz form,
+        # since compute_trim_floor.py's trim-coords/-thresholds mapping
+        # files get compressed like any other .tsv in this tree.
+        if path is not None and not compressed_io.exists(path):
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
@@ -450,13 +454,20 @@ def main():
         "-b",
         str(args.batch_size),
     ]
-    if args.cwm_trim_thresholds:
-        call_hits_cmd += ["-T", args.cwm_trim_thresholds]
-    if args.cwm_trim_coords:
-        call_hits_cmd += ["-R", args.cwm_trim_coords]
-    if args.compile:
-        call_hits_cmd.append("-J")
-    run(call_hits_cmd, args.verbose)
+    with ExitStack() as stack:
+        if args.cwm_trim_thresholds:
+            trim_thresholds = stack.enter_context(
+                compressed_io.ensure_plain(args.cwm_trim_thresholds)
+            )
+            call_hits_cmd += ["-T", str(trim_thresholds)]
+        if args.cwm_trim_coords:
+            trim_coords = stack.enter_context(
+                compressed_io.ensure_plain(args.cwm_trim_coords)
+            )
+            call_hits_cmd += ["-R", str(trim_coords)]
+        if args.compile:
+            call_hits_cmd.append("-J")
+        run(call_hits_cmd, args.verbose)
 
     print(f"\nFi-NeMo hits saved to {call_hits_dir}")
 

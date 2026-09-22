@@ -31,9 +31,12 @@ gzip, so a compressed cache works. Verify on the cluster if polars there is
 old, since the fallback is silent breakage at region extraction.
 """
 
+import gzip
 import shutil
 import subprocess
+import tempfile
 import warnings
+from contextlib import contextmanager
 from pathlib import Path
 
 # Written gzip; pandas infers the codec from the suffix on both ends.
@@ -95,6 +98,36 @@ def resolve(path, missing_ok=False):
 def exists(path):
     """Whether either form of `path` is present."""
     return resolve(path, missing_ok=True) is not None
+
+
+@contextmanager
+def ensure_plain(path):
+    """Yield a plain-text-readable path for `path`, decompressing to a
+    temporary file first if only its `.gz` form exists.
+
+    For handing a small mapping/config file to code that doesn't itself
+    decompress gzip -- e.g. Fi-NeMo's own -R/-T mapping-file CLI args and
+    `finemo.data_io.load_mapping_tuple`, unlike `polars.scan_csv` (used for
+    `peaks.narrowPeak`), which decompresses transparently regardless (see
+    module docstring). Only ever used for tiny files (a handful of
+    motif_name<TAB>... rows), so decompressing to a temp file on every call
+    is cheap. The temp file is removed on exit; the original resolved path
+    is yielded as-is (no cleanup) when it was already plain.
+    """
+    resolved = resolve(path)
+    if resolved.suffix != ".gz":
+        yield resolved
+        return
+    tmp = tempfile.NamedTemporaryFile(
+        suffix=plain_name(resolved).suffix, delete=False
+    )
+    try:
+        with gzip.open(resolved, "rb") as src:
+            shutil.copyfileobj(src, tmp)
+        tmp.close()
+        yield Path(tmp.name)
+    finally:
+        Path(tmp.name).unlink(missing_ok=True)
 
 
 def write_tsv(frame, path, **kwargs):

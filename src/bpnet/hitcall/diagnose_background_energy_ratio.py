@@ -255,10 +255,10 @@ def load_and_compute_background_excess(
     peak_row_index = build_peak_row_index(peaks_df)
     peak_region_starts = peaks_df["peak_region_start"].to_numpy()
 
-    trim_coords = (
-        load_mapping_tuple(str(trim_coords_path), int)
-        if trim_coords_path and trim_coords_path.exists() else None
-    )
+    trim_coords = None
+    if trim_coords_path and compressed_io.exists(trim_coords_path):
+        with compressed_io.ensure_plain(trim_coords_path) as plain_trim_coords:
+            trim_coords = load_mapping_tuple(str(plain_trim_coords), int)
     if trim_coords_path is not None and trim_coords is None and verbose:
         print(f"[background_excess] Note: {trim_coords_path} not found, falling back to default cwm_trim_threshold")
 
