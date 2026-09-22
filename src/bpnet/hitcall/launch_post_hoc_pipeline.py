@@ -305,7 +305,8 @@ def main():
             already_done = (
                 compressed_io.exists(hits_filtered)
                 and compressed_io.exists(hits_confidence_filtered)
-                and hits_filtered.stat().st_mtime >= hits_confidence_filtered.stat().st_mtime
+                and compressed_io.resolve(hits_filtered).stat().st_mtime
+                >= compressed_io.resolve(hits_confidence_filtered).stat().st_mtime
             )
             if already_done and not args.force:
                 skipped_done += 1
