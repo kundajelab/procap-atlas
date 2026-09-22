@@ -18,10 +18,9 @@ each motif m,
         report/CWMs/*/hits_fc.png and modisco_fc.png plot (built via
         finemo.evaluation.get_cwms and finemo.data_io.load_modisco_motifs,
         called directly here rather than through `finemo report`'s CLI,
-        which -- as established while root-causing this -- discards
-        --cwm-trim-coords/--min-trim-len for any hits file other than
-        hits_unique.tsv and always re-derives a flat, un-floored trim
-        window instead)
+        which discards --cwm-trim-coords/--min-trim-len for any hits file
+        other than hits_unique.tsv and always re-derives a flat,
+        un-floored trim window instead)
 
     background_ratio(cwm) = sum(cwm[:, ~trim_mask]**2) / sum(cwm[:, trim_mask]**2)
 
@@ -35,8 +34,8 @@ what hits_fc.png showed for CA-Inr in B-cell/neuron/liver, and NOT what it
 showed for K562's own (differently-shaped, RC'ed) Inr -- pushes excess well
 above 0. A difference, not a ratio: background_ratio(modisco_fc) is often
 genuinely ~0 for a cleanly-discovered motif, and dividing by that blows a
-ratio-of-ratios up into a meaningless, unbounded number (found by hand on
-synthetic data) -- a difference degrades gracefully instead.
+ratio-of-ratios up into a meaningless, unbounded number -- a difference
+degrades gracefully instead.
 
 Diagnostic only -- does not filter anything or write output. Motifs are
 sorted by ratio descending so the worst offenders are easy to spot; compare

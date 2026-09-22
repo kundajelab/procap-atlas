@@ -1,182 +1,56 @@
 """Drop the low-confidence mode of a motif's hits, when one is detectable.
 
-Reviewed real per-hit hit_correlation distributions for K562 ENCSR220XSM's
-profile head (three motifs failing report_bpnet.py's cwm_similarity QC even
-after filter_repeat_density.py): GATA showed a clear bimodal split -- a large
-bulk of ambiguous hits plus a distinct, separable population of very
-high-confidence hits (correlation trough around the 90th percentile, then
-rising again toward the max) -- while TA-Initiator showed no such split at
-all (a smooth, monotonically decaying unimodal distribution). That matters:
-a motif's aggregate cwm_similarity can be dragged down by a large low-
-confidence tail even when a real, legitimate high-confidence subset exists
-under the same motif_name, but filtering only helps where that split is
-actually there to find.
-
-This is deliberately identity-agnostic (no hardcoded motif names/thresholds,
-same reasoning as filter_repeat_density.py): for each motif, it builds a
-histogram of --score-column (default hit_correlation), looks for a genuine
-local dip-then-rise (trough after the primary mode, followed by a
-sufficiently large and sufficiently separated secondary mode), and drops
-hits below that trough only when one is found. Motifs with a smooth/unimodal
-distribution (e.g. TA-Inr in the case above) are left untouched -- there's no
+Identity-agnostic (no hardcoded motif names/thresholds, same reasoning as
+filter_repeat_density.py): for each motif, builds a histogram of
+--score-column (default hit_correlation) and drops hits below a detected
+trough only when a genuine secondary mode exists (find_peaks-based, not
+naive first/global extrema -- see detect_low_confidence_cutoff's docstring).
+Motifs with a smooth/unimodal distribution are left untouched; there's no
 data-driven cutoff to apply, and filtering them anyway would just be an
-arbitrary top-K cut with no principled justification.
+arbitrary top-K cut.
 
---score-column hit_summit_proximity is a different, non-attribution-based
-axis entirely: diagnose_hit_summit_distance.py's signed distance from each
-hit to the real PRO-cap TSS summit (not Fi-NeMo's synthetic peak-midpoint
-"summit"), negated and made unsigned (-abs(signed_distance)) so higher is
-still "better"/closer, matching every other score column's convention here.
-A real core-promoter element like TATA should sit at a fixed, narrow offset
-upstream of the TSS; repeat-context noise elsewhere in the peak has no
-reason to respect that offset. Checks for a genuine narrow near-summit mode
-sitting on top of an otherwise diffuse/background spread, the same
-find_peaks-based logic as every other score here, just applied to this
-different signal in case it's separable even where attribution-based scores
-(hit_correlation/hit_importance) weren't.
+--score-column options beyond any native hits.tsv column:
+  - hit_summit_proximity: -abs(distance to the real PRO-cap TSS summit, from
+    diagnose_hit_summit_distance.py, not Fi-NeMo's synthetic peak-midpoint
+    "summit"). Needs filtered_peaks.bed.gz.
+  - hit_seq_complexity: -(longest homopolymer-or-dinucleotide-repeat run
+    within --complexity-window bp of the hit's center, decoded from
+    regions.npz's one-hot sequence). Needs only regions.npz.
+  - hit_seqlet_confidence: -log10(p) of the best tangermeme.seqlet.
+    recursive_seqlets call overlapping the hit's trimmed span, or exactly
+    0.0 if none overlap (a real negative signal, not missing data) -- the
+    only column that tests local prominence relative to background, which
+    Fi-NeMo's own optimizer never checks (sparsity there comes only from a
+    global per-motif L1 penalty and a global per-hit correlation floor).
+    Bypasses the bimodality search entirely (this score's real shape is a
+    spike at 0.0 then monotonic decay, not dip-then-second-peak) and applies
+    a direct, unconditional > 0 floor instead
+    (--log-scale/--n-bins/--smoothing-window/--min-rise-frac/--min-bin-frac
+    are all ignored for it). Deliberately not a clean separator -- see
+    src/bpnet/README.md for the real corroboration-rate numbers and the
+    CLIPNET precedent for --seqlet-threshold's default. More
+    compute-intensive than the other columns (a full recursive_seqlets pass
+    over every region in regions.npz).
 
---score-column hit_seq_complexity is a third, sequence-intrinsic axis --
-independent of attribution magnitude, shape, and position entirely. Direct
-visual review of real ENCSR220XSM TATA hits (logo plots of the actual
-observed contribution track, dump_tata_logos.py-style) showed a clean,
-consistent qualitative difference: real core hits (~-30bp from the TSS)
-show one compact, isolated "TATAAA"-like word sitting in an otherwise quiet
-flanking background, while both the unexplained downstream-hump hits and
-far-background hits sit inside long, dense, low-complexity stretches --
-extended homopolymer or dinucleotide-repeat runs spanning most or all of
-the window, with no single discrete feature standing out. Fi-NeMo's own
-optimizer (hitcaller.py's fit_contribs/prox_grad_step) has no mechanism
-that would catch this: sparsity comes only from a single global per-motif
-L1 penalty and a global per-hit correlation floor, never a check on
-whether a position's importance stands out from its own local
-neighborhood, so a long repetitive stretch can keep yielding weak-but-
-passing hits indefinitely. hit_seq_complexity is
--(longest homopolymer-or-dinucleotide-repeat run within
---complexity-window bp of the hit's center, decoded directly from
-regions.npz's one-hot sequence), so a short run (compact motif in normal-
-complexity flanks) scores near 0 and a long repeat run scores very
-negative, matching every other score column's higher-is-better convention.
-Needs only regions.npz, no other files.
-
---score-column hit_seqlet_confidence is a fourth axis, and the first that
-isn't blind to *local prominence relative to background*. Direct visual
-review of a larger, unbiased logo sample (dump_tata_logos_v2.py, 20 hits per
-signed-distance category instead of the original 6) showed the real
-distinguishing property isn't sequence-level repeat structure after all
-(hit_seq_complexity came back null on real data, no separation between
-categories) -- it's whether the hit's own attribution track is a genuine
-local spike or just an unremarkable blip inside generally noisy background,
-and critically, *both* types occur in every position category (near-summit,
-downstream-hump, far-background alike), which is exactly why every position-
-based and magnitude-based score tried so far averaged the signal away.
-tangermeme.seqlet.recursive_seqlets is an independent seqlet caller whose
-"recursive" property requires every internal sub-span down to
-min_seqlet_len to also independently pass, giving a real statement about
-local prominence -- this is exactly the mechanism Fi-NeMo's own optimizer
-(hitcaller.py's fit_contribs/prox_grad_step) lacks (sparsity comes only from
-a single global per-motif L1 penalty and a global per-hit correlation
-floor, confirmed directly from source -- never a comparison to a hit's own
-local neighborhood), and matches why prior methods without a shared global
-sparsity fit (recursive_seqlets itself, CWM scanning) didn't show this
-overcalling problem for TATA. The CLIPNET paper (Cochran/Cochran-adjacent
-methods, via Schreiber2025-bb) independently confirms recursive_seqlets was
-used successfully for exactly these motifs: "High importance profile motifs
-such as the TATA box and initiator elements were called using the
-recursive_seqlets approach" at a p-value threshold of 0.05 (tangermeme's own
-default is 0.01) -- see --seqlet-threshold.
-
-Its null-distribution histogram bins the *entire* flattened input in one
-global range (xmax, xmin = X.max(), X.min() over every region passed to one
-call, not per-region -- found by reading recursive_seqlets' actual numba-
-jitted source, not assumed), so a single extreme outlier value anywhere in
-the ~90k-region genome-wide batch collapses bin resolution for every other
-region too -- reproduced directly on synthetic data (one contaminating
-outlier dropped calls on 100 otherwise-trivially-callable clean spikes from
-100/100 to 0/100) and is exactly why the first real run of this column came
-back with 100% of hits completely uncorroborated. --seqlet-clip-percentile
-clips |contribs| before the call to fix this while keeping one fast,
-well-powered call over the whole batch (a per-region-only null was
-considered and rejected: much less powered, only ~2100 positions per
-region's own histogram, vs. this approach's single global fix).
-
-hit_seqlet_confidence = -log10(p-value) of the best (lowest-p) recursive
-seqlet overlapping the hit's trimmed [start, end) span, or exactly 0.0 if
-no seqlet call overlaps at all -- "no call" is a real, meaningful negative
-signal here (recursive_seqlets calls nothing in flat background), not
-missing/unscoreable data. Used identity-agnostically (no tomtom/motif-
-matching step, unlike prior hand-tuning-heavy attempts, and unlike
-CLIPNET's own full pipeline which adds Tomtom-lite identity matching plus a
-seqlet-importance floor on top): we only ask whether *any* locally
-prominent attribution feature overlaps the hit's own trimmed span, not what
-it matches, since Fi-NeMo's own hit_correlation already establishes the
-CWM-shape match.
-
-Real per-hit data (K562 ENCSR220XSM, threshold=0.05, clip_percentile=99.99)
-split by ground-truth signed distance to the real PRO-cap TSS summit showed
-corroboration RATE differs ~2-3x between near-summit "core" hits for both
-TATA and TA-Inr (~58-59%) and their downstream-hump/far-background hits
-(~20-29%) -- real, useful structure -- while the score's *magnitude* when
-corroborated (mean ~1.34-1.41) is nearly identical across every category:
-all the information is in whether a call exists at all, not in how strong
-it is. detect_low_confidence_cutoff's find_peaks-based trough-then-rise
-search is the wrong tool for this shape (a spike at exactly 0.0 followed by
-a monotonically *decaying* tail, not a dip-then-second-peak) and reports
-"no secondary mode" even though this real structure exists, so this column
-bypasses that machinery entirely and applies a direct, unconditional
-hit_seqlet_confidence > 0 floor to every motif with enough hits instead
-(--log-scale/--n-bins/--smoothing-window/--min-rise-frac/--min-bin-frac are
-all ignored for this column). This is not a clean separator (~41% of real
-core hits would still be dropped as false negatives; ~20-29% of spurious
-hits still survive as corroborated by chance), and CLIPNET's own methods
-note recursive_seqlets "struggled to consistently identify relatively low
-importance profile motifs" (DPR, activator elements) independent of any
-contamination problem, so this floor costs real recall there too --
-accepted deliberately as a scaling decision: this needs to run identity-
-agnostically across the whole atlas, and consistent recall on core promoter
-motifs (TATA/Inr) was judged to matter more than recall on low-importance
-profile motifs. More compute-intensive than the other columns -- runs a
-full recursive_seqlets pass over every region in regions.npz once.
+Applying the hit_seqlet_confidence floor to every motif is too blunt (see
+README for the real drop-rate numbers) -- three scoping mechanisms narrow
+it instead, unioned together when more than one is given:
+  --seqlet-low-similarity-only: only motifs already failing cwm_similarity
+    QC (reads a prior report_bpnet.py run's report/motif_report.tsv).
+  --seqlet-compendium-clusters: motifs whose local pattern maps to a given
+    MotifCompendium cluster id -- for motifs like CA-Inr, whose short
+    trimmed core keeps cwm_similarity high regardless of real contamination,
+    so --seqlet-low-similarity-only never brings them into scope.
+  --seqlet-background-excess-only: diagnose_background_energy_ratio.py's
+    detect_elbow_count, fully identity-agnostic (no compendium cluster id
+    or cwm_similarity threshold needed).
+See src/bpnet/README.md's Hit-Call Diagnostics section for the full
+investigation behind each of these (real per-motif numbers, rejected
+alternatives, and why).
 
 Run after filter_repeat_density.py (reads hits_dedensified.tsv if present,
-else hits_unique.tsv) and before report_bpnet.py, which prefers this script's
-output (hits_confidence_filtered.tsv) when present.
-
---seqlet-compendium-clusters, a second scoping mechanism (2026, B-cell/
-neuron/liver CA-Inr): --seqlet-low-similarity-only assumes cwm_similarity
-drops for a genuinely-contaminated motif the way it did for TATA, but
-CA-Inr's trimmed core is only ~4bp -- short enough that almost any hit
-containing it scores well against a near-zero-flank archetype regardless of
-real background contamination, so its cwm_similarity stays >0.9 no matter
-how bad the problem gets and --seqlet-low-similarity-only never brings it
-into scope at any threshold. Checked directly (diagnose_seqlet_confidence_
-by_group.py) whether CA-Inr has the same corroboration-rate gap TATA did
-rather than assuming it: real per-hit data (ENCSR342WAR/neuron) showed
-normal (1 hit/peak) vs. excess (2-4 hits/peak) corroboration rates of 41.1%
-vs. 24.4-28.6% -- the same shape and magnitude as TATA's own 58-59% vs.
-20-29% "not a clean separator" gap above, not meaningfully worse. Per-hit
-hit_correlation/hit_coefficient/hit_importance, hit position relative to
-peak midpoint, and strand-majority-within-peak all failed to separate excess
-from normal hits (see diagnose_hit_signal_metaplot.py/diagnose_hit_summit_
-distance.py); splitting excess hits by same- vs. mixed-strand (candidate
-divergent-promoter pairs) didn't cleanly track corroboration rate either
-(28.6% vs. 24.4%, opposite the predicted direction) and was dropped as a
-refinement. A per-peak hit-count cap was considered and rejected outright:
-most human promoters are divergent, so 2+ genuine Inr calls per peak is
-expected biology, not an artifact to cap away. Given the corroboration gap
-is real and TATA-comparable, --seqlet-compendium-clusters resolves this
-experiment's local motif name(s) for a given MotifCompendium cluster (e.g.
-CA-Inr's cluster, identified once via its consistent atlas-wide identity
-rather than per-experiment pattern numbering) and unions them into scope
-alongside whatever --seqlet-low-similarity-only already selected.
-
---seqlet-background-excess-only is a third scoping mechanism, fully general
-and identity-agnostic (no compendium cluster ID or cwm_similarity threshold
-needed): it calls diagnose_background_energy_ratio.py's detect_elbow_count
-directly on this experiment's own regions.npz/hits/modisco h5, unioning in
-whichever motifs it flags as having unusually elevated background
-attribution energy outside their trimmed core. Validated against the same
-two hand-labeled real experiments above, both recovering exactly their 3
-confirmed motifs -- see that script's module docstring for the metric.
+else hits_unique.tsv) and before report_bpnet.py, which prefers this
+script's output (hits_confidence_filtered.tsv) when present.
 
 Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM
@@ -303,37 +177,30 @@ def compute_seqlet_confidence(
     or exactly 0.0 if no call overlaps at all. `contribs` must be the full
     (n_regions, region_width) projected contribution track from regions.npz,
     row-aligned with peak_row_index/peak_region_starts, same convention as
-    every other score column here. Absolute value is passed to
-    recursive_seqlets since it only identifies *positive* seqlets (per its
-    own docstring) and contributions can be negative for repressive motifs.
-    Explicitly upcast to float32 first: regions.npz stores contribs as
-    float16 to save space, but recursive_seqlets' numba-jitted core has no
-    float16 array type support (NotImplementedError at compile time) --
-    found by hand running this against real data.
+    every other score column here. Absolute value is passed since
+    recursive_seqlets only identifies *positive* seqlets (per its own
+    docstring) and contributions can be negative for repressive motifs.
+    Upcast to float32 first: regions.npz stores contribs as float16, but
+    recursive_seqlets' numba-jitted core has no float16 support
+    (NotImplementedError at compile time).
 
-    Clips |contribs| to `clip_percentile` before the call. Found by hand on
-    real data: recursive_seqlets' internal histogram bins the *entire*
-    flattened input in one global range (`xmax, xmin = X.max(), X.min()`
-    over all regions at once, not per-region), so a single extreme outlier
-    value anywhere in the whole genome-wide array blows out bin_width and
-    collapses every other region's real signal into a handful of near-zero
-    bins -- reproduced directly on synthetic data: one contaminating outlier
-    dropped calls on 100 otherwise-trivially-callable clean spikes from
-    100/100 to 0/100, and clipping first restored calling to 101/100. This
-    is why the real ENCSR220XSM run first came back with 100% of hits
+    Clips |contribs| to `clip_percentile` before the call:
+    recursive_seqlets' internal histogram bins the *entire* flattened input
+    in one global range (`xmax, xmin = X.max(), X.min()` over all regions at
+    once, not per-region), so a single extreme outlier anywhere in the
+    genome-wide array collapses every other region's real signal into a
+    handful of near-zero bins -- confirmed on synthetic data (one
+    contaminating outlier dropped calls on 100 otherwise-trivially-callable
+    clean spikes from 100/100 to 0/100; clipping first restored 101/100).
+    This is why the real ENCSR220XSM run first came back with 100% of hits
     completely uncalled -- a global batching artifact, not biology.
 
     additional_flanks pads each called seqlet's returned start/end
-    symmetrically *after* calling, per tangermeme's own Tutorial_A4_Seqlets:
-    it doesn't affect which seqlets get called, the threshold, or the
-    returned p-value/attribution -- only the boundaries used here for
-    overlap testing. The recursive property requires every internal
-    sub-span down to min_seqlet_len to also independently pass, which the
-    tutorial documents as making call boundaries conservative (a real motif
-    core with even a brief dip in one flanking position can fail to extend
-    to its full width); additional_flanks is tangermeme's own sanctioned fix
-    for exactly that, without loosening calling sensitivity the way raising
-    threshold would.
+    symmetrically *after* calling (tangermeme's own sanctioned fix, per its
+    Tutorial_A4_Seqlets, for the recursive property's documented tendency
+    toward conservative call boundaries) -- it only affects the boundaries
+    used here for overlap testing, not which seqlets get called or their
+    threshold/p-value/attribution.
     """
     contribs_abs = np.abs(contribs).astype(np.float32)
     clip_val = np.percentile(contribs_abs, clip_percentile)

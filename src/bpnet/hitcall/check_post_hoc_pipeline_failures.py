@@ -8,17 +8,14 @@ signal the way modisco/relaunch_timeout.py does for its specific TIME_LIMIT
 case: that works there because SLURM's own time-limit cancellation message
 is a fixed, reliable string, but this pipeline's own dependencies (finemo,
 numpy, matplotlib) routinely print non-fatal UserWarning/RuntimeWarning
-text to stderr even on a fully successful run (confirmed directly -- every
-real report_bpnet.py run this session printed warnings like "Passing a
-hits.tsv file to `finemo report` is deprecated" and "invalid value
-encountered in divide" on success). A naive non-empty-stderr check would
-flag nearly everything.
+text to stderr even on a fully successful run. A naive non-empty-stderr
+check would flag nearly everything.
 
 Instead, reuses launch_post_hoc_pipeline.py's own completion check as
 ground truth: hits_filtered.tsv must exist AND be at least as new as
 hits_confidence_filtered.tsv, confirming the final report_bpnet.py pass
-(step 4) genuinely ran after the corroboration filter (step 3), not just
-after the baseline pass (step 2) alone. An experiment is flagged only if:
+(step 5) genuinely ran after the corroboration filter (step 4), not just
+after the baseline pass (step 3) alone. An experiment is flagged only if:
 
 1. It has a job log (job was actually submitted at some point), and
 2. It is not yet complete by that check, and
@@ -29,7 +26,7 @@ after the baseline pass (step 2) alone. An experiment is flagged only if:
 Since launch_post_hoc_pipeline.py is submitted with --requeue, most
 preemptions resolve themselves automatically without ever needing this
 script -- what's left to catch here is everything --requeue doesn't help
-with: a real bug or bad data in one of the four underlying scripts, an
+with: a real bug or bad data in one of the five underlying scripts, an
 OOM/node failure, hitting the --time limit, etc. This script only reports;
 it doesn't resubmit anything. Since launch_post_hoc_pipeline.py's own skip
 check is the same completion check used here, simply rerunning it with the

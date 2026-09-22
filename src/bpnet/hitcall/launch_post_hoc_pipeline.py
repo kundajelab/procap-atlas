@@ -27,88 +27,52 @@ experiment processed early could link against a stale or incomplete
 compendium. Run launch_link.py as its own separate, later, atlas-scope
 step once the compendium is up to date.
 
-Order within each job, matching the real dependency chain established
-while root-causing TATA/TA-Inr overcalling (see filter_low_confidence_hits.py's
-module docstring and src/bpnet/README.md for the full investigation):
+Order within each job (see filter_low_confidence_hits.py's module docstring
+and src/bpnet/README.md for the full TATA/TA-Inr/CA-Inr investigation this
+sequence and its defaults are built on):
 
 1. extract_regions_bpnet.py -- rebuilds peaks.narrowPeak/regions.npz if
    missing or corrupt (e.g. deleted by hand to save disk space -- it's a
-   large, deterministically-rebuildable cache, and this is routine), from
-   the experiment's own filtered peaks and saved OHE/attribution arrays.
-   A no-op, printing "Reusing existing regions.npz", whenever a valid one
-   is already there. Deliberately never calls finemo call-hits itself
-   (unlike call_hits_bpnet.py's own regeneration path), so it can't
-   recall hits or disturb any of the stages below.
+   large, deterministically-rebuildable cache), without touching finemo
+   call-hits, so it can't recall hits or disturb the stages below. A no-op
+   when a valid regions.npz is already there.
 2. filter_repeat_density.py -- drops dense same-motif repeat clusters.
 3. report_bpnet.py (baseline pass) -- REQUIRED before step 4, even though
    its own output gets overwritten by step 5: --seqlet-low-similarity-only
-   (the default --low-confidence-args below) reads *this* pass's
-   report/motif_report.tsv to decide which motifs are already failing
-   cwm_similarity QC, so it must reflect hits from before the corroboration
-   filter runs, not after.
-4. filter_low_confidence_hits.py -- hit_seqlet_confidence, scoped to only
-   the motifs step 3 flagged as failing (the locked-in configuration; see
-   --low-confidence-args below to override). For profile head specifically,
-   also unconditionally scoped to CA-Inr's hand-identified MotifCompendium
-   clusters (CA_INR_COMPENDIUM_ARGS below), independent of
-   --low-confidence-args -- cwm_similarity is structurally blind to that
-   motif's overcalling (its trimmed core is only ~4bp), so step 3's QC-
-   failure scoping never brings it into scope no matter the threshold.
-5. report_bpnet.py (final pass) -- now prefers hits_confidence_filtered.tsv
-   from step 4, and defaults to --cwm-similarity-threshold 0.8 (not 0.9) to
-   retain the substantially-improved-but-not-quite-0.9 core-promoter
-   motifs from step 4 instead of dropping them wholesale.
+   reads *this* pass's report/motif_report.tsv to decide which motifs are
+   already failing cwm_similarity QC, so it must reflect hits from before
+   the corroboration filter runs.
+4. filter_low_confidence_hits.py -- hit_seqlet_confidence, scoped to the
+   motifs step 3 flagged plus (profile head only) CA_INR_COMPENDIUM_ARGS
+   below, unconditionally -- cwm_similarity is structurally blind to that
+   motif's overcalling, so step 3's scoping alone never catches it.
+5. report_bpnet.py (final pass) -- prefers hits_confidence_filtered.tsv
+   from step 4; --cwm-similarity-threshold defaults to 0.8, not 0.9, to
+   retain core-promoter motifs step 4 substantially improved but didn't
+   quite push past 0.9.
 
-`set -e` in the generated sbatch script aborts the whole job if any stage
-fails, rather than continuing on to a later stage against a broken/missing
-input (e.g. running the corroboration filter's --seqlet-low-similarity-only
-against a baseline report that never actually ran).
+`set -e` aborts the whole job if any stage fails. Submitted with
+--requeue (default --partition includes preemptible `owners`), safe since
+every stage overwrites its own output deterministically and there's no
+per-stage skip logic inside the job -- a requeued job just reruns
+everything. check_post_hoc_pipeline_failures.py finds jobs that started
+but never reached a genuinely-complete state (including non-preemption
+failures --requeue can't fix), since this pipeline's dependencies print
+enough non-fatal stderr warnings that naive stderr-scanning isn't reliable.
 
-Jobs are submitted with --requeue, matching src/bpnet/fit/launch.py's
-reasoning: the default --partition includes `owners`, which is preemptible
-(`normal`/`akundaje`/`gpu` are not), and without --requeue a preempted job
-just dies with no automatic resubmission. A requeued job re-runs this whole
-script from
-scratch rather than resuming mid-chain -- there's no per-stage skip logic
-inside the job itself (see below), so this is safe: every stage overwrites
-its own output deterministically from the same inputs, so redoing an
-already-succeeded earlier stage on retry can't corrupt anything, just costs
-some wasted recompute. check_post_hoc_pipeline_failures.py scans for jobs
-that started but never reached this genuinely-complete state (including
-non-preemption failures --requeue doesn't help with, e.g. a real bug or
-bad data in one of the five scripts) without you having to check SLURM
-job states or `.err` logs by hand -- text-scanning stderr for a generic
-"did this fail" signal isn't reliable here the way it is for e.g.
-modisco/relaunch_timeout.py's specific TIME_LIMIT text match, since this
-pipeline's own dependencies (finemo, numpy, matplotlib) routinely print
-non-fatal warnings to stderr even on a fully successful run.
+Resource defaults sum the other four stages' own launcher defaults
+(repeat-density 30min/16G/1cpu, report 2h/64G/4cpu x2, low-confidence
+30min/16G/1cpu; extract_regions_bpnet.py adds negligibly, no model
+inference). hit_seqlet_confidence is the most compute-intensive
+--score-column (a full single-threaded recursive_seqlets pass per region,
+no GPU/parallelism), so this is a conservative starting budget -- check
+real wall-clock before running atlas-wide.
 
-Resource defaults are a rough sum across the other four stages' own
-launcher defaults (repeat-density 30min/16G/1cpu, report 2h/64G/4cpu x2,
-low-confidence 30min/16G/1cpu); extract_regions_bpnet.py has no separate
-launcher to cite a budget from, but it's a no-op when regions.npz is
-already valid and otherwise only re-extracts already-computed OHE/
-attribution arrays (no model inference), so it doesn't meaningfully add
-to this total. hit_seqlet_confidence specifically is
-noted as more compute-intensive than filter_low_confidence_hits.py's other
---score-column options (a full, single-threaded tangermeme.seqlet.
-recursive_seqlets pass per region, no GPU/parallelism support), so this is
-a conservative starting budget; check actual wall-clock on a real
-experiment and adjust --time if needed before running atlas-wide.
-
-Jobs are skipped if hits_filtered.tsv already exists (fully done -- the
-final report_bpnet.py pass's own output) or if hits_unique.tsv is missing
-(run call_hits_bpnet.py/hitcall/launch.py first) -- unless --force is
-given, which resubmits already-complete experiments too (e.g. after
-changing --low-confidence-args/--report-args or the underlying scripts
-and wanting to reprocess the whole atlas with the new settings; missing
-hits_unique.tsv is still skipped even with --force, since there's nothing
-to reprocess). Unlike the per-stage launchers, there's no per-stage skip
-logic inside the job itself -- each
-underlying script is safe to rerun and overwrites its own output
-unconditionally, and the stages are fast enough that redundant
-recomputation within an already-partially-done experiment isn't worth the
-added complexity.
+Jobs are skipped if hits_filtered.tsv already exists (the final
+report_bpnet.py pass's own output) or if hits_unique.tsv is missing (run
+hitcall/launch.py first) -- unless --force, which resubmits already-complete
+experiments too (missing hits_unique.tsv is still always skipped, since
+there's nothing to reprocess).
 
 Usage:
     python src/bpnet/hitcall/launch_post_hoc_pipeline.py                    # submit all experiments, profile head

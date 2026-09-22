@@ -2,20 +2,14 @@
 relative to the peak's real PRO-cap TSS summit, or are scattered across the
 peak window like repeat noise.
 
-TATA's overcalled hits in K562 ENCSR220XSM aren't weak-magnitude noise --
-they carry real hit_importance, comparable to genuine discovery seqlets
-(checked directly against seqlet-derived floors). The problem is CWM
-*shape* mismatch (what cwm_similarity/hit_correlation measure), not signal
-weakness, and no magnitude-based threshold can fix a problem with no
-magnitude gap to exploit. This script checks a different, motif-identity-
-agnostic axis: real core-promoter elements (TATA, Inr) sit at a fixed,
-narrow offset from the transcription start site (TATA ~-25 to -30bp);
-AT-rich repeat-context noise elsewhere in a ~2kb peak window has no reason
-to respect that offset. If a motif's real hits are position-constrained and
-its noise hits aren't, the per-motif hit-to-summit distance distribution
-should show a sharp mode (real) sitting on top of, or instead of, a diffuse
-spread (noise) -- checkable without any consensus/JASPAR identity
-knowledge, using only each motif's own hits.
+Motif-identity-agnostic: real core-promoter elements (TATA, Inr) sit at a
+fixed, narrow offset from the transcription start site (TATA ~-25 to
+-30bp); AT-rich repeat-context noise elsewhere in a ~2kb peak window has
+no reason to respect that offset. If a motif's real hits are position-
+constrained and its noise hits aren't, the per-motif hit-to-summit
+distance distribution should show a sharp mode (real) sitting on top of,
+or instead of, a diffuse spread (noise) -- checkable without any
+consensus/JASPAR identity knowledge, using only each motif's own hits.
 
 Fi-NeMo's hit-calling never sees a real biological summit: call_hits_bpnet's
 build_peaks_narrowpeak() feeds it a synthetic narrowPeak whose "summit" is

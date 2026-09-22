@@ -10,21 +10,14 @@ which drops all hits for any motif whose hit-derived CWM correlates poorly
 with the reference CWM (they used a 0.9 threshold on their `cwm_correlation`,
 the equivalent metric in the older Fi-NeMo release they used).
 
---cwm-similarity-threshold's default is 0.8, not HDMA's 0.9: extensive
-investigation into K562 ENCSR220XSM's TATA box/TA-Inr/GATA overcalling
-(see filter_low_confidence_hits.py's module docstring for the full
-writeup -- seven score axes tried, most native to hits.tsv, before finding
-one that worked) found that filter_low_confidence_hits.py's
-hit_seqlet_confidence corroboration filter (scoped to already-failing
-motifs via --seqlet-low-similarity-only) substantially improves but doesn't
-fully resolve these motifs past 0.9 (e.g. TATA: 0.765 -> 0.853). Every
-further lever tried (looser/stricter recursive_seqlets thresholds,
-additional_flanks, layering CLIPNET's own importance-floor second stage)
-either made things worse or was a no-op. Rather than drop these
-substantially-improved motifs' hits wholesale at the stricter 0.9 cutoff,
-0.8 retains them while still dropping motifs that remain clearly broken
-(e.g. K562 ENCSR220XSM's pos_patterns.pattern_38 at 0.538, neg_patterns.
-pattern_30 at 0.599 -- both far below either threshold).
+--cwm-similarity-threshold's default is 0.8, not HDMA's 0.9:
+filter_low_confidence_hits.py's hit_seqlet_confidence corroboration filter
+substantially improves TATA/TA-Inr/GATA-family overcalling but doesn't
+fully resolve it past 0.9 (e.g. TATA: 0.765 -> 0.853) -- 0.8 retains those
+substantially-improved motifs instead of dropping them wholesale, while
+still dropping motifs that remain clearly broken. See
+filter_low_confidence_hits.py's module docstring and src/bpnet/README.md
+for the full investigation.
 
 `cwm_similarity` is computed from `regions.npz` + `hits.tsv` + the motif h5's
 own CWMs, independent of TF-MoDISco seqlets, so `--no-recall` is always used
