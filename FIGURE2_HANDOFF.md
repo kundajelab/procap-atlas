@@ -126,7 +126,25 @@ result was never a cluster-id problem). Fixed: step 4 now points at
 real render** -- needs the `_ubiquitous.tsv` file confirmed to actually
 contain clusters 4/21/24.
 
-Steps 3-4 below should be re-run once #5, #6, and #7 are confirmed.
+An eighth bug, found running `generate_figure2.sh` on Sherlock: step 3's
+loop tried both `pos_patterns.{cid}` and `neg_patterns.{cid}` for each of
+4/21/24, but `cluster_final` ids are namespaced separately per
+`pos_patterns`/`neg_patterns` group in the compendium h5 -- "cluster 4"
+only ever exists on one side, not as a matched pos/neg pair sharing one
+id. `neg_patterns/4` (etc.) doesn't exist in
+`motifcompendium_profile_cluster_averages.h5` **at all**, for every
+contributing experiment, which made `metaplot_motif.py` raise
+`SystemExit("no windows extracted from any contributing experiment")` and
+killed the whole batch job under `set -e`. Fixed: dropped the `pos`/`neg`
+loop entirely -- 4/21/24 are all confirmed `pos_patterns`-side.
+
+Also worth noting while running this on Sherlock via `sbatch`: the script
+briefly resolved `REPO_ROOT` from `${BASH_SOURCE[0]}`, but `sbatch` copies
+the script into a spool directory and runs *that* copy, so every relative
+path resolved against `/var/spool/...` instead of the repo. Fixed by using
+`$SLURM_SUBMIT_DIR` instead (see `generate_figure2.sh`'s own comment).
+
+Steps 3-4 below should be re-run once #5, #6, #7, and #8 are confirmed.
 
 **Panel order changed:** `plot_figure2.py`'s main-figure lettering is now
 **a = motif exemplars** (the logo grid, top full-width row), **b =
@@ -201,12 +219,15 @@ comment) — re-verify these ids by eye against
 reclustered.
 
 ```bash
-# compendium-wide metaplots for the three named clusters, both strands
+# compendium-wide metaplots for the three named clusters. cluster_final ids
+# are namespaced separately per pos_patterns/neg_patterns group in the
+# compendium h5 -- "cluster 4" only exists on one side, not as a pos/neg
+# pair sharing one id -- and 4/21/24 are all confirmed pos_patterns-side
+# (neg_patterns/4 etc. don't exist in the h5 at all). Don't loop over both;
+# metaplot_motif.py raises SystemExit on the missing side.
 for cid in 4 21 24; do
-    for posneg in pos neg; do
-        python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
-            --head profile --compendium-motif-name "${posneg}_patterns.${cid}" -v
-    done
+    python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
+        --head profile --compendium-motif-name "pos_patterns.${cid}" -v
 done
 
 # still need select_motif_exemplars.py --head profile once, to produce the

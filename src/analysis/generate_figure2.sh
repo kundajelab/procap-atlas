@@ -65,11 +65,16 @@ run python src/analysis/select_motif_exemplars.py --head count --max-groups 2 --
     --logo-root motifcompendium/bpnet/
 
 echo "=== Step 3: profile-head core-promoter band ==="
+# cluster_final ids are namespaced separately per pos_patterns/neg_patterns
+# group in the compendium h5 (a "cluster 4" only ever exists on one side),
+# not a pos/neg pair sharing one id -- confirmed 4/21/24 are all
+# pos_patterns-side (neg_patterns/4 doesn't exist in the h5 at all, not
+# just empty, for every contributing experiment). Looping over both sides
+# per id was wrong and made metaplot_motif.py raise SystemExit on the neg
+# half, killing the whole job under `set -e`.
 for cid in 4 21 24; do
-    for posneg in pos neg; do
-        run python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
-            --head profile --compendium-motif-name "${posneg}_patterns.${cid}" -v
-    done
+    run python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
+        --head profile --compendium-motif-name "pos_patterns.${cid}" -v
 done
 
 run python src/analysis/select_motif_exemplars.py --head profile --include-unmatched \
