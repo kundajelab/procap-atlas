@@ -55,6 +55,17 @@ reads the exact window size modisco-lite used back from the h5's own
 assuming/hardcoding it. Fi-NeMo hits need no such correction at all: their
 genome coordinates are written directly into hits.tsv by call-hits.
 
+Getting the crop right still isn't the whole story: a seqlet's start/end
+span MoDISco's full, untrimmed window for that pattern, not the
+informative core of it. Fi-NeMo hits don't have this problem because
+call_hits_bpnet.py's own --cwm-trim-threshold already crops each hit to
+its CWM's informative core (finemo.data_io.trim_motif) before writing
+hits.tsv -- which is exactly why hits-based metaplots center cleanly.
+seqlet_positions() applies that same trim_motif() call (same default
+threshold) to each pattern's own contrib_scores, so seqlet-based sources
+agree with hit-based ones about what "motif center" means, instead of
+using MoDISco's arbitrarily-wider raw window's geometric midpoint.
+
 Seqlet/hit "strand" is a locally-discovered pattern's own orientation label
 and has no guaranteed relationship to real transcription direction (a motif
 can be labelled "+" from one experiment's MoDISco run and get its reverse
@@ -125,10 +136,14 @@ import numpy as np
 import numpy.lib.format as npy_format
 import pandas as pd
 import yaml
-from finemo.data_io import load_peaks
+from finemo.data_io import load_peaks, trim_motif
 
 import compressed_io
-from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
+from call_hits_bpnet import (
+    DEFAULT_CWM_TRIM_THRESHOLD,
+    resolve_experiment_paths,
+    resolve_hits_path,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src" / "metaplot"))
@@ -331,8 +346,29 @@ def seqlet_positions(
         ends = seqlets["end"][:]
         example_idx = seqlets["example_idx"][:]
         is_revcomp = seqlets["is_revcomp"][:]
+        contrib_scores = f[posneg_group][pattern_key]["contrib_scores"][:]
 
     crop_start = raw_width // 2 - modisco_window // 2
+
+    # Every seqlet spans this pattern's full, untrimmed MoDISco window --
+    # unlike Fi-NeMo hits, which call_hits_bpnet.py's own
+    # --cwm-trim-threshold (finemo.data_io.trim_motif, same default here)
+    # already crops to the CWM's informative core before writing hits.tsv.
+    # Using the untrimmed window's raw geometric midpoint as "motif center"
+    # is why a real, sharp, single-position signal (like CA-Inr, which
+    # itself sits AT the true TSS) still showed up offset from position 0
+    # even after the crop-offset and orientation-mixing fixes: the pattern's
+    # informative core isn't necessarily centered in MoDISco's own
+    # (arbitrarily wider) seqlet window. trim_motif() finds that same core
+    # from the pattern's own contrib_scores, exactly as call_hits_bpnet.py
+    # does for Fi-NeMo hits, so seqlet-based and hit-based sources agree on
+    # what "motif center" means. Trimming happens in the pattern's own
+    # left-to-right reading frame, which only lines up with genome-forward
+    # coordinates for a forward (non-revcomp) match -- a reverse-complement
+    # match's pattern position 0 is genome position (e - 1), so the trim
+    # window has to be mirrored onto (e - trim_end, e - trim_start) instead
+    # of (s + trim_start, s + trim_end).
+    trim_start, trim_end = trim_motif(contrib_scores.T, DEFAULT_CWM_TRIM_THRESHOLD)
 
     out = []
     n_regions = len(chrs)
@@ -340,8 +376,13 @@ def seqlet_positions(
         idx = int(idx)
         if idx < 0 or idx >= n_regions:
             continue
-        genome_start = int(region_starts[idx]) + crop_start + int(s)
-        genome_end = int(region_starts[idx]) + crop_start + int(e)
+        region_start = int(region_starts[idx]) + crop_start
+        if rc:
+            genome_start = region_start + int(e) - trim_end
+            genome_end = region_start + int(e) - trim_start
+        else:
+            genome_start = region_start + int(s) + trim_start
+            genome_end = region_start + int(s) + trim_end
         out.append((str(chrs[idx]), genome_start, genome_end, bool(rc)))
     return out
 
