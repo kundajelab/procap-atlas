@@ -68,6 +68,7 @@ Usage:
 import argparse
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import h5py
@@ -153,6 +154,7 @@ def hit_positions(
     ]
 
 
+@lru_cache(maxsize=None)
 def region_geometry(
     experiment: str, head: str, min_trim_len: int | None, model_dir: str | None,
     verbose: bool = False,
@@ -160,6 +162,15 @@ def region_geometry(
     """peaks_df ('chr'/'peak_region_start'), row-aligned with the OHE/
     attribution arrays TF-MoDISco seqlets index into -- read directly from
     peaks.narrowPeak rather than regions.npz. See module docstring for why.
+
+    Cached per (experiment, head, min_trim_len, model_dir): both inputs are
+    files on disk that don't change within one process's run, but
+    compendium-seqlets mode calls this once per contributing experiment for
+    *every* cluster, and a "ubiquitous" cluster's contributing experiments
+    heavily overlap the next one's. Caching matters more than it looks --
+    load_npy_or_npz() on {experiment}_ohe.npz fully decompresses that whole
+    array just to read one dimension (it's a zip archive, not mmap-able),
+    which otherwise reruns on every one of those repeats.
     """
     exp_dir, _, _, _ = resolve_experiment_paths(experiment, head, min_trim_len, model_dir)
     peaks_narrowpeak = compressed_io.resolve(exp_dir / "peaks.narrowPeak", missing_ok=True)
