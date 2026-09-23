@@ -15,9 +15,9 @@ Fig 2 entirely (redundant with panels b/c — see history at the bottom if
 you want the reasoning). **Nothing is blocked.** Run the "Full run order"
 section below top to bottom.
 
-Four real bugs were found and fixed today in the `--with-metaplots` path
-(steps 3-4), #3 and #4 below being the ones actually causing "metaplots
-look flat/random" and "double-peaked":
+Five real bugs were found and fixed today in the `--with-metaplots` path
+(steps 3-4), #3-5 below being the ones actually causing "metaplots look
+flat/random" and "double-peaked":
 
 1. Panel c's layout was broken (rows colliding, illegible captions,
    metaplot stacked below instead of beside its logo) — fixed.
@@ -59,7 +59,35 @@ wrong) because `cluster_motifs.py`'s `cluster_final` ids aren't stable
 across reruns — corrected to `4 = CA-Inr, 8 = TATA-Inr, 24 = TA-Inr` (was
 `2, 4, 7`) by direct visual check against the cluster report HTML.
 
-Steps 3-4 below have been re-verified with all four fixes in place.
+A fifth bug, found immediately after confirming #4: removing `auto_orient`
+fixed CA-Inr, but a fresh full-size standalone render of the same cluster
+still showed a symmetric double peak (-13/+13, sense vs. antisense). Root
+cause: MotifCompendium's clustering explicitly checks a pattern against
+both orientations of a cluster and keeps whichever aligns better
+(`similarity_core.compute_similarity_and_align`), so one `cluster_final`
+id can legitimately contain some contributing experiments' patterns in one
+orientation and others' in the mirror-image orientation --
+`cluster_motifs.py`'s `export_pattern_to_cluster_mapping()` never records
+which members got flipped, so `compendium-seqlets` pooling mixed two
+internally-consistent but globally-mirrored subpopulations. Since
+`collect_windows()` flips the whole window for "-"-labeled entries, that
+doesn't blur a peak, it splits one real peak into a sense-channel bump at
+one offset and an antisense-channel bump at the mirror offset -- exactly
+the symptom seen. Fixed by `pattern_is_flipped_relative_to_cluster()`:
+aligns each contributing experiment's own CWM against the cluster's
+reference CWM (`motifcompendium_{head}_cluster_averages.h5`) and flips
+that experiment's seqlet strand labels if the reverse complement aligns
+better. Not circular like `auto_orient` -- compares motif shape to the
+cluster's own reference shape, never the observed PRO-cap signal being
+pooled. **Not yet verified on a real render** -- needs Sherlock's actual
+per-experiment modisco h5s and `motifcompendium_{head}_cluster_averages.h5`,
+neither available locally. Re-run the CA-Inr standalone test first:
+```bash
+python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
+    --head profile --compendium-motif-name pos_patterns.4 -v
+```
+
+Steps 3-4 below should be re-run once that's confirmed.
 
 ## Full run order (the runbook)
 
