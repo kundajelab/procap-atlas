@@ -21,20 +21,26 @@ Three sources, chosen with `--source`:
                        been (re-)run against that cluster for every
                        experiment yet.
 
-Resolving a seqlet to a genome position needs one non-obvious step. TF-MoDISco
-is run directly on attributions/bpnet/{experiment}_ohe.npz (see modisco.sh),
-whose window is the model's full input (IN_WINDOW, 2114bp by default), *not*
-regions.npz's window -- extract_regions_bpnet.py/call_hits_bpnet.py build
-regions.npz by center-cropping that same raw array to --region-width via
-finemo's own `load_regions_from_modisco_fmt`. A seqlet's start/end are local
-to the *raw*, uncropped window, so converting to genome coordinates needs
-regions.npz's own peak_region_start *plus* the crop offset between the raw
-window and regions.npz's (usually, but not always, equal) window -- using
-peak_region_start alone silently mis-locates every seqlet by that offset
-whenever --region-width differs from IN_WINDOW. crop_offset is computed
-directly from both arrays' actual widths at runtime rather than assumed to be
-zero, so this stays correct either way. Fi-NeMo hits need no such correction:
-their genome coordinates are written directly into hits.tsv by call-hits.
+Resolving a seqlet to a genome position needs one thing: peaks.narrowPeak's
+own peak coordinates, read with the same half-width TF-MoDISco's input used
+(IN_WINDOW//2 by default) -- *not* regions.npz. regions.npz packages the
+same peak coordinates together with a cropped copy of the sequence/
+contribution arrays (via finemo's `extract-regions-modisco-fmt`), but this
+module has no use for those arrays, so building it is unnecessary work, and
+it depends on the head-specific attributions .npz for something this module
+never reads (regions.npz's build fails if that file is missing/corrupt,
+even though only the coordinates -- derived solely from peaks.narrowPeak and
+the shared {experiment}_ohe.npz -- are actually needed here; see finemo's
+own `load_peaks()` in data_io.py). peaks.narrowPeak is also written earlier
+and independently of that attribution step (call_hits_bpnet.py's
+build_peaks_narrowpeak, before its `finemo extract-regions-modisco-fmt`
+call) and is protected from `cleanup_hitcalls.py`'s deletions, so it stays
+available even when regions.npz has been cleaned up or never finished
+building. Reading it at half-width = (this experiment's OHE array width)//2
+gives peak_region_start already in the same raw-window frame a seqlet's
+start/end are local to -- no separate crop offset to compute. Fi-NeMo hits
+need no such correction either: their genome coordinates are written
+directly into hits.tsv by call-hits.
 
 Seqlet/hit "strand" is a locally-discovered pattern's own orientation label
 and has no guaranteed relationship to real transcription direction (a motif
@@ -72,7 +78,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
-from finemo.data_io import load_npy_or_npz, load_regions_npz
+from finemo.data_io import load_npy_or_npz, load_peaks
 
 import compressed_io
 from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
@@ -149,28 +155,29 @@ def hit_positions(
 
 def region_geometry(
     experiment: str, head: str, min_trim_len: int | None, model_dir: str | None,
-) -> tuple[pd.DataFrame, int]:
-    """(peaks_df, crop_offset) -- see module docstring for why crop_offset
-    can be nonzero. peaks_df has 'chr'/'peak_region_start', row-aligned with
-    regions.npz's own sequences/contributions arrays.
+    verbose: bool = False,
+) -> pd.DataFrame:
+    """peaks_df ('chr'/'peak_region_start'), row-aligned with the OHE/
+    attribution arrays TF-MoDISco seqlets index into -- read directly from
+    peaks.narrowPeak rather than regions.npz. See module docstring for why.
     """
     exp_dir, _, _, _ = resolve_experiment_paths(experiment, head, min_trim_len, model_dir)
-    regions_npz = exp_dir / "regions.npz"
-    if not regions_npz.exists():
+    peaks_narrowpeak = compressed_io.resolve(exp_dir / "peaks.narrowPeak", missing_ok=True)
+    if peaks_narrowpeak is None:
         raise SystemExit(
-            f"Error: {regions_npz} missing -- run extract_regions_bpnet.py first"
+            f"Error: peaks.narrowPeak missing in {exp_dir} -- run "
+            "extract_regions_bpnet.py first"
         )
-    sequences, _, peaks_df, has_peaks = load_regions_npz(str(regions_npz))
-    if not has_peaks:
-        raise SystemExit(f"Error: {regions_npz} has no genome coordinates")
-    region_width = sequences.shape[-1]
 
     ohe_path = ATTR_DIR / f"{experiment}_ohe.npz"
     if not ohe_path.exists():
         raise SystemExit(f"Error: {ohe_path} missing")
     raw_width = load_npy_or_npz(str(ohe_path)).shape[-1]
-    crop_offset = raw_width // 2 - region_width // 2
-    return peaks_df.to_pandas(), crop_offset
+
+    if verbose:
+        print(f"Reading peak coordinates from {peaks_narrowpeak}")
+    peaks_df = load_peaks(str(peaks_narrowpeak), None, raw_width // 2)
+    return peaks_df.to_pandas()
 
 
 def seqlet_positions(
@@ -186,7 +193,7 @@ def seqlet_positions(
         raise SystemExit(f"Error: {h5_path} missing")
     posneg_group, pattern_key = parse_local_motif_name(local_motif_name)
 
-    peaks_df, crop_offset = region_geometry(experiment, head, min_trim_len, model_dir)
+    peaks_df = region_geometry(experiment, head, min_trim_len, model_dir, verbose)
     chrs = peaks_df["chr"].to_numpy()
     region_starts = peaks_df["peak_region_start"].to_numpy()
 
@@ -209,8 +216,8 @@ def seqlet_positions(
         idx = int(idx)
         if idx < 0 or idx >= n_regions:
             continue
-        genome_start = int(region_starts[idx]) + crop_offset + int(s)
-        genome_end = int(region_starts[idx]) + crop_offset + int(e)
+        genome_start = int(region_starts[idx]) + int(s)
+        genome_end = int(region_starts[idx]) + int(e)
         out.append((str(chrs[idx]), genome_start, genome_end, bool(rc)))
     return out
 
