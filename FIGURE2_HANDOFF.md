@@ -135,24 +135,36 @@ python src/analysis/plot_figure2.py --head count --modisco-h5 auto --with-metapl
     --profile-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5 \
     --profile-names configs/core_promoter_names.tsv --n-profile 3
 ```
-Double-check `--n-profile 3` actually restricts the profile band to just the
-2/4/7 rows rather than whatever `select_motif_exemplars.py` ranks highest by
-seqlet count — not yet verified.
+**First real render of this (2026-09-23) had two separate bugs**, both now
+fixed but **neither re-verified on a real render yet** — rerun and check
+before treating either as resolved:
 
-**First real render of this (2026-09-23) was broken** — rows visibly
-collided/shifted, captions were illegible, and the metaplot sat stacked
-below its logo instead of beside it. Fixed in `_logo_metaplot_grid`
-(now a side-by-side 1x2 cell, logo left/metaplot right, instead of a
-stacked 2x1) and in `main()` (the manuscript `--figsize` default, 7.4x6.2in,
-was sized for panel c's plain single-row-per-cell layout and starved badly
-once cells needed ~1.85x the width for logo+metaplot side by side plus
-still fitting a 3-line caption — now auto-scales from the actual row count
-when `--figsize` isn't explicitly overridden). Also switched
-`--category-label` to `header` by default under `--with-metaplots`: the
-rotated band labels ("profile head: initiation shape") need more vertical
-run length than a short one-row band has room for, and were visibly
-colliding with each other. **Not yet re-verified on a real render** — rerun
-and check before treating this as fixed.
+1. **Layout was broken** — rows visibly collided/shifted, captions were
+   illegible, and the metaplot sat stacked below its logo instead of
+   beside it. Fixed in `_logo_metaplot_grid` (now a side-by-side 1x2 cell,
+   logo left/metaplot right, instead of a stacked 2x1) and in `main()`
+   (the manuscript `--figsize` default, 7.4x6.2in, was sized for panel c's
+   plain single-row-per-cell layout and starved badly once cells needed
+   ~1.85x the width for logo+metaplot side by side plus still fitting a
+   3-line caption — now auto-scales from the actual row count when
+   `--figsize` isn't explicitly overridden). Also switched
+   `--category-label` to `header` by default under `--with-metaplots`: the
+   rotated band labels ("profile head: initiation shape") need more
+   vertical run length than a short one-row band has room for, and were
+   visibly colliding with each other.
+2. **The profile row was showing the wrong motifs** — this is what the
+   "double-check" note right above used to flag as unverified, and the
+   answer turned out to be no: `--profile-names` was only ever used for
+   caption text. `panel_exemplars()`'s profile row still ran
+   `rank_for_panel(profile_rows, n_profile)` over the *entire*
+   `--profile-exemplars` table, ranked by `total_seqlets` — so it rendered
+   whichever profile-head clusters simply had the most seqlets
+   (Pou5f1::Sox2/Hmga1/ZBTB7A), not CA-Inr/TATA/TA-Inr. Fixed in `main()`:
+   `profile_rows` is now filtered to `--profile-names`' cluster ids *before*
+   any ranking happens, with a warning if a requested cluster is missing
+   from the exemplars table. This is exactly the generic-selection-on-
+   profile-head failure mode the decision section below exists to avoid —
+   the bug just let it back in through a side door.
 
 ### 5. Extended Data / Supplement (no blockers, runnable now)
 

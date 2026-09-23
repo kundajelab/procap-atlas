@@ -1270,6 +1270,37 @@ def main():
         profile_names = dict(
             zip(names["cluster_final"].astype(int), names["name"].astype(str))
         )
+        if profile_rows is not None:
+            # --profile-names curates a specific handful of core-promoter
+            # clusters (e.g. configs/core_promoter_names.tsv's CA-Inr/TATA/
+            # TA-Inr) -- it was only being used for caption text below.
+            # rank_for_panel() still ranked the *entire* profile-head
+            # exemplar table by total_seqlets, so the profile row actually
+            # showed whichever clusters happened to have the most seqlets
+            # (Pou5f1::Sox2/Hmga1/ZBTB7A, not CA-Inr/TATA/TA-Inr) --
+            # FIGURE2_HANDOFF.md explicitly decided against running that
+            # generic selection on profile head at all, since its
+            # compendium is contaminated with exactly this kind of
+            # low-complexity/composite motif.
+            before = len(profile_rows)
+            profile_rows = profile_rows[
+                profile_rows["cluster_final"].astype(int).isin(profile_names)
+            ]
+            missing = set(profile_names) - set(
+                profile_rows["cluster_final"].astype(int)
+            )
+            if missing:
+                print(
+                    f"WARNING: --profile-names cluster(s) {sorted(missing)} "
+                    f"not found in {args.profile_exemplars}",
+                    file=sys.stderr,
+                )
+            print(
+                f"--profile-names restricted the profile row to "
+                f"{len(profile_rows)}/{before} rows "
+                f"({sorted(profile_names.values())})",
+                file=sys.stderr,
+            )
     stem = args.out_stem or (args.in_dir / f"figure2_{args.head}")
     stem.parent.mkdir(parents=True, exist_ok=True)
     exemplar_kwargs = dict(
