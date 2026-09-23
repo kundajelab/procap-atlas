@@ -1520,6 +1520,29 @@ for this experiment/head with the default per-experiment motif source, not
 `--modisco-h5` pointed at the compendium. No GPU needed, so `launch_link.py`
 runs as its own cheap CPU-only SLURM job.
 
+### Consolidated QC
+
+`report_bpnet.py`'s final pass writes one `motif_report.tsv` per experiment
+(`motif_name`, `num_hits_total`, `num_hits_restricted`, `cwm_similarity`), but
+nothing else in this codebase aggregates that across the atlas -- every other
+script here reads one experiment's own report at a time.
+`consolidate_motif_reports.py` sweeps every experiment/head the same way
+`launch_post_hoc_pipeline.py` does and concatenates them into one table, plus
+prints atlas-wide totals (summed hit counts, median `cwm_similarity`, fraction
+of motif rows at or below the 0.8 QC threshold):
+
+```bash
+python src/bpnet/hitcall/consolidate_motif_reports.py
+python src/bpnet/hitcall/consolidate_motif_reports.py --head profile --head count
+python src/bpnet/hitcall/consolidate_motif_reports.py --min-trim-len 6
+```
+
+Reads the *final* pass's report (after both `filter_repeat_density.py` and
+`filter_low_confidence_hits.py`), not the baseline pass `report_bpnet.py` also
+writes for `--seqlet-low-similarity-only` scoping -- that one reflects
+pre-corroboration-filter hit counts and would overstate what actually
+survived. Output: `figures/motif_atlas/hitcall_motif_report_consolidated.tsv`.
+
 ### Hit-Call Diagnostics
 
 Read-only investigation scripts, plus one plotting script. None of them filter

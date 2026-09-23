@@ -63,6 +63,7 @@ Usage:
 
 import argparse
 import gzip
+import os
 import shutil
 import sys
 import time
@@ -88,6 +89,13 @@ NEVER_TOUCH_NAMES = {
     "hits_filtered.tsv",
     "hits_linked.tsv",
 } | PROTECTED_BASE_DIR_NAMES
+# report/'s own output (finemo report: motif_report.tsv, per-motif CWM logos,
+# report.html) and comparison/ never contain any ALWAYS_SAFE_DELETE_NAMES or
+# COMPRESS_NAMES filename, so categories 1/2's walk skips them entirely
+# rather than stat()-ing every logo file for zero possible matches -- one of
+# these can hold 100+ files (one set of logos per motif), and on Sherlock's
+# Lustre-backed scratch each stat() is a network round-trip.
+SKIP_DIR_NAMES = {"report", "comparison"}
 
 
 def logical_name(path):
@@ -109,9 +117,36 @@ def human_bytes(n):
     return f"{n:.1f}PB"
 
 
-def is_old_enough(path, min_age_hours):
-    age_hours = (time.time() - path.stat().st_mtime) / 3600
-    return age_hours >= min_age_hours
+def is_old_enough(mtime, min_age_hours):
+    return (time.time() - mtime) / 3600 >= min_age_hours
+
+
+def walk_stat(root, skip_dir_names=frozenset()):
+    """Yield (Path, os.stat_result) for every file under root, pruning any
+    directory whose name is in skip_dir_names before descending into it.
+
+    Replaces pathlib's Path.rglob("*"), which has no way to prune a subtree
+    -- it always stats every entry, so a report/ directory full of per-motif
+    CWM logos got walked in full just to find filenames that can never live
+    there. Each file is stat()'d exactly once here and the result is reused
+    by every caller, instead of the previous pattern of re-stat()-ing the
+    same path once for the age check, once for the size total, and once more
+    in the per-file print loop.
+    """
+    stack = [str(root)]
+    while stack:
+        current = stack.pop()
+        try:
+            entries = list(os.scandir(current))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_dir(follow_symlinks=False):
+                if entry.name in skip_dir_names:
+                    continue
+                stack.append(entry.path)
+            elif entry.is_file(follow_symlinks=False):
+                yield Path(entry.path), entry.stat(follow_symlinks=False)
 
 
 def find_stale_regions_tmp(exp_head_dir, min_age_hours):
@@ -123,35 +158,40 @@ def find_stale_regions_tmp(exp_head_dir, min_age_hours):
         # No valid regions.npz yet -- this could be an in-progress write,
         # never touch it.
         return None
-    if not is_old_enough(tmp_path, min_age_hours):
+    st = tmp_path.stat()
+    if not is_old_enough(st.st_mtime, min_age_hours):
         return None
-    return tmp_path
+    return tmp_path, st.st_size
 
 
-def find_always_safe_deletes(exp_head_dir, min_age_hours):
-    found = []
-    for path in exp_head_dir.rglob("*"):
-        if path.is_file() and logical_name(path) in ALWAYS_SAFE_DELETE_NAMES and is_old_enough(path, min_age_hours):
-            found.append(path)
+def find_safe_and_compress(exp_head_dir, min_age_hours):
+    """Categories 1 (always-safe deletes) and 2 (compress candidates) in one
+    walk instead of two separate rglob("*") passes, skipping report/
+    comparison entirely (see SKIP_DIR_NAMES). Returns
+    ([(path, size)], [(path, size)]).
+    """
+    safe, compress = [], []
+    for path, st in walk_stat(exp_head_dir, SKIP_DIR_NAMES):
+        if not is_old_enough(st.st_mtime, min_age_hours):
+            continue
+        if logical_name(path) in ALWAYS_SAFE_DELETE_NAMES:
+            safe.append((path, st.st_size))
+        elif path.name in COMPRESS_NAMES:
+            compress.append((path, st.st_size))
+
     stale_tmp = find_stale_regions_tmp(exp_head_dir, min_age_hours)
     if stale_tmp is not None:
-        found.append(stale_tmp)
-    return found
-
-
-def find_compress_candidates(exp_head_dir, min_age_hours):
-    found = []
-    for path in exp_head_dir.rglob("*"):
-        if (path.is_file() and path.name in COMPRESS_NAMES
-                and is_old_enough(path, min_age_hours)):
-            found.append(path)
-    return found
+        safe.append(stale_tmp)
+    return safe, compress
 
 
 def find_abandoned_trim_dirs(exp_head_dir, min_age_hours):
-    """Files sitting directly in exp_head_dir (not in a nested trim*
-    subdirectory) when a sibling trim*-prefixed subdirectory exists,
-    excluding the trim-independent regions.npz/peaks.narrowPeak cache.
+    """[(path, size)] sitting directly in exp_head_dir (not in a nested
+    trim* subdirectory) when a sibling trim*-prefixed subdirectory exists,
+    excluding the trim-independent regions.npz/peaks.narrowPeak cache. See
+    module docstring for why the trim-sibling check matters: without it, a
+    base-level report/ could be an experiment's *only* current result rather
+    than one superseded by a trim-suffixed rerun.
     """
     has_trim_sibling = any(
         child.is_dir() and child.name.startswith("trim") for child in exp_head_dir.iterdir()
@@ -165,22 +205,20 @@ def find_abandoned_trim_dirs(exp_head_dir, min_age_hours):
         if logical_name(path) in PROTECTED_BASE_DIR_NAMES:
             continue
         if path.is_file():
-            if is_old_enough(path, min_age_hours):
-                found.append(path)
+            st = path.stat()
+            if is_old_enough(st.st_mtime, min_age_hours):
+                found.append((path, st.st_size))
         elif path.is_dir():
             # report/, comparison/, or any other base-level directory --
             # age-gate on the directory's own mtime (crude but simple: a
             # directory only gets a newer mtime when a file is added or
             # removed from it directly, not on nested writes, but these
             # are only ever fully written once so that's fine here).
-            if is_old_enough(path, min_age_hours):
-                found.extend(f for f in path.rglob("*") if f.is_file())
+            dir_st = path.stat()
+            if is_old_enough(dir_st.st_mtime, min_age_hours):
+                found.extend((p, st.st_size) for p, st in walk_stat(path))
 
     return found
-
-
-def total_size(paths):
-    return sum(p.stat().st_size for p in paths if p.exists())
 
 
 def main():
@@ -213,34 +251,35 @@ def main():
 
     always_safe, compress, abandoned = [], [], []
     for exp_head_dir in exp_head_dirs:
-        always_safe.extend(find_always_safe_deletes(exp_head_dir, args.min_age_hours))
-        compress.extend(find_compress_candidates(exp_head_dir, args.min_age_hours))
+        safe, comp = find_safe_and_compress(exp_head_dir, args.min_age_hours)
+        always_safe.extend(safe)
+        compress.extend(comp)
         abandoned.extend(find_abandoned_trim_dirs(exp_head_dir, args.min_age_hours))
 
     print(f"Scanned {len(exp_head_dirs)} experiment/head directories under {HITCALLS_BPNET_DIR}\n")
 
-    print(f"[1] Always-safe deletes: {len(always_safe)} file(s), {human_bytes(total_size(always_safe))}")
-    for p in always_safe:
-        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(p.stat().st_size)})")
+    print(f"[1] Always-safe deletes: {len(always_safe)} file(s), {human_bytes(sum(s for _, s in always_safe))}")
+    for p, size in always_safe:
+        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(size)})")
 
-    print(f"\n[2] Compress candidates (gzip in place): {len(compress)} file(s), {human_bytes(total_size(compress))}")
-    for p in compress:
-        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(p.stat().st_size)})")
+    print(f"\n[2] Compress candidates (gzip in place): {len(compress)} file(s), {human_bytes(sum(s for _, s in compress))}")
+    for p, size in compress:
+        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(size)})")
 
     label = "included" if args.include_abandoned_trim_dirs else "reported only, use --include-abandoned-trim-dirs to act on these"
-    print(f"\n[3] Abandoned no-min-trim-len files ({label}): {len(abandoned)} file(s), {human_bytes(total_size(abandoned))}")
-    for p in abandoned:
-        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(p.stat().st_size)})")
+    print(f"\n[3] Abandoned no-min-trim-len files ({label}): {len(abandoned)} file(s), {human_bytes(sum(s for _, s in abandoned))}")
+    for p, size in abandoned:
+        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(size)})")
 
     if not args.execute:
         print("\nDry-run only (pass --execute to actually delete/compress). Nothing was modified.")
         return
 
-    for p in always_safe:
+    for p, _ in always_safe:
         p.unlink()
     print(f"\nDeleted {len(always_safe)} always-safe file(s).")
 
-    for p in compress:
+    for p, _ in compress:
         gz_path = p.with_name(p.name + ".gz")
         with open(p, "rb") as f_in, gzip.open(gz_path, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -248,7 +287,7 @@ def main():
     print(f"Compressed {len(compress)} file(s).")
 
     if args.include_abandoned_trim_dirs:
-        for p in abandoned:
+        for p, _ in abandoned:
             if p.exists():
                 p.unlink()
         # Clean up now-empty directories (report/, comparison/, ...) left
