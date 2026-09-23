@@ -40,15 +40,28 @@ its supporting ED/supplement figures, in dependency order.
     --with-metaplots` directly.
 2. ✅ **`launch_link.py --head count`** — relabels count-head hits with their
    MotifCompendium cluster identity. Done.
-3. ✅ **`motif_hit_density.py --panel2d`** — Fig 2 panel 2d. Built: the
-   tissue-label permutation null (`specificity_permutation_null()`, mirrors
-   `motif_group_concentration.py`'s swap-null: full null distribution +
-   add-one empirical p-value, not just a mean/percentile) and the compact
-   motif×tissue-group heatmap for hand-picked TFs (`--panel2d-motifs`,
-   default MEF2A/GATA2/POU2F3, resolved to compendium clusters by JASPAR
-   name via `select_named_clusters()`; masked at the group level via
-   `group_discovery_mask()` so undiscovered stays visually distinct from a
-   true zero). Not yet run on real count-head data — see runbook step 6.
+3. ✅ **`motif_hit_density.py --panel2d`** — Fig 2 panel 2d. Built, then
+   redesigned once Adam saw the first render and called it uncompelling —
+   both halves, not a tweak:
+   - **Left (null comparison)**: first version overlaid the full per-cluster
+     specificity distributions (observed vs. pooled null draws), which
+     diluted the comparison into two similarly-shaped curves since most
+     clusters have low specificity either way. Now mirrors
+     `plot_figure2.py`'s `panel_concentration()` exactly: a single scalar
+     test statistic (atlas-wide mean specificity) against its own null
+     distribution (`n_null` permutation draws), bold observed line, add-one
+     empirical p-value — the same visual language the rest of Fig 2 uses.
+   - **Right (hand-picked TFs)**: first version was a 3-row motif×tissue-
+     group heatmap — an awkward chart for 3 rows, and redundant with panel c
+     (which already shows what MEF2A/GATA2/POU2F3 look like and their
+     signal shape). Replaced with a usage-vs-specificity scatter over every
+     qualifying cluster, with the named TFs highlighted/labeled — shows
+     *where* they sit in the global landscape instead of repeating panel c.
+   - `select_named_clusters()` still resolves `--panel2d-motifs`' JASPAR
+     names to compendium clusters. `group_discovery_mask()` (the heatmap's
+     masking helper) was removed along with the heatmap — the scatter has
+     no missing-cell ambiguity to mask.
+   - Not yet run on real count-head data — see runbook step 6.
 
 Nothing else below depends on this chain; everything else can run now.
 
@@ -162,15 +175,16 @@ python src/analysis/motif_hit_density.py --head count --panel2d
 ```
 Needs `--cluster-metadata` (or the default
 `motifcompendium/bpnet/motifcompendium_count_cluster_metadata.tsv` to
-exist) — `--panel2d` uses it both to resolve `--panel2d-motifs`' JASPAR
-names to compendium clusters and for the group-level undiscovered mask.
-Writes the existing per-cluster specificity table/motif×experiment heatmap
-as before, plus `motif_hit_density_count_panel2d.{png,pdf}` (global
-specificity vs. permutation null + the compact MEF2A/GATA2/POU2F3
-motif×tissue-group heatmap) and `..._panel2d_null.npy` (the raw null
-draws). Not yet run on real count-head data — check the printed p-value and
-the heatmap's masking (blank vs. dark-magenta-near-zero) look right before
-treating this as final.
+exist) — `--panel2d` uses it to resolve `--panel2d-motifs`' JASPAR names to
+compendium clusters for the scatter's highlighted points. Writes the
+existing per-cluster specificity table/motif×experiment heatmap as before,
+plus `motif_hit_density_count_panel2d.{png,pdf}` (atlas-wide mean
+specificity vs. its tissue-permutation null, left; usage-vs-specificity
+scatter with MEF2A/GATA2/POU2F3 highlighted, right) and
+`..._panel2d_null.npy` (the raw null draws). Not yet run on real count-head
+data — check the printed p-value and that the highlighted points land
+where the "textbook sites" claim in panel c expects (high specificity,
+correct top_group) before treating this as final.
 
 ## Background: what each panel is and why (commands are in the runbook above)
 
@@ -238,22 +252,23 @@ never for a cluster-count or redundancy claim.
   python src/analysis/plot_cross_celltype_figure.py --in-dir figures/cross_celltype_all198
   ```
 - **Motif hit density (panel 2d)** — built, not yet run on real count-head
-  data (runbook step 6):
-  - Global distribution of motif-usage specificity vs. a tissue-label
-    permutation null: `specificity_permutation_null()` permutes biosample-
-    group labels across experiments (density matrix and each cluster's own
-    discovery pattern held fixed), recomputing `specificity_table()` each
-    time; `panel2d_null_stats()` reports the atlas-wide mean specificity
-    against that null with an add-one empirical p-value, matching
-    `motif_group_concentration.py`'s swap-null pattern rather than
-    inventing a third null design.
-  - A compact motif x tissue-group heatmap (not motif x experiment — the
-    existing `plot_heatmap()` clusters by experiment, 198 columns) for
-    `--panel2d-motifs` (default MEF2A, GATA2, POU2F3), resolved from JASPAR
-    name to compendium cluster by `select_named_clusters()`. Undiscovered
-    cells are masked, not drawn as zero, via `group_discovery_mask()` —
-    a group is masked only if *no* experiment in it ever discovered the
-    cluster, aggregated up from `discovery_status()`'s per-experiment mask.
+  data (runbook step 6). Redesigned once after the first render (see
+  blocking-chain step 3 above for the full rationale):
+  - Left: atlas-wide mean specificity vs. its tissue-label permutation null
+    (`specificity_permutation_null()` permutes biosample-group labels
+    across experiments, density matrix and each cluster's own discovery
+    pattern held fixed; `panel2d_null_stats()` reports the mean against
+    that null with an add-one empirical p-value) — a single scalar test
+    statistic against its null, matching `plot_figure2.py`'s
+    `panel_concentration()` visual convention, not a per-cluster
+    distribution overlay.
+  - Right: a usage (log mean hits/peak when detected) vs. specificity
+    scatter over every qualifying cluster, with `--panel2d-motifs` (default
+    MEF2A, GATA2, POU2F3) highlighted and labeled — resolved from JASPAR
+    name to compendium cluster by `select_named_clusters()`. Not a
+    motif×tissue-group heatmap (that version was redundant with panel c and
+    an awkward fit for 3 rows) — no missing-cell masking needed since it's
+    a scatter, not a matrix.
   - Both in `plot_panel2d()`, wired into `main()` behind `--panel2d`. Run:
     ```bash
     python src/analysis/motif_hit_density.py --head count --panel2d

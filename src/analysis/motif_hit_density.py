@@ -43,10 +43,12 @@ Outputs (in --out-dir):
   motif_hit_density_{head}.{png,pdf}        the clustered heatmap panel
   motif_hit_density_{head}_columns.tsv      per-experiment column annotations
   motif_hit_density_{head}_panel2d.{png,pdf}   Fig. 2 panel 2d, with --panel2d:
-                                             global specificity vs. a tissue-label
-                                             permutation null, plus a compact
-                                             motif x tissue-group heatmap for a
-                                             few hand-picked TFs (--panel2d-motifs)
+                                             atlas-wide mean specificity vs.
+                                             its tissue-label permutation
+                                             null, plus a usage-vs-
+                                             specificity scatter highlighting
+                                             a few hand-picked TFs
+                                             (--panel2d-motifs)
   motif_hit_density_{head}_panel2d_null.npy    the null's raw (n_permutations,
                                              n_clusters) specificity draws
 
@@ -350,84 +352,100 @@ def select_named_clusters(
     return out
 
 
-def group_discovery_mask(status: pd.DataFrame, group_map: dict[str, str]) -> pd.DataFrame:
-    """cluster x group boolean, True where *no* experiment in that group ever
-    discovered the cluster -- the same "undiscovered, not a true zero"
-    distinction plot_heatmap()'s --mask-undiscovered draws at the experiment
-    level, aggregated up since panel 2d's compact heatmap groups columns by
-    tissue rather than showing all experiments.
-    """
-    groups = pd.Series({c: group_map.get(c, "other") for c in status.columns})
-    discovered_any = (status == "discovered").T.groupby(groups).any().T
-    return ~discovered_any
-
-
 def plot_panel2d(
     spec: pd.DataFrame,
-    null_specs: np.ndarray,
-    density: pd.DataFrame,
-    group_map: dict[str, str],
-    status: pd.DataFrame | None,
+    null_means: np.ndarray,
+    observed_mean: float,
+    p_value: float,
     named_clusters: dict[str, str],
     head: str,
     out_stem: Path,
 ) -> None:
-    """Fig. 2 panel 2d: global specificity vs. its tissue-label permutation
-    null (left), plus a compact motif x tissue-group heatmap for a few
-    hand-picked, high-confidence lineage TFs (right) -- unlike
-    plot_heatmap()'s clustered motif x experiment panel (198 columns), this
-    is meant to be read directly at a glance.
+    """Fig. 2 panel 2d: atlas-wide specificity vs. its tissue-label
+    permutation null (left), and a usage-vs-specificity scatter
+    highlighting a few hand-picked TFs (right).
+
+    Left deliberately plots the null distribution of one scalar test
+    statistic (mean specificity across clusters) against a single observed
+    value, mirroring plot_figure2.py's panel_concentration() -- not the
+    per-cluster specificity distributions themselves. Overlaying those
+    (an earlier version of this panel) buries the comparison: both curves
+    span the same [0, 1] range and look similarly shaped even when the
+    scalar mean is genuinely far outside its null, because most clusters
+    have low specificity under either labeling.
+
+    Right replaces an earlier 3-row motif x tissue-group heatmap, which was
+    both a poor fit for 3 rows and redundant with panel c (which already
+    shows what these motifs look like and their signal shape). This instead
+    shows where they sit in the global usage/specificity landscape -- new
+    content panel c can't show.
     """
-    observed_mean, p_value, null_means = panel2d_null_stats(spec["specificity"], null_specs)
-
-    fig, (ax_null, ax_heat) = plt.subplots(
-        1, 2, figsize=(11, 4.2), gridspec_kw={"width_ratios": (1.1, 1.0)}
+    fig, (ax_null, ax_scatter) = plt.subplots(
+        1, 2, figsize=(10.5, 4.2), gridspec_kw={"width_ratios": (1.0, 1.15)}
     )
 
-    ax_null.hist(
-        null_specs.ravel(), bins=40, density=True, color="#bbbbbb",
-        alpha=0.7, label="permutation null (per-cluster draws)",
+    bins = np.linspace(
+        min(null_means.min(), observed_mean) - 0.01,
+        max(null_means.max(), observed_mean) + 0.01, 40,
     )
     ax_null.hist(
-        spec["specificity"].dropna(), bins=40, density=True, histtype="step",
-        color="#c02020", linewidth=1.5, label="observed",
+        null_means, bins=bins, color="#bbbbbb", edgecolor="white", lw=0.3,
+        label=f"tissue-permutation null\n(n={len(null_means)} permutations)",
     )
-    ax_null.axvline(observed_mean, color="#c02020", linestyle="--", linewidth=1)
-    ax_null.axvline(float(np.mean(null_means)), color="#555555", linestyle="--", linewidth=1)
-    ax_null.set_xlabel("Specificity (1 - H(q)/log G)")
-    ax_null.set_ylabel("Density")
+    counts, _ = np.histogram(null_means, bins=bins)
+    ax_null.set_ylim(top=counts.max() * 1.28)
+    ax_null.axvline(observed_mean, color="#b2182b", lw=2, zorder=5)
+    ax_null.text(
+        observed_mean, ax_null.get_ylim()[1] * 0.97, f"observed\n{observed_mean:.3f}",
+        color="#b2182b", fontsize=8, fontweight="bold", ha="center", va="top",
+    )
+    null_mean = float(null_means.mean())
+    fold = observed_mean / null_mean if null_mean else float("nan")
+    ax_null.text(
+        0.02, 0.75,
+        f"{observed_mean:.3f} vs {null_mean:.3f} expected\n"
+        f"{fold:.2f}× vs tissue-permutation null\np = {p_value:.3g}",
+        transform=ax_null.transAxes, fontsize=7.5, va="top",
+    )
+    ax_null.set_xlabel("Mean specificity across clusters")
+    ax_null.set_ylabel("Permutations")
+    ax_null.legend(frameon=False, fontsize=6.5, loc="upper right")
+    ax_null.spines[["top", "right"]].set_visible(False)
     ax_null.set_title(
-        f"mean specificity {observed_mean:.3f} vs. null "
-        f"{np.mean(null_means):.3f} (p={p_value:.3g})", fontsize=9,
+        "Motif usage is more tissue-specific than expected",
+        loc="left", fontweight="bold", fontsize=9,
     )
-    ax_null.legend(frameon=False, fontsize=7)
 
-    groups = pd.Series({c: group_map.get(c, "other") for c in density.columns})
-    group_means = density.T.groupby(groups).mean().T
-    rows = [m for m in named_clusters.values() if m in group_means.index]
-    row_labels = [n for n, m in named_clusters.items() if m in group_means.index]
-    if rows:
-        sub = group_means.loc[rows]
-        mask = None
-        if status is not None:
-            mask = group_discovery_mask(status, group_map).loc[rows, sub.columns]
-        sns.heatmap(
-            np.log10(sub + 1e-4), mask=mask, cmap="magma", ax=ax_heat,
-            yticklabels=row_labels, cbar_kws={"label": "log$_{10}$ hits per peak"},
-            linewidths=0.4, linecolor="white",
+    x = np.log10(spec["mean_hits_per_peak_detected"].clip(lower=1e-6))
+    y = spec["specificity"]
+    ax_scatter.scatter(
+        x, y, s=6, color="#999999", alpha=0.35, linewidths=0,
+        label=f"all clusters (n={len(spec):,})",
+    )
+    palette = ["#c02020", "#2050c0", "#1a9850", "#984ea3", "#e08214", "#31688e"]
+    for (name, motif), color in zip(named_clusters.items(), palette):
+        if motif not in spec.index:
+            continue
+        row = spec.loc[motif]
+        xi = float(np.log10(max(row["mean_hits_per_peak_detected"], 1e-6)))
+        ax_scatter.scatter(
+            xi, row["specificity"], s=60, color=color,
+            edgecolors="white", linewidths=0.8, zorder=5,
         )
-        ax_heat.set_xlabel("Biosample group")
-        ax_heat.set_ylabel("")
-        ax_heat.tick_params(axis="x", rotation=45, labelsize=7)
-        ax_heat.tick_params(axis="y", labelsize=8)
-        for label in ax_heat.get_xticklabels():
-            label.set_ha("right")
-    else:
-        ax_heat.text(0.5, 0.5, "no requested motifs matched", ha="center", va="center")
-        ax_heat.set_axis_off()
-    ax_heat.set_title(f"{head} head: hand-picked lineage TFs", fontsize=9)
+        ax_scatter.annotate(
+            f"{name} ({row['top_group']})", (xi, row["specificity"]),
+            textcoords="offset points", xytext=(6, 6), fontsize=7.5,
+            color=color, fontweight="bold",
+        )
+    ax_scatter.set_xlabel("log$_{10}$ mean hits per peak (when detected)")
+    ax_scatter.set_ylabel("Specificity (1 - H(q)/log G)")
+    ax_scatter.spines[["top", "right"]].set_visible(False)
+    ax_scatter.legend(frameon=False, fontsize=6.5, loc="lower left")
+    ax_scatter.set_title(
+        f"{head} head: usage vs. tissue specificity",
+        loc="left", fontweight="bold", fontsize=9,
+    )
 
-    fig.suptitle(f"Motif usage specificity — {head} head", fontsize=11)
     fig.tight_layout()
     for ext in ("png", "pdf"):
         path = out_stem.with_suffix(f".{ext}")
@@ -830,9 +848,12 @@ def main():
             args.out_dir / f"motif_hit_density_{args.head}_panel2d_null.npy",
             null_specs,
         )
+        observed_mean, p_value, null_means = panel2d_null_stats(
+            plot_spec["specificity"], null_specs
+        )
         named = select_named_clusters(cluster_metadata, args.panel2d_motifs)
         plot_panel2d(
-            plot_spec, null_specs, density, group_map, status, named,
+            plot_spec, null_means, observed_mean, p_value, named,
             args.head, args.out_dir / f"motif_hit_density_{args.head}_panel2d",
         )
 
