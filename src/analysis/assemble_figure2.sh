@@ -19,31 +19,19 @@
 # --requeue is safe: plot_figure2.py deterministically overwrites its own
 # output every time, so a preemption/requeue just reruns it from scratch.
 
-set -euo pipefail
+# Hand-copying the `ml` lines from a `module list` snapshot (as this
+# script briefly did) replays them out of whatever Lmod toolchain/hierarchy
+# state was active when that snapshot was taken -- Lmod rejected xz/5.8.1
+# with "requires a toolchain that is incompatible with the currently
+# loaded environment" when replayed cold in a fresh batch job. Source the
+# actual setup script instead, so it runs the same way it does
+# interactively. Sourced before `set -euo pipefail` below -- bs.sh is a
+# personal interactive script, not written to be strict-mode-safe, and an
+# unrelated nonzero return or unset-variable check inside it shouldn't
+# abort this script.
+source ~/bs.sh
 
-# Known-working module set (confirmed by hand on Sherlock) -- narrower
-# subsets (biology/htslib alone, or with an explicit python/3.12.1) still
-# left the uv-managed venv's python3 unable to find libpython3.12.so.1.0
-# at runtime ("cannot open shared object file"). Load exactly this list.
-ml openblas/0.3.28
-ml xsimd/8.1.0
-ml xz/5.8.1
-ml hdf5/1.14.4
-ml arrow/22.0.0
-ml py-pyarrow/18.1.0_py312
-ml lz4/1.8.0
-ml biology
-ml htslib
-ml ucsc-utils
-ml rust/1.90.0
-ml go/1.25.10
-ml bcftools/1.16
-ml openmpi/5.0.5
-ml cmake/3.31.4
-ml make/4.4
-ml ninja/1.13.1
-ml gcc/14.2.0
-ml cmake/3.31.4
+set -euo pipefail
 
 mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 
