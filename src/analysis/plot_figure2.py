@@ -334,7 +334,7 @@ def panel_rarefaction(ax, curves: pd.DataFrame, mark_k: int = 5) -> None:
     ax.set_ylim(bottom=0, top=total * 1.08)
     ax.set_xlabel("Experiments sampled")
     ax.set_ylabel("Motifs recovered")
-    ax.set_title("a   Lexicon growth", loc="left", fontweight="bold", fontsize=10)
+    ax.set_title("b   Lexicon growth", loc="left", fontweight="bold", fontsize=10)
     ax.legend(frameon=False, fontsize=6.5, loc="lower right")
     ax.spines[["top", "right"]].set_visible(False)
 
@@ -403,7 +403,7 @@ def panel_lexicon_bracket(
 def panel_concentration(
     ax, draws: pd.DataFrame, swap: pd.DataFrame, motif_class: str = "TF-matched",
     biosample_swap: pd.DataFrame | None = None,
-    title: str = "b   Discovery is lineage-confined",
+    title: str = "c   Discovery is lineage-confined",
 ) -> None:
     sub = swap[swap["motif_class"] == motif_class]
     if not len(sub):
@@ -592,7 +592,7 @@ def _logo_metaplot_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwarg
     compendium-wide observed-signal metaplot (metaplot_motif.py's
     compendium-seqlets source) -- fusing the CWM and the signal that
     select_motif_exemplars.py's --with-metaplots report lets you inspect
-    separately, into one panel-c cell. Side by side, not stacked: a motif
+    separately, into one panel-a cell. Side by side, not stacked: a motif
     and its signal are two views of the same row, and stacking them
     doubled the vertical space every row needed for no benefit -- callers
     must size the figure for cells roughly twice as *wide* as a plain logo
@@ -600,7 +600,7 @@ def _logo_metaplot_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwarg
 
     Deliberately a sibling function rather than a `_logo_grid` parameter:
     `_logo_grid`'s adaptive font-shrinking spacing is tuned and covered by a
-    byte-identical-output test for the default (no-metaplot) panel c, and a
+    byte-identical-output test for the default (no-metaplot) panel a, and a
     much simpler fixed layout here (no adaptive shrinking) keeps this
     opt-in path from ever touching that tested one. --with-metaplots is for
     exploring the figure with real signal attached, not (yet) the polished
@@ -996,7 +996,7 @@ def main():
                         choices=["tissue", "biosample"])
     parser.add_argument(
         "--with-metaplots", action="store_true",
-        help="panel c: stack a compendium-wide observed-signal metaplot "
+        help="panel a: stack a compendium-wide observed-signal metaplot "
              "under each logo (metaplot_motif.py's compendium-seqlets "
              "source). Needs finemo/h5py (Linux only) and queries every "
              "contributing experiment's own bigwigs per motif, so this is "
@@ -1152,7 +1152,7 @@ def main():
     parser.add_argument(
         "--split-logos", action="store_true",
         help="also write one small transparent PDF per motif logo, unlabelled, "
-             "so panel c can be rearranged freely",
+             "so panel a can be rearranged freely",
     )
     args = parser.parse_args()
 
@@ -1203,7 +1203,7 @@ def main():
     resolve_label_fields(args.label_fields)
 
     # Rotated multi-word band labels ("profile head: initiation shape") need
-    # more vertical run length than a short band has room for -- panel c's
+    # more vertical run length than a short band has room for -- panel a's
     # profile row is a single row of logos, nowhere near enough height for
     # ~30 characters of rotated text, and it visibly collided with the
     # neighboring band's label. Header style puts the label on its own
@@ -1495,11 +1495,11 @@ def main():
     # --with-metaplots cells are ~1.85x as wide as a plain logo (logo beside
     # its metaplot, not stacked -- see _logo_metaplot_grid) and still need
     # room for a 3-line caption, so the manuscript default --figsize
-    # (7.4x6.2in, sized for panel c's plain single-row-per-cell layout)
+    # (7.4x6.2in, sized for panel a's plain single-row-per-cell layout)
     # starves it badly enough to visibly overlap rows. Auto-scale from the
     # actual row count instead of guessing a fixed bigger constant, unless
     # the user already overrode --figsize.
-    c_height_ratio = 1.45
+    exemplars_height_ratio = 1.45
     if args.with_metaplots and tuple(args.figsize) == (7.4, 6.2):
         def _sub_rows(rows, n):
             picked = len(rank_for_panel(rows, n)) if rows is not None else 0
@@ -1514,36 +1514,40 @@ def main():
                       else args.n_restricted)
             n_sub_total += _sub_rows(profile_rows, n_prof)
 
-        ab_height = 3.0  # fixed: panels a/b don't grow with panel c's content
-        c_height = 1.6 * max(n_sub_total, 1)
-        c_height_ratio = c_height / ab_height
+        # fixed: panels b/c don't grow with panel a's content
+        fixed_row_height = 3.0
+        exemplars_height = 1.6 * max(n_sub_total, 1)
+        exemplars_height_ratio = exemplars_height / fixed_row_height
         args.figsize = [max(14.0, 2.3 * args.logos_per_row),
-                        ab_height + c_height + 1.0]
+                        fixed_row_height + exemplars_height + 1.0]
 
     fig = plt.figure(figsize=tuple(args.figsize))
-    gs = GridSpec(2, 2, figure=fig, height_ratios=[1.0, c_height_ratio],
+    gs = GridSpec(2, 2, figure=fig,
+                  height_ratios=[exemplars_height_ratio, 1.0],
                   hspace=0.52, wspace=0.26,
                   left=0.09, right=0.965, top=0.94, bottom=0.04)
 
-    panel_rarefaction(fig.add_subplot(gs[0, 0]), tables["curves"], args.mark_k)
-    panel_concentration(
-        fig.add_subplot(gs[0, 1]), tables["draws"], tables["swap"],
-        args.motif_class, bio_swap,
-    )
-
-    sub = gs[1, :].subgridspec(1, 1)
+    sub = gs[0, :].subgridspec(1, 1)
     n_logos = panel_exemplars(
         fig, sub[0, 0], tables["ubiquitous"], tables["restricted"],
         Path(h5_path), **exemplar_kwargs,
     )
-    # Anchored to the bottom row's own extent. A hardcoded y collided with
-    # panel a's x-axis label as soon as the height ratios changed.
-    box = gs[1, :].get_position(fig)
+    # Anchored to the top row's own extent, same reasoning as the old
+    # bottom-row anchor before panel a/exemplars and the b/c stats row
+    # swapped places: a hardcoded y drifts out of position as soon as the
+    # height ratios change.
+    box = gs[0, :].get_position(fig)
     fig.text(
         box.x0 - 0.075, box.y1 + 0.075,
-        "c   The two lexicons" if profile_rows is not None
-        else "c   Ubiquitous vs lineage-restricted motifs",
+        "a   The two lexicons" if profile_rows is not None
+        else "a   Ubiquitous vs lineage-restricted motifs",
         fontweight="bold", fontsize=10, ha="left", va="bottom",
+    )
+
+    panel_rarefaction(fig.add_subplot(gs[1, 0]), tables["curves"], args.mark_k)
+    panel_concentration(
+        fig.add_subplot(gs[1, 1]), tables["draws"], tables["swap"],
+        args.motif_class, bio_swap,
     )
 
     for ext in ("pdf", "png"):
@@ -1558,19 +1562,19 @@ def main():
         written += save_panel(
             lambda f: panel_rarefaction(f.add_subplot(111), tables["curves"],
                                         args.mark_k),
-            Path(f"{stem}_a_rarefaction"), (w * 0.52, h * 0.46),
+            Path(f"{stem}_b_rarefaction"), (w * 0.52, h * 0.46),
         )
         written += save_panel(
             lambda f: panel_concentration(
                 f.add_subplot(111), tables["draws"], tables["swap"],
                 args.motif_class, bio_swap),
-            Path(f"{stem}_b_concentration"), (w * 0.52, h * 0.46),
+            Path(f"{stem}_c_concentration"), (w * 0.52, h * 0.46),
         )
         written += save_panel(
             lambda f: panel_exemplars(
                 f, GridSpec(1, 1, figure=f)[0, 0], tables["ubiquitous"],
                 tables["restricted"], Path(h5_path), **exemplar_kwargs),
-            Path(f"{stem}_c_exemplars"), (w, h * 0.56),
+            Path(f"{stem}_a_exemplars"), (w, h * 0.56),
         )
         if args.collapse_concentration is not None:
             cd = args.collapse_concentration

@@ -3176,7 +3176,7 @@ def test_figure2_cli_end_to_end(tmp_path):
     assert result.returncode == 0, result.stderr
     assert (tmp_path / "figure2_count.pdf").exists()
     # per-panel files are written by default, for hand-alignment
-    for panel in ("a_rarefaction", "b_concentration", "c_exemplars"):
+    for panel in ("a_exemplars", "b_rarefaction", "c_concentration"):
         assert (tmp_path / f"figure2_count_{panel}.pdf").exists(), panel
     assert "4 logos drawn" in result.stdout
 
@@ -3191,7 +3191,7 @@ def test_figure2_cli_can_skip_the_split_panels(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert (tmp_path / "figure2_count.pdf").exists()
-    assert not (tmp_path / "figure2_count_a_rarefaction.pdf").exists()
+    assert not (tmp_path / "figure2_count_b_rarefaction.pdf").exists()
 
 
 def test_figure2_cli_writes_individual_logos(tmp_path):
@@ -3559,7 +3559,7 @@ def test_lineage_caption_keeps_an_omitted_sole_group_rather_than_blank():
     assert fig2.lineage_caption("heart", omit=("heart",)) == "heart"
 
 
-# --- panel c layout ---------------------------------------------------------
+# --- panel a layout ---------------------------------------------------------
 #
 # Caption overlap escaped review twice. `_logo_grid` set `hspace` -- a fraction
 # of the *axis* height -- from the caption's line count, but a caption is sized
@@ -3751,7 +3751,7 @@ def test_lexicon_bracket_annotations_do_not_overlap():
             assert not a.overlaps(b), "bracket annotations overlap"
 
 
-# --- panel b: the histogram and the caption must be one run -----------------
+# --- panel c: the histogram and the caption must be one run -----------------
 
 
 def concentration_tables(draws_mean=6.07, null_mean=None, obs=37,
@@ -3783,7 +3783,7 @@ def concentration_tables(draws_mean=6.07, null_mean=None, obs=37,
     return draws, swap
 
 
-def test_panel_b_rejects_null_draws_from_a_different_run():
+def test_panel_c_rejects_null_draws_from_a_different_run():
     """The exact bug: 18-group draws (mean 8.31) beside 21-group numbers."""
     import matplotlib
     matplotlib.use("Agg")
@@ -3796,7 +3796,7 @@ def test_panel_b_rejects_null_draws_from_a_different_run():
     plt.close(fig)
 
 
-def test_panel_b_accepts_draws_from_the_same_run():
+def test_panel_c_accepts_draws_from_the_same_run():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -3807,7 +3807,7 @@ def test_panel_b_accepts_draws_from_the_same_run():
     plt.close(fig)
 
 
-def test_panel_b_reports_a_motif_class_missing_from_the_swap_table():
+def test_panel_c_reports_a_motif_class_missing_from_the_swap_table():
     """A --drop-unnamed run writes the same filenames with one class only."""
     import matplotlib
     matplotlib.use("Agg")
@@ -3820,7 +3820,7 @@ def test_panel_b_reports_a_motif_class_missing_from_the_swap_table():
     plt.close(fig)
 
 
-def test_panel_b_leaves_headroom_above_the_tallest_bar_for_the_legend():
+def test_panel_c_leaves_headroom_above_the_tallest_bar_for_the_legend():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -3834,8 +3834,8 @@ def test_panel_b_leaves_headroom_above_the_tallest_bar_for_the_legend():
     assert top > tallest * 1.15, "no room for the legend above the null mode"
 
 
-def test_panel_b_title_is_overridable_for_the_collapsed_version():
-    """The supplementary copy must not be captioned 'b'."""
+def test_panel_c_title_is_overridable_for_the_collapsed_version():
+    """The supplementary copy must not be captioned 'c'."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -3847,10 +3847,10 @@ def test_panel_b_title_is_overridable_for_the_collapsed_version():
                                    "(one unit per JASPAR name)")
     t = ax.get_title(loc="left")
     plt.close(fig)
-    assert "JASPAR name" in t and not t.startswith("b")
+    assert "JASPAR name" in t and not t.startswith("c")
 
 
-def test_panel_b_default_title_still_carries_the_panel_letter():
+def test_panel_c_default_title_still_carries_the_panel_letter():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -3860,10 +3860,10 @@ def test_panel_b_default_title_still_carries_the_panel_letter():
     fig2.panel_concentration(ax, draws, swap)
     t = ax.get_title(loc="left")
     plt.close(fig)
-    assert t.startswith("b")
+    assert t.startswith("c")
 
 
-def test_collapsed_panel_b_guard_also_applies(tmp_path):
+def test_collapsed_panel_c_guard_also_applies(tmp_path):
     """The consistency guard is not bypassed by the collapsed route."""
     import matplotlib
     matplotlib.use("Agg")
@@ -3882,7 +3882,7 @@ def test_collapsed_concentration_is_supplementary_only(tmp_path):
     JASPAR-name collapse is a supplementary robustness panel, not the headline
     result, so `--collapse-concentration` must add a file and leave the main
     figure untouched. Asserted by rendering twice and comparing bytes: if the
-    collapsed tables ever leak into panel b of the main figure, the PNGs
+    collapsed tables ever leak into panel c of the main figure, the PNGs
     diverge and this fails.
     """
     h5 = fig2_inputs(tmp_path)
@@ -3915,7 +3915,7 @@ def test_collapsed_concentration_is_supplementary_only(tmp_path):
     assert (tmp_path / "withcoll_s_concentration_jaspar_name.pdf").exists(), \
         "the supplementary panel was not written"
     assert (tmp_path / "withcoll.png").read_bytes() == plain_main, \
-        "collapsed tables changed the main figure; panel b must stay cluster-level"
+        "collapsed tables changed the main figure; panel c must stay cluster-level"
 
 
 def test_presentation_headers_clear_the_first_row_of_captions(tmp_path):
@@ -4055,7 +4055,7 @@ def test_profile_names_tsv_overrides_the_fallback():
 
 
 def test_three_block_panel_has_no_caption_collisions(tmp_path):
-    """The profile block makes panel c three bands; headers must still clear."""
+    """The profile block makes panel a three bands; headers must still clear."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt

@@ -11,7 +11,7 @@ its supporting ED/supplement figures, in dependency order.
 
 Every prerequisite is done: profile-head and count-head post-hoc hitcall
 pipelines, `launch_link.py --head count`, and panel 2d has been cut from
-Fig 2 entirely (redundant with panels b/c — see history at the bottom if
+Fig 2 entirely (redundant with panels a/c — see history at the bottom if
 you want the reasoning). **Nothing is blocked.** Run the "Full run order"
 section below top to bottom.
 
@@ -19,7 +19,7 @@ Six real bugs were found and fixed today in the `--with-metaplots` path
 (steps 3-4), #3-6 below being the ones actually causing "metaplots look
 flat/random", "double-peaked", and "offset from the true TSS":
 
-1. Panel c's layout was broken (rows colliding, illegible captions,
+1. Panel a's layout was broken (rows colliding, illegible captions,
    metaplot stacked below instead of beside its logo) — fixed.
 2. The profile row showed the wrong motifs (`--profile-names` was only
    used for captions, not for restricting which clusters got selected) —
@@ -112,6 +112,18 @@ directly overlap the TSS) should peak at 0.
 
 Steps 3-4 below should be re-run once #5 and #6 are confirmed.
 
+**Panel order changed:** `plot_figure2.py`'s main-figure lettering is now
+**a = motif exemplars** (the logo grid, top full-width row), **b =
+rarefaction** (bottom-left), **c = discovery concentration**
+(bottom-right) -- was a=rarefaction/b=concentration/c=exemplars. The two
+GridSpec rows were swapped (exemplars now on top) so visual reading order
+matches the new letters; `panel_rarefaction`'s and `panel_concentration`'s
+own title prefixes, the exemplars `fig.text()` caption, the
+`--no-split-panels` per-panel filenames (`_a_exemplars`/`_b_rarefaction`/
+`_c_concentration`), and `tests/test_motif_atlas_panels.py`'s panel-letter
+assertions were all updated to match. Verified: all 284 tests in that file
+pass.
+
 ## Full run order (the runbook)
 
 Commands in the order you'd actually run them. Reference this section
@@ -165,7 +177,7 @@ reclustered.
 
 ```bash
 # compendium-wide metaplots for the three named clusters, both strands
-for cid in 4 8 24; do
+for cid in 4 21 24; do
     for posneg in pos neg; do
         python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
             --head profile --compendium-motif-name "${posneg}_patterns.${cid}" -v
@@ -220,15 +232,15 @@ python src/analysis/plot_cross_celltype_figure.py --in-dir figures/cross_celltyp
 Three panels, all already scripted and run on real data via
 `plot_figure2.py`:
 
-- **a — rarefaction**: `plot_motif_rarefaction.py`. 5-experiment study
-  recovers only 20.7% of the lexicon; ≥55% missed at k=5 under every
-  abundance threshold, ≥47% even collapsed to JASPAR names.
-- **b — discovery concentration**: `motif_group_concentration.py`. 36
-  single-group TF-matched clusters vs. 6.15 expected (5.86x enrichment,
-  p=5.5e-19), swap-null concentration 0.811.
-- **c — motif exemplars**: `select_motif_exemplars.py`. Textbook sites —
+- **a — motif exemplars**: `select_motif_exemplars.py`. Textbook sites —
   MEF2A (heart+muscle), POU2F3 (lymphoid_b+bulk), GATA2
   (myeloid_erythroid), etc. `--max-groups 2` is the setting to use.
+- **b — rarefaction**: `plot_motif_rarefaction.py`. 5-experiment study
+  recovers only 20.7% of the lexicon; ≥55% missed at k=5 under every
+  abundance threshold, ≥47% even collapsed to JASPAR names.
+- **c — discovery concentration**: `motif_group_concentration.py`. 36
+  single-group TF-matched clusters vs. 6.15 expected (5.86x enrichment,
+  p=5.5e-19), swap-null concentration 0.811.
 
 **Plus a small profile-head core-promoter band** (TATA/Inr/DPE, via
 `plot_figure2.py --profile-exemplars`), *not* a parallel rarefaction/
