@@ -37,17 +37,25 @@ where the cluster was detected, and specificity is 1 - H(q)/log(G), so 0 is
 perfectly ubiquitous and 1 is confined to a single group.
 
 Outputs (in --out-dir):
-  motif_hit_density_{head}.tsv           cluster x experiment hits/peak (full, unfiltered)
-  motif_hit_density_{head}_status.tsv    per-cell discovered/undiscovered mask (with --cluster-metadata)
-  motif_specificity_{head}.tsv           per-cluster specificity, breadth, top group
-  motif_hit_density_{head}.{png,pdf}     the clustered heatmap panel
-  motif_hit_density_{head}_columns.tsv   per-experiment column annotations
+  motif_hit_density_{head}.tsv              cluster x experiment hits/peak (full, unfiltered)
+  motif_hit_density_{head}_status.tsv       per-cell discovered/undiscovered mask (with --cluster-metadata)
+  motif_specificity_{head}.tsv              per-cluster specificity, breadth, top group
+  motif_hit_density_{head}.{png,pdf}        the clustered heatmap panel
+  motif_hit_density_{head}_columns.tsv      per-experiment column annotations
+  motif_hit_density_{head}_panel2d.{png,pdf}   Fig. 2 panel 2d, with --panel2d:
+                                             global specificity vs. a tissue-label
+                                             permutation null, plus a compact
+                                             motif x tissue-group heatmap for a
+                                             few hand-picked TFs (--panel2d-motifs)
+  motif_hit_density_{head}_panel2d_null.npy    the null's raw (n_permutations,
+                                             n_clusters) specificity draws
 
 Usage:
     python src/analysis/motif_hit_density.py
     python src/analysis/motif_hit_density.py --head count --min-trim-len 6
     python src/analysis/motif_hit_density.py --cluster-metadata motifcompendium/bpnet/motifcompendium_profile_cluster_metadata.tsv --mask-undiscovered
     python src/analysis/motif_hit_density.py --top-n 60 --sort-by specificity
+    python src/analysis/motif_hit_density.py --head count --panel2d --panel2d-motifs MEF2A GATA2 POU2F3
 """
 
 import argparse
@@ -284,6 +292,150 @@ def specificity_table(
     return out.join(group_means.add_prefix("group_mean:"))
 
 
+def specificity_permutation_null(
+    density: pd.DataFrame,
+    group_map: dict[str, str],
+    n_permutations: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """(n_permutations, n_clusters) null specificity scores from permuting
+    biosample-group *labels* across experiments -- the density matrix and
+    each cluster's own discovery pattern are held fixed; only which group
+    each experiment counts as is randomized. Answers "how tissue-specific
+    would clusters look from just their existing hit distribution and
+    unequal group sizes, if tissue identity carried no information at all",
+    the same degree-preserving logic as motif_group_concentration.py's
+    swap_null_test but for this continuous entropy-based score rather than a
+    presence/absence count.
+    """
+    real_groups = np.array([group_map.get(c, "other") for c in density.columns])
+    out = np.empty((n_permutations, density.shape[0]))
+    for i in range(n_permutations):
+        perm_map = dict(zip(density.columns, rng.permutation(real_groups)))
+        out[i] = specificity_table(density, perm_map)["specificity"].to_numpy()
+    return out
+
+
+def panel2d_null_stats(
+    observed: pd.Series, null_specs: np.ndarray,
+) -> tuple[float, float, np.ndarray]:
+    """(observed_mean, p_value, null_means) for the atlas-wide mean
+    specificity against its permutation null. Add-one empirical p-value, as
+    in motif_group_concentration.py's swap_null_test, so it is never
+    reported as exactly zero.
+    """
+    observed_mean = float(observed.mean())
+    null_means = null_specs.mean(axis=1)
+    p_value = (int(np.sum(null_means >= observed_mean)) + 1) / (len(null_means) + 1)
+    return observed_mean, p_value, null_means
+
+
+def select_named_clusters(
+    cluster_metadata: Path, names: list[str],
+) -> dict[str, str]:
+    """{jaspar_name: compendium_motif_name} for the best-matching (highest
+    jaspar_score) cluster of each requested name -- panel 2d's hand-picked
+    motif x tissue-group heatmap names a few representative TFs by their
+    common name, not by compendium cluster id.
+    """
+    meta = pd.read_csv(cluster_metadata, sep="\t")
+    meta = meta[meta["jaspar_name"].isin(names)]
+    out: dict[str, str] = {}
+    for name, group in meta.groupby("jaspar_name"):
+        best = group.sort_values("jaspar_score", ascending=False).iloc[0]
+        out[str(name)] = f"{best['posneg']}_patterns.{int(best['cluster_final'])}"
+    missing = set(names) - set(out)
+    if missing:
+        print(f"WARNING: no cluster matched {sorted(missing)}", file=sys.stderr)
+    return out
+
+
+def group_discovery_mask(status: pd.DataFrame, group_map: dict[str, str]) -> pd.DataFrame:
+    """cluster x group boolean, True where *no* experiment in that group ever
+    discovered the cluster -- the same "undiscovered, not a true zero"
+    distinction plot_heatmap()'s --mask-undiscovered draws at the experiment
+    level, aggregated up since panel 2d's compact heatmap groups columns by
+    tissue rather than showing all experiments.
+    """
+    groups = pd.Series({c: group_map.get(c, "other") for c in status.columns})
+    discovered_any = (status == "discovered").T.groupby(groups).any().T
+    return ~discovered_any
+
+
+def plot_panel2d(
+    spec: pd.DataFrame,
+    null_specs: np.ndarray,
+    density: pd.DataFrame,
+    group_map: dict[str, str],
+    status: pd.DataFrame | None,
+    named_clusters: dict[str, str],
+    head: str,
+    out_stem: Path,
+) -> None:
+    """Fig. 2 panel 2d: global specificity vs. its tissue-label permutation
+    null (left), plus a compact motif x tissue-group heatmap for a few
+    hand-picked, high-confidence lineage TFs (right) -- unlike
+    plot_heatmap()'s clustered motif x experiment panel (198 columns), this
+    is meant to be read directly at a glance.
+    """
+    observed_mean, p_value, null_means = panel2d_null_stats(spec["specificity"], null_specs)
+
+    fig, (ax_null, ax_heat) = plt.subplots(
+        1, 2, figsize=(11, 4.2), gridspec_kw={"width_ratios": (1.1, 1.0)}
+    )
+
+    ax_null.hist(
+        null_specs.ravel(), bins=40, density=True, color="#bbbbbb",
+        alpha=0.7, label="permutation null (per-cluster draws)",
+    )
+    ax_null.hist(
+        spec["specificity"].dropna(), bins=40, density=True, histtype="step",
+        color="#c02020", linewidth=1.5, label="observed",
+    )
+    ax_null.axvline(observed_mean, color="#c02020", linestyle="--", linewidth=1)
+    ax_null.axvline(float(np.mean(null_means)), color="#555555", linestyle="--", linewidth=1)
+    ax_null.set_xlabel("Specificity (1 - H(q)/log G)")
+    ax_null.set_ylabel("Density")
+    ax_null.set_title(
+        f"mean specificity {observed_mean:.3f} vs. null "
+        f"{np.mean(null_means):.3f} (p={p_value:.3g})", fontsize=9,
+    )
+    ax_null.legend(frameon=False, fontsize=7)
+
+    groups = pd.Series({c: group_map.get(c, "other") for c in density.columns})
+    group_means = density.T.groupby(groups).mean().T
+    rows = [m for m in named_clusters.values() if m in group_means.index]
+    row_labels = [n for n, m in named_clusters.items() if m in group_means.index]
+    if rows:
+        sub = group_means.loc[rows]
+        mask = None
+        if status is not None:
+            mask = group_discovery_mask(status, group_map).loc[rows, sub.columns]
+        sns.heatmap(
+            np.log10(sub + 1e-4), mask=mask, cmap="magma", ax=ax_heat,
+            yticklabels=row_labels, cbar_kws={"label": "log$_{10}$ hits per peak"},
+            linewidths=0.4, linecolor="white",
+        )
+        ax_heat.set_xlabel("Biosample group")
+        ax_heat.set_ylabel("")
+        ax_heat.tick_params(axis="x", rotation=45, labelsize=7)
+        ax_heat.tick_params(axis="y", labelsize=8)
+        for label in ax_heat.get_xticklabels():
+            label.set_ha("right")
+    else:
+        ax_heat.text(0.5, 0.5, "no requested motifs matched", ha="center", va="center")
+        ax_heat.set_axis_off()
+    ax_heat.set_title(f"{head} head: hand-picked lineage TFs", fontsize=9)
+
+    fig.suptitle(f"Motif usage specificity — {head} head", fontsize=11)
+    fig.tight_layout()
+    for ext in ("png", "pdf"):
+        path = out_stem.with_suffix(f".{ext}")
+        fig.savefig(path, dpi=300, bbox_inches="tight")
+        print(f"Saved {path}", file=sys.stderr)
+    plt.close(fig)
+
+
 def annotate_labels(
     motifs: pd.Index, cluster_metadata: Path | None
 ) -> dict[str, str]:
@@ -518,6 +670,27 @@ def main():
         help="write the resolved biosample->group table here and exit, for curation",
     )
     parser.add_argument(
+        "--panel2d", action="store_true",
+        help="also build Fig. 2 panel 2d: global specificity vs. a "
+             "tissue-label permutation null, plus a compact motif x "
+             "tissue-group heatmap for --panel2d-motifs (needs "
+             "--cluster-metadata, or the default to exist)",
+    )
+    parser.add_argument(
+        "--panel2d-motifs", nargs="*", default=["MEF2A", "GATA2", "POU2F3"],
+        metavar="JASPAR_NAME",
+        help="JASPAR names to draw in panel 2d's compact heatmap "
+             "(default: MEF2A GATA2 POU2F3)",
+    )
+    parser.add_argument(
+        "--n-null", type=int, default=1000, metavar="N",
+        help="tissue-label permutations for panel 2d's null (default: 1000)",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0,
+        help="RNG seed for panel 2d's permutation null (default: 0)",
+    )
+    parser.add_argument(
         "--hitcall-dir", type=Path, default=HITCALL_DIR, metavar="DIR",
         help=f"root of per-experiment hit-call outputs (default: "
              f"{HITCALL_DIR.relative_to(REPO_ROOT)}/)",
@@ -639,6 +812,28 @@ def main():
             f"  {motif:<28} spec={row['specificity']:.3f} "
             f"groups={int(row['n_groups_detected']):>2} top={row['top_group']}",
             file=sys.stderr,
+        )
+
+    if args.panel2d:
+        if cluster_metadata is None:
+            print(
+                "ERROR: --panel2d needs --cluster-metadata (or the default "
+                "cluster metadata to exist)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        rng = np.random.default_rng(args.seed)
+        null_specs = specificity_permutation_null(
+            density.loc[plot_spec.index], group_map, args.n_null, rng,
+        )
+        np.save(
+            args.out_dir / f"motif_hit_density_{args.head}_panel2d_null.npy",
+            null_specs,
+        )
+        named = select_named_clusters(cluster_metadata, args.panel2d_motifs)
+        plot_panel2d(
+            plot_spec, null_specs, density, group_map, status, named,
+            args.head, args.out_dir / f"motif_hit_density_{args.head}_panel2d",
         )
 
 
