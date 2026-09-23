@@ -58,14 +58,22 @@ genome coordinates are written directly into hits.tsv by call-hits.
 Seqlet/hit "strand" is a locally-discovered pattern's own orientation label
 and has no guaranteed relationship to real transcription direction (a motif
 can be labelled "+" from one experiment's MoDISco run and get its reverse
-complement labelled "+" in another) -- collect_windows() is fed this label to
-orient windows, then auto_orient() checks whether the resulting aggregate
-antisense signal exceeds sense at the center and flips both if so, exactly as
-diagnose_hit_signal_metaplot.py already does for hits. In compendium-seqlets
-mode this check is applied *per contributing experiment* before pooling,
-since each experiment's own local pattern has its own independent labelling
-convention -- pooling first and correcting once would let differently-flipped
-experiments cancel each other out instead of reinforcing.
+complement labelled "+" in another) -- collect_windows() is fed this label
+directly to orient windows, with no further correction. An earlier version
+of this module (like diagnose_hit_signal_metaplot.py, which this copied the
+idea from) additionally auto-detected orientation from the signal itself --
+flip if antisense exceeds sense, whether checked at the center bin or
+summed over the whole window -- and applied that per contributing
+experiment before pooling. That's circular (deciding orientation from the
+outcome you're measuring can manufacture a peak-looking shape out of
+noise) and, worse, noisy at that granularity: a per-experiment decision
+made from that one experiment's own often-small seqlet set has nothing
+independent to calibrate against, unlike diagnose_hit_signal_metaplot.py's
+one-time decision from a single large, trusted reference group. Removed
+entirely rather than re-tuned. If a compendium cluster's pooled signal ever
+looks orientation-inverted, that means Fi-NeMo/MoDISco's own strand label
+is wrong for enough contributing experiments to matter, which is a
+labelling bug to fix upstream, not something to paper over here.
 
 Usage:
     python src/bpnet/hitcall/metaplot_motif.py --source hits \\
@@ -334,36 +342,6 @@ def compendium_experiments(
     return list(zip(sub["experiment"], sub["local_motif_name"]))
 
 
-def auto_orient(sense: np.ndarray, antisense: np.ndarray) -> tuple[np.ndarray, np.ndarray, bool]:
-    """Flip (sense, antisense) if antisense carries more signal overall.
-
-    A motif label's "+"/"-" only means "matched this orientation of the
-    locally-discovered pattern", not "matches the real transcription
-    direction" -- see module docstring. Detected empirically from the data
-    itself rather than trusted a priori.
-
-    Compares the *whole window's* total signal, not just the center bin
-    (an earlier version did, and it was wrong): a true Initiator peak is
-    not guaranteed to sit exactly at the motif's own nominal center (e.g.
-    a dinucleotide Inr's dominant TSS can be a dozen-odd bp to one side),
-    in which case the center bin for both strands is near-baseline noise
-    and comparing only it is close to a coin flip. Since this runs *per
-    experiment before pooling*, a noisy per-experiment coin flip mirrors
-    that experiment's real, off-center peak onto the wrong side about half
-    the time -- pooling flipped and unflipped experiments together then
-    looks like a fake symmetric double peak with a dip at the true center,
-    not like noise, which is what made this hard to catch by eye. Total
-    signal across the window is far more robust to the peak's exact
-    position: real transcriptional engagement is strongly strand-biased
-    over the whole displayed region, not just at one bin.
-    """
-    if len(sense) == 0:
-        return sense, antisense, False
-    if antisense.sum() > sense.sum():
-        return antisense, sense, True
-    return sense, antisense, False
-
-
 def collect_metaplot(
     source: str, head: str, config: dict, *,
     experiment: str | None = None, motif_name: str | None = None,
@@ -400,11 +378,8 @@ def collect_metaplot(
             print(f"{experiment}: {len(tss_list)} hits, {len(sense)} windows extracted")
         if len(sense) == 0:
             raise SystemExit("Error: no windows extracted")
-        s, a, flipped = auto_orient(sense.mean(axis=0), antisense.mean(axis=0))
-        if flipped and verbose:
-            print("Note: flipped sense/antisense (antisense > sense at center)")
-        sense_rows.append(s)
-        antisense_rows.append(a)
+        sense_rows.append(sense.mean(axis=0))
+        antisense_rows.append(antisense.mean(axis=0))
         n_total = len(sense)
 
     elif source == "seqlets":
@@ -428,11 +403,8 @@ def collect_metaplot(
             print(f"{experiment}: {len(positions)} seqlets, {len(sense)} windows extracted")
         if len(sense) == 0:
             raise SystemExit("Error: no windows extracted")
-        s, a, flipped = auto_orient(sense.mean(axis=0), antisense.mean(axis=0))
-        if flipped and verbose:
-            print("Note: flipped sense/antisense (antisense > sense at center)")
-        sense_rows.append(s)
-        antisense_rows.append(a)
+        sense_rows.append(sense.mean(axis=0))
+        antisense_rows.append(antisense.mean(axis=0))
         n_total = len(sense)
 
     elif source == "compendium-seqlets":
@@ -471,18 +443,10 @@ def collect_metaplot(
                 if verbose:
                     print(f"  {exp}: 0 windows extracted, skipping", file=sys.stderr)
                 continue
-            # Flipped per-experiment, before pooling -- each experiment's own
-            # local pattern has its own independent +/- convention, so
-            # correcting once *after* pooling would let oppositely-flipped
-            # experiments cancel each other out. See module docstring.
-            s, a, flipped = auto_orient(sense.mean(axis=0), antisense.mean(axis=0))
             if verbose:
-                print(
-                    f"  {exp}: {len(positions)} seqlets, {len(sense)} windows"
-                    f"{' (flipped)' if flipped else ''}"
-                )
-            sense_rows.append(s)
-            antisense_rows.append(a)
+                print(f"  {exp}: {len(positions)} seqlets, {len(sense)} windows")
+            sense_rows.append(sense.mean(axis=0))
+            antisense_rows.append(antisense.mean(axis=0))
             n_total += len(sense)
 
         if not sense_rows:
