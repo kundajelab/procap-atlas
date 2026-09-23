@@ -145,14 +145,14 @@ pass.
 Commands in the order you'd actually run them. Reference this section
 directly rather than re-deriving paths/flags from the discussion below.
 
-Steps 0-4 are also mirrored verbatim in `src/analysis/generate_figure2.sh`,
+Steps 1-5 are also mirrored verbatim in `src/analysis/generate_figure2.sh`,
 a single sbatch script -- `sbatch src/analysis/generate_figure2.sh` -- for
 running the whole thing unattended instead of babysitting an interactive
 session through timeouts/dropped connections. Keep the two in sync if
 either changes; the script is not a replacement for this section, just a
-batch wrapper around the same commands. Extended Data/Supplement (step 5)
-is intentionally not included in the script -- those figures are separate
-and largely independent of the main assembly.
+batch wrapper around the same commands. Step 0 (atlas-wide housekeeping)
+is intentionally not included in the script -- it's a one-off disk-cleanup
+pass, not part of "generate the figure," and stays a manual step.
 
 ### 0. Atlas-wide housekeeping (stale files from dual min-trim-len runs)
 

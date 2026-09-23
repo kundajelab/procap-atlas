@@ -15,7 +15,7 @@
 #SBATCH --requeue
 
 # Runs the entire Figure 2 pipeline (FIGURE2_HANDOFF.md's "Full run order",
-# steps 0-4) as one sequential batch job, so a dropped ssh connection or an
+# steps 1-5) as one sequential batch job, so a dropped ssh connection or an
 # interactive-session timeout can't kill a multi-hour run partway through.
 # --requeue matters here because the default --partition includes
 # preemptible `owners` -- every step below is safe to rerun from scratch
@@ -23,10 +23,9 @@
 # repeats whatever step was interrupted.
 #
 # This is a plain mirror of the runbook, not a replacement for it -- keep
-# the two in sync. Extended Data/Supplement (FIGURE2_HANDOFF.md step 5) is
-# deliberately not included: those are separate, largely independent
-# figures (cross-cell-type prediction, JASPAR-name robustness) that don't
-# need to block or be blocked by the main Figure 2 assembly.
+# the two in sync. Step 0 (atlas-wide housekeeping/cleanup_hitcalls.py) is
+# deliberately not included here -- it's a one-off disk-cleanup pass, not
+# part of "generate the figure," and is left to be run by hand.
 
 set -euo pipefail
 
@@ -43,10 +42,6 @@ run() {
     echo "+ $*"
     uv run --project "$REPO_ROOT" --extra sherlock --frozen "$@"
 }
-
-echo "=== Step 0: atlas-wide housekeeping ==="
-run python src/bpnet/hitcall/cleanup_hitcalls.py
-run python src/bpnet/hitcall/cleanup_hitcalls.py --execute --include-abandoned-trim-dirs
 
 echo "=== Step 1: atlas-wide QC summary ==="
 run python src/bpnet/hitcall/consolidate_motif_reports.py --min-trim-len 6
@@ -79,5 +74,20 @@ run python src/analysis/plot_figure2.py --head count --modisco-h5 auto --with-me
     --profile-exemplars figures/motif_atlas/motif_exemplars_profile_ubiquitous.tsv \
     --profile-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5 \
     --profile-names configs/core_promoter_names.tsv --n-profile 3
+
+echo "=== Step 5: Extended Data / Supplement ==="
+run python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 \
+    --collapse-by jaspar_name --sweep --out-dir figures/motif_atlas/collapsed
+run python src/analysis/motif_group_concentration.py --head count --group-level tissue \
+    --collapse-by jaspar_name --out-dir figures/motif_atlas/collapsed
+
+run python src/analysis/motif_redundancy.py --head count --modisco-h5 auto \
+    --trim-threshold 0.5 --drop-untrimmable --report-threshold 1e-6
+
+run python src/analysis/cross_celltype_prediction.py \
+    --observed figures/count_correlation_all198/observed_counts.tsv \
+    --predicted figures/count_correlation_all198/predicted_counts.tsv \
+    --out-dir figures/cross_celltype_all198
+run python src/analysis/plot_cross_celltype_figure.py --in-dir figures/cross_celltype_all198
 
 echo "=== Done ==="
