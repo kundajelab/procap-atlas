@@ -35,7 +35,14 @@ ml ucsc-utils
 
 mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 
-REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+# sbatch copies this script into a spool directory and executes the copy,
+# so ${BASH_SOURCE[0]} resolves under /var/spool/... at runtime -- deriving
+# REPO_ROOT from it (as this script briefly did) silently resolves every
+# relative path against /var/spool instead of the repo. SLURM_SUBMIT_DIR is
+# set by Slurm to wherever `sbatch` was invoked from, which is the repo
+# root here; fall back to BASH_SOURCE only for a plain `bash` test run
+# outside SLURM, where it resolves correctly.
+REPO_ROOT="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 cd "$REPO_ROOT"
 
 run() {
