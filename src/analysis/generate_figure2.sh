@@ -40,9 +40,17 @@
 
 set -euo pipefail
 
+# ml ucsc-utils (mimicking modisco.sh's module list) is NOT loaded here --
+# it pulls in a curl/openssl combination that conflicts with python/3.12.1's
+# own openssl/3.0.7 dependency (Lmod swaps them, leaving the uv-managed
+# venv's python3 unable to find libpython3.12.so.1.0 at runtime: "cannot
+# open shared object file"). modisco.sh never actually runs a plain python
+# script through uv (only the compiled `modisco` binary), so it never hit
+# this; every launcher here that does run python via uv (e.g. launch_link.py)
+# only loads biology/htslib, which is enough -- Fig 2 generation never
+# shells out to a UCSC binary (pybigtools handles bigwig I/O in Python).
 ml biology
 ml htslib
-ml ucsc-utils
 
 mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 
@@ -59,6 +67,12 @@ cd "$REPO_ROOT"
 LOG_DIR="$REPO_ROOT/logs/generate_figure2_${SLURM_JOB_ID:-$$}"
 mkdir -p "$LOG_DIR"
 echo "Per-step logs: $LOG_DIR"
+
+# Fails fast and clearly if the venv's interpreter is broken (e.g. a module
+# conflict leaves it unable to find libpython3.so), instead of fanning out
+# to 13 parallel jobs that all fail with the same confusing error.
+uv run --project "$REPO_ROOT" --extra sherlock --frozen python -c \
+    "import sys; print('interpreter OK:', sys.version)"
 
 pids=()
 labels=()
