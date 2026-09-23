@@ -15,9 +15,9 @@ Fig 2 entirely (redundant with panels b/c — see history at the bottom if
 you want the reasoning). **Nothing is blocked.** Run the "Full run order"
 section below top to bottom.
 
-Three real bugs were found and fixed today in the `--with-metaplots` path
-(steps 3-4), the last of which is the one actually causing "metaplots look
-flat/random":
+Four real bugs were found and fixed today in the `--with-metaplots` path
+(steps 3-4), #3 and #4 below being the ones actually causing "metaplots
+look flat/random" and "double-peaked":
 
 1. Panel c's layout was broken (rows colliding, illegible captions,
    metaplot stacked below instead of beside its logo) — fixed.
@@ -40,8 +40,26 @@ flat/random":
    same. **This is the actual fix for the flat-metaplot report — 1 and 2
    were real but unrelated bugs found along the way.**
 
-None of the three has been verified on a real render yet — that requires
-rerunning steps 3-4 below from scratch (`git pull` first).
+A fourth bug, found chasing the same flat/random-looking CA-Inr metaplot
+after fixing #3: `metaplot_motif.py`'s `auto_orient()` was flipping
+sense/antisense per contributing experiment based on which one had more
+signal, applied independently in `compendium-seqlets` pooling. That's
+circular (deciding orientation from the thing you're measuring) and
+produced a fake symmetric double-peak instead of a real single peak.
+Removed entirely — every source (`hits`/`seqlets`/`compendium-seqlets`) now
+trusts each seqlet's/hit's own labeled strand with zero post-hoc
+correction, same convention `diagnose_hit_signal_metaplot.py` uses (that
+script's own reorientation is a single one-time decision from one large
+trusted reference group, not a per-experiment loop, so it isn't affected).
+**Confirmed fixed on a real render** — CA-Inr now shows a clean single
+peak.
+
+Also, `configs/core_promoter_names.tsv`'s cluster ids were stale (2 of 3
+wrong) because `cluster_motifs.py`'s `cluster_final` ids aren't stable
+across reruns — corrected to `4 = CA-Inr, 8 = TATA-Inr, 24 = TA-Inr` (was
+`2, 4, 7`) by direct visual check against the cluster report HTML.
+
+Steps 3-4 below have been re-verified with all four fixes in place.
 
 ## Full run order (the runbook)
 
@@ -84,15 +102,19 @@ python src/analysis/select_motif_exemplars.py --head count --max-groups 2 --per-
 ### 3. Profile-head core-promoter band — NOT select_motif_exemplars.py
 
 Only presenting the three curated core-promoter motifs in
-`configs/core_promoter_names.tsv` (cluster 2 = CA-Inr, 4 = TATA, 7 = TA-Inr),
-not a generic lineage-restricted/ubiquitous selection — profile head's
-compendium is known-contaminated with poly-nucleotide/duplicate/composite
-motifs (see Decision section below), so it isn't run through the same
-selection algorithm as count head.
+`configs/core_promoter_names.tsv` (cluster 4 = CA-Inr, 8 = TATA-Inr,
+24 = TA-Inr), not a generic lineage-restricted/ubiquitous selection —
+profile head's compendium is known-contaminated with poly-nucleotide/
+duplicate/composite motifs (see Decision section below), so it isn't run
+through the same selection algorithm as count head. Note `cluster_final`
+ids are not stable across `cluster_motifs.py` reruns (see its own module
+comment) — re-verify these ids by eye against
+`motifcompendium_profile_cluster_report.html` if the compendium is ever
+reclustered.
 
 ```bash
 # compendium-wide metaplots for the three named clusters, both strands
-for cid in 2 4 7; do
+for cid in 4 8 24; do
     for posneg in pos neg; do
         python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
             --head profile --compendium-motif-name "${posneg}_patterns.${cid}" -v
