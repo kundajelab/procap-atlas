@@ -59,21 +59,44 @@ Seqlet/hit "strand" is a locally-discovered pattern's own orientation label
 and has no guaranteed relationship to real transcription direction (a motif
 can be labelled "+" from one experiment's MoDISco run and get its reverse
 complement labelled "+" in another) -- collect_windows() is fed this label
-directly to orient windows, with no further correction. An earlier version
-of this module (like diagnose_hit_signal_metaplot.py, which this copied the
-idea from) additionally auto-detected orientation from the signal itself --
-flip if antisense exceeds sense, whether checked at the center bin or
-summed over the whole window -- and applied that per contributing
-experiment before pooling. That's circular (deciding orientation from the
-outcome you're measuring can manufacture a peak-looking shape out of
-noise) and, worse, noisy at that granularity: a per-experiment decision
-made from that one experiment's own often-small seqlet set has nothing
-independent to calibrate against, unlike diagnose_hit_signal_metaplot.py's
-one-time decision from a single large, trusted reference group. Removed
-entirely rather than re-tuned. If a compendium cluster's pooled signal ever
-looks orientation-inverted, that means Fi-NeMo/MoDISco's own strand label
-is wrong for enough contributing experiments to matter, which is a
-labelling bug to fix upstream, not something to paper over here.
+directly to orient windows, with no signal-based correction. An earlier
+version of this module (like diagnose_hit_signal_metaplot.py, which this
+copied the idea from) additionally auto-detected orientation from the
+signal itself -- flip if antisense exceeds sense, whether checked at the
+center bin or summed over the whole window -- and applied that per
+contributing experiment before pooling. That's circular (deciding
+orientation from the outcome you're measuring can manufacture a
+peak-looking shape out of noise) and, worse, noisy at that granularity: a
+per-experiment decision made from that one experiment's own often-small
+seqlet set has nothing independent to calibrate against, unlike
+diagnose_hit_signal_metaplot.py's one-time decision from a single large,
+trusted reference group. Removed entirely rather than re-tuned.
+
+That's not the whole story for compendium-seqlets, though. MotifCompendium's
+own clustering (MotifCompendium/utils/similarity_core.py's
+compute_similarity_and_align) explicitly checks a pattern against both the
+cluster's orientation and its reverse complement and keeps whichever
+aligns better, so one cluster_final id can legitimately contain some
+experiments' patterns in one orientation and others' in the mirror-image
+orientation. cluster_motifs.py's export_pattern_to_cluster_mapping() never
+records which contributing members got flipped -- motifcompendium_{head}_
+pattern_to_cluster.tsv only has experiment/local_motif_name/
+compendium_motif_name -- so pooling raw per-experiment is_revcomp labels
+mixes two mirror-image subpopulations. Each is internally self-consistent
+(correctly labeled relative to its own experiment's pattern), but globally
+inconsistent with each other, which doesn't blur a real peak -- it splits
+it, since collect_windows() flips the whole window (position and sense/
+antisense) for "-"-labeled entries: one subgroup's real peak lands in
+sense at some offset, the other's identical real peak lands in antisense
+at the mirror-image offset. pattern_is_flipped_relative_to_cluster()
+recomputes the orientation MotifCompendium's clustering already decided
+but discarded, by aligning each contributing experiment's own CWM
+(contrib_scores, from its per-experiment MoDISco h5) against the cluster's
+own reference CWM (motifcompendium_{head}_cluster_averages.h5, which
+cluster_averages() already built by correctly RC-aligning every member).
+This is not circular the way auto_orient was: it compares motif shape
+against the cluster's reference shape, never the observed PRO-cap signal
+being aggregated.
 
 Usage:
     python src/bpnet/hitcall/metaplot_motif.py --source hits \\
@@ -119,6 +142,7 @@ MC_DIR = REPO_ROOT / "motifcompendium" / "bpnet"
 DEFAULT_WINDOW = 200
 DEFAULT_BIN_SIZE = 5
 LOCAL_MOTIF_RE = re.compile(r"^(pos|neg)_patterns\.(pattern_\d+)$")
+COMPENDIUM_MOTIF_RE = re.compile(r"^(pos|neg)_patterns\.(\d+)$")
 
 
 def npz_array_shape(path: str, key: str = "arr_0") -> tuple[int, ...]:
@@ -322,6 +346,104 @@ def seqlet_positions(
     return out
 
 
+def local_pattern_cwm(
+    experiment: str, head: str, local_motif_name: str, modisco_h5: Path | None,
+) -> np.ndarray:
+    """(L, 4) contrib_scores CWM for one experiment's own local pattern, read
+    straight from its per-experiment MoDISco h5 -- see
+    pattern_is_flipped_relative_to_cluster()."""
+    h5_path = modisco_h5 or (MODISCO_DIR / f"{experiment}_{head}.modisco.h5")
+    if not Path(h5_path).exists():
+        raise SystemExit(f"Error: {h5_path} missing")
+    posneg_group, pattern_key = parse_local_motif_name(local_motif_name)
+    with h5py.File(h5_path, "r") as f:
+        if posneg_group not in f or pattern_key not in f[posneg_group]:
+            raise SystemExit(
+                f"Error: {posneg_group}/{pattern_key} not found in {h5_path}"
+            )
+        return f[posneg_group][pattern_key]["contrib_scores"][:]
+
+
+@lru_cache(maxsize=None)
+def cluster_reference_cwm(head: str, compendium_motif_name: str) -> np.ndarray:
+    """(L, 4) averaged contrib_scores CWM for one compendium cluster, from
+    motifcompendium_{head}_cluster_averages.h5 -- the exact reference frame
+    MotifCompendium's own cluster_averages() reverse-complement-aligned
+    every contributing member to before averaging them into this cluster's
+    logo (see pattern_is_flipped_relative_to_cluster()). Cached per (head,
+    compendium_motif_name): compendium-seqlets mode calls this once per
+    contributing experiment for the same cluster.
+    """
+    path = MC_DIR / f"motifcompendium_{head}_cluster_averages.h5"
+    resolved = compressed_io.resolve(path, missing_ok=True)
+    if resolved is None:
+        raise SystemExit(
+            f"Error: {path} missing -- run motifcompendium/cluster_motifs.py first"
+        )
+    m = COMPENDIUM_MOTIF_RE.match(compendium_motif_name)
+    if not m:
+        raise SystemExit(
+            f"Error: {compendium_motif_name!r} doesn't look like a compendium "
+            "motif name (expected e.g. 'pos_patterns.4')"
+        )
+    posneg_group, cluster_id = f"{m.group(1)}_patterns", m.group(2)
+    with h5py.File(resolved, "r") as f:
+        if posneg_group not in f or cluster_id not in f[posneg_group]:
+            raise SystemExit(
+                f"Error: {posneg_group}/{cluster_id} not found in {path}"
+            )
+        return f[posneg_group][cluster_id]["contrib_scores"][:]
+
+
+def _reverse_complement_cwm(cwm: np.ndarray) -> np.ndarray:
+    return cwm[::-1, ::-1]
+
+
+def _best_alignment_score(a: np.ndarray, b: np.ndarray) -> float:
+    """Max total cross-correlation between two CWMs (any two lengths) over
+    every relative shift, summed across the 4 bases -- a coarse stand-in for
+    MotifCompendium's own alignment step (similarity_core.py's
+    compute_similarity_and_align), just to classify orientation rather than
+    to reproduce its exact clustering numerics.
+    """
+    score = np.zeros(a.shape[0] + b.shape[0] - 1)
+    for k in range(a.shape[1]):
+        score += np.correlate(a[:, k], b[:, k], mode="full")
+    return float(score.max())
+
+
+def pattern_is_flipped_relative_to_cluster(
+    experiment: str, head: str, local_motif_name: str, compendium_motif_name: str,
+    modisco_h5: Path | None,
+) -> bool:
+    """True if this experiment's own local pattern aligns better to the
+    compendium cluster's reference CWM as a reverse complement than as-is --
+    i.e. its seqlets' is_revcomp/strand labels are flipped relative to the
+    cluster's canonical orientation and need inverting before pooling.
+
+    MotifCompendium's own clustering can and does group a pattern together
+    with its reverse complement under one cluster_final id (its similarity
+    metric explicitly checks both orientations and keeps whichever aligns
+    better -- see module docstring), but cluster_motifs.py's
+    export_pattern_to_cluster_mapping() never records which contributing
+    members needed the flip, so compendium-seqlets pooling has had no way
+    to know. This recomputes that same forward-vs-reverse-complement
+    decision from scratch, from the two pieces of ground truth that are
+    independently available: this experiment's own per-experiment MoDISco
+    pattern, and the cluster's own MotifCompendium-built reference average.
+
+    Unlike the removed auto_orient() (see module docstring), this is not
+    circular: it compares motif *shape* (CWM contrib_scores) against the
+    cluster's reference shape, never the observed PRO-cap signal being
+    aggregated.
+    """
+    local_cwm = local_pattern_cwm(experiment, head, local_motif_name, modisco_h5)
+    cluster_cwm = cluster_reference_cwm(head, compendium_motif_name)
+    score_fwd = _best_alignment_score(local_cwm, cluster_cwm)
+    score_rc = _best_alignment_score(_reverse_complement_cwm(local_cwm), cluster_cwm)
+    return score_rc > score_fwd
+
+
 def compendium_experiments(
     compendium_motif_name: str, head: str, mapping_tsv: Path | None,
 ) -> list[tuple[str, str]]:
@@ -421,6 +543,9 @@ def collect_metaplot(
                 positions = seqlet_positions(
                     exp, head, local_motif_name, min_trim_len, model_dir, None, verbose,
                 )
+                flipped = pattern_is_flipped_relative_to_cluster(
+                    exp, head, local_motif_name, compendium_motif_name, None,
+                )
                 total_reads = load_total_reads(exp)
                 if total_reads is None:
                     if verbose:
@@ -432,8 +557,13 @@ def collect_metaplot(
                     print(f"  {exp}: WARNING {e}, skipping", file=sys.stderr)
                 continue
 
+            if verbose and flipped:
+                print(
+                    f"  {exp}: pattern is reverse-complement relative to the "
+                    "cluster reference, flipping its seqlets' strand labels"
+                )
             tss_list = [
-                (chrom, (start + end) // 2, "-" if rc else "+")
+                (chrom, (start + end) // 2, "-" if (rc != flipped) else "+")
                 for chrom, start, end, rc in positions
             ]
             sense, antisense = collect_windows(
