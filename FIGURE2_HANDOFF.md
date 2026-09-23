@@ -181,7 +181,7 @@ python src/analysis/select_motif_exemplars.py --head count --max-groups 2 --per-
 ### 3. Profile-head core-promoter band — NOT select_motif_exemplars.py
 
 Only presenting the three curated core-promoter motifs in
-`configs/core_promoter_names.tsv` (cluster 4 = CA-Inr, 8 = TATA,
+`configs/core_promoter_names.tsv` (cluster 4 = CA-Inr, 21 = TATA,
 24 = TA-Inr), not a generic lineage-restricted/ubiquitous selection —
 profile head's compendium is known-contaminated with poly-nucleotide/
 duplicate/composite motifs (see Decision section below), so it isn't run
@@ -201,8 +201,15 @@ for cid in 4 21 24; do
 done
 
 # still need select_motif_exemplars.py --head profile once, to produce the
-# TSV plot_figure2.py's --profile-exemplars reads (not for its own report)
-python src/analysis/select_motif_exemplars.py --head profile --include-unmatched
+# TSV plot_figure2.py's --profile-exemplars reads (not for its own report,
+# so the selection quality doesn't matter -- only that clusters 4/21/24
+# actually show up in the ubiquitous file's rows). TATA-driven promoters
+# are a genuine minority (~10-20% of promoters use a canonical TATA box),
+# so cluster 21 doesn't clear the default --broad-groups floor (15) the
+# way near-universal CA-Inr does -- --broad-groups 1 --top-ubiquitous 999
+# keeps everything instead of re-deriving which motifs "count" as broad.
+python src/analysis/select_motif_exemplars.py --head profile --include-unmatched \
+    --broad-groups 1 --top-ubiquitous 999
 ```
 
 ### 4. Assemble Figure 2 (count panels + profile core-promoter band, fused with metaplots)
@@ -210,7 +217,7 @@ python src/analysis/select_motif_exemplars.py --head profile --include-unmatched
 ```bash
 python src/analysis/plot_figure2.py --head count --modisco-h5 auto --with-metaplots \
     --n-restricted 14 \
-    --profile-exemplars figures/motif_atlas/motif_exemplars_profile_restricted.tsv \
+    --profile-exemplars figures/motif_atlas/motif_exemplars_profile_ubiquitous.tsv  \
     --profile-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5 \
     --profile-names configs/core_promoter_names.tsv --n-profile 3
 ```
