@@ -139,6 +139,21 @@ Double-check `--n-profile 3` actually restricts the profile band to just the
 2/4/7 rows rather than whatever `select_motif_exemplars.py` ranks highest by
 seqlet count — not yet verified.
 
+**First real render of this (2026-09-23) was broken** — rows visibly
+collided/shifted, captions were illegible, and the metaplot sat stacked
+below its logo instead of beside it. Fixed in `_logo_metaplot_grid`
+(now a side-by-side 1x2 cell, logo left/metaplot right, instead of a
+stacked 2x1) and in `main()` (the manuscript `--figsize` default, 7.4x6.2in,
+was sized for panel c's plain single-row-per-cell layout and starved badly
+once cells needed ~1.85x the width for logo+metaplot side by side plus
+still fitting a 3-line caption — now auto-scales from the actual row count
+when `--figsize` isn't explicitly overridden). Also switched
+`--category-label` to `header` by default under `--with-metaplots`: the
+rotated band labels ("profile head: initiation shape") need more vertical
+run length than a short one-row band has room for, and were visibly
+colliding with each other. **Not yet re-verified on a real render** — rerun
+and check before treating this as fixed.
+
 ### 5. Extended Data / Supplement (no blockers, runnable now)
 
 ```bash

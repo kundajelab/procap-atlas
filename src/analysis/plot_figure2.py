@@ -588,11 +588,15 @@ def _logo_metaplot_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwarg
                         category_style="rotated", metaplot_window=200,
                         metaplot_bin_size=5, metaplot_min_trim_len=None,
                         mapping_tsv=None):
-    """Like _logo_grid, but each cell stacks a logo over its own
+    """Like _logo_grid, but each cell places a logo beside its own
     compendium-wide observed-signal metaplot (metaplot_motif.py's
     compendium-seqlets source) -- fusing the CWM and the signal that
     select_motif_exemplars.py's --with-metaplots report lets you inspect
-    separately, into one panel-c cell.
+    separately, into one panel-c cell. Side by side, not stacked: a motif
+    and its signal are two views of the same row, and stacking them
+    doubled the vertical space every row needed for no benefit -- callers
+    must size the figure for cells roughly twice as *wide* as a plain logo
+    instead (see main()'s with_metaplots figsize handling).
 
     Deliberately a sibling function rather than a `_logo_grid` parameter:
     `_logo_grid`'s adaptive font-shrinking spacing is tuned and covered by a
@@ -610,34 +614,34 @@ def _logo_metaplot_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwarg
     n = len(rows)
     n_sub = max(1, -(-n // per_row))
     inner = GridSpecFromSubplotSpec(
-        n_sub, per_row, subplot_spec=spec, wspace=0.35, hspace=1.1,
+        n_sub, per_row, subplot_spec=spec, wspace=0.55, hspace=0.9,
     )
     band = spec.get_position(fig)
     drew = 0
     for i, r in enumerate(rows.itertuples()):
         cell = GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=inner[i // per_row, i % per_row],
-            height_ratios=(1.3, 1), hspace=0.45,
+            1, 2, subplot_spec=inner[i // per_row, i % per_row],
+            width_ratios=(1.0, 0.85), wspace=0.12,
         )
         posneg = getattr(r, "posneg", "pos") or "pos"
 
         ax_logo = fig.add_subplot(cell[0, 0])
+        ax_meta = fig.add_subplot(cell[0, 1])
         df = trimmed_cwm(h5_path, int(r.cluster_final), posneg, **trim_kwargs)
         if df is None:
             ax_logo.text(0.5, 0.5, f"cl {r.cluster_final}\nnot in h5", ha="center",
                         va="center", fontsize=5, color="#b2182b",
                         transform=ax_logo.transAxes)
             ax_logo.set_axis_off()
-            fig.add_subplot(cell[1, 0]).set_axis_off()
+            ax_meta.set_axis_off()
             continue
         logomaker.Logo(df, ax=ax_logo, shade_below=0.0, fade_below=0.0)
         ax_logo.set_xticks([])
         ax_logo.set_yticks([])
         ax_logo.spines[["top", "right", "left", "bottom"]].set_visible(False)
         ax_logo.set_title(label_fn(r), fontsize=label_fontsize, pad=1.2,
-                          linespacing=1.2)
+                          linespacing=1.2, loc="left")
 
-        ax_meta = fig.add_subplot(cell[1, 0])
         compendium_name = f"{posneg}_patterns.{int(r.cluster_final)}"
         try:
             sense, antisense, n_inst = collect_metaplot(
@@ -1190,12 +1194,22 @@ def main():
         "uppercase_names": False,
         "exemplar_figsize": None,
     }
+    category_label_explicit = args.category_label is not None
     chosen = presentation_defaults if args.presentation else manuscript_defaults
     for key, value in chosen.items():
         if getattr(args, key) is None:
             setattr(args, key, value)
     # Fails here on a typo rather than after the h5 reads.
     resolve_label_fields(args.label_fields)
+
+    # Rotated multi-word band labels ("profile head: initiation shape") need
+    # more vertical run length than a short band has room for -- panel c's
+    # profile row is a single row of logos, nowhere near enough height for
+    # ~30 characters of rotated text, and it visibly collided with the
+    # neighboring band's label. Header style puts the label on its own
+    # horizontal line above the band instead, which any band has room for.
+    if args.with_metaplots and not category_label_explicit:
+        args.category_label = "header"
 
     h5_path = args.modisco_h5
     if str(h5_path) == "auto":
@@ -1447,8 +1461,36 @@ def main():
         print(f"{total} logos drawn")
         return
 
+    # --with-metaplots cells are ~1.85x as wide as a plain logo (logo beside
+    # its metaplot, not stacked -- see _logo_metaplot_grid) and still need
+    # room for a 3-line caption, so the manuscript default --figsize
+    # (7.4x6.2in, sized for panel c's plain single-row-per-cell layout)
+    # starves it badly enough to visibly overlap rows. Auto-scale from the
+    # actual row count instead of guessing a fixed bigger constant, unless
+    # the user already overrode --figsize.
+    c_height_ratio = 1.45
+    if args.with_metaplots and tuple(args.figsize) == (7.4, 6.2):
+        def _sub_rows(rows, n):
+            picked = len(rank_for_panel(rows, n)) if rows is not None else 0
+            return max(1, -(-picked // args.logos_per_row)) if picked else 0
+
+        n_sub_total = (
+            _sub_rows(tables["ubiquitous"], args.n_ubiquitous)
+            + _sub_rows(tables["restricted"], args.n_restricted)
+        )
+        if profile_rows is not None and args.profile_h5:
+            n_prof = (args.n_profile if args.n_profile is not None
+                      else args.n_restricted)
+            n_sub_total += _sub_rows(profile_rows, n_prof)
+
+        ab_height = 3.0  # fixed: panels a/b don't grow with panel c's content
+        c_height = 1.6 * max(n_sub_total, 1)
+        c_height_ratio = c_height / ab_height
+        args.figsize = [max(14.0, 2.3 * args.logos_per_row),
+                        ab_height + c_height + 1.0]
+
     fig = plt.figure(figsize=tuple(args.figsize))
-    gs = GridSpec(2, 2, figure=fig, height_ratios=[1.0, 1.45],
+    gs = GridSpec(2, 2, figure=fig, height_ratios=[1.0, c_height_ratio],
                   hspace=0.52, wspace=0.26,
                   left=0.09, right=0.965, top=0.94, bottom=0.04)
 
