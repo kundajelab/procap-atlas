@@ -81,6 +81,7 @@ Usage:
 import argparse
 import re
 import sys
+import zipfile
 from functools import lru_cache
 from pathlib import Path
 
@@ -90,9 +91,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.lib.format as npy_format
 import pandas as pd
 import yaml
-from finemo.data_io import load_npy_or_npz, load_peaks
+from finemo.data_io import load_peaks
 
 import compressed_io
 from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
@@ -111,14 +113,55 @@ DEFAULT_BIN_SIZE = 5
 LOCAL_MOTIF_RE = re.compile(r"^(pos|neg)_patterns\.(pattern_\d+)$")
 
 
+def npz_array_shape(path: str, key: str = "arr_0") -> tuple[int, ...]:
+    """One array's shape inside a .npz, without decompressing its data.
+
+    region_geometry() only ever wants {experiment}_ohe.npz's last
+    dimension, but a plain np.load()/load_npy_or_npz() must fully
+    decompress the member to hand back an ndarray -- it's a zip archive,
+    not mmap-able. compendium-seqlets mode calls this once per contributing
+    experiment, and a widely-shared ("ubiquitous") cluster's contributing
+    experiments can number in the hundreds, each with a multi-GB
+    uncompressed OHE array -- decompressing every one of those just to
+    read one int was the dominant cost in a real timing (0.75s vs. 0.0003s
+    for a 50k-peak array in a synthetic benchmark). The .npy format's shape
+    lives in a small text header at the very start of the member's
+    decompressed stream, so this reads only that header -- deflate
+    decoding is sequential, so reading the first few hundred bytes of
+    output only costs decompressing roughly that much input, not the
+    array's full data.
+    """
+    with zipfile.ZipFile(path) as zf, zf.open(f"{key}.npy") as f:
+        major, _ = npy_format.read_magic(f)
+        read_header = (
+            npy_format.read_array_header_1_0 if major == 1
+            else npy_format.read_array_header_2_0
+        )
+        shape, _, _ = read_header(f)
+        return shape
+
+
+_READ_COUNTS: dict[str, float] | None = None
+
+
 def load_total_reads(experiment: str) -> float | None:
-    with open(N_READS_PATH) as f:
-        next(f)
-        for line in f:
-            parts = line.strip().split("\t")
-            if parts[0] == experiment and len(parts) >= 5:
-                return float(parts[4])
-    return None
+    """configs/n_reads.txt's total-reads column, parsed once and cached.
+
+    compendium-seqlets mode looks this up once per contributing experiment
+    per cluster, and the same experiment recurs across many clusters within
+    one process -- a per-call linear scan of the file re-read it from
+    scratch every time.
+    """
+    global _READ_COUNTS
+    if _READ_COUNTS is None:
+        _READ_COUNTS = {}
+        with open(N_READS_PATH) as f:
+            next(f)
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) >= 5:
+                    _READ_COUNTS[parts[0]] = float(parts[4])
+    return _READ_COUNTS.get(experiment)
 
 
 def bigwig_paths(config: dict, experiment: str) -> tuple[Path, Path]:
@@ -184,10 +227,10 @@ def region_geometry(
     files on disk that don't change within one process's run, but
     compendium-seqlets mode calls this once per contributing experiment for
     *every* cluster, and a "ubiquitous" cluster's contributing experiments
-    heavily overlap the next one's. Caching matters more than it looks --
-    load_npy_or_npz() on {experiment}_ohe.npz fully decompresses that whole
-    array just to read one dimension (it's a zip archive, not mmap-able),
-    which otherwise reruns on every one of those repeats.
+    heavily overlap the next one's. Reading raw_width is cheap now
+    (npz_array_shape() reads only the .npy header, not the array), but
+    resolving peaks.narrowPeak still means a bgzip decompression and a
+    polars parse per call, which this still saves across those repeats.
     """
     exp_dir, _, _, _ = resolve_experiment_paths(experiment, head, min_trim_len, model_dir)
     peaks_narrowpeak = compressed_io.resolve(exp_dir / "peaks.narrowPeak", missing_ok=True)
@@ -200,7 +243,7 @@ def region_geometry(
     ohe_path = ATTR_DIR / f"{experiment}_ohe.npz"
     if not ohe_path.exists():
         raise SystemExit(f"Error: {ohe_path} missing")
-    raw_width = load_npy_or_npz(str(ohe_path)).shape[-1]
+    raw_width = npz_array_shape(str(ohe_path))[-1]
 
     if verbose:
         print(f"Reading peak coordinates from {peaks_narrowpeak}")
