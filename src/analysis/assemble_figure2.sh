@@ -21,18 +21,29 @@
 
 set -euo pipefail
 
-# ml ucsc-utils is deliberately NOT loaded -- it pulls in a curl/openssl
-# combination that conflicts with python/3.12.1's own openssl dependency
-# and left the uv-managed venv's python3 unable to find
-# libpython3.12.so.1.0 at runtime ("cannot open shared object file").
-# plot_figure2.py never shells out to a UCSC binary anyway (pybigtools
-# handles bigwig I/O in Python). python/3.12.1 is loaded explicitly rather
-# than relying on whatever a given compute node's default module state
-# happens to be -- the failure above reproduced with or without
-# ucsc-utils, and only stopped once this was loaded explicitly.
+# Known-working module set (confirmed by hand on Sherlock) -- narrower
+# subsets (biology/htslib alone, or with an explicit python/3.12.1) still
+# left the uv-managed venv's python3 unable to find libpython3.12.so.1.0
+# at runtime ("cannot open shared object file"). Load exactly this list.
+ml openblas/0.3.28
+ml xsimd/8.1.0
+ml xz/5.8.1
+ml hdf5/1.14.4
+ml arrow/22.0.0
+ml py-pyarrow/18.1.0_py312
+ml lz4/1.8.0
 ml biology
 ml htslib
-ml python/3.12.1
+ml ucsc-utils
+ml rust/1.90.0
+ml go/1.25.10
+ml bcftools/1.16
+ml openmpi/5.0.5
+ml cmake/3.31.4
+ml make/4.4
+ml ninja/1.13.1
+ml gcc/14.2.0
+ml cmake/3.31.4
 
 mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 
