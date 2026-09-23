@@ -163,13 +163,20 @@ pass.
 Commands in the order you'd actually run them. Reference this section
 directly rather than re-deriving paths/flags from the discussion below.
 
-Steps 1-5 are also mirrored verbatim in `src/analysis/generate_figure2.sh`,
-a single sbatch script -- `sbatch src/analysis/generate_figure2.sh` -- for
+Steps 1-5 are also mirrored in `src/analysis/generate_figure2.sh`, a
+single sbatch script -- `sbatch src/analysis/generate_figure2.sh` -- for
 running the whole thing unattended instead of babysitting an interactive
-session through timeouts/dropped connections. Keep the two in sync if
-either changes; the script is not a replacement for this section, just a
-batch wrapper around the same commands. Step 0 (atlas-wide housekeeping)
-is intentionally not included in the script -- it's a one-off disk-cleanup
+session through timeouts/dropped connections. Everything mutually
+independent (QC summary, the three diagnostic metaplots, the
+rarefaction/concentration/exemplars commands, the JASPAR-name pair,
+redundancy, cross-cell-type prediction) runs concurrently in the
+background, each logged to its own file under
+`logs/generate_figure2_<job id>/`; only step 4 (needs step 2/3's outputs)
+and the cross-cell-type figure assembly (needs its own prediction step)
+wait on anything. Keep the two in sync if either changes; the script is
+not a replacement for this section, just a batch wrapper around the same
+commands. Step 0 (atlas-wide housekeeping) is intentionally not included
+in the script -- it's a one-off disk-cleanup
 pass, not part of "generate the figure," and stays a manual step.
 
 ### 0. Atlas-wide housekeeping (stale files from dual min-trim-len runs)
