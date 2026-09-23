@@ -15,9 +15,9 @@ Fig 2 entirely (redundant with panels b/c — see history at the bottom if
 you want the reasoning). **Nothing is blocked.** Run the "Full run order"
 section below top to bottom.
 
-Five real bugs were found and fixed today in the `--with-metaplots` path
-(steps 3-4), #3-5 below being the ones actually causing "metaplots look
-flat/random" and "double-peaked":
+Six real bugs were found and fixed today in the `--with-metaplots` path
+(steps 3-4), #3-6 below being the ones actually causing "metaplots look
+flat/random", "double-peaked", and "offset from the true TSS":
 
 1. Panel c's layout was broken (rows colliding, illegible captions,
    metaplot stacked below instead of beside its logo) — fixed.
@@ -87,7 +87,30 @@ python src/bpnet/hitcall/metaplot_motif.py --source compendium-seqlets \
     --head profile --compendium-motif-name pos_patterns.4 -v
 ```
 
-Steps 3-4 below should be re-run once that's confirmed.
+A sixth bug, found immediately when re-checking CA-Inr after #5: the
+mirror-split was gone, but the single remaining peak sat ~13bp off
+position 0 -- wrong, since Inr's consensus directly overlaps the true
+TSS, so it should center at 0. Root cause: seqlet start/end span
+MoDISco's full, untrimmed pattern window, and `(start+end)//2` is that
+window's raw geometric midpoint, not its informative core. Fi-NeMo hits
+don't have this problem because `call_hits_bpnet.py`'s own
+`--cwm-trim-threshold` already crops each hit to the CWM's informative
+core (`finemo.data_io.trim_motif`) before writing `hits.tsv` -- exactly
+why hit-based metaplots (`diagnose_hit_signal_metaplot.py`) center
+cleanly. `seqlet_positions()` now runs the same `trim_motif()` call (same
+default threshold) on each pattern's own `contrib_scores` and reports the
+trimmed core's genome span instead of the full untrimmed one (mirrored
+correctly for reverse-complement seqlets). **Not yet verified on a real
+render either** -- same Sherlock-only dependency as #5.
+
+For comparison: TATA-Inr (`pos_patterns.8`, tested against `pos_patterns.21`
+during this investigation) legitimately shows sense/antisense signal
+offset by ~20-25bp either side of 0, not at 0 -- that's expected, real
+biology (TATA box sits ~25-30bp upstream of the actual TSS), not a bug.
+Don't "fix" that one to be centered at 0; only Inr-type elements (which
+directly overlap the TSS) should peak at 0.
+
+Steps 3-4 below should be re-run once #5 and #6 are confirmed.
 
 ## Full run order (the runbook)
 
