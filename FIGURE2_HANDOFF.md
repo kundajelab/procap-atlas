@@ -56,7 +56,7 @@ peak.
 
 Also, `configs/core_promoter_names.tsv`'s cluster ids were stale (2 of 3
 wrong) because `cluster_motifs.py`'s `cluster_final` ids aren't stable
-across reruns — corrected to `4 = CA-Inr, 8 = TATA-Inr, 24 = TA-Inr` (was
+across reruns — corrected to `4 = CA-Inr, 8 = TATA, 24 = TA-Inr` (was
 `2, 4, 7`) by direct visual check against the cluster report HTML.
 
 A fifth bug, found immediately after confirming #4: removing `auto_orient`
@@ -103,14 +103,30 @@ trimmed core's genome span instead of the full untrimmed one (mirrored
 correctly for reverse-complement seqlets). **Not yet verified on a real
 render either** -- same Sherlock-only dependency as #5.
 
-For comparison: TATA-Inr (`pos_patterns.8`, tested against `pos_patterns.21`
-during this investigation) legitimately shows sense/antisense signal
-offset by ~20-25bp either side of 0, not at 0 -- that's expected, real
-biology (TATA box sits ~25-30bp upstream of the actual TSS), not a bug.
-Don't "fix" that one to be centered at 0; only Inr-type elements (which
-directly overlap the TSS) should peak at 0.
+For comparison: TATA (`pos_patterns.8`/`pos_patterns.21` -- both are
+valid, separate TATA clusters; `21` is the one currently used in
+`configs/core_promoter_names.tsv`) legitimately shows sense/antisense
+signal offset by ~20-25bp either side of 0, not at 0 -- that's expected,
+real biology (TATA box sits ~25-30bp upstream of the actual TSS), not a
+bug. Don't "fix" that one to be centered at 0; only Inr-type elements
+(which directly overlap the TSS) should peak at 0.
 
-Steps 3-4 below should be re-run once #5 and #6 are confirmed.
+A seventh bug, found when step 4's `plot_figure2.py` run reported
+`--profile-names restricted the profile row to 0/16 rows` for `[4, 21, 24]`
+(and, before that, `[4, 8, 24]`): step 4's `--profile-exemplars` pointed
+at `motif_exemplars_profile_restricted.tsv`, but `select_motif_exemplars.py`
+splits its output into two files -- `_restricted.tsv` (lineage-restricted
+candidates) and `_ubiquitous.tsv` (motifs spanning most/all groups).
+CA-Inr/TATA/TA-Inr are used at nearly every promoter in nearly every
+tissue -- textbook ubiquitous, not lineage-restricted -- so they can never
+appear in the `_restricted` file no matter what their cluster ids are
+(MotifCompendium clustering is frozen and was never rerun -- the 0/16
+result was never a cluster-id problem). Fixed: step 4 now points at
+`motif_exemplars_profile_ubiquitous.tsv` instead. **Not yet verified on a
+real render** -- needs the `_ubiquitous.tsv` file confirmed to actually
+contain clusters 4/21/24.
+
+Steps 3-4 below should be re-run once #5, #6, and #7 are confirmed.
 
 **Panel order changed:** `plot_figure2.py`'s main-figure lettering is now
 **a = motif exemplars** (the logo grid, top full-width row), **b =
@@ -165,7 +181,7 @@ python src/analysis/select_motif_exemplars.py --head count --max-groups 2 --per-
 ### 3. Profile-head core-promoter band — NOT select_motif_exemplars.py
 
 Only presenting the three curated core-promoter motifs in
-`configs/core_promoter_names.tsv` (cluster 4 = CA-Inr, 8 = TATA-Inr,
+`configs/core_promoter_names.tsv` (cluster 4 = CA-Inr, 8 = TATA,
 24 = TA-Inr), not a generic lineage-restricted/ubiquitous selection —
 profile head's compendium is known-contaminated with poly-nucleotide/
 duplicate/composite motifs (see Decision section below), so it isn't run
