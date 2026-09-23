@@ -583,6 +583,93 @@ def _logo_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
     return drew
 
 
+def _logo_metaplot_grid(fig, spec, rows, h5_path, subtitle, label_fn, trim_kwargs,
+                        head, config, per_row=6, label_fontsize=6.2,
+                        category_style="rotated", metaplot_window=200,
+                        metaplot_bin_size=5, metaplot_min_trim_len=None,
+                        mapping_tsv=None):
+    """Like _logo_grid, but each cell stacks a logo over its own
+    compendium-wide observed-signal metaplot (metaplot_motif.py's
+    compendium-seqlets source) -- fusing the CWM and the signal that
+    select_motif_exemplars.py's --with-metaplots report lets you inspect
+    separately, into one panel-c cell.
+
+    Deliberately a sibling function rather than a `_logo_grid` parameter:
+    `_logo_grid`'s adaptive font-shrinking spacing is tuned and covered by a
+    byte-identical-output test for the default (no-metaplot) panel c, and a
+    much simpler fixed layout here (no adaptive shrinking) keeps this
+    opt-in path from ever touching that tested one. --with-metaplots is for
+    exploring the figure with real signal attached, not (yet) the polished
+    default.
+    """
+    import logomaker
+
+    sys.path.insert(0, str(REPO_ROOT / "src" / "bpnet" / "hitcall"))
+    from metaplot_motif import collect_metaplot, draw_metaplot
+
+    n = len(rows)
+    n_sub = max(1, -(-n // per_row))
+    inner = GridSpecFromSubplotSpec(
+        n_sub, per_row, subplot_spec=spec, wspace=0.35, hspace=1.1,
+    )
+    band = spec.get_position(fig)
+    drew = 0
+    for i, r in enumerate(rows.itertuples()):
+        cell = GridSpecFromSubplotSpec(
+            2, 1, subplot_spec=inner[i // per_row, i % per_row],
+            height_ratios=(1.3, 1), hspace=0.45,
+        )
+        posneg = getattr(r, "posneg", "pos") or "pos"
+
+        ax_logo = fig.add_subplot(cell[0, 0])
+        df = trimmed_cwm(h5_path, int(r.cluster_final), posneg, **trim_kwargs)
+        if df is None:
+            ax_logo.text(0.5, 0.5, f"cl {r.cluster_final}\nnot in h5", ha="center",
+                        va="center", fontsize=5, color="#b2182b",
+                        transform=ax_logo.transAxes)
+            ax_logo.set_axis_off()
+            fig.add_subplot(cell[1, 0]).set_axis_off()
+            continue
+        logomaker.Logo(df, ax=ax_logo, shade_below=0.0, fade_below=0.0)
+        ax_logo.set_xticks([])
+        ax_logo.set_yticks([])
+        ax_logo.spines[["top", "right", "left", "bottom"]].set_visible(False)
+        ax_logo.set_title(label_fn(r), fontsize=label_fontsize, pad=1.2,
+                          linespacing=1.2)
+
+        ax_meta = fig.add_subplot(cell[1, 0])
+        compendium_name = f"{posneg}_patterns.{int(r.cluster_final)}"
+        try:
+            sense, antisense, n_inst = collect_metaplot(
+                "compendium-seqlets", head, config,
+                compendium_motif_name=compendium_name, mapping_tsv=mapping_tsv,
+                min_trim_len=metaplot_min_trim_len, window=metaplot_window,
+                bin_size=metaplot_bin_size,
+            )
+            draw_metaplot(ax_meta, sense, antisense, metaplot_window, metaplot_bin_size)
+            ax_meta.text(0.97, 0.92, f"n={n_inst:,}", transform=ax_meta.transAxes,
+                        fontsize=4.5, ha="right", va="top", color="#555555")
+        except SystemExit:
+            ax_meta.text(0.5, 0.5, "no signal yet", ha="center", va="center",
+                        fontsize=5, color="#999999", transform=ax_meta.transAxes)
+        ax_meta.set_xticks([])
+        ax_meta.set_yticks([])
+        ax_meta.spines[["top", "right", "left", "bottom"]].set_visible(False)
+        drew += 1
+
+    if drew and category_style == "rotated":
+        fig.text(
+            band.x0 - 0.018, band.y0 + band.height / 2, subtitle,
+            rotation=90, ha="right", va="center", fontsize=7, color="#555555",
+        )
+    elif drew:
+        fig.text(
+            band.x0, band.y1 + 0.02, subtitle, ha="left", va="bottom",
+            fontsize=label_fontsize * 1.15, color="#222222", fontweight="bold",
+        )
+    return drew
+
+
 def panel_sidebar(fig, spec, ubiquitous, restricted, h5_path,
                   profile_rows=None, profile_h5=None, trim_kwargs=None,
                   cols=8, band_rows=2, label_fontsize=11.0,
@@ -706,8 +793,15 @@ def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
                     uppercase_names=False, hspace=0.55,
                     profile_names=None, n_profile=None, blocks=None,
                     head_prefixes=True, equalize_band_heights=False,
-                    min_hspace=None):
+                    min_hspace=None, head="count", with_metaplots=False,
+                    metaplot_config=None, metaplot_window=200,
+                    metaplot_bin_size=5, metaplot_min_trim_len=None,
+                    metaplot_mapping_tsv=None):
     trim_kwargs = trim_kwargs or {}
+    if with_metaplots and metaplot_config is None:
+        import yaml
+        with open(REPO_ROOT / "configs" / "experiment_config.yaml") as f:
+            metaplot_config = yaml.safe_load(f)
     fields = resolve_label_fields(label_fields)
     have_profile = bool(
         profile_rows is not None and len(profile_rows) and profile_h5
@@ -734,6 +828,7 @@ def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
                            else n_restricted),
             profile_h5,
             motif_label(fields["profile"], uppercase_names, profile_names),
+            "profile",
         ))
     if "ubiquitous" in wanted:
         rows.append((
@@ -741,6 +836,7 @@ def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
             rank_for_panel(ubiquitous, n_ubiquitous),
             h5_path,
             motif_label(fields["ubiquitous"], uppercase_names),
+            head,
         ))
     if "restricted" in wanted:
         rows.append((
@@ -748,11 +844,12 @@ def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
             rank_for_panel(restricted, n_restricted),
             h5_path,
             motif_label(fields["restricted"], uppercase_names),
+            head,
         ))
 
     # Height per category in proportion to how many sub-rows it needs, so a
     # 15-motif category is not squeezed into the same band as a 5-motif one.
-    sub_rows = [max(1, -(-len(df) // per_row)) for _, df, _, _ in rows]
+    sub_rows = [max(1, -(-len(df) // per_row)) for _, df, _, _, _ in rows]
     ratios = sub_rows
     if equalize_band_heights:
         # Sub-row count alone is not the right ratio: within a band of n
@@ -768,13 +865,24 @@ def panel_exemplars(fig, spec, ubiquitous, restricted, h5_path,
         len(rows), 1, subplot_spec=spec, hspace=hspace, height_ratios=ratios
     )
     total = 0
-    for i, (subtitle, df, h5, label_fn) in enumerate(rows):
-        total += _logo_grid(fig, inner[i, 0], df, h5, subtitle, label_fn,
-                            trim_kwargs, per_row=per_row,
-                            label_fontsize=label_fontsize,
-                            min_label_fontsize=min_label_fontsize,
-                            category_style=category_style,
-                            min_hspace=min_hspace)
+    for i, (subtitle, df, h5, label_fn, row_head) in enumerate(rows):
+        if with_metaplots:
+            total += _logo_metaplot_grid(
+                fig, inner[i, 0], df, h5, subtitle, label_fn, trim_kwargs,
+                row_head, metaplot_config, per_row=per_row,
+                label_fontsize=label_fontsize, category_style=category_style,
+                metaplot_window=metaplot_window,
+                metaplot_bin_size=metaplot_bin_size,
+                metaplot_min_trim_len=metaplot_min_trim_len,
+                mapping_tsv=metaplot_mapping_tsv,
+            )
+        else:
+            total += _logo_grid(fig, inner[i, 0], df, h5, subtitle, label_fn,
+                                trim_kwargs, per_row=per_row,
+                                label_fontsize=label_fontsize,
+                                min_label_fontsize=min_label_fontsize,
+                                category_style=category_style,
+                                min_hspace=min_hspace)
     return total
 
 
@@ -882,6 +990,25 @@ def main():
                              "'auto' to look under motifcompendium/bpnet/")
     parser.add_argument("--group-level", default="tissue",
                         choices=["tissue", "biosample"])
+    parser.add_argument(
+        "--with-metaplots", action="store_true",
+        help="panel c: stack a compendium-wide observed-signal metaplot "
+             "under each logo (metaplot_motif.py's compendium-seqlets "
+             "source). Needs finemo/h5py (Linux only) and queries every "
+             "contributing experiment's own bigwigs per motif, so this is "
+             "much slower than the default logo-only panel. Opt-in and "
+             "uses a simpler fixed layout than the default -- see "
+             "_logo_metaplot_grid's docstring",
+    )
+    parser.add_argument("--metaplot-window", type=int, default=200, metavar="BP")
+    parser.add_argument("--metaplot-bin-size", type=int, default=5, metavar="BP")
+    parser.add_argument(
+        "--metaplot-min-trim-len", type=int, default=None, metavar="BP",
+        help="must match the value hitcall/launch.py was run with, if any -- "
+             "unrelated to --min-trim-len below, which controls CWM display "
+             "trimming, not which hitcall directory metaplots are read from",
+    )
+    parser.add_argument("--metaplot-mapping-tsv", type=Path, default=None)
     parser.add_argument("--motif-class", default="TF-matched")
     parser.add_argument(
         "--collapse-curves", type=Path, default=None, metavar="PATH",
@@ -1143,6 +1270,11 @@ def main():
         profile_names=profile_names, n_profile=args.n_profile,
         head_prefixes=not args.presentation,
         equalize_band_heights=args.presentation,
+        head=args.head, with_metaplots=args.with_metaplots,
+        metaplot_window=args.metaplot_window,
+        metaplot_bin_size=args.metaplot_bin_size,
+        metaplot_min_trim_len=args.metaplot_min_trim_len,
+        metaplot_mapping_tsv=args.metaplot_mapping_tsv,
     )
 
     if args.profile_exemplars and profile_rows is None:

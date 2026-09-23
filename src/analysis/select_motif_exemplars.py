@@ -310,6 +310,71 @@ def embed_svg(path: Path) -> str | None:
         return None
 
 
+def render_metaplot_uri(
+    compendium_motif_name: str, head: str, window: int = 200, bin_size: int = 5,
+    min_trim_len: int | None = None,
+) -> str | None:
+    """A small motif-centered metaplot PNG as a base64 data URI, pooling
+    seqlet-derived signal atlas-wide for one compendium cluster (see
+    metaplot_motif.py's compendium-seqlets source), or None if no windows
+    could be extracted at all (e.g. no contributing experiment has both a
+    regions.npz and a bigwig read count yet).
+
+    Imports metaplot_motif.py lazily: it needs finemo/h5py, which are
+    Linux-only (pyproject.toml's `sys_platform == 'linux'` marker), so an
+    unconditional module-level import would break this script's --help on
+    macOS even when --with-metaplots is never passed.
+    """
+    import base64
+    import io
+
+    import matplotlib.pyplot as plt
+    import yaml
+
+    sys.path.insert(0, str(REPO_ROOT / "src" / "bpnet" / "hitcall"))
+    from metaplot_motif import collect_metaplot, draw_metaplot
+
+    with open(REPO_ROOT / "configs" / "experiment_config.yaml") as f:
+        config = yaml.safe_load(f)
+    try:
+        sense, antisense, n = collect_metaplot(
+            "compendium-seqlets", head, config,
+            compendium_motif_name=compendium_motif_name,
+            min_trim_len=min_trim_len, window=window, bin_size=bin_size,
+        )
+    except SystemExit as exc:
+        print(f"  WARNING: metaplot for {compendium_motif_name} failed: {exc}",
+              file=sys.stderr)
+        return None
+
+    fig, ax = plt.subplots(figsize=(2.4, 1.3))
+    draw_metaplot(ax, sense, antisense, window, bin_size)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_title(f"n={n:,}", fontsize=6, pad=1)
+    buf = io.BytesIO()
+    fig.tight_layout(pad=0.2)
+    fig.savefig(buf, format="png", dpi=150)
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def collect_metaplots(dfs: list, head: str, window: int, bin_size: int,
+                      min_trim_len: int | None = None) -> dict:
+    """(cluster_final, posneg) -> data URI, for every row across `dfs`."""
+    out = {}
+    for df in dfs:
+        for r in df.itertuples():
+            posneg = getattr(r, "posneg", "pos") or "pos"
+            key = (int(r.cluster_final), posneg)
+            if key in out:
+                continue
+            name = f"{posneg}_patterns.{int(r.cluster_final)}"
+            print(f"  metaplot: {name}...", file=sys.stderr)
+            out[key] = render_metaplot_uri(name, head, window, bin_size, min_trim_len)
+    return out
+
+
 def resolve_logos(d: pd.DataFrame, logo_paths: Path | None, logo_root: Path) -> dict:
     """cluster_final -> data URI, for whichever logos can be found."""
     if logo_paths is None or not Path(logo_paths).exists():
@@ -329,12 +394,21 @@ def resolve_logos(d: pd.DataFrame, logo_paths: Path | None, logo_root: Path) -> 
     return out
 
 
-def _row_html(r, logos: dict) -> str:
+def _row_html(r, logos: dict, metaplots: dict | None = None) -> str:
     uri = logos.get(r.cluster_final)
     img = (
         f'<img src="{uri}" style="height:58px">' if uri
         else '<span style="color:#999">logo unavailable</span>'
     )
+    metaplot_cell = ""
+    if metaplots is not None:
+        posneg = getattr(r, "posneg", "pos") or "pos"
+        muri = metaplots.get((int(r.cluster_final), posneg))
+        metaplot_img = (
+            f'<img src="{muri}" style="height:58px">' if muri
+            else '<span style="color:#999">n/a</span>'
+        )
+        metaplot_cell = f"\n  <td>{metaplot_img}</td>"
     name = html.escape(str(r.jaspar_name))
     group = html.escape(str(getattr(r, "lineage", "") or ""))
     flag = (
@@ -342,7 +416,7 @@ def _row_html(r, logos: dict) -> str:
         if getattr(r, "name_also_broad", False) else ""
     )
     return f"""<tr>
-  <td>{img}</td>
+  <td>{img}</td>{metaplot_cell}
   <td><b>{name}</b>{flag}<br><span style="color:#666">cluster {r.cluster_final}</span></td>
   <td>{group}</td>
   <td style="text-align:right">{int(r.prevalence)}</td>
@@ -351,14 +425,17 @@ def _row_html(r, logos: dict) -> str:
 </tr>"""
 
 
-def write_html(restricted, ubiquitous, flagged, logos, path: Path, head: str) -> Path:
+def write_html(restricted, ubiquitous, flagged, logos, path: Path, head: str,
+               metaplots: dict | None = None) -> Path:
+    metaplot_header = "<th>metaplot</th>" if metaplots is not None else ""
+
     def table(df, caption):
         if not len(df):
             return f"<h2>{caption}</h2><p>none</p>"
-        rows = "\n".join(_row_html(r, logos) for r in df.itertuples())
+        rows = "\n".join(_row_html(r, logos, metaplots) for r in df.itertuples())
         return f"""<h2>{caption}</h2>
 <table cellpadding="6" style="border-collapse:collapse">
-<tr style="background:#eee"><th>logo</th><th>JASPAR</th><th>tissue group</th>
+<tr style="background:#eee"><th>logo</th>{metaplot_header}<th>JASPAR</th><th>tissue group</th>
 <th>experiments</th><th>groups</th><th>seqlets</th></tr>
 {rows}
 </table>"""
@@ -372,6 +449,16 @@ def write_html(restricted, ubiquitous, flagged, logos, path: Path, head: str) ->
             "to.</p>"
         )
 
+    metaplot_note = (
+        "<p>The metaplot column pools observed PRO-cap signal (RPM-normalized, "
+        "strand-oriented) around every seqlet TF-MoDISco assigned to this "
+        "cluster, atlas-wide -- see metaplot_motif.py's compendium-seqlets "
+        "source. A flat/missing metaplot despite a clean logo means no "
+        "contributing experiment has both a regions.npz and a read count yet, "
+        "not that the motif is spurious.</p>"
+        if metaplots is not None else ""
+    )
+
     body = f"""<!doctype html>
 <html><head><meta charset="utf-8">
 <title>{head} motif exemplars</title></head>
@@ -382,6 +469,7 @@ def write_html(restricted, ubiquitous, flagged, logos, path: Path, head: str) ->
 with enough seqlet support to be more than noise, whose JASPAR name is not also
 carried by a broad cluster. See the flagged table for why that last condition
 matters.</p>
+{metaplot_note}
 {table(restricted, "Lineage-restricted candidates")}
 {table(ubiquitous, "Ubiquitous motifs")}
 {table(flagged, "Excluded: restricted, but the name also labels a broad cluster")}
@@ -485,6 +573,20 @@ def main():
     )
     parser.add_argument("--include-unmatched", action="store_true",
                         help="also consider clusters JASPAR could not name")
+    parser.add_argument(
+        "--with-metaplots", action="store_true",
+        help="add a motif-centered observed-signal metaplot beside each "
+             "logo, pooled atlas-wide from compendium seqlets (see "
+             "metaplot_motif.py). Needs finemo/h5py (Linux only) and queries "
+             "every contributing experiment's own bigwigs, so this is much "
+             "slower than the logo-only report",
+    )
+    parser.add_argument("--metaplot-window", type=int, default=200, metavar="BP")
+    parser.add_argument("--metaplot-bin-size", type=int, default=5, metavar="BP")
+    parser.add_argument(
+        "--metaplot-min-trim-len", type=int, default=None, metavar="BP",
+        help="must match the value hitcall/launch.py was run with, if any",
+    )
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT, metavar="DIR")
     args = parser.parse_args()
 
@@ -551,12 +653,21 @@ def main():
     )
     logos = resolve_logos(d, logo_paths, logo_root)
 
+    metaplots = None
+    if args.with_metaplots:
+        print(f"\nRendering metaplots for {len(restricted) + len(ubiquitous)} candidate(s)...")
+        metaplots = collect_metaplots(
+            [restricted, ubiquitous], args.head, args.metaplot_window,
+            args.metaplot_bin_size, args.metaplot_min_trim_len,
+        )
+
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stem = args.out_dir / f"motif_exemplars_{args.head}"
     restricted.to_csv(f"{stem}_restricted.tsv", sep="\t", index=False)
     ubiquitous.to_csv(f"{stem}_ubiquitous.tsv", sep="\t", index=False)
     html_path = write_html(
-        restricted, ubiquitous, flagged, logos, Path(f"{stem}.html"), args.head
+        restricted, ubiquitous, flagged, logos, Path(f"{stem}.html"), args.head,
+        metaplots,
     )
 
     cols = ["cluster_final", "jaspar_name", "lineage", "prevalence",
