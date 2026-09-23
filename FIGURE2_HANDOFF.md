@@ -7,63 +7,41 @@ supplementary/ED figures are still placeholders in `procap_atlas.pdf`.
 single place with every command needed to regenerate every Fig 2 panel and
 its supporting ED/supplement figures, in dependency order.
 
-## Blocking dependency chain
+## Status right now (2026-09-23, read this first)
 
-1. ✅ **Post-hoc hitcall pipeline, profile head** (`launch_post_hoc_pipeline.py
-   --min-trim-len 6 --force`) — done. Regenerated hit calls atlas-wide with
-   the CA-Inr compendium-cluster scoping fix. **Note: this defaulted to
-   `--head profile` only** (`launch_post_hoc_pipeline.py`'s `--head` default
-   is `["profile"]` when omitted) — count head was never run through this
-   pipeline, so `hitcalls/bpnet/{experiment}_count/regions.npz` etc. don't
-   exist yet. Discovered when `--with-metaplots` silently rendered "no
-   signal yet" placeholders for every count-head cluster (`plot_figure2.py`'s
-   `_logo_metaplot_grid` swallows the `SystemExit` reason from
-   `collect_metaplot()`, so this needed a direct `metaplot_motif.py
-   --source compendium-seqlets --head count -v` call to surface the real
-   error: `regions.npz missing -- run extract_regions_bpnet.py first`).
-1b. ✅ Not actually blocking. `regions.npz` was missing for count head
-    because rebuilding it needs `attributions/bpnet/{model_dir_name}_count.npz`
-    (corrupted, needs regenerating — separate GPU work, not started), but
-    count-head Fi-NeMo results (`hits.tsv` etc.) already exist and never
-    needed `regions.npz` (genome coords are written directly into
-    `hits.tsv`). The seqlet-based metaplot sources (`seqlets`,
-    `compendium-seqlets`) don't need it either, on inspection —
-    `metaplot_motif.py`'s `region_geometry()` now reads peak coordinates
-    directly from `peaks.narrowPeak` via finemo's own `load_peaks()`, at
-    half-width = the raw attribution window's half-width. That's the same
-    genome-coordinate source `regions.npz` itself is built from; the only
-    thing `regions.npz` adds is a cropped copy of the sequence/contribution
-    arrays, which this module never read. `peaks.narrowPeak` is written
-    before the attribution-dependent step and is protected from
-    `cleanup_hitcalls.py`, so it survives even when `regions.npz` doesn't.
-    No action needed here — retest cluster 126 and rerun `plot_figure2.py
-    --with-metaplots` directly.
-2. ✅ **`launch_link.py --head count`** — relabels count-head hits with their
-   MotifCompendium cluster identity. Done.
+Every prerequisite is done: profile-head and count-head post-hoc hitcall
+pipelines, `launch_link.py --head count`, and panel 2d has been cut from
+Fig 2 entirely (redundant with panels b/c — see history at the bottom if
+you want the reasoning). **Nothing is blocked.** Run the "Full run order"
+section below top to bottom.
 
-**Panel 2d cut from Fig 2 entirely** (2026-09-23) — its two halves both
-restated content already elsewhere in the figure: the specificity-vs-null
-comparison re-proves "tissue restriction beats chance," which panel b
-already establishes with a different metric (5.86× enrichment, swap-null
-p=5.5e-19), and the hand-picked-TF highlight (MEF2A/GATA2/POU2F3) is the
-same story panel c already tells better, with actual logos and signal
-shape. `motif_hit_density.py --panel2d` (`specificity_permutation_null()`,
-`panel2d_null_stats()`, `select_named_clusters()`, `plot_panel2d()`) is
-left in the script, just unused by the runbook — not deleted, in case this
-gets revisited. The rest of `motif_hit_density.py` (the motif×experiment
-clustered heatmap, no `--panel2d` needed) is still a candidate for
-Extended Data — it shows the universal-core/tissue-restricted block
-structure across the whole atlas at a scale neither b nor c does — but
-isn't in the runbook below yet either; flag if that's wanted.
+Three real bugs were found and fixed today in the `--with-metaplots` path
+(steps 3-4), the last of which is the one actually causing "metaplots look
+flat/random":
 
-Nothing else below depends on this chain; everything else can run now.
+1. Panel c's layout was broken (rows colliding, illegible captions,
+   metaplot stacked below instead of beside its logo) — fixed.
+2. The profile row showed the wrong motifs (`--profile-names` was only
+   used for captions, not for restricting which clusters got selected) —
+   fixed.
+3. **`seqlet_positions()` in `metaplot_motif.py` was resolving every
+   seqlet-based metaplot (`--source seqlets`/`compendium-seqlets`) to the
+   wrong genome position by a fixed ~557bp offset.** modisco-lite's own
+   `motifs -w/--window` crops the raw attribution array to 1000bp
+   (`modisco.sh`'s hardcoded flag) *before* seqlet discovery, so seqlet
+   `start`/`end` are local to that 1000bp crop, not the full 2114bp raw
+   window this module assumed. Averaging PRO-cap signal at a position
+   shifted the same fixed amount off the true motif center for every
+   instance doesn't look like an error — it looks exactly like the "flat/
+   random, no positional dependence" signal reported, since there's no
+   real alignment at all. Fixed by reading the exact window size back from
+   the modisco h5's own `window_size` attribute (`modiscolite.io.save_hdf5`
+   writes it) rather than assuming the seqlet and raw windows are the
+   same. **This is the actual fix for the flat-metaplot report — 1 and 2
+   were real but unrelated bugs found along the way.**
 
-**Separately (not blocking Fig 2), `attributions/bpnet/*_count.npz` needs
-regenerating** — those files are corrupted atlas-wide for count head. Only
-matters if `extract_regions_bpnet.py`/`launch_post_hoc_pipeline.py --head
-count` needs to rebuild `regions.npz` from scratch for some other reason
-later (e.g. a `--region-width` change); the metaplot fallback above avoids
-needing that for now.
+None of the three has been verified on a real render yet — that requires
+rerunning steps 3-4 below from scratch (`git pull` first).
 
 ## Full run order (the runbook)
 
@@ -135,36 +113,10 @@ python src/analysis/plot_figure2.py --head count --modisco-h5 auto --with-metapl
     --profile-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5 \
     --profile-names configs/core_promoter_names.tsv --n-profile 3
 ```
-**First real render of this (2026-09-23) had two separate bugs**, both now
-fixed but **neither re-verified on a real render yet** — rerun and check
-before treating either as resolved:
-
-1. **Layout was broken** — rows visibly collided/shifted, captions were
-   illegible, and the metaplot sat stacked below its logo instead of
-   beside it. Fixed in `_logo_metaplot_grid` (now a side-by-side 1x2 cell,
-   logo left/metaplot right, instead of a stacked 2x1) and in `main()`
-   (the manuscript `--figsize` default, 7.4x6.2in, was sized for panel c's
-   plain single-row-per-cell layout and starved badly once cells needed
-   ~1.85x the width for logo+metaplot side by side plus still fitting a
-   3-line caption — now auto-scales from the actual row count when
-   `--figsize` isn't explicitly overridden). Also switched
-   `--category-label` to `header` by default under `--with-metaplots`: the
-   rotated band labels ("profile head: initiation shape") need more
-   vertical run length than a short one-row band has room for, and were
-   visibly colliding with each other.
-2. **The profile row was showing the wrong motifs** — this is what the
-   "double-check" note right above used to flag as unverified, and the
-   answer turned out to be no: `--profile-names` was only ever used for
-   caption text. `panel_exemplars()`'s profile row still ran
-   `rank_for_panel(profile_rows, n_profile)` over the *entire*
-   `--profile-exemplars` table, ranked by `total_seqlets` — so it rendered
-   whichever profile-head clusters simply had the most seqlets
-   (Pou5f1::Sox2/Hmga1/ZBTB7A), not CA-Inr/TATA/TA-Inr. Fixed in `main()`:
-   `profile_rows` is now filtered to `--profile-names`' cluster ids *before*
-   any ranking happens, with a warning if a requested cluster is missing
-   from the exemplars table. This is exactly the generic-selection-on-
-   profile-head failure mode the decision section below exists to avoid —
-   the bug just let it back in through a side door.
+See "Status right now" at the top for the three bugs fixed in this path
+today (layout, profile-row selection, and the seqlet coordinate offset
+that actually caused the flat/random metaplots). Not yet re-verified —
+this is the command to rerun once you've pulled.
 
 ### 5. Extended Data / Supplement (no blockers, runnable now)
 

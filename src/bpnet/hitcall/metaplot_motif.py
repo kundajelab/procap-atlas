@@ -21,26 +21,39 @@ Three sources, chosen with `--source`:
                        been (re-)run against that cluster for every
                        experiment yet.
 
-Resolving a seqlet to a genome position needs one thing: peaks.narrowPeak's
-own peak coordinates, read with the same half-width TF-MoDISco's input used
-(IN_WINDOW//2 by default) -- *not* regions.npz. regions.npz packages the
-same peak coordinates together with a cropped copy of the sequence/
-contribution arrays (via finemo's `extract-regions-modisco-fmt`), but this
-module has no use for those arrays, so building it is unnecessary work, and
-it depends on the head-specific attributions .npz for something this module
-never reads (regions.npz's build fails if that file is missing/corrupt,
-even though only the coordinates -- derived solely from peaks.narrowPeak and
-the shared {experiment}_ohe.npz -- are actually needed here; see finemo's
-own `load_peaks()` in data_io.py). peaks.narrowPeak is also written earlier
-and independently of that attribution step (call_hits_bpnet.py's
+Resolving a seqlet to a genome position needs peaks.narrowPeak's own peak
+coordinates -- *not* regions.npz. regions.npz packages the same peak
+coordinates together with a cropped copy of the sequence/contribution
+arrays (via finemo's `extract-regions-modisco-fmt`), but this module has no
+use for those arrays, so building it is unnecessary work, and it depends on
+the head-specific attributions .npz for something this module never reads
+(regions.npz's build fails if that file is missing/corrupt, even though
+only the coordinates -- derived solely from peaks.narrowPeak and the shared
+{experiment}_ohe.npz -- are actually needed here; see finemo's own
+`load_peaks()` in data_io.py). peaks.narrowPeak is also written earlier and
+independently of that attribution step (call_hits_bpnet.py's
 build_peaks_narrowpeak, before its `finemo extract-regions-modisco-fmt`
 call) and is protected from `cleanup_hitcalls.py`'s deletions, so it stays
 available even when regions.npz has been cleaned up or never finished
-building. Reading it at half-width = (this experiment's OHE array width)//2
-gives peak_region_start already in the same raw-window frame a seqlet's
-start/end are local to -- no separate crop offset to compute. Fi-NeMo hits
-need no such correction either: their genome coordinates are written
-directly into hits.tsv by call-hits.
+building.
+
+Getting the peak coordinate right isn't the whole story, though: reading
+peaks.narrowPeak at half-width = (this experiment's OHE array width)//2
+gives peak_region_start in the *raw* attribution window's frame (IN_WINDOW,
+2114bp by default) -- but a seqlet's start/end are local to a SECOND,
+narrower crop modisco-lite's own CLI takes before seqlet discovery
+(`modisco motifs -w/--window`, 1000bp in this repo's modisco.sh), centered
+on the same peak. Missing that second crop offset (as this module did until
+2026-09-23) silently shifts every resolved position by a fixed amount
+((raw_width - modisco_window) // 2 -- 557bp for 2114/1000) in every
+instance alike, which isn't obviously wrong the way a crash or a scattered
+random shift would be: it just averages out to flat, no-signal-looking
+metaplots, since every instance is displaced from the true motif position
+by the same fixed offset rather than centered on it. `seqlet_positions()`
+reads the exact window size modisco-lite used back from the h5's own
+`window_size` attribute (written by `modiscolite.io.save_hdf5`) rather than
+assuming/hardcoding it. Fi-NeMo hits need no such correction at all: their
+genome coordinates are written directly into hits.tsv by call-hits.
 
 Seqlet/hit "strand" is a locally-discovered pattern's own orientation label
 and has no guaranteed relationship to real transcription direction (a motif
@@ -158,10 +171,14 @@ def hit_positions(
 def region_geometry(
     experiment: str, head: str, min_trim_len: int | None, model_dir: str | None,
     verbose: bool = False,
-) -> pd.DataFrame:
-    """peaks_df ('chr'/'peak_region_start'), row-aligned with the OHE/
-    attribution arrays TF-MoDISco seqlets index into -- read directly from
-    peaks.narrowPeak rather than regions.npz. See module docstring for why.
+) -> tuple[pd.DataFrame, int]:
+    """(peaks_df, raw_width). peaks_df ('chr'/'peak_region_start') is
+    row-aligned with the OHE/attribution arrays TF-MoDISco seqlets index
+    into -- read directly from peaks.narrowPeak rather than regions.npz. See
+    module docstring for why. raw_width is returned too because
+    seqlet_positions() needs it a second time, to correct for modisco's own
+    -w/--window crop (see module docstring) -- returning it here avoids
+    decompressing {experiment}_ohe.npz a second time for the same value.
 
     Cached per (experiment, head, min_trim_len, model_dir): both inputs are
     files on disk that don't change within one process's run, but
@@ -188,7 +205,7 @@ def region_geometry(
     if verbose:
         print(f"Reading peak coordinates from {peaks_narrowpeak}")
     peaks_df = load_peaks(str(peaks_narrowpeak), None, raw_width // 2)
-    return peaks_df.to_pandas()
+    return peaks_df.to_pandas(), raw_width
 
 
 def seqlet_positions(
@@ -204,7 +221,7 @@ def seqlet_positions(
         raise SystemExit(f"Error: {h5_path} missing")
     posneg_group, pattern_key = parse_local_motif_name(local_motif_name)
 
-    peaks_df = region_geometry(experiment, head, min_trim_len, model_dir, verbose)
+    peaks_df, raw_width = region_geometry(experiment, head, min_trim_len, model_dir, verbose)
     chrs = peaks_df["chr"].to_numpy()
     region_starts = peaks_df["peak_region_start"].to_numpy()
 
@@ -215,11 +232,32 @@ def seqlet_positions(
             raise SystemExit(
                 f"Error: {posneg_group}/{pattern_key} not found in {h5_path}"
             )
+        if "window_size" not in f.attrs:
+            raise SystemExit(
+                f"Error: {h5_path} has no window_size attribute -- written "
+                "by an older modisco-lite? seqlet coordinates can't be "
+                "resolved without it (see module docstring)."
+            )
+        # modisco-lite's own `motifs -w/--window` crops the raw attribution
+        # array to a window centered on the peak *before* seqlet discovery
+        # (modisco.sh uses -w 1000, well under IN_WINDOW's 2114) -- every
+        # seqlet's start/end is local to THAT crop, not the full raw array.
+        # window_size is the exact value used, saved as an h5 attribute by
+        # modiscolite.io.save_hdf5, so this is read back rather than
+        # assumed/hardcoded. Missing this offset (as this module did until
+        # 2026-09-23) silently shifts every resolved position by
+        # (raw_width - window_size) // 2 -- 557bp for the atlas's own
+        # 2114/1000 combination -- which averages out to flat/no signal in
+        # a metaplot instead of erroring, since it's a systematic shift
+        # applied identically to every seqlet, not random.
+        modisco_window = int(f.attrs["window_size"])
         seqlets = f[posneg_group][pattern_key]["seqlets"]
         starts = seqlets["start"][:]
         ends = seqlets["end"][:]
         example_idx = seqlets["example_idx"][:]
         is_revcomp = seqlets["is_revcomp"][:]
+
+    crop_start = raw_width // 2 - modisco_window // 2
 
     out = []
     n_regions = len(chrs)
@@ -227,8 +265,8 @@ def seqlet_positions(
         idx = int(idx)
         if idx < 0 or idx >= n_regions:
             continue
-        genome_start = int(region_starts[idx]) + int(s)
-        genome_end = int(region_starts[idx]) + int(e)
+        genome_start = int(region_starts[idx]) + crop_start + int(s)
+        genome_end = int(region_starts[idx]) + crop_start + int(e)
         out.append((str(chrs[idx]), genome_start, genome_end, bool(rc)))
     return out
 
