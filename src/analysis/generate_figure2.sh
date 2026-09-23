@@ -42,15 +42,18 @@ set -euo pipefail
 
 # ml ucsc-utils (mimicking modisco.sh's module list) is NOT loaded here --
 # it pulls in a curl/openssl combination that conflicts with python/3.12.1's
-# own openssl/3.0.7 dependency (Lmod swaps them, leaving the uv-managed
-# venv's python3 unable to find libpython3.12.so.1.0 at runtime: "cannot
-# open shared object file"). modisco.sh never actually runs a plain python
-# script through uv (only the compiled `modisco` binary), so it never hit
-# this; every launcher here that does run python via uv (e.g. launch_link.py)
-# only loads biology/htslib, which is enough -- Fig 2 generation never
-# shells out to a UCSC binary (pybigtools handles bigwig I/O in Python).
+# own openssl dependency. Removing it alone didn't fully fix it, though:
+# the uv-managed venv's python3 still couldn't find libpython3.12.so.1.0 at
+# runtime ("cannot open shared object file") on some compute nodes with
+# neither ucsc-utils nor an explicit python module loaded -- uv on Sherlock
+# appears to fall back to the system python/3.12.1 module's interpreter
+# rather than a self-contained download (likely blocked network egress),
+# so it has to be loaded explicitly rather than relying on a given node's
+# default module state. Fig 2 generation never shells out to a UCSC binary
+# anyway (pybigtools handles bigwig I/O in Python).
 ml biology
 ml htslib
+ml python/3.12.1
 
 mamba activate "${PROCAP_ATLAS_ENV:-procap-atlas}"
 

@@ -263,6 +263,12 @@ today (layout, profile-row selection, and the seqlet coordinate offset
 that actually caused the flat/random metaplots). Not yet re-verified —
 this is the command to rerun once you've pulled.
 
+`src/analysis/assemble_figure2.sh` runs just this step as its own sbatch
+job -- `sbatch src/analysis/assemble_figure2.sh` -- for when steps 1-3/5
+are already done and only the final assembly needs (re)running. Loads
+`python/3.12.1` explicitly (see its own comment for why -- the same
+libpython3.12.so.1.0 issue documented for `generate_figure2.sh` below).
+
 ### 5. Extended Data / Supplement (no blockers, runnable now)
 
 ```bash
