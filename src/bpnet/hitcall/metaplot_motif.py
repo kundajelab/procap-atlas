@@ -335,17 +335,31 @@ def compendium_experiments(
 
 
 def auto_orient(sense: np.ndarray, antisense: np.ndarray) -> tuple[np.ndarray, np.ndarray, bool]:
-    """Flip (sense, antisense) if antisense exceeds sense at the center bin.
+    """Flip (sense, antisense) if antisense carries more signal overall.
 
     A motif label's "+"/"-" only means "matched this orientation of the
     locally-discovered pattern", not "matches the real transcription
     direction" -- see module docstring. Detected empirically from the data
     itself rather than trusted a priori.
+
+    Compares the *whole window's* total signal, not just the center bin
+    (an earlier version did, and it was wrong): a true Initiator peak is
+    not guaranteed to sit exactly at the motif's own nominal center (e.g.
+    a dinucleotide Inr's dominant TSS can be a dozen-odd bp to one side),
+    in which case the center bin for both strands is near-baseline noise
+    and comparing only it is close to a coin flip. Since this runs *per
+    experiment before pooling*, a noisy per-experiment coin flip mirrors
+    that experiment's real, off-center peak onto the wrong side about half
+    the time -- pooling flipped and unflipped experiments together then
+    looks like a fake symmetric double peak with a dip at the true center,
+    not like noise, which is what made this hard to catch by eye. Total
+    signal across the window is far more robust to the peak's exact
+    position: real transcriptional engagement is strongly strand-biased
+    over the whole displayed region, not just at one bin.
     """
     if len(sense) == 0:
         return sense, antisense, False
-    center = len(sense) // 2
-    if antisense[center] > sense[center]:
+    if antisense.sum() > sense.sum():
         return antisense, sense, True
     return sense, antisense, False
 
