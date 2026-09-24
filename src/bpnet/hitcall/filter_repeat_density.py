@@ -41,14 +41,13 @@ Usage:
 
 import argparse
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+import compressed_io
+from call_hits_bpnet import resolve_experiment_paths
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_MIN_CLUSTER_HITS = 5
 DEFAULT_CLUSTER_WINDOW = 80
 
@@ -130,24 +129,16 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir
-        / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    _, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = hits_dir / "hits_unique.tsv"
-    if not hits_path.exists():
+    if not compressed_io.exists(hits_path):
         print(f"Error: hits not found: {hits_path}", file=sys.stderr)
         print("Run call_hits_bpnet.py first.", file=sys.stderr)
         sys.exit(1)
+    hits_path = compressed_io.resolve(hits_path)
 
     if args.verbose:
         print(f"Reading hits from {hits_path}")
@@ -191,7 +182,7 @@ def main():
         print("No dense same-motif clusters found; nothing dropped.")
 
     out_path = hits_dir / "hits_dedensified.tsv"
-    kept.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(kept, out_path)
     print(f"\nWrote {len(kept)} hits to {out_path}")
 
 

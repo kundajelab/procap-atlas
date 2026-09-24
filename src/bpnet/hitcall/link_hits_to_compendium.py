@@ -31,7 +31,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+import compressed_io
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -85,18 +86,9 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir
-        / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    _, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     # Prefer the most-processed hits available: cwm_similarity-filtered
     # (report_bpnet.py, which itself already reads hits_confidence_filtered.tsv/
@@ -121,7 +113,7 @@ def main():
         print(f"Error: no hits found in {hits_dir}", file=sys.stderr)
         print("Run call_hits_bpnet.py first.", file=sys.stderr)
         sys.exit(1)
-    if not mapping_path.exists():
+    if not compressed_io.exists(mapping_path):
         print(f"Error: pattern-to-cluster mapping not found: {mapping_path}", file=sys.stderr)
         print("Run src/bpnet/motifcompendium/cluster_motifs.py first.", file=sys.stderr)
         sys.exit(1)
@@ -131,7 +123,7 @@ def main():
         print(f"Reading mapping from {mapping_path}")
 
     hits = pd.read_csv(hits_path, sep="\t")
-    mapping = pd.read_csv(mapping_path, sep="\t")
+    mapping = pd.read_csv(compressed_io.resolve(mapping_path), sep="\t")
     mapping = mapping[mapping["experiment"] == args.experiment][
         ["local_motif_name", "compendium_motif_name"]
     ]
@@ -157,7 +149,7 @@ def main():
         )
 
     out_path = hits_dir / "hits_linked.tsv"
-    linked.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(linked, out_path)
 
     n_compendium_motifs = linked["compendium_motif_name"].nunique()
     print(

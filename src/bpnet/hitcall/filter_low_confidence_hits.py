@@ -1,163 +1,56 @@
 """Drop the low-confidence mode of a motif's hits, when one is detectable.
 
-Reviewed real per-hit hit_correlation distributions for K562 ENCSR220XSM's
-profile head (three motifs failing report_bpnet.py's cwm_similarity QC even
-after filter_repeat_density.py): GATA showed a clear bimodal split -- a large
-bulk of ambiguous hits plus a distinct, separable population of very
-high-confidence hits (correlation trough around the 90th percentile, then
-rising again toward the max) -- while TA-Initiator showed no such split at
-all (a smooth, monotonically decaying unimodal distribution). That matters:
-a motif's aggregate cwm_similarity can be dragged down by a large low-
-confidence tail even when a real, legitimate high-confidence subset exists
-under the same motif_name, but filtering only helps where that split is
-actually there to find.
-
-This is deliberately identity-agnostic (no hardcoded motif names/thresholds,
-same reasoning as filter_repeat_density.py): for each motif, it builds a
-histogram of --score-column (default hit_correlation), looks for a genuine
-local dip-then-rise (trough after the primary mode, followed by a
-sufficiently large and sufficiently separated secondary mode), and drops
-hits below that trough only when one is found. Motifs with a smooth/unimodal
-distribution (e.g. TA-Inr in the case above) are left untouched -- there's no
+Identity-agnostic (no hardcoded motif names/thresholds, same reasoning as
+filter_repeat_density.py): for each motif, builds a histogram of
+--score-column (default hit_correlation) and drops hits below a detected
+trough only when a genuine secondary mode exists (find_peaks-based, not
+naive first/global extrema -- see detect_low_confidence_cutoff's docstring).
+Motifs with a smooth/unimodal distribution are left untouched; there's no
 data-driven cutoff to apply, and filtering them anyway would just be an
-arbitrary top-K cut with no principled justification.
+arbitrary top-K cut.
 
---score-column hit_flank_similarity computes a score not natively present in
-hits.tsv: filter_by_flank_consistency.py's per-hit cosine similarity between
-the observed contribution track over a hit's *full* (untrimmed) CWM window
-and the motif's full CWM -- unlike hit_correlation/hit_importance, which are
-computed only over the trimmed core and so can't see a real-motif-in-the-
-wrong-flanking-context problem (see that script's docstring). Anchoring that
-score's drop floor to TF-MoDISco discovery seqlets (filter_by_
-seqlet_importance.py's approach) turned out to be the wrong reference
-population for it: real per-hit data (K562 ENCSR220XSM) showed seqlets
-scoring systematically *lower* than hits on this metric for every motif
-checked, including clearly healthy ones -- expected, since MoDISco seqlets
-are an intentionally diverse cluster of variant/degenerate instances
-averaged into one consensus CWM, while Fi-NeMo hit-calling's sparse
-regression explicitly searches for windows maximizing fit to that one
-template. Detecting bimodality within the hit population itself (this
-script's existing machinery) is the right level to look for a real/noise
-split on this score, the same way it already is for hit_correlation.
+--score-column options beyond any native hits.tsv column:
+  - hit_summit_proximity: -abs(distance to the real PRO-cap TSS summit, from
+    diagnose_hit_summit_distance.py, not Fi-NeMo's synthetic peak-midpoint
+    "summit"). Needs filtered_peaks.bed.gz.
+  - hit_seq_complexity: -(longest homopolymer-or-dinucleotide-repeat run
+    within --complexity-window bp of the hit's center, decoded from
+    regions.npz's one-hot sequence). Needs only regions.npz.
+  - hit_seqlet_confidence: -log10(p) of the best tangermeme.seqlet.
+    recursive_seqlets call overlapping the hit's trimmed span, or exactly
+    0.0 if none overlap (a real negative signal, not missing data) -- the
+    only column that tests local prominence relative to background, which
+    Fi-NeMo's own optimizer never checks (sparsity there comes only from a
+    global per-motif L1 penalty and a global per-hit correlation floor).
+    Bypasses the bimodality search entirely (this score's real shape is a
+    spike at 0.0 then monotonic decay, not dip-then-second-peak) and applies
+    a direct, unconditional > 0 floor instead
+    (--log-scale/--n-bins/--smoothing-window/--min-rise-frac/--min-bin-frac
+    are all ignored for it). Deliberately not a clean separator -- see
+    src/bpnet/README.md for the real corroboration-rate numbers and the
+    CLIPNET precedent for --seqlet-threshold's default. More
+    compute-intensive than the other columns (a full recursive_seqlets pass
+    over every region in regions.npz).
 
---score-column hit_summit_proximity is a different, non-attribution-based
-axis entirely: diagnose_hit_summit_distance.py's signed distance from each
-hit to the real PRO-cap TSS summit (not Fi-NeMo's synthetic peak-midpoint
-"summit"), negated and made unsigned (-abs(signed_distance)) so higher is
-still "better"/closer, matching every other score column's convention here.
-A real core-promoter element like TATA should sit at a fixed, narrow offset
-upstream of the TSS; repeat-context noise elsewhere in the peak has no
-reason to respect that offset. Checks for a genuine narrow near-summit mode
-sitting on top of an otherwise diffuse/background spread, the same
-find_peaks-based logic as every other score here, just applied to this
-different signal in case it's separable even where attribution-based scores
-(hit_correlation/hit_importance/hit_flank_similarity) weren't.
-
---score-column hit_seq_complexity is a third, sequence-intrinsic axis --
-independent of attribution magnitude, shape, and position entirely. Direct
-visual review of real ENCSR220XSM TATA hits (logo plots of the actual
-observed contribution track, dump_tata_logos.py-style) showed a clean,
-consistent qualitative difference: real core hits (~-30bp from the TSS)
-show one compact, isolated "TATAAA"-like word sitting in an otherwise quiet
-flanking background, while both the unexplained downstream-hump hits and
-far-background hits sit inside long, dense, low-complexity stretches --
-extended homopolymer or dinucleotide-repeat runs spanning most or all of
-the window, with no single discrete feature standing out. Fi-NeMo's own
-optimizer (hitcaller.py's fit_contribs/prox_grad_step) has no mechanism
-that would catch this: sparsity comes only from a single global per-motif
-L1 penalty and a global per-hit correlation floor, never a check on
-whether a position's importance stands out from its own local
-neighborhood, so a long repetitive stretch can keep yielding weak-but-
-passing hits indefinitely. hit_seq_complexity is
--(longest homopolymer-or-dinucleotide-repeat run within
---complexity-window bp of the hit's center, decoded directly from
-regions.npz's one-hot sequence), so a short run (compact motif in normal-
-complexity flanks) scores near 0 and a long repeat run scores very
-negative, matching every other score column's higher-is-better convention.
-Needs only regions.npz, no other files.
-
---score-column hit_seqlet_confidence is a fourth axis, and the first that
-isn't blind to *local prominence relative to background*. Direct visual
-review of a larger, unbiased logo sample (dump_tata_logos_v2.py, 20 hits per
-signed-distance category instead of the original 6) showed the real
-distinguishing property isn't sequence-level repeat structure after all
-(hit_seq_complexity came back null on real data, no separation between
-categories) -- it's whether the hit's own attribution track is a genuine
-local spike or just an unremarkable blip inside generally noisy background,
-and critically, *both* types occur in every position category (near-summit,
-downstream-hump, far-background alike), which is exactly why every position-
-based and magnitude-based score tried so far averaged the signal away.
-tangermeme.seqlet.recursive_seqlets is an independent seqlet caller whose
-"recursive" property requires every internal sub-span down to
-min_seqlet_len to also independently pass, giving a real statement about
-local prominence -- this is exactly the mechanism Fi-NeMo's own optimizer
-(hitcaller.py's fit_contribs/prox_grad_step) lacks (sparsity comes only from
-a single global per-motif L1 penalty and a global per-hit correlation
-floor, confirmed directly from source -- never a comparison to a hit's own
-local neighborhood), and matches why prior methods without a shared global
-sparsity fit (recursive_seqlets itself, CWM scanning) didn't show this
-overcalling problem for TATA. The CLIPNET paper (Cochran/Cochran-adjacent
-methods, via Schreiber2025-bb) independently confirms recursive_seqlets was
-used successfully for exactly these motifs: "High importance profile motifs
-such as the TATA box and initiator elements were called using the
-recursive_seqlets approach" at a p-value threshold of 0.05 (tangermeme's own
-default is 0.01) -- see --seqlet-threshold.
-
-Its null-distribution histogram bins the *entire* flattened input in one
-global range (xmax, xmin = X.max(), X.min() over every region passed to one
-call, not per-region -- found by reading recursive_seqlets' actual numba-
-jitted source, not assumed), so a single extreme outlier value anywhere in
-the ~90k-region genome-wide batch collapses bin resolution for every other
-region too -- reproduced directly on synthetic data (one contaminating
-outlier dropped calls on 100 otherwise-trivially-callable clean spikes from
-100/100 to 0/100) and is exactly why the first real run of this column came
-back with 100% of hits completely uncorroborated. --seqlet-clip-percentile
-clips |contribs| before the call to fix this while keeping one fast,
-well-powered call over the whole batch (a per-region-only null was
-considered and rejected: much less powered, only ~2100 positions per
-region's own histogram, vs. this approach's single global fix).
-
-hit_seqlet_confidence = -log10(p-value) of the best (lowest-p) recursive
-seqlet overlapping the hit's trimmed [start, end) span, or exactly 0.0 if
-no seqlet call overlaps at all -- "no call" is a real, meaningful negative
-signal here (recursive_seqlets calls nothing in flat background), not
-missing/unscoreable data. Used identity-agnostically (no tomtom/motif-
-matching step, unlike prior hand-tuning-heavy attempts, and unlike
-CLIPNET's own full pipeline which adds Tomtom-lite identity matching plus a
-seqlet-importance floor on top): we only ask whether *any* locally
-prominent attribution feature overlaps the hit's own trimmed span, not what
-it matches, since Fi-NeMo's own hit_correlation already establishes the
-CWM-shape match.
-
-Real per-hit data (K562 ENCSR220XSM, threshold=0.05, clip_percentile=99.99)
-split by ground-truth signed distance to the real PRO-cap TSS summit showed
-corroboration RATE differs ~2-3x between near-summit "core" hits for both
-TATA and TA-Inr (~58-59%) and their downstream-hump/far-background hits
-(~20-29%) -- real, useful structure -- while the score's *magnitude* when
-corroborated (mean ~1.34-1.41) is nearly identical across every category:
-all the information is in whether a call exists at all, not in how strong
-it is. detect_low_confidence_cutoff's find_peaks-based trough-then-rise
-search is the wrong tool for this shape (a spike at exactly 0.0 followed by
-a monotonically *decaying* tail, not a dip-then-second-peak) and reports
-"no secondary mode" even though this real structure exists, so this column
-bypasses that machinery entirely and applies a direct, unconditional
-hit_seqlet_confidence > 0 floor to every motif with enough hits instead
-(--log-scale/--n-bins/--smoothing-window/--min-rise-frac/--min-bin-frac are
-all ignored for this column). This is not a clean separator (~41% of real
-core hits would still be dropped as false negatives; ~20-29% of spurious
-hits still survive as corroborated by chance), and CLIPNET's own methods
-note recursive_seqlets "struggled to consistently identify relatively low
-importance profile motifs" (DPR, activator elements) independent of any
-contamination problem, so this floor costs real recall there too --
-accepted deliberately as a scaling decision: this needs to run identity-
-agnostically across the whole atlas, and consistent recall on core promoter
-motifs (TATA/Inr) was judged to matter more than recall on low-importance
-profile motifs. More compute-intensive than the other columns -- runs a
-full recursive_seqlets pass over every region in regions.npz once.
+Applying the hit_seqlet_confidence floor to every motif is too blunt (see
+README for the real drop-rate numbers) -- three scoping mechanisms narrow
+it instead, unioned together when more than one is given:
+  --seqlet-low-similarity-only: only motifs already failing cwm_similarity
+    QC (reads a prior report_bpnet.py run's report/motif_report.tsv).
+  --seqlet-compendium-clusters: motifs whose local pattern maps to a given
+    MotifCompendium cluster id -- for motifs like CA-Inr, whose short
+    trimmed core keeps cwm_similarity high regardless of real contamination,
+    so --seqlet-low-similarity-only never brings them into scope.
+  --seqlet-background-excess-only: diagnose_background_energy_ratio.py's
+    detect_elbow_count, fully identity-agnostic (no compendium cluster id
+    or cwm_similarity threshold needed).
+See src/bpnet/README.md's Hit-Call Diagnostics section for the full
+investigation behind each of these (real per-motif numbers, rejected
+alternatives, and why).
 
 Run after filter_repeat_density.py (reads hits_dedensified.tsv if present,
-else hits_unique.tsv) and before report_bpnet.py, which prefers this script's
-output (hits_confidence_filtered.tsv) when present.
+else hits_unique.tsv) and before report_bpnet.py, which prefers this
+script's output (hits_confidence_filtered.tsv) when present.
 
 Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM
@@ -165,10 +58,13 @@ Usage:
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_similarity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_importance --log-scale
-    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_flank_similarity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_summit_proximity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seq_complexity
     python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence
+    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_seqlet_confidence \\
+        --seqlet-low-similarity-only --seqlet-compendium-clusters pos_patterns.42
+    python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6 \\
+        --score-column hit_seqlet_confidence --seqlet-background-excess-only
 """
 
 import argparse
@@ -182,20 +78,20 @@ from finemo.data_io import load_regions_npz
 from scipy.signal import find_peaks
 from tangermeme.seqlet import recursive_seqlets
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
+import compressed_io
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
+from diagnose_background_energy_ratio import detect_elbow_count, load_and_compute_background_excess
 from diagnose_hit_summit_distance import (
     build_summit_lookup,
     compute_distances,
     infer_coordinate_mode,
     load_filtered_peaks,
 )
-from filter_by_flank_consistency import build_cwm_lookup, compute_flank_similarity
-from filter_by_seqlet_importance import build_peak_row_index, project_contribs
+from region_utils import build_peak_row_index, project_contribs
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_SCORE_COLUMN = "hit_correlation"
-FLANK_SIMILARITY_COLUMN = "hit_flank_similarity"
 SUMMIT_PROXIMITY_COLUMN = "hit_summit_proximity"
 SEQ_COMPLEXITY_COLUMN = "hit_seq_complexity"
 DEFAULT_COMPLEXITY_WINDOW = 100
@@ -281,37 +177,30 @@ def compute_seqlet_confidence(
     or exactly 0.0 if no call overlaps at all. `contribs` must be the full
     (n_regions, region_width) projected contribution track from regions.npz,
     row-aligned with peak_row_index/peak_region_starts, same convention as
-    every other score column here. Absolute value is passed to
-    recursive_seqlets since it only identifies *positive* seqlets (per its
-    own docstring) and contributions can be negative for repressive motifs.
-    Explicitly upcast to float32 first: regions.npz stores contribs as
-    float16 to save space, but recursive_seqlets' numba-jitted core has no
-    float16 array type support (NotImplementedError at compile time) --
-    found by hand running this against real data.
+    every other score column here. Absolute value is passed since
+    recursive_seqlets only identifies *positive* seqlets (per its own
+    docstring) and contributions can be negative for repressive motifs.
+    Upcast to float32 first: regions.npz stores contribs as float16, but
+    recursive_seqlets' numba-jitted core has no float16 support
+    (NotImplementedError at compile time).
 
-    Clips |contribs| to `clip_percentile` before the call. Found by hand on
-    real data: recursive_seqlets' internal histogram bins the *entire*
-    flattened input in one global range (`xmax, xmin = X.max(), X.min()`
-    over all regions at once, not per-region), so a single extreme outlier
-    value anywhere in the whole genome-wide array blows out bin_width and
-    collapses every other region's real signal into a handful of near-zero
-    bins -- reproduced directly on synthetic data: one contaminating outlier
-    dropped calls on 100 otherwise-trivially-callable clean spikes from
-    100/100 to 0/100, and clipping first restored calling to 101/100. This
-    is why the real ENCSR220XSM run first came back with 100% of hits
+    Clips |contribs| to `clip_percentile` before the call:
+    recursive_seqlets' internal histogram bins the *entire* flattened input
+    in one global range (`xmax, xmin = X.max(), X.min()` over all regions at
+    once, not per-region), so a single extreme outlier anywhere in the
+    genome-wide array collapses every other region's real signal into a
+    handful of near-zero bins -- confirmed on synthetic data (one
+    contaminating outlier dropped calls on 100 otherwise-trivially-callable
+    clean spikes from 100/100 to 0/100; clipping first restored 101/100).
+    This is why the real ENCSR220XSM run first came back with 100% of hits
     completely uncalled -- a global batching artifact, not biology.
 
     additional_flanks pads each called seqlet's returned start/end
-    symmetrically *after* calling, per tangermeme's own Tutorial_A4_Seqlets:
-    it doesn't affect which seqlets get called, the threshold, or the
-    returned p-value/attribution -- only the boundaries used here for
-    overlap testing. The recursive property requires every internal
-    sub-span down to min_seqlet_len to also independently pass, which the
-    tutorial documents as making call boundaries conservative (a real motif
-    core with even a brief dip in one flanking position can fail to extend
-    to its full width); additional_flanks is tangermeme's own sanctioned fix
-    for exactly that, without loosening calling sensitivity the way raising
-    threshold would.
+    symmetrically *after* calling (tangermeme's own sanctioned fix, per its
+    Tutorial_A4_Seqlets, for the recursive property's documented tendency
+    toward conservative call boundaries) -- it only affects the boundaries
+    used here for overlap testing, not which seqlets get called or their
+    threshold/p-value/attribution.
     """
     contribs_abs = np.abs(contribs).astype(np.float32)
     clip_val = np.percentile(contribs_abs, clip_percentile)
@@ -388,8 +277,8 @@ def detect_low_confidence_cutoff(
     column's own natural bound (e.g. a cosine similarity near 1.0, or a
     proximity score near 0) would otherwise collapse into that undetectable
     edge bin and silently vanish -- found by hand while validating
-    hit_summit_proximity/hit_flank_similarity on synthetic data shaped
-    exactly like this. One bin of padding isn't enough on its own:
+    hit_summit_proximity on synthetic data shaped exactly like this. One
+    bin of padding isn't enough on its own:
     `smoothing_window`'s convolution spreads a sharp edge spike's mass back
     outward by its own radius, refilling the padding and erasing the
     prominence cliff that padding is supposed to create, so padding scales
@@ -494,9 +383,7 @@ def main():
             f"per-hit score column to check for bimodality (default: "
             f"{DEFAULT_SCORE_COLUMN}). Any existing Fi-NeMo hits.tsv column "
             f"works, plus three special values that aren't native columns "
-            f"and are computed on the fly: {FLANK_SIMILARITY_COLUMN!r} "
-            "(requires regions.npz and the .modisco.h5 -- filter_by_flank_"
-            f"consistency.py's per-hit full-window CWM similarity), "
+            f"and are computed on the fly: "
             f"{SUMMIT_PROXIMITY_COLUMN!r} (requires filtered_peaks.bed.gz -- "
             "diagnose_hit_summit_distance.py's -abs(distance to the real "
             f"PRO-cap TSS summit)), {SEQ_COMPLEXITY_COLUMN!r} (requires "
@@ -506,15 +393,6 @@ def main():
             "tangermeme.seqlet.recursive_seqlets call overlapping the hit, "
             "or 0.0 if none overlap; see module docstring for details on "
             "all of these"
-        ),
-    )
-    parser.add_argument(
-        "--modisco-h5",
-        type=str,
-        default=None,
-        help=(
-            f"override path to the .modisco.h5 file, default derived from "
-            f"config -- only used when --score-column {FLANK_SIMILARITY_COLUMN}"
         ),
     )
     parser.add_argument(
@@ -573,6 +451,84 @@ def main():
             "testing here, to compensate for the recursive property's "
             "documented tendency toward conservative call boundaries"
         ),
+    )
+    parser.add_argument(
+        "--seqlet-compendium-clusters",
+        type=str,
+        action="append",
+        default=None,
+        metavar="COMPENDIUM_MOTIF_NAME",
+        help=(
+            "additionally apply the hit_seqlet_confidence corroboration "
+            "floor to whichever of this experiment's local motifs map to "
+            "these MotifCompendium cluster(s) (e.g. 'pos_patterns.42'), "
+            "resolved via motifcompendium/bpnet/motifcompendium_{head}_"
+            "pattern_to_cluster.tsv; repeatable. For motifs like CA-Inr, "
+            "whose trimmed core is short enough that cwm_similarity stays "
+            "high (>0.9) regardless of real background contamination -- "
+            "see this module's docstring -- --seqlet-low-similarity-only's "
+            "scoping never fires no matter the threshold, so this is a "
+            "second, independent way to scope the floor by verified motif "
+            "identity instead. Combines with --seqlet-low-similarity-only "
+            "(union of both motif sets) rather than replacing it -- "
+            "TATA-shaped problems (cwm_similarity actually drops) and "
+            "Inr-shaped problems (cwm_similarity structurally blind) need "
+            "different scoping mechanisms, not one or the other atlas-wide. "
+            "Only used when --score-column " + SEQLET_CONFIDENCE_COLUMN
+        ),
+    )
+    parser.add_argument(
+        "--compendium-mapping-tsv",
+        type=str,
+        default=None,
+        help=(
+            "override path to the pattern-to-cluster mapping table used by "
+            "--seqlet-compendium-clusters (default: motifcompendium/bpnet/"
+            "motifcompendium_{head}_pattern_to_cluster.tsv, same file "
+            "link_hits_to_compendium.py uses)"
+        ),
+    )
+    parser.add_argument(
+        "--seqlet-background-excess-only",
+        action="store_true",
+        help=(
+            "a third, fully general/identity-agnostic scoping mechanism: "
+            "additionally apply the hit_seqlet_confidence corroboration "
+            "floor to whichever motifs diagnose_background_energy_ratio.py's "
+            "detect_elbow_count flags as having unusually elevated background "
+            "attribution energy outside their trimmed core (relative to the "
+            "MoDISco discovery archetype's own background level), computed "
+            "fresh here. Doesn't need a MotifCompendium cluster ID or a "
+            "cwm_similarity threshold -- validated against two hand-labeled "
+            "real experiments (K562 profile: TATA/GC-rich-SP-KLF-repeat/"
+            "TA-Inr; ENCSR342WAR/neuron profile: CA-Inr + 2 other hand-"
+            "confirmed-noisy motifs), both correctly recovering exactly the "
+            "3 confirmed motifs. Unions into scope alongside whatever "
+            "--seqlet-low-similarity-only/--seqlet-compendium-clusters "
+            "already selected. Only used when --score-column " + SEQLET_CONFIDENCE_COLUMN
+        ),
+    )
+    parser.add_argument(
+        "--seqlet-modisco-h5",
+        type=str,
+        default=None,
+        help=(
+            "override path to the MoDISco h5 used by "
+            "--seqlet-background-excess-only (default: modisco/bpnet/"
+            "{experiment}_{head}.modisco.h5)"
+        ),
+    )
+    parser.add_argument(
+        "--seqlet-background-min-gap-ratio",
+        type=float,
+        default=None,
+        help="override detect_elbow_count's min_gap_ratio for --seqlet-background-excess-only (default: its own default)",
+    )
+    parser.add_argument(
+        "--seqlet-background-min-top-excess",
+        type=float,
+        default=None,
+        help="override detect_elbow_count's min_top_excess for --seqlet-background-excess-only (default: its own default)",
     )
     parser.add_argument(
         "--seqlet-low-similarity-only",
@@ -667,18 +623,9 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir
-        / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    exp_dir, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = resolve_hits_path(
         hits_dir,
@@ -696,42 +643,7 @@ def main():
     hits = pd.read_csv(hits_path, sep="\t")
     original_columns = list(hits.columns)
 
-    if args.score_column == FLANK_SIMILARITY_COLUMN:
-        regions_npz = exp_dir / "regions.npz"
-        modisco_h5 = (
-            Path(args.modisco_h5) if args.modisco_h5
-            else modisco_dir / f"{args.experiment}_{args.head}.modisco.h5"
-        )
-        for path, label, hint in [
-            (regions_npz, "regions.npz", "Run call_hits_bpnet.py first."),
-            (modisco_h5, "motif CWMs (.modisco.h5)", "Run MoDISco first."),
-        ]:
-            if not path.exists():
-                print(f"Error: {label} not found: {path}", file=sys.stderr)
-                print(hint, file=sys.stderr)
-                sys.exit(1)
-
-        if args.verbose:
-            print(f"Computing {FLANK_SIMILARITY_COLUMN} from {regions_npz} and {modisco_h5}")
-
-        sequences, contribs, peaks_df, _ = load_regions_npz(str(regions_npz))
-        contribs = project_contribs(contribs, sequences)
-        peak_row_index = build_peak_row_index(peaks_df)
-        peak_region_starts = peaks_df["peak_region_start"].to_numpy()
-        cwm_lookup, motif_width = build_cwm_lookup(modisco_h5)
-
-        hits[FLANK_SIMILARITY_COLUMN] = compute_flank_similarity(
-            hits, contribs, sequences, peak_row_index, peak_region_starts, cwm_lookup, motif_width
-        )
-        n_unscoreable = int(hits[FLANK_SIMILARITY_COLUMN].isna().sum())
-        if args.verbose or n_unscoreable:
-            print(
-                f"{n_unscoreable}/{len(hits)} hits ({n_unscoreable / max(len(hits), 1):.1%}) "
-                "could not be scored (untrimmed span outside the saved contribution "
-                "track, e.g. near a peak edge) -- excluded from bimodality detection "
-                "and never dropped by this score"
-            )
-    elif args.score_column == SUMMIT_PROXIMITY_COLUMN:
+    if args.score_column == SUMMIT_PROXIMITY_COLUMN:
         with open(CONFIG_PATH) as f:
             config = yaml.safe_load(f)
         if args.experiment not in config["experiments"]:
@@ -877,7 +789,7 @@ def main():
         restricted_motifs = None
         if args.seqlet_low_similarity_only:
             motif_report_path = hits_dir / "report" / "motif_report.tsv"
-            if not motif_report_path.exists():
+            if not compressed_io.exists(motif_report_path):
                 print(
                     f"Error: --seqlet-low-similarity-only needs {motif_report_path} "
                     "from a prior report_bpnet.py run (against hits from *before* "
@@ -886,7 +798,7 @@ def main():
                     file=sys.stderr,
                 )
                 sys.exit(1)
-            motif_report = pd.read_csv(motif_report_path, sep="\t")
+            motif_report = pd.read_csv(compressed_io.resolve(motif_report_path), sep="\t")
             restricted_motifs = set(
                 motif_report.loc[
                     motif_report["cwm_similarity"] <= args.seqlet_similarity_threshold,
@@ -900,6 +812,85 @@ def main():
                     f"{args.seqlet_similarity_threshold} (from {motif_report_path}): "
                     f"{sorted(restricted_motifs)}"
                 )
+
+        # A second, independent scoping mechanism: motifs like CA-Inr have a
+        # trimmed core short enough that cwm_similarity stays >0.9 regardless
+        # of real background contamination (see module docstring), so
+        # --seqlet-low-similarity-only's threshold never brings them into
+        # scope no matter how low it's set. Resolve this experiment's local
+        # motif names for the given compendium cluster(s) instead, and union
+        # them into restricted_motifs -- verified motif identity standing in
+        # for a cwm_similarity signal that's structurally blind here.
+        if args.seqlet_compendium_clusters:
+            mapping_path = (
+                Path(args.compendium_mapping_tsv)
+                if args.compendium_mapping_tsv
+                else REPO_ROOT / "motifcompendium" / "bpnet" / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
+            )
+            if not compressed_io.exists(mapping_path):
+                print(
+                    f"Error: --seqlet-compendium-clusters needs {mapping_path} "
+                    "(run src/bpnet/motifcompendium/cluster_motifs.py first)",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            mapping = pd.read_csv(compressed_io.resolve(mapping_path), sep="\t")
+            mapping = mapping[mapping["experiment"] == args.experiment]
+            compendium_motifs = set(
+                mapping.loc[
+                    mapping["compendium_motif_name"].isin(args.seqlet_compendium_clusters),
+                    "local_motif_name",
+                ]
+            )
+            if args.verbose:
+                print(
+                    f"Resolved compendium cluster(s) {args.seqlet_compendium_clusters} to "
+                    f"{len(compendium_motifs)} local motif(s) for {args.experiment} "
+                    f"(from {mapping_path}): {sorted(compendium_motifs)}"
+                )
+            elif not compendium_motifs:
+                print(
+                    f"WARNING: none of {args.experiment}'s local motifs map to compendium "
+                    f"cluster(s) {args.seqlet_compendium_clusters} (from {mapping_path})",
+                    file=sys.stderr,
+                )
+            restricted_motifs = (
+                compendium_motifs if restricted_motifs is None else restricted_motifs | compendium_motifs
+            )
+
+        # A third, fully general/identity-agnostic scoping mechanism: no
+        # MotifCompendium cluster ID or cwm_similarity threshold needed,
+        # just this experiment's own regions.npz/hits/modisco h5 (same
+        # inputs report_bpnet.py already uses). See diagnose_background_
+        # energy_ratio.py's module docstring for the metric and
+        # detect_elbow_count's docstring for the elbow-detection logic and
+        # its real-data validation (K562/neuron, both recovering exactly
+        # their 3 hand-confirmed motifs).
+        if args.seqlet_background_excess_only:
+            excess_kwargs = {}
+            if args.seqlet_background_min_gap_ratio is not None:
+                excess_kwargs["min_gap_ratio"] = args.seqlet_background_min_gap_ratio
+            if args.seqlet_background_min_top_excess is not None:
+                excess_kwargs["min_top_excess"] = args.seqlet_background_min_top_excess
+
+            excess_rows = load_and_compute_background_excess(
+                args.experiment, args.head, min_trim_len=args.min_trim_len,
+                model_dir=args.model_dir, modisco_h5_override=args.seqlet_modisco_h5,
+                verbose=args.verbose,
+            )
+            excess_rows.sort(key=lambda r: -r["excess"])
+            n_in_scope = detect_elbow_count([r["excess"] for r in excess_rows], **excess_kwargs)
+            background_excess_motifs = {r["motif_name"] for r in excess_rows[:n_in_scope]}
+
+            if args.verbose:
+                print(
+                    f"--seqlet-background-excess-only flagged {len(background_excess_motifs)} "
+                    f"motif(s) via detect_elbow_count: {sorted(background_excess_motifs)}"
+                )
+            restricted_motifs = (
+                background_excess_motifs if restricted_motifs is None
+                else restricted_motifs | background_excess_motifs
+            )
 
         out_of_scope_motifs = []
         for motif_name, group in hits.groupby("motif_name", sort=False):
@@ -918,8 +909,9 @@ def main():
         if args.verbose and out_of_scope_motifs:
             print(
                 f"\n{len(out_of_scope_motifs)} motif(s) left completely untouched "
-                f"(cwm_similarity above {args.seqlet_similarity_threshold}, out of "
-                f"scope for --seqlet-low-similarity-only): {out_of_scope_motifs}"
+                f"(not selected by --seqlet-low-similarity-only, "
+                f"--seqlet-compendium-clusters, or --seqlet-background-excess-only): "
+                f"{out_of_scope_motifs}"
             )
     else:
         for motif_name, group in hits.groupby("motif_name", sort=False):
@@ -949,9 +941,9 @@ def main():
                 )
             )
 
-    # Drop any synthetic column this run added (hit_flank_similarity/
-    # hit_summit_proximity/hit_seq_complexity/hit_seqlet_confidence aren't
-    # part of Fi-NeMo's fixed hits.tsv schema) before writing output --
+    # Drop any synthetic column this run added (hit_summit_proximity/
+    # hit_seq_complexity/hit_seqlet_confidence aren't part of Fi-NeMo's
+    # fixed hits.tsv schema) before writing output --
     # finemo's own downstream `report` subcommand hard-codes an expected
     # column count and errors on a mismatch (polars.exceptions.SchemaError:
     # "provided schema does not match number of columns in file"), found by
@@ -1004,7 +996,7 @@ def main():
             )
 
     out_path = hits_dir / "hits_confidence_filtered.tsv"
-    kept.to_csv(out_path, sep="\t", index=False)
+    out_path = compressed_io.write_tsv(kept, out_path)
     print(
         f"\nKept {len(kept)}/{len(hits)} hits "
         f"({len(hits) - len(kept)} dropped from {len(filtered_motifs)} motifs)"

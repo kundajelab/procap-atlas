@@ -33,7 +33,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+import compressed_io
+from call_hits_bpnet import resolve_experiment_paths
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -111,7 +112,6 @@ def main():
 
     attr_dir = REPO_ROOT / "attributions" / "bpnet"
     modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    out_dir = REPO_ROOT / "hitcalls" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall"
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -142,13 +142,15 @@ def main():
                 skipped_no_modisco_h5 += 1
                 continue
 
-            trim_coords = (
-                modisco_dir
-                / f"{exp_id}_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
-                if args.min_trim_len is not None
-                else None
+            # Mirrors call_hits_bpnet.py's own path resolution so the skip
+            # check looks in the same directory that job will actually
+            # write to. --call-hits-args isn't a structured flag, so a
+            # --cwm-trim-threshold/--cwm-trim-thresholds override passed
+            # through it won't be reflected here -- only --min-trim-len is.
+            _, call_hits_dir, trim_coords, suffix = resolve_experiment_paths(
+                exp_id, head, args.min_trim_len
             )
-            if trim_coords is not None and not trim_coords.exists():
+            if trim_coords is not None and not compressed_io.exists(trim_coords):
                 skipped_no_trim_floor += 1
                 continue
 
@@ -161,14 +163,6 @@ def main():
                 skipped_no_attr += 1
                 continue
 
-            # Mirrors call_hits_bpnet.py's trim_suffix() so the skip check
-            # looks in the same directory that job will actually write to.
-            # --call-hits-args isn't a structured flag, so a
-            # --cwm-trim-threshold/--cwm-trim-thresholds override passed
-            # through it won't be reflected here -- only --min-trim-len is.
-            suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-            exp_out_dir = out_dir / f"{model_dir_name}_{head}"
-            call_hits_dir = exp_out_dir / suffix.lstrip("_") if suffix else exp_out_dir
             hits_path = call_hits_dir / "hits.tsv"
             if hits_path.exists():
                 skipped_done += 1

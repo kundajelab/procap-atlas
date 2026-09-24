@@ -4,8 +4,8 @@ motif-trim-length floor per experiment.
 
 Reads experiment IDs from configs/experiment_config.yaml and submits one
 sbatch job per (experiment, head) pair via compute_trim_floor.py -e, so
-hitcall/launch.py --min-trim-len and hitcall/launch_report.py/launch_link.py
---min-trim-len have a per-experiment trim-coords file to find.
+hitcall/launch.py --min-trim-len and hitcall/launch_post_hoc_pipeline.py/
+launch_link.py --min-trim-len have a per-experiment trim-coords file to find.
 
 Jobs are skipped if the output TSV already exists or if the per-experiment
 modisco.h5 is missing (run modisco/launch.py first).
@@ -26,6 +26,8 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+
+import compressed_io
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -109,7 +111,7 @@ def main():
             out_path = (
                 modisco_dir / f"{exp_id}_{head}_trim_coords_min{args.min_len}bp.tsv"
             )
-            if out_path.exists():
+            if compressed_io.exists(out_path):
                 skipped_done += 1
                 continue
 

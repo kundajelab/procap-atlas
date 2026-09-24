@@ -10,21 +10,14 @@ which drops all hits for any motif whose hit-derived CWM correlates poorly
 with the reference CWM (they used a 0.9 threshold on their `cwm_correlation`,
 the equivalent metric in the older Fi-NeMo release they used).
 
---cwm-similarity-threshold's default is 0.8, not HDMA's 0.9: extensive
-investigation into K562 ENCSR220XSM's TATA box/TA-Inr/GATA overcalling
-(see filter_low_confidence_hits.py's module docstring for the full
-writeup -- seven score axes tried, most native to hits.tsv, before finding
-one that worked) found that filter_low_confidence_hits.py's
-hit_seqlet_confidence corroboration filter (scoped to already-failing
-motifs via --seqlet-low-similarity-only) substantially improves but doesn't
-fully resolve these motifs past 0.9 (e.g. TATA: 0.765 -> 0.853). Every
-further lever tried (looser/stricter recursive_seqlets thresholds,
-additional_flanks, layering CLIPNET's own importance-floor second stage)
-either made things worse or was a no-op. Rather than drop these
-substantially-improved motifs' hits wholesale at the stricter 0.9 cutoff,
-0.8 retains them while still dropping motifs that remain clearly broken
-(e.g. K562 ENCSR220XSM's pos_patterns.pattern_38 at 0.538, neg_patterns.
-pattern_30 at 0.599 -- both far below either threshold).
+--cwm-similarity-threshold's default is 0.8, not HDMA's 0.9:
+filter_low_confidence_hits.py's hit_seqlet_confidence corroboration filter
+substantially improves TATA/TA-Inr/GATA-family overcalling but doesn't
+fully resolve it past 0.9 (e.g. TATA: 0.765 -> 0.853) -- 0.8 retains those
+substantially-improved motifs instead of dropping them wholesale, while
+still dropping motifs that remain clearly broken. See
+filter_low_confidence_hits.py's module docstring and src/bpnet/README.md
+for the full investigation.
 
 `cwm_similarity` is computed from `regions.npz` + `hits.tsv` + the motif h5's
 own CWMs, independent of TF-MoDISco seqlets, so `--no-recall` is always used
@@ -77,6 +70,7 @@ Usage:
 import argparse
 import subprocess
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 
 import matplotlib
@@ -91,6 +85,7 @@ from finemo.visualization import (
     plot_peak_motif_indicator_heatmap,
 )
 
+import compressed_io
 from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, resolve_hits_path, trim_suffix
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -230,22 +225,17 @@ def main():
     hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
     regions_npz = exp_dir / "regions.npz"
     # Prefer the most-processed pre-QC hits available: dropping dense
-    # same-motif repeat clusters (filter_repeat_density.py), a motif's
-    # low-confidence hit mode (filter_low_confidence_hits.py), hits below
-    # what its own discovery seqlets would support
-    # (filter_by_seqlet_importance.py), and/or hits whose flanking sequence
-    # context doesn't match the motif's full CWM even though the trimmed
-    # core does (filter_by_flank_consistency.py) before computing
-    # cwm_similarity lets a motif dragged down by that noise (e.g.
-    # TATA/GATA) clear the QC threshold on its remaining real hits, instead
-    # of losing every hit for that motif wholesale. Staleness-aware: a
-    # rerun of an earlier stage with different settings makes a later
-    # stage's file stale, so it's skipped in favor of the rerun's output.
+    # same-motif repeat clusters (filter_repeat_density.py), then a motif's
+    # low-confidence hit mode (filter_low_confidence_hits.py), before
+    # computing cwm_similarity lets a motif dragged down by that noise
+    # (e.g. TATA/GATA) clear the QC threshold on its remaining real hits,
+    # instead of losing every hit for that motif wholesale.
+    # Staleness-aware: a rerun of an earlier stage with different settings
+    # makes a later stage's file stale, so it's skipped in favor of the
+    # rerun's output.
     hits_tsv = resolve_hits_path(
         hits_dir,
         stages=[
-            "hits_flank_filtered.tsv",
-            "hits_seqlet_filtered.tsv",
             "hits_confidence_filtered.tsv",
             "hits_dedensified.tsv",
             "hits_unique.tsv",
@@ -285,29 +275,41 @@ def main():
     # instead (deprecated but functional Fi-NeMo behavior) is the only way
     # to have it recompute cwm_similarity against filter_repeat_density.py's/
     # filter_low_confidence_hits.py's cleaned-up hits, so only take that path
-    # when one of those has actually been run.
-    hits_arg = str(hits_tsv) if hits_tsv.name != "hits_unique.tsv" else str(hits_dir)
-    run(
-        [
-            "finemo",
-            "report",
-            "-r",
-            str(regions_npz),
-            "-H",
-            hits_arg,
-            "-m",
-            str(modisco_h5),
-            "-o",
-            str(report_dir),
-            "-t",
-            str(args.cwm_trim_threshold),
-            "-n",
-        ],
-        args.verbose,
-    )
+    # when one of those has actually been run. Compare against the logical
+    # (uncompressed) name, since hits_tsv may resolve to hits_unique.tsv.gz.
+    is_hits_unique = compressed_io.plain_name(hits_tsv).name == "hits_unique.tsv"
+    with ExitStack() as stack:
+        if is_hits_unique:
+            hits_arg = str(hits_dir)
+        else:
+            # finemo's deprecated single-file -H mode dispatches on a
+            # literal ".tsv" suffix; a ".tsv.gz" path fails that check and
+            # gets silently treated as a directory instead. Decompress to a
+            # real .tsv first rather than relying on finemo's own reader to
+            # handle gzip, the same reasoning as compressed_io.ensure_plain's
+            # other callers.
+            hits_arg = str(stack.enter_context(compressed_io.ensure_plain(hits_tsv)))
+        run(
+            [
+                "finemo",
+                "report",
+                "-r",
+                str(regions_npz),
+                "-H",
+                hits_arg,
+                "-m",
+                str(modisco_h5),
+                "-o",
+                str(report_dir),
+                "-t",
+                str(args.cwm_trim_threshold),
+                "-n",
+            ],
+            args.verbose,
+        )
 
     motif_report_path = report_dir / "motif_report.tsv"
-    motif_report = pl.read_csv(motif_report_path, separator="\t")
+    motif_report = pl.read_csv(compressed_io.resolve(motif_report_path), separator="\t")
     low_similarity = motif_report.filter(
         pl.col("cwm_similarity") <= args.cwm_similarity_threshold
     )
@@ -332,8 +334,7 @@ def main():
 
     hits = pl.read_csv(hits_tsv, separator="\t")
     hits_filtered = hits.filter(~pl.col("motif_name").is_in(drop_motifs))
-    hits_filtered_path = hits_dir / "hits_filtered.tsv"
-    hits_filtered.write_csv(hits_filtered_path, separator="\t")
+    hits_filtered_path = compressed_io.write_tsv(hits_filtered, hits_dir / "hits_filtered.tsv")
 
     print(
         f"\nKept {hits_filtered.height}/{hits.height} hits "
