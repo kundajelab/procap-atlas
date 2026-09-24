@@ -1,0 +1,303 @@
+#!/usr/bin/env python3
+"""Find and remove/compress the large, unneeded files that
+call_hits_bpnet.py and the post-hoc filtering pipeline
+(launch_post_hoc_pipeline.py) leave behind under hitcalls/bpnet/.
+
+Three categories, in increasing order of judgment call:
+
+1. Always-safe deletes -- nothing in this codebase reads these by name:
+   - hits.tsv: Fi-NeMo's own "complete hit data with all instances" dump.
+     hits_unique.tsv (deduplicated by chr/start/motif_name/strand) is the
+     canonical file every downstream script actually reads; hits.tsv is
+     pure duplicate bloat, generally larger than hits_unique.tsv itself.
+   - hits_flank_filtered.tsv / hits_seqlet_filtered.tsv: output of
+     filter_by_flank_consistency.py / filter_by_seqlet_importance.py,
+     both rejected as null results while root-causing TATA/TA-Inr
+     overcalling and since deleted from the codebase entirely -- nothing
+     can write or (via HITS_FILE_STAGES) prefer these anymore, so any
+     that still exist are pure leftovers from before that deletion.
+   - regions.tmp.npz: call_hits_bpnet.py's atomic-write temp file for
+     regions.npz, left behind only if a job died between writing it and
+     renaming it into place. Only ever flagged if a valid regions.npz
+     already sits next to it (otherwise it could be an in-progress write).
+
+2. Compress in place (gzip): hits.bed. Same rows as hits_unique.tsv, just
+   BED-formatted for genome-browser loading -- nothing in this codebase
+   reads it back by exact filename, so gzipping it can't break any
+   downstream script's file resolution the way gzipping hits_unique.tsv,
+   hits_dedensified.tsv, hits_confidence_filtered.tsv, or hits_filtered.tsv
+   would (those are all located by exact name in resolve_hits_path /
+   launch_link.py).
+
+3. Opt-in only (--include-abandoned-trim-dirs): call-hits output sitting
+   directly in hitcalls/bpnet/{exp}_{head}/ (hits*.tsv, hits.bed,
+   peaks_qc.tsv, motif_data.tsv, motif_cwms.npy, parameters.json, report/,
+   comparison/) when a sibling trim*-prefixed subdirectory also exists for
+   the same experiment/head. That sibling means call_hits_bpnet.py was
+   rerun with --cwm-trim-coords/--min-trim-len (the min-length floor added
+   to fix over-trimming of short core-promoter motifs like Inr), which is
+   what every current launcher (launch_post_hoc_pipeline.py, launch_link.py,
+   ...) selects via --min-trim-len. The base-level files
+   predate that switch. regions.npz/peaks.narrowPeak are NEVER included in
+   this category even here -- they're trim-independent and reused by every
+   trim configuration for that (experiment, head), including the current
+   one (see call_hits_bpnet.py's own comment above its regions_npz cache
+   check).
+
+Never touched, under any flag: regions.npz, peaks.narrowPeak, hits_unique.tsv,
+hits_dedensified.tsv, hits_confidence_filtered.tsv, hits_filtered.tsv,
+hits_linked.tsv, and anything not matched by the categories above.
+
+Defaults to a dry-run report (sizes per category, nothing modified).
+Pass --execute to actually delete/compress category 1/2 files, and
+additionally --include-abandoned-trim-dirs to also clean up category 3.
+--min-age-hours (default 24) skips anything modified more recently than
+that, as a guard against touching a still-running job's output.
+
+Usage:
+    python src/bpnet/hitcall/cleanup_hitcalls.py                     # dry-run report
+    python src/bpnet/hitcall/cleanup_hitcalls.py --execute            # delete/compress categories 1-2
+    python src/bpnet/hitcall/cleanup_hitcalls.py --execute --include-abandoned-trim-dirs
+    python src/bpnet/hitcall/cleanup_hitcalls.py --min-age-hours 48 --execute
+"""
+
+import argparse
+import gzip
+import os
+import shutil
+import sys
+import time
+import zipfile
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+HITCALLS_BPNET_DIR = REPO_ROOT / "hitcalls" / "bpnet"
+
+ALWAYS_SAFE_DELETE_NAMES = {
+    "hits.tsv",
+    "hits_flank_filtered.tsv",
+    "hits_seqlet_filtered.tsv",
+}
+# hits.bed is bgzipped by call-hits now, so this only catches files from
+# builds predating that. Kept for those.
+COMPRESS_NAMES = {"hits.bed"}
+PROTECTED_BASE_DIR_NAMES = {"peaks.narrowPeak", "regions.npz", "regions.tmp.npz"}
+NEVER_TOUCH_NAMES = {
+    "hits_unique.tsv",
+    "hits_dedensified.tsv",
+    "hits_confidence_filtered.tsv",
+    "hits_filtered.tsv",
+    "hits_linked.tsv",
+} | PROTECTED_BASE_DIR_NAMES
+# report/'s own output (finemo report: motif_report.tsv, per-motif CWM logos,
+# report.html) and comparison/ never contain any ALWAYS_SAFE_DELETE_NAMES or
+# COMPRESS_NAMES filename, so categories 1/2's walk skips them entirely
+# rather than stat()-ing every logo file for zero possible matches -- one of
+# these can hold 100+ files (one set of logos per motif), and on Sherlock's
+# Lustre-backed scratch each stat() is a network round-trip.
+SKIP_DIR_NAMES = {"report", "comparison"}
+
+
+def logical_name(path):
+    """`path.name` with any `.gz` stripped.
+
+    The name sets below are keyed on logical names, so a compressed tree must
+    still match them -- otherwise hits_unique.tsv.gz is not recognised as
+    NEVER_TOUCH and hits.tsv.gz is not recognised as safe to delete, and
+    cleanup silently changes behaviour the moment a tree is compressed.
+    """
+    return path.name[:-3] if path.name.endswith(".gz") else path.name
+
+
+def human_bytes(n):
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if n < 1024:
+            return f"{n:.1f}{unit}"
+        n /= 1024
+    return f"{n:.1f}PB"
+
+
+def is_old_enough(mtime, min_age_hours):
+    return (time.time() - mtime) / 3600 >= min_age_hours
+
+
+def walk_stat(root, skip_dir_names=frozenset()):
+    """Yield (Path, os.stat_result) for every file under root, pruning any
+    directory whose name is in skip_dir_names before descending into it.
+
+    Replaces pathlib's Path.rglob("*"), which has no way to prune a subtree
+    -- it always stats every entry, so a report/ directory full of per-motif
+    CWM logos got walked in full just to find filenames that can never live
+    there. Each file is stat()'d exactly once here and the result is reused
+    by every caller, instead of the previous pattern of re-stat()-ing the
+    same path once for the age check, once for the size total, and once more
+    in the per-file print loop.
+    """
+    stack = [str(root)]
+    while stack:
+        current = stack.pop()
+        try:
+            entries = list(os.scandir(current))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_dir(follow_symlinks=False):
+                if entry.name in skip_dir_names:
+                    continue
+                stack.append(entry.path)
+            elif entry.is_file(follow_symlinks=False):
+                yield Path(entry.path), entry.stat(follow_symlinks=False)
+
+
+def find_stale_regions_tmp(exp_head_dir, min_age_hours):
+    tmp_path = exp_head_dir / "regions.tmp.npz"
+    regions_path = exp_head_dir / "regions.npz"
+    if not tmp_path.exists():
+        return None
+    if not (regions_path.exists() and zipfile.is_zipfile(regions_path)):
+        # No valid regions.npz yet -- this could be an in-progress write,
+        # never touch it.
+        return None
+    st = tmp_path.stat()
+    if not is_old_enough(st.st_mtime, min_age_hours):
+        return None
+    return tmp_path, st.st_size
+
+
+def find_safe_and_compress(exp_head_dir, min_age_hours):
+    """Categories 1 (always-safe deletes) and 2 (compress candidates) in one
+    walk instead of two separate rglob("*") passes, skipping report/
+    comparison entirely (see SKIP_DIR_NAMES). Returns
+    ([(path, size)], [(path, size)]).
+    """
+    safe, compress = [], []
+    for path, st in walk_stat(exp_head_dir, SKIP_DIR_NAMES):
+        if not is_old_enough(st.st_mtime, min_age_hours):
+            continue
+        if logical_name(path) in ALWAYS_SAFE_DELETE_NAMES:
+            safe.append((path, st.st_size))
+        elif path.name in COMPRESS_NAMES:
+            compress.append((path, st.st_size))
+
+    stale_tmp = find_stale_regions_tmp(exp_head_dir, min_age_hours)
+    if stale_tmp is not None:
+        safe.append(stale_tmp)
+    return safe, compress
+
+
+def find_abandoned_trim_dirs(exp_head_dir, min_age_hours):
+    """[(path, size)] sitting directly in exp_head_dir (not in a nested
+    trim* subdirectory) when a sibling trim*-prefixed subdirectory exists,
+    excluding the trim-independent regions.npz/peaks.narrowPeak cache. See
+    module docstring for why the trim-sibling check matters: without it, a
+    base-level report/ could be an experiment's *only* current result rather
+    than one superseded by a trim-suffixed rerun.
+    """
+    has_trim_sibling = any(
+        child.is_dir() and child.name.startswith("trim") for child in exp_head_dir.iterdir()
+    )
+    if not has_trim_sibling:
+        return []
+    found = []
+    for path in exp_head_dir.iterdir():
+        if path.is_dir() and path.name.startswith("trim"):
+            continue
+        if logical_name(path) in PROTECTED_BASE_DIR_NAMES:
+            continue
+        if path.is_file():
+            st = path.stat()
+            if is_old_enough(st.st_mtime, min_age_hours):
+                found.append((path, st.st_size))
+        elif path.is_dir():
+            # report/, comparison/, or any other base-level directory --
+            # age-gate on the directory's own mtime (crude but simple: a
+            # directory only gets a newer mtime when a file is added or
+            # removed from it directly, not on nested writes, but these
+            # are only ever fully written once so that's fine here).
+            dir_st = path.stat()
+            if is_old_enough(dir_st.st_mtime, min_age_hours):
+                found.extend((p, st.st_size) for p, st in walk_stat(path))
+
+    return found
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--execute", action="store_true",
+        help="actually delete/compress category 1/2 files (default: dry-run report only)",
+    )
+    parser.add_argument(
+        "--include-abandoned-trim-dirs", action="store_true",
+        help=(
+            "also delete category 3: base-level call-hits output superseded "
+            "by a sibling trim*-prefixed subdirectory. Requires --execute to "
+            "actually delete; without --execute, still reported."
+        ),
+    )
+    parser.add_argument(
+        "--min-age-hours", type=float, default=24.0,
+        help="skip anything modified more recently than this many hours ago (default: 24)",
+    )
+    args = parser.parse_args()
+
+    if not HITCALLS_BPNET_DIR.exists():
+        print(f"Error: {HITCALLS_BPNET_DIR} not found", file=sys.stderr)
+        sys.exit(1)
+
+    exp_head_dirs = sorted(d for d in HITCALLS_BPNET_DIR.iterdir() if d.is_dir())
+
+    always_safe, compress, abandoned = [], [], []
+    for exp_head_dir in exp_head_dirs:
+        safe, comp = find_safe_and_compress(exp_head_dir, args.min_age_hours)
+        always_safe.extend(safe)
+        compress.extend(comp)
+        abandoned.extend(find_abandoned_trim_dirs(exp_head_dir, args.min_age_hours))
+
+    print(f"Scanned {len(exp_head_dirs)} experiment/head directories under {HITCALLS_BPNET_DIR}\n")
+
+    print(f"[1] Always-safe deletes: {len(always_safe)} file(s), {human_bytes(sum(s for _, s in always_safe))}")
+    for p, size in always_safe:
+        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(size)})")
+
+    print(f"\n[2] Compress candidates (gzip in place): {len(compress)} file(s), {human_bytes(sum(s for _, s in compress))}")
+    for p, size in compress:
+        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(size)})")
+
+    label = "included" if args.include_abandoned_trim_dirs else "reported only, use --include-abandoned-trim-dirs to act on these"
+    print(f"\n[3] Abandoned no-min-trim-len files ({label}): {len(abandoned)} file(s), {human_bytes(sum(s for _, s in abandoned))}")
+    for p, size in abandoned:
+        print(f"      {p.relative_to(REPO_ROOT)}  ({human_bytes(size)})")
+
+    if not args.execute:
+        print("\nDry-run only (pass --execute to actually delete/compress). Nothing was modified.")
+        return
+
+    for p, _ in always_safe:
+        p.unlink()
+    print(f"\nDeleted {len(always_safe)} always-safe file(s).")
+
+    for p, _ in compress:
+        gz_path = p.with_name(p.name + ".gz")
+        with open(p, "rb") as f_in, gzip.open(gz_path, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        p.unlink()
+    print(f"Compressed {len(compress)} file(s).")
+
+    if args.include_abandoned_trim_dirs:
+        for p, _ in abandoned:
+            if p.exists():
+                p.unlink()
+        # Clean up now-empty directories (report/, comparison/, ...) left
+        # behind after their files were removed.
+        for exp_head_dir in exp_head_dirs:
+            for child in sorted(exp_head_dir.iterdir(), reverse=True):
+                if child.is_dir() and not child.name.startswith("trim") and not any(child.rglob("*")):
+                    child.rmdir()
+        print(f"Deleted {len(abandoned)} abandoned no-min-trim-len file(s).")
+
+
+if __name__ == "__main__":
+    main()

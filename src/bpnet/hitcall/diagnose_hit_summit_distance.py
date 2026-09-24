@@ -2,20 +2,14 @@
 relative to the peak's real PRO-cap TSS summit, or are scattered across the
 peak window like repeat noise.
 
-filter_by_seqlet_importance.py established that TATA's overcalled hits in
-K562 ENCSR220XSM aren't weak-magnitude noise -- they carry real
-hit_importance, comparable to genuine discovery seqlets. The problem is CWM
-*shape* mismatch (what cwm_similarity/hit_correlation measure), not signal
-weakness, and no magnitude-based threshold can fix a problem with no
-magnitude gap to exploit. This script checks a different, motif-identity-
-agnostic axis: real core-promoter elements (TATA, Inr) sit at a fixed,
-narrow offset from the transcription start site (TATA ~-25 to -30bp);
-AT-rich repeat-context noise elsewhere in a ~2kb peak window has no reason
-to respect that offset. If a motif's real hits are position-constrained and
-its noise hits aren't, the per-motif hit-to-summit distance distribution
-should show a sharp mode (real) sitting on top of, or instead of, a diffuse
-spread (noise) -- checkable without any consensus/JASPAR identity
-knowledge, using only each motif's own hits.
+Motif-identity-agnostic: real core-promoter elements (TATA, Inr) sit at a
+fixed, narrow offset from the transcription start site (TATA ~-25 to
+-30bp); AT-rich repeat-context noise elsewhere in a ~2kb peak window has
+no reason to respect that offset. If a motif's real hits are position-
+constrained and its noise hits aren't, the per-motif hit-to-summit
+distance distribution should show a sharp mode (real) sitting on top of,
+or instead of, a diffuse spread (noise) -- checkable without any
+consensus/JASPAR identity knowledge, using only each motif's own hits.
 
 Fi-NeMo's hit-calling never sees a real biological summit: call_hits_bpnet's
 build_peaks_narrowpeak() feeds it a synthetic narrowPeak whose "summit" is
@@ -56,6 +50,8 @@ Usage:
     python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM
     python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --min-trim-len 6 -v
     python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --concentration-window 50
+    python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR342WAR --min-trim-len 6 \\
+        --plot-motifs pos_patterns.pattern_2
 """
 
 import argparse
@@ -63,15 +59,15 @@ import re
 import sys
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
 
-from call_hits_bpnet import (
-    DEFAULT_CWM_TRIM_THRESHOLD,
-    resolve_hits_path,
-    trim_suffix,
-)
+from call_hits_bpnet import resolve_experiment_paths, resolve_hits_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -253,6 +249,18 @@ def main():
         "--min-hits", type=int, default=DEFAULT_MIN_HITS,
         help=f"skip a motif entirely if it has fewer hits than this (default: {DEFAULT_MIN_HITS})",
     )
+    parser.add_argument(
+        "--plot-motifs", type=str, action="append", default=None, metavar="MOTIF_NAME",
+        help=(
+            "save a TSS-relative signed-distance histogram (PNG) for this "
+            "motif; repeatable. Skipped for motifs with no output dir yet -- "
+            "see --plot-dir. Default: no plots, print-only."
+        ),
+    )
+    parser.add_argument(
+        "--plot-dir", type=str, default=None,
+        help="directory to write --plot-motifs histograms into (default: hits_dir/summit_distance_plots)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -264,16 +272,9 @@ def main():
         sys.exit(1)
     filtered_peaks_path = REPO_ROOT / experiments[args.experiment]["processed"]["filtered_peaks"]
 
-    model_dir_name = Path(args.model_dir).name if args.model_dir else args.experiment
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
-    trim_coords = (
-        modisco_dir / f"{args.experiment}_{args.head}_trim_coords_min{args.min_trim_len}bp.tsv"
-        if args.min_trim_len is not None
-        else None
+    _, hits_dir, _, _ = resolve_experiment_paths(
+        args.experiment, args.head, args.min_trim_len, args.model_dir
     )
-    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
-    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
-    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
     hits_path = resolve_hits_path(hits_dir, verbose=args.verbose)
     if hits_path is None:
@@ -304,11 +305,31 @@ def main():
             "could not be matched to any peak with a real summit"
         )
 
+    plot_motifs = set(args.plot_motifs) if args.plot_motifs else set()
+    plot_dir = Path(args.plot_dir) if args.plot_dir else hits_dir / "summit_distance_plots"
+    if plot_motifs:
+        plot_dir.mkdir(parents=True, exist_ok=True)
+
     rows = []
     skipped = []
     for motif_name, group in hits.groupby("motif_name"):
         group_signed = signed[group.index.to_numpy()]
-        n_valid = int((~np.isnan(group_signed)).sum())
+        group_signed = group_signed[~np.isnan(group_signed)]
+
+        if motif_name in plot_motifs and len(group_signed):
+            plot_path = plot_dir / f"{motif_name.replace('.', '_')}_summit_distance.png"
+            fig, ax = plt.subplots(figsize=(6, 3))
+            ax.hist(group_signed, bins=100, color="tab:blue")
+            ax.axvline(0, color="black", linewidth=1, linestyle="--")
+            ax.set_xlabel("Hit-to-summit distance, bp (upstream negative)")
+            ax.set_ylabel("Hit count")
+            ax.set_title(f"{motif_name} (n={len(group_signed)})")
+            fig.tight_layout()
+            fig.savefig(plot_path, dpi=150)
+            plt.close(fig)
+            print(f"Wrote {plot_path}")
+
+        n_valid = len(group_signed)
         if n_valid < args.min_hits:
             skipped.append((motif_name, n_valid))
             continue

@@ -14,7 +14,11 @@ plus/minus BigWigs, metadata, and hg38, then:
 - computes profile-head and count-head DeepLIFT/SHAP logos using the production
   observed-nucleotide-frequency soft reference and places the logos in the same
   summary figure as the tracks. All panels share the same genomic x tick
-  positions.
+  positions. The baseline is imported from
+  [`attribute_bpnet.py`](../src/bpnet/attribute/attribute_bpnet.py) and passed
+  to `deep_lift_shap` as a **callable**: tangermeme only one-hot-validates
+  *Tensor* references, so a prebuilt soft PFM tensor is rejected outright,
+  while a callable is invoked internally and skips that check.
 - optionally calls seqlets in the displayed logo window and annotates them
   against a MEME motif database with tangermeme and memelite.
 
@@ -28,6 +32,121 @@ example `200` for `[-200, 200]` or `None` for the full range. `SHOW_SEQLETS`
 overlays called seqlets on the logo panels and annotates them when
 `SEQLET_MOTIF_PATH` points to an available MEME motif file.
 
+### Device selection
+
+`DEVICE = best_device()` picks CUDA, then **Apple Metal (`mps`)**, then CPU.
+MPS is a real speedup over CPU on Apple silicon, and attributions there match
+CPU to float32 rounding (~1e-7 on this path), so there is no accuracy reason
+to avoid it. MPS has no float64, but nothing here needs it on-device — the
+fold accumulators are numpy, on the host. Override `DEVICE` by hand in the
+configuration cell if you want to force one.
+
+### CPM scaling
+
+Observed/predicted coverage and counts-head DeepLIFT are all on a raw-count
+scale that a library's sequencing depth moves directly, so comparing two
+experiments (a differential-locus panel, say) needs them on a common CPM
+footing first -- otherwise a difference in depth looks like a difference in
+biology. `cpm_scale_for(exp_id)` reads `configs/n_reads.txt` and returns
+`1e6 / total_reads`; the config cell computes it once as `cpm_scale` and
+passes it through to `save_locus_viewer_outputs`, which threads it into
+`plot_locus_summary`/`plot_deeplift_logos`.
+
+**Profile-head DeepLIFT is exempt.** It explains a softmax output -- a shape
+distribution, depth-independent by construction -- so scaling it by a
+depth-based factor would be meaningless, not merely unnecessary.
+
+Scaling happens only on the copy each plotting function draws, never on
+`prediction`/`attributions` themselves, so `locus_viewer_arrays.npz` always
+holds raw values regardless of how a figure was rendered -- matching
+`clip_track_arrays`, which makes the same choice for display clipping. If
+`configs/n_reads.txt` is missing or lacks the experiment, `cpm_scale_for`
+warns and returns `None`, which every scaling call site treats as "leave
+this raw" rather than failing the cell.
+
+### Adjustable DeepLIFT y-axis
+
+`LOGO_VALUE_CLIP` fixes each DeepLIFT panel's y-axis instead of letting it
+autoscale to that run's own data, mirroring `TRACK_VALUE_CLIP` for the
+coverage tracks. It is one value per head --
+`{"profile": 0.05, "count": 0.03}` -- rather than a single shared value,
+since profile and count DeepLIFT are on unrelated scales (see CPM scaling
+above); a head absent from the dict, or `None`, autoscales as before.
+
+This matters specifically when comparing two independently-rendered panels
+-- two experiments at the same locus, say. Each figure autoscales its
+DeepLIFT axes to its own data by default, which can visually erase a real
+difference in attribution magnitude between them unless both are pinned to
+the same range.
+
+Unlike `TRACK_VALUE_CLIP`, this never touches the underlying values. A
+letter taller than the clip is drawn in full and cut off by the axes
+boundary (ordinary matplotlib clip-to-axes behaviour) rather than
+numerically truncated, so a logo's shape past the clip is simply not shown
+-- nothing is corrupted the way clipping a stacked value before drawing it
+would be.
+
+The clip is also **asymmetric by default**: `plot_logo_panel`'s
+`negative_fraction=0.25` sets the y-axis to `(-clip * 0.25, clip)`, a 4:1
+positive:negative split, rather than `(-clip, clip)`. DeepLIFT motifs are
+overwhelmingly positive-contribution in practice, so a symmetric range
+spends half the panel's height on a negative region that is normally close
+to flat. `format_track_axis`'s `ylim` (the coverage-track equivalent of
+`value_clip`) takes the same `negative_fraction=0.25` default, for the same
+reason a divergent promoter's dominant strand otherwise loses half its
+panel to a near-flat minus strand.
+
+Pass `1.0` for a symmetric range. This matters more for coverage than for
+logos: DeepLIFT's positive-dominance is a general property of the
+attribution method, but plus/minus-strand balance is locus-specific -- a
+genuinely divergent promoter can have real, comparable bidirectional
+signal, and the default 4:1 split would visually suppress that. Check
+against a locus with known strong antisense signal before trusting it
+blindly.
+
+Both are exposed as separate config-cell variables --
+`TRACK_NEGATIVE_FRACTION` and `LOGO_NEGATIVE_FRACTION` -- rather than one
+shared value, threaded through `plot_locus_summary`/`plot_dual_locus_summary`
+as `track_negative_fraction`/`logo_negative_fraction`.
+
+### Optional labels and seqlet annotations
+
+`SHOW_SEQLET_ANNOTATIONS` (both notebooks) controls whether called seqlets
+are drawn on the DeepLIFT panels, independent of whether `SHOW_SEQLETS`
+computes them at all -- seqlets can still be called and exported to
+`locus_viewer_seqlets.tsv` with `SHOW_SEQLET_ANNOTATIONS = False`, just not
+drawn on that particular figure.
+
+The dual notebook also has `SHOW_ROW_LABELS`, which draws or suppresses the
+`"{exp_id} ({biosample})\n{kind}"` corner label on every row (see
+`plot_dual_locus_summary`'s docstring for why that label exists at all).
+Useful once the row order and identity are known and a clean figure is
+wanted for the manuscript rather than for checking which row is which.
+
+### Sweeping many regions
+
+The cells above run one region at a time. The final **Multi-region sweep**
+section batches instead, for comparisons across many regions — alternate TSSs
+of a gene, for instance:
+
+- `region_inputs(resources, regions)` extracts all inputs in one
+  `extract_loci` call and returns a record frame aligned row-for-row with the
+  `(N, 4, 2114)` batch, so predictions and attributions index the same way;
+- `ensemble_predictions(...)` returns `(N, ...)` and
+  `deeplift_attributions_batch(...)` returns `{head: (N, 4, W)}`.
+
+Both make the fold model the **outer** loop, so all seven load once for the
+whole batch rather than once per region: a sweep over N regions costs 7 model
+loads, not 7N. Peak memory is unchanged — still one model resident at a time.
+The single-region `ensemble_prediction`/`deeplift_attributions` now delegate to
+these and return example 0, so existing cells behave identically.
+
+Every region in one call must share a width, since `logo_offsets` is shared
+across the batch; group by width and call once per group otherwise. To sweep
+experiments as well, loop over `EXP_ID` and call `setup_experiment` per
+experiment — downloads are cached in `WORK_DIR`, so only the first pass pays
+for them.
+
 Open the notebook through the Colab badge in the first cell for the default
 workflow. The setup cell detects Colab, clones this repository into
 `/content/procap-atlas`, installs the notebook runtime dependencies with `pip`,
@@ -38,6 +157,62 @@ Sherlock/Open OnDemand execution is still supported as an option. Use the
 registered `PRO-cap Atlas (uv)` kernel described below and set
 `RUN_ONDEMAND_ENV_CHECK = True` in the optional notebook check cell if you want
 to verify that Open OnDemand's injected Python paths have been removed.
+
+## Dual-Locus Viewer
+
+`procap_atlas_bpnet_differential_locus_viewer.ipynb` compares **two
+experiments at one locus** -- a gene shown active in one cell type and quiet
+in another, say. It reuses every single-locus building block
+(`setup_experiment`, `region_input`, `ensemble_prediction`,
+`deeplift_attributions`, `cpm_scale_for`) called once per experiment, and adds
+one new drawing function, `plot_dual_locus_summary`, plus its saver
+`save_dual_locus_viewer_outputs`.
+
+**Rows are grouped by experiment**: each experiment's own four rows stay
+together -- observed, predicted, counts DeepLIFT, profile DeepLIFT -- A
+first, then B the same way. Eight rows total, each labelled directly on the
+panel with its experiment ID and biosample (`ax.text` in the corner, not
+`ax.set_ylabel`/`set_title`: `apply_compact_summary_axis_style` clears both
+of those unconditionally, since the single-locus figure never shows either.
+An earlier version set the label before that call and it was silently
+wiped on every row -- with eight otherwise-identical rows there was then no
+way to tell which experiment or track a given row was, which is what
+looked like the rows being "misordered"). Set `SHOW_ROW_LABELS = False`
+once the row order is known, for a clean figure with no per-row text.
+
+**The shared axis is computed automatically by default**, and this is the
+entire reason the notebook exists rather than running the single-locus
+notebook twice and pasting the results together. Two independently rendered
+figures each autoscale to their own data, which erases a genuine difference
+in magnitude between conditions -- exactly the failure `CPM scaling` and
+`Adjustable DeepLIFT y-axis` above exist to prevent, and exactly what
+happens again if two such figures are then assembled by hand without
+matching axes. `LOGO_VALUE_CLIP`/`TRACK_YLIM` default to `None`, which
+computes the shared scale from both experiments' actual (already
+CPM-scaled) values via `paired_track_ylim`/`paired_logo_clip`: the larger
+experiment sets the ceiling, so the smaller one is drawn at its true
+relative scale instead of independently filling its own row.
+`paired_track_ylim` goes further and applies **one uniform limit across all
+four coverage rows** -- both experiments' observed *and* predicted -- not
+just matching each track type between the two experiments, since observed
+and predicted are not guaranteed to share a natural scale and a per-type
+limit would still hide how much of the observed signal the model actually
+recovered. Pass an explicit dict -- even one with some values still `None`
+-- to take manual control of specific rows instead.
+
+`REGION` (and hence the model input window) is shared between the two
+experiments, since a differential-locus comparison is inherently about the
+same genomic window under two conditions.
+
+Output lands under
+`plots/bpnet/locus_viewer_dual/{EXP_ID_A}_vs_{EXP_ID_B}/{REGION}/`: one
+combined `locus_viewer_dual_summary.pdf`, and each experiment's raw
+prediction/attributions in its own `{exp_id}/locus_viewer_arrays.npz` --
+the same filename and array layout `save_locus_viewer_outputs` already
+uses in the single-locus notebook, one directory per experiment, so nothing
+downstream needs a second format to read. Raw arrays are always saved in
+their original units regardless of any display scaling/clipping used above,
+matching `clip_track_arrays`.
 
 ## BPNet Locus Diagnostics
 

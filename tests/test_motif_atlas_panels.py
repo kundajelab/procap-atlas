@@ -1,0 +1,4374 @@
+"""Tests for the Fig. 2 motif-atlas panels.
+
+The real inputs (MotifCompendium cluster metadata, per-experiment
+hits_linked.tsv) are produced on the cluster, so these tests build synthetic
+fixtures that match those schemas exactly -- cluster_motifs.py's
+`cluster_final/posneg/experiments` metadata columns and
+link_hits_to_compendium.py's `compendium_motif_name` hits column -- and check
+the panel arithmetic against them.
+"""
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Scripts under test import matplotlib.pyplot at module level and some call
+# into memelite, which uses OpenMP. On macOS the default (MacOSX) backend can
+# SIGABRT when a subprocess mixes the two, which made these tests flaky rather
+# than failing -- a single-file run passed while the full suite aborted. Force
+# a headless backend and single-threaded OMP so subprocess runs are
+# deterministic; this is a test-harness concern, not script behaviour (on the
+# cluster the backend is already Agg).
+SUBPROC_ENV = {**os.environ, "MPLBACKEND": "Agg", "OMP_NUM_THREADS": "1"}
+sys.path.insert(0, str(REPO_ROOT / "src" / "analysis"))
+sys.path.insert(0, str(REPO_ROOT / "src" / "bpnet" / "hitcall"))
+
+import _biosample_groups as bg  # noqa: E402
+import plot_motif_rarefaction as rare  # noqa: E402
+
+pytest.importorskip("seaborn")
+import motif_hit_density as mhd  # noqa: E402
+
+
+# --------------------------------------------------------------------------
+# biosample grouping
+# --------------------------------------------------------------------------
+
+
+def test_metastases_are_routed_to_their_tissue_of_origin():
+    """Origin determines the regulatory program, so a breast metastasis
+    belongs with breast -- not with the organ it spread to, and not in a
+    `metastatic_carcinoma` bucket that is a clinical category rather than a
+    tissue. Both name orderings used by the atlas must work."""
+    assert bg.assign_group("Metastatic Breast Carcinoma in the Brain") == "breast"
+    assert bg.assign_group("Colon Carcinoma Metastatic in the Lung") == "gi_tract"
+    assert bg.assign_group("Metastatic Liver Carcinoma in the Adrenal Gland") == (
+        "liver_biliary"
+    )
+    assert bg.assign_group("Metastatic Lung Carcinoma in the Adrenal Gland") == (
+        "lung_airway"
+    )
+    assert bg.assign_group("Metastatic Pancreatic Carcinoma in the Ovary") == "pancreas"
+
+
+def test_destination_organ_never_wins_for_a_metastasis():
+    # The neural rule precedes the breast rule, so matching the whole name
+    # would file a breast metastasis in the brain as neural. Matching the
+    # extracted origin substring alone is what prevents that.
+    assert bg.assign_group("Metastatic Breast Carcinoma in the Brain") != "neural"
+    assert bg.assign_group("Colon Carcinoma Metastatic in the Brain") == "gi_tract"
+    assert bg.assign_group("Metastatic Breast Carcinoma in the Ovary") != "reproductive"
+
+
+def test_metastasis_origin_extracts_both_name_orderings():
+    assert bg.metastasis_origin("Metastatic Breast Carcinoma in the Brain") == "breast"
+    assert bg.metastasis_origin("Colon Carcinoma Metastatic in the Lung") == "colon"
+    assert bg.metastasis_origin("cerebellum") is None
+
+
+def test_unparseable_metastasis_falls_through_to_other():
+    # Loud rather than filed by destination: a new naming convention must not
+    # be silently swept into whichever organ appears in the string.
+    assert bg.metastasis_origin("Metastatic Tumour Of Unknown Primary") is None
+    assert bg.assign_group("Metastasis, site unspecified") == bg.OTHER_GROUP
+
+
+@pytest.mark.parametrize(
+    "biosample,expected",
+    [
+        ("cerebellum", "neural"),
+        ("heart left ventricle", "heart"),
+        ("right lobe of liver", "liver_biliary"),
+        ("HCT116", "gi_tract"),
+        ("K562", "myeloid_erythroid"),
+        ("peripheral blood mononuclear cell", "lymphoid_bulk"),
+        ("T-cell", "lymphoid_t"),
+        ("Pfeiffer", "lymphoid_b"),
+        # must not be captured by lung_airway's `pulmonary` / `bronch`
+        ("pulmonary lymph node", "lymphoid_bulk"),
+        ("bronchial lymph node", "lymphoid_bulk"),
+        ("endothelial cell of umbilical vein", "vascular"),
+        ("body of pancreas", "pancreas"),
+        ("HEK293T", "hek"),
+        ("some novel biosample", "other"),
+    ],
+)
+def test_group_assignment(biosample, expected):
+    assert bg.assign_group(biosample) == expected
+
+
+def test_override_tsv_wins_but_unlisted_biosamples_still_fall_back(tmp_path):
+    override = tmp_path / "groups.tsv"
+    override.write_text("biosample\tgroup\nK562\tmy_custom_group\n")
+    experiments = {
+        "EXP1": {"biosample": "K562"},
+        "EXP2": {"biosample": "cerebellum"},
+    }
+    group_map, biosample_map = bg.load_group_map(experiments, override, quiet=True)
+    assert group_map == {"EXP1": "my_custom_group", "EXP2": "neural"}
+    assert biosample_map["EXP1"] == "K562"
+
+
+def test_write_group_tsv_roundtrips(tmp_path):
+    experiments = {"E1": {"biosample": "liver"}, "E2": {"biosample": "liver"}}
+    group_map, biosample_map = bg.load_group_map(experiments, quiet=True)
+    out = tmp_path / "t.tsv"
+    bg.write_group_tsv(biosample_map, group_map, out)
+    table = pd.read_csv(out, sep="\t", comment="#")
+    assert table.loc[0, "n_experiments"] == 2
+    assert table.loc[0, "group"] == "liver_biliary"
+
+
+# --------------------------------------------------------------------------
+# rarefaction
+# --------------------------------------------------------------------------
+
+
+def write_cluster_metadata(path, rows, with_jaspar=True):
+    """Write a cluster_motifs.py-shaped cluster metadata TSV."""
+    records = []
+    for cluster_final, (posneg, exps, jaspar) in enumerate(rows):
+        rec = {
+            "cluster_final": cluster_final,
+            "n_motifs": len(exps),
+            "total_seqlets": 100 * len(exps),
+            "n_experiments": len(exps),
+            "experiments": ",".join(sorted(exps)),
+            "posneg": posneg,
+        }
+        if with_jaspar:
+            rec["jaspar_name"] = jaspar
+            rec["jaspar_score"] = 0.9 if jaspar else np.nan
+        records.append(rec)
+    pd.DataFrame(records).to_csv(path, sep="\t", index=False)
+    return path
+
+
+def test_load_presence_parses_and_filters(tmp_path):
+    meta_path = write_cluster_metadata(
+        tmp_path / "m.tsv",
+        [
+            ("pos", ["E1", "E2", "E3"], "SP1"),
+            ("pos", ["E4"], None),  # dropped entirely by the keep set below
+            ("neg", ["E2", "E4"], "GATA1"),
+        ],
+    )
+    meta, universe = rare.load_presence(meta_path, keep_experiments={"E1", "E2", "E3"})
+    assert universe == ["E1", "E2", "E3"]
+    # cluster 1 lived only in E4 and is unreachable in this universe
+    assert list(meta["cluster_final"]) == [0, 2]
+    assert list(meta["prevalence"]) == [3, 1]
+
+
+def test_load_presence_rejects_wrong_schema(tmp_path):
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame({"cluster_final": [0]}).to_csv(bad, sep="\t", index=False)
+    with pytest.raises(ValueError, match="experiments"):
+        rare.load_presence(bad)
+
+
+def test_uniform_curve_exact_endpoints():
+    """At k=1 the expectation is sum(p/N); at k=N every cluster is found."""
+    prevalences = np.array([1, 2, 5, 5, 10])
+    n = 20
+    curve = rare.uniform_curve_exact(prevalences, n)
+    assert curve[0] == pytest.approx(prevalences.sum() / n)
+    assert curve[-1] == pytest.approx(len(prevalences))
+    assert np.all(np.diff(curve) >= -1e-9)  # monotone non-decreasing
+
+
+def test_uniform_curve_exact_matches_monte_carlo():
+    """The closed form must agree with brute-force subsampling."""
+    rng = np.random.default_rng(0)
+    n = 12
+    exp_ids = [f"E{i}" for i in range(n)]
+    exp_sets = [
+        set(rng.choice(exp_ids, size=int(p), replace=False))
+        for p in (1, 3, 3, 6, 9)
+    ]
+    prevalences = np.array([len(s) for s in exp_sets])
+    exact = rare.uniform_curve_exact(prevalences, n)
+
+    groups = {e: "g" for e in exp_ids}
+    mc = rare.rarefy(exp_sets, groups, "uniform", n_reps=4000, rng=rng).mean(axis=0)
+    assert np.allclose(exact, mc, atol=0.12)
+
+
+def test_rarefy_curves_are_monotone_and_complete():
+    exp_sets = [{"E1", "E2"}, {"E3"}, {"E2", "E3", "E4"}]
+    groups = {"E1": "a", "E2": "a", "E3": "b", "E4": "b"}
+    for scheme in ("uniform", "diverse", "redundant"):
+        curves = rare.rarefy(exp_sets, groups, scheme, 25, np.random.default_rng(1))
+        assert curves.shape == (25, 4)
+        assert np.all(np.diff(curves, axis=1) >= 0), scheme
+        assert np.all(curves[:, -1] == 3), scheme  # all clusters found at k=N
+
+
+def test_diverse_sampling_beats_redundant_when_motifs_are_group_specific():
+    """The panel's actual claim: with a group-specific lexicon, spreading
+    experiments across tissues recovers more motifs than piling into one."""
+    groups = {}
+    exp_sets = []
+    for gi, group in enumerate("abcdefgh"):
+        members = [f"E{gi}_{j}" for j in range(4)]
+        for m in members:
+            groups[m] = group
+        # 5 motifs private to this group, all present in all of its members
+        for _ in range(5):
+            exp_sets.append(set(members))
+    rng = np.random.default_rng(7)
+    diverse = rare.rarefy(exp_sets, groups, "diverse", 60, rng).mean(axis=0)
+    redundant = rare.rarefy(exp_sets, groups, "redundant", 60, rng).mean(axis=0)
+    mid = len(diverse) // 4
+    assert diverse[mid] > redundant[mid] * 1.5
+
+
+def test_classify_clusters_jaspar_fallback(tmp_path):
+    meta_path = write_cluster_metadata(
+        tmp_path / "m.tsv",
+        [("pos", ["E1"], "SP1"), ("pos", ["E1"], None)],
+    )
+    meta, _ = rare.load_presence(meta_path)
+    classes = rare.classify_clusters(meta, None)
+    assert list(classes) == ["TF-matched", "unmatched (core promoter / repeat)"]
+
+
+def test_classify_clusters_prefers_curated_annotation(tmp_path):
+    meta_path = write_cluster_metadata(
+        tmp_path / "m.tsv", [("pos", ["E1"], "SP1"), ("pos", ["E1"], None)]
+    )
+    ann = tmp_path / "ann.tsv"
+    ann.write_text("cluster_final\tclass\n0\tcore promoter\n")
+    meta, _ = rare.load_presence(meta_path)
+    classes = rare.classify_clusters(meta, ann)
+    assert list(classes) == ["core promoter", "unannotated"]
+
+
+# --------------------------------------------------------------------------
+# hit density
+# --------------------------------------------------------------------------
+
+
+def make_hitcall_tree(root, experiment, head, motif_counts, n_peaks):
+    """Write a hits_linked.tsv + peaks.narrowPeak pair for one experiment."""
+    exp_dir = root / f"{experiment}_{head}"
+    exp_dir.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for motif, count in motif_counts.items():
+        for i in range(count):
+            rows.append(
+                {
+                    "chr": "chr1", "start": 100 + i, "end": 110 + i,
+                    "motif_name": "pos_patterns.pattern_0",
+                    "strand": "+", "peak_id": i % n_peaks,
+                    "compendium_motif_name": motif,
+                }
+            )
+    pd.DataFrame(rows).to_csv(exp_dir / "hits_linked.tsv", sep="\t", index=False)
+    with open(exp_dir / "peaks.narrowPeak", "w") as f:
+        for i in range(n_peaks):
+            f.write(f"chr1\t{i * 1000}\t{i * 1000 + 2114}\tpeak{i}\t0\t.\t0\t0\t0\t1057\n")
+    return exp_dir
+
+
+def test_count_peaks_prefers_narrowpeak(tmp_path):
+    root = tmp_path / "hitcalls"
+    exp_dir = make_hitcall_tree(root, "EXP1", "profile", {"pos_patterns.0": 5}, n_peaks=40)
+    hits = pd.read_csv(exp_dir / "hits_linked.tsv", sep="\t")
+    n, source = mhd.count_peaks(exp_dir, hits)
+    assert (n, source) == (40, "peaks.narrowPeak")
+
+
+def test_count_peaks_flags_the_fallback(tmp_path):
+    """Without peaks.narrowPeak the count is derived from hits and known to be
+    an underestimate, so the provenance string has to say so."""
+    exp_dir = tmp_path / "EXP1_profile"
+    exp_dir.mkdir()
+    hits = pd.DataFrame({"peak_id": [0, 1, 2], "compendium_motif_name": ["pos_patterns.0"] * 3})
+    n, source = mhd.count_peaks(exp_dir, hits)
+    assert n == 3
+    assert "underestimate" in source
+
+
+def test_collect_densities_normalizes_per_peak(tmp_path):
+    root = tmp_path / "hitcalls"
+    make_hitcall_tree(root, "EXP1", "profile", {"pos_patterns.0": 20, "pos_patterns.1": 10}, 100)
+    make_hitcall_tree(root, "EXP2", "profile", {"pos_patterns.0": 5}, 50)
+    density, info = mhd.collect_densities(
+        ["EXP1", "EXP2", "EXP_MISSING"], "profile", None, hitcall_dir=root, quiet=True
+    )
+    assert density.loc["pos_patterns.0", "EXP1"] == pytest.approx(0.20)
+    assert density.loc["pos_patterns.1", "EXP1"] == pytest.approx(0.10)
+    assert density.loc["pos_patterns.0", "EXP2"] == pytest.approx(0.10)
+    # absent motif in EXP2 becomes a zero, not a NaN
+    assert density.loc["pos_patterns.1", "EXP2"] == 0.0
+    assert "EXP_MISSING" not in density.columns
+    assert info.loc["EXP1", "n_peaks"] == 100
+
+
+def test_discovery_status_separates_structural_zeros(tmp_path):
+    root = tmp_path / "hitcalls"
+    make_hitcall_tree(root, "EXP1", "profile", {"pos_patterns.0": 4}, 20)
+    make_hitcall_tree(root, "EXP2", "profile", {"pos_patterns.1": 4}, 20)
+    density, _ = mhd.collect_densities(
+        ["EXP1", "EXP2"], "profile", None, hitcall_dir=root, quiet=True
+    )
+    meta = write_cluster_metadata(
+        tmp_path / "m.tsv",
+        [("pos", ["EXP1", "EXP2"], "SP1"), ("pos", ["EXP2"], "GATA1")],
+    )
+    status = mhd.discovery_status(density, meta)
+    # cluster 0 was discovered in both, but only EXP1 has hits for it: a real
+    # zero in EXP2, not a discovery failure.
+    assert status.loc["pos_patterns.0", "EXP2"] == "discovered"
+    assert density.loc["pos_patterns.0", "EXP2"] == 0.0
+    # cluster 1 was never discovered in EXP1 at all: structurally zero.
+    assert status.loc["pos_patterns.1", "EXP1"] == "undiscovered"
+
+
+def test_specificity_is_zero_for_ubiquitous_and_one_for_private():
+    columns = ["E1", "E2", "E3", "E4"]
+    group_map = {"E1": "liver", "E2": "liver", "E3": "neural", "E4": "heart"}
+    density = pd.DataFrame(
+        {
+            "E1": [1.0, 1.0, 0.0],
+            "E2": [1.0, 0.0, 0.0],
+            "E3": [1.0, 0.0, 2.0],
+            "E4": [1.0, 0.0, 0.0],
+        },
+        index=["ubiquitous", "liver_only", "neural_only"],
+    )[columns]
+    spec = mhd.specificity_table(density, group_map)
+    assert spec.loc["ubiquitous", "specificity"] == pytest.approx(0.0, abs=1e-9)
+    assert spec.loc["liver_only", "specificity"] == pytest.approx(1.0)
+    assert spec.loc["neural_only", "specificity"] == pytest.approx(1.0)
+    assert spec.loc["liver_only", "top_group"] == "liver"
+    assert spec.loc["neural_only", "top_group"] == "neural"
+    assert spec.loc["ubiquitous", "n_groups_detected"] == 3
+
+
+def test_specificity_averages_within_group_before_scoring():
+    """A motif present in every group is ubiquitous even when one group is
+    replicated far more than the others -- the panel's whole reason for
+    scoring over groups rather than experiments."""
+    group_map = {f"H{i}": "gi_tract" for i in range(16)}
+    group_map.update({"L1": "liver_biliary", "N1": "neural"})
+    density = pd.DataFrame(
+        {c: [1.0] for c in group_map}, index=["everywhere"]
+    )
+    spec = mhd.specificity_table(density, group_map)
+    assert spec.loc["everywhere", "specificity"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_annotate_labels_adds_jaspar_names(tmp_path):
+    meta = write_cluster_metadata(
+        tmp_path / "m.tsv", [("pos", ["E1"], "SP1"), ("neg", ["E1"], None)]
+    )
+    labels = mhd.annotate_labels(
+        pd.Index(["pos_patterns.0", "neg_patterns.1"]), meta
+    )
+    assert labels["pos_patterns.0"] == "pos_patterns.0 (SP1)"
+    assert labels["neg_patterns.1"] == "neg_patterns.1"
+
+
+def test_depth_colors_match_figure_1d_tiers():
+    colors = mhd.depth_colors(
+        {"A": 5e6, "B": 15e6, "C": 30e6}, ["A", "B", "C", "D"]
+    )
+    assert colors["A"] == "#d73027"  # <10M
+    assert colors["B"] == "#fee090"  # 10-20M
+    assert colors["C"] == "#4575b4"  # >20M
+    assert colors["D"] == "#cccccc"  # unknown
+
+
+# --------------------------------------------------------------------------
+# end-to-end, against real accessions from the repo config
+# --------------------------------------------------------------------------
+
+
+def real_experiments(n):
+    import yaml
+
+    cfg = yaml.safe_load(open(REPO_ROOT / "configs" / "experiment_config.yaml"))
+    read_counts = rare.load_read_counts()
+    picked = [
+        e for e in cfg["experiments"]
+        if read_counts.get(e, 0) >= 10e6
+        and "uncapped" not in str(cfg["experiments"][e].get("library_construction", "")).lower()
+        and e != "ENCSR973QQI"
+    ]
+    return picked[:n]
+
+
+def test_rarefaction_cli_end_to_end(tmp_path):
+    exps = real_experiments(12)
+    rows = [("pos", exps, "SP1")]  # ubiquitous
+    rows += [("pos", exps[:2], "GATA1"), ("pos", exps[2:4], "HNF4A")]
+    rows += [("neg", [e], None) for e in exps]  # singletons
+    meta = write_cluster_metadata(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--n-reps", "20",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    curves = pd.read_csv(tmp_path / "out" / "motif_rarefaction_profile.tsv", sep="\t")
+    full = curves[
+        (curves["scheme"] == "uniform") & (curves["motif_class"] == "__all__")
+    ].sort_values("k")
+    assert full["mean"].iloc[-1] == pytest.approx(len(rows))
+    assert (tmp_path / "out" / "motif_rarefaction_profile.png").exists()
+    assert (tmp_path / "out" / "motif_prevalence_profile.tsv").exists()
+
+
+def test_hit_density_cli_end_to_end(tmp_path):
+    exps = real_experiments(8)
+    root = tmp_path / "hitcalls"
+    for i, exp in enumerate(exps):
+        counts = {"pos_patterns.0": 50}
+        if i < 3:
+            counts["pos_patterns.1"] = 30
+        make_hitcall_tree(root, exp, "profile", counts, n_peaks=100)
+    meta = write_cluster_metadata(
+        tmp_path / "meta.tsv",
+        [("pos", exps, "SP1"), ("pos", exps[:3], "GATA1")],
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_hit_density.py"),
+            "--hitcall-dir", str(root), "--cluster-metadata", str(meta),
+            "--out-dir", str(tmp_path / "out"), "--min-experiments", "2",
+            "--mask-undiscovered",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    density = pd.read_csv(out / "motif_hit_density_profile.tsv", sep="\t", index_col=0)
+    assert density.loc["pos_patterns.0"].eq(0.5).all()
+    spec = pd.read_csv(out / "motif_specificity_profile.tsv", sep="\t", index_col=0)
+    assert spec.loc["pos_patterns.1", "specificity"] > spec.loc["pos_patterns.0", "specificity"]
+    status = pd.read_csv(out / "motif_hit_density_profile_status.tsv", sep="\t", index_col=0)
+    assert (status.loc["pos_patterns.1", exps[3:]] == "undiscovered").all()
+    assert (out / "motif_hit_density_profile.png").exists()
+    assert (out / "motif_hit_density_profile_columns.tsv").exists()
+
+
+def test_balanced_selection_keeps_tissue_restricted_motifs():
+    """A restricted motif that is heavily used in its own tissues must survive
+    selection, even though its summed density is far below that of a weak
+    motif spread over every experiment."""
+    spec = pd.DataFrame(
+        {
+            # broad but weak: present in 100 experiments at 0.10 each
+            "total_hits_per_peak": [10.0] * 6 + [3.5, 3.5],
+            "mean_hits_per_peak_detected": [0.10] * 6 + [0.35, 0.35],
+            "n_experiments_detected": [100] * 6 + [10, 10],
+            "specificity": [0.02] * 6 + [0.95, 0.92],
+        },
+        index=[f"broad{i}" for i in range(6)] + ["lineage_a", "lineage_b"],
+    )
+    picked = mhd.select_clusters(spec, top_n=4, sort_by="balanced")
+    assert "lineage_a" in picked.index
+    assert "lineage_b" in picked.index
+    assert len(picked) == 4
+
+
+def test_balanced_selection_falls_back_when_pool_is_thin():
+    spec = pd.DataFrame(
+        {
+            "total_hits_per_peak": [5.0, 4.0],
+            "mean_hits_per_peak_detected": [0.5, 0.4],
+            "n_experiments_detected": [10, 10],
+            "specificity": [0.1, 0.9],
+        },
+        index=["a", "b"],
+    )
+    picked = mhd.select_clusters(spec, top_n=10, sort_by="balanced")
+    assert set(picked.index) == {"a", "b"}
+
+
+def test_sort_by_total_hits_still_available():
+    spec = pd.DataFrame(
+        {
+            "total_hits_per_peak": [1.0, 9.0],
+            "mean_hits_per_peak_detected": [0.1, 0.9],
+            "n_experiments_detected": [10, 10],
+            "specificity": [0.9, 0.1],
+        },
+        index=["low", "high"],
+    )
+    picked = mhd.select_clusters(spec, top_n=1, sort_by="total_hits")
+    assert list(picked.index) == ["high"]
+
+
+def write_pattern_to_cluster(path, rows):
+    """Write a cluster_motifs.py-shaped pattern-to-cluster mapping TSV.
+
+    `rows` is the same (posneg, experiments, jaspar) shape as
+    write_cluster_metadata, so the two loaders can be compared directly.
+    """
+    records = []
+    for cluster_final, (posneg, exps, _jaspar) in enumerate(rows):
+        for i, exp in enumerate(sorted(exps)):
+            records.append(
+                {
+                    "experiment": exp,
+                    "local_motif_name": f"{posneg}_patterns.pattern_{i}",
+                    "compendium_motif_name": f"{posneg}_patterns.{cluster_final}",
+                }
+            )
+    pd.DataFrame(records).to_csv(path, sep="\t", index=False)
+    return path
+
+
+def test_mapping_loader_matches_metadata_loader(tmp_path):
+    """The two inputs must give identical presence sets -- that equivalence is
+    the whole reason the mapping is a safe early substitute."""
+    rows = [
+        ("pos", ["E1", "E2", "E3"], "SP1"),
+        ("neg", ["E2", "E4"], "GATA1"),
+        ("pos", ["E4"], None),
+    ]
+    meta_path = write_cluster_metadata(tmp_path / "meta.tsv", rows)
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+
+    from_meta, universe_meta = rare.load_presence(meta_path)
+    from_map, universe_map = rare.load_presence_from_mapping(map_path)
+
+    assert universe_meta == universe_map
+
+    # Compare on content keyed by cluster identity, not row order: the
+    # metadata TSV is sorted by total_seqlets while the mapping is grouped by
+    # motif name, and no curve depends on row order.
+    def keyed(df):
+        return {
+            int(row["cluster_final"]): (row["posneg"], row["prevalence"], row["exp_set"])
+            for _, row in df.iterrows()
+        }
+
+    assert keyed(from_meta) == keyed(from_map)
+    assert keyed(from_map)[0][0] == "pos"
+    assert keyed(from_map)[1][0] == "neg"
+
+
+def test_mapping_loader_respects_keep_set(tmp_path):
+    rows = [("pos", ["E1", "E2", "E3"], "SP1"), ("pos", ["E4"], None)]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+    meta, universe = rare.load_presence_from_mapping(
+        map_path, keep_experiments={"E1", "E2"}
+    )
+    assert universe == ["E1", "E2"]
+    assert len(meta) == 1  # the E4-only cluster is unreachable
+    assert meta.loc[0, "prevalence"] == 2
+
+
+def test_mapping_loader_rejects_wrong_schema(tmp_path):
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame({"experiment": ["E1"]}).to_csv(bad, sep="\t", index=False)
+    with pytest.raises(ValueError, match="compendium_motif_name"):
+        rare.load_presence_from_mapping(bad)
+
+
+def test_classify_clusters_single_class_without_jaspar(tmp_path):
+    """Mapping-derived tables have no JASPAR column, so stratification must
+    collapse to one class rather than crashing."""
+    rows = [("pos", ["E1", "E2"], "SP1"), ("neg", ["E2"], None)]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+    meta, _ = rare.load_presence_from_mapping(map_path)
+    classes = rare.classify_clusters(meta, None)
+    assert set(classes) == {"all motifs"}
+
+
+def test_rarefaction_cli_accepts_pattern_to_cluster(tmp_path):
+    exps = real_experiments(12)
+    rows = [("pos", exps, "SP1"), ("pos", exps[:3], "GATA1")]
+    rows += [("neg", [e], None) for e in exps]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--pattern-to-cluster", str(map_path),
+            "--out-dir", str(tmp_path / "out"), "--n-reps", "20",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    curves = pd.read_csv(tmp_path / "out" / "motif_rarefaction_profile.tsv", sep="\t")
+    full = curves[
+        (curves["scheme"] == "uniform") & (curves["motif_class"] == "__all__")
+    ].sort_values("k")
+    assert full["mean"].iloc[-1] == pytest.approx(len(rows))
+    assert (tmp_path / "out" / "motif_rarefaction_profile.png").exists()
+
+
+# --------------------------------------------------------------------------
+# abundance-threshold sweep
+# --------------------------------------------------------------------------
+
+
+def write_cluster_metadata_with_seqlets(path, rows):
+    """Like write_cluster_metadata but with explicit per-cluster seqlet totals.
+
+    `rows` is (posneg, experiments, jaspar, total_seqlets).
+    """
+    records = []
+    for cluster_final, (posneg, exps, jaspar, total_seqlets) in enumerate(rows):
+        records.append(
+            {
+                "cluster_final": cluster_final,
+                "n_motifs": len(exps),
+                "total_seqlets": total_seqlets,
+                "n_experiments": len(exps),
+                "experiments": ",".join(sorted(exps)),
+                "posneg": posneg,
+                "jaspar_name": jaspar,
+                "jaspar_score": 0.9 if jaspar else np.nan,
+            }
+        )
+    pd.DataFrame(records).to_csv(path, sep="\t", index=False)
+    return path
+
+
+def test_load_presence_computes_seqlets_per_motif(tmp_path):
+    meta_path = write_cluster_metadata_with_seqlets(
+        tmp_path / "m.tsv",
+        [("pos", ["E1", "E2", "E3", "E4"], "SP1", 400), ("pos", ["E1", "E2"], None, 40)],
+    )
+    meta, _ = rare.load_presence(meta_path)
+    assert list(meta["seqlets_per_motif"]) == [100.0, 20.0]
+
+
+def test_sweep_requires_seqlet_columns(tmp_path):
+    """The pattern-to-cluster fallback carries no seqlet counts, so the sweep
+    must refuse rather than silently sweeping nothing."""
+    map_path = write_pattern_to_cluster(
+        tmp_path / "map.tsv", [("pos", ["E1", "E2"], None)]
+    )
+    meta, _ = rare.load_presence_from_mapping(map_path)
+    with pytest.raises(ValueError, match="cluster_metadata"):
+        rare.sweep_abundance(meta, 2, [0.0, 100.0], [1])
+
+
+def build_sweep_meta(n_total=100, n_broad=40, n_narrow=60):
+    """Clusters where abundance tracks prevalence, as on the real compendium.
+
+    Broad clusters are prevalent AND abundant; narrow ones are restricted AND
+    sparse. That coupling is what makes an abundance floor act as a prevalence
+    floor.
+    """
+    exps = [f"E{i}" for i in range(n_total)]
+    rng = np.random.default_rng(3)
+    rows = []
+    for _ in range(n_broad):
+        members = set(rng.choice(exps, size=80, replace=False))
+        rows.append({"exp_set": members, "prevalence": 80, "seqlets_per_motif": 900.0})
+    for _ in range(n_narrow):
+        members = set(rng.choice(exps, size=4, replace=False))
+        rows.append({"exp_set": members, "prevalence": 4, "seqlets_per_motif": 30.0})
+    return pd.DataFrame(rows), n_total
+
+
+def test_sweep_shrinks_lexicon_monotonically():
+    meta, n_total = build_sweep_meta()
+    _, summary = rare.sweep_abundance(meta, n_total, [0.0, 100.0, 1000.0], [5])
+    # the 1000 threshold drops everything, leaving <10 clusters -> skipped
+    assert list(summary["min_seqlets_per_motif"]) == [0.0, 100.0]
+    assert list(summary["n_clusters"]) == [100, 40]
+
+
+def test_sweep_fraction_reaches_one_at_full_atlas():
+    meta, n_total = build_sweep_meta()
+    curves, _ = rare.sweep_abundance(meta, n_total, [0.0, 100.0], [5])
+    for threshold, sub in curves.groupby("min_seqlets_per_motif"):
+        assert sub.sort_values("k")["fraction"].iloc[-1] == pytest.approx(1.0)
+
+
+def test_sweep_reproduces_the_confound_direction():
+    """The sweep's whole finding: because abundance tracks prevalence, raising
+    the floor raises the fraction a small sample recovers. If this ever
+    reverses, the interpretation in the docstring is wrong."""
+    meta, n_total = build_sweep_meta()
+    _, summary = rare.sweep_abundance(meta, n_total, [0.0, 100.0], [5])
+    low = summary.set_index("min_seqlets_per_motif").loc[0.0, "fraction_at_k5"]
+    high = summary.set_index("min_seqlets_per_motif").loc[100.0, "fraction_at_k5"]
+    assert high > low
+
+
+def test_sweep_cli_end_to_end(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps, "SP1", 30 * 900) for _ in range(8)]
+    rows += [("pos", exps[:20], f"BROAD{i}", 20 * 300) for i in range(8)]
+    rows += [("pos", exps[i : i + 3], f"TF{i}", 3 * 30) for i in range(0, 24, 3)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--n-reps", "10", "--sweep",
+            "--sweep-thresholds", "0", "100", "--sweep-marks", "1", "5",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    assert (out / "motif_rarefaction_sweep_profile.png").exists()
+    summary = pd.read_csv(
+        out / "motif_rarefaction_sweep_profile_summary.tsv", sep="\t"
+    )
+    assert list(summary["min_seqlets_per_motif"]) == [0.0, 100.0]
+    assert summary.loc[1, "n_clusters"] < summary.loc[0, "n_clusters"]
+    # the confound diagnostic and weakest-form claim are both reported
+    assert "prevalence vs seqlets/motif r =" in result.stderr
+    assert "Weakest-form claim" in result.stderr
+
+
+def test_min_seqlets_per_motif_filters_and_reports(tmp_path):
+    exps = real_experiments(12)
+    rows = [("pos", exps, "SP1", 12 * 900)] * 3
+    rows += [("pos", exps[:3], "TF", 3 * 20)] * 3
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--n-reps", "10", "--min-seqlets-per-motif", "100",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "kept 3/6 clusters" in result.stderr
+
+
+def test_min_seqlets_per_motif_rejected_without_metadata(tmp_path):
+    exps = real_experiments(6)
+    rows = [("pos", exps, None), ("pos", exps[:2], None)]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+            "--pattern-to-cluster", str(map_path),
+            "--out-dir", str(tmp_path / "out"), "--min-seqlets-per-motif", "50",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "needs total_seqlets and n_motifs" in result.stderr
+
+
+# --------------------------------------------------------------------------
+# group concentration
+# --------------------------------------------------------------------------
+
+import motif_group_concentration as mgc  # noqa: E402
+
+
+def test_expected_n_groups_matches_monte_carlo():
+    rng = np.random.default_rng(0)
+    sizes = np.array([40, 25, 20, 10, 5, 5, 3, 2])
+    n_total = int(sizes.sum())
+    labels = np.repeat(np.arange(len(sizes)), sizes)
+    for p in (2, 5, 20):
+        exact = mgc.expected_n_groups(p, sizes, n_total)
+        draws = [
+            len(set(rng.choice(labels, size=p, replace=False))) for _ in range(4000)
+        ]
+        assert exact == pytest.approx(np.mean(draws), abs=0.08), p
+
+
+def test_prob_single_group_matches_closed_form_at_p2():
+    """At p=2 the probability reduces to sum n_g(n_g-1) / N(N-1), which is the
+    hand calculation used to check the real data."""
+    sizes = np.array([41, 28, 21, 18, 15, 11, 8, 8, 8, 7, 7, 6, 5, 4, 3, 3, 2, 2, 1])
+    n_total = int(sizes.sum())
+    expected = (sizes * (sizes - 1)).sum() / (n_total * (n_total - 1))
+    assert mgc.prob_single_group(2, sizes, n_total) == pytest.approx(expected)
+
+
+def test_prob_single_group_zero_when_no_group_is_large_enough():
+    sizes = np.array([3, 3, 3])
+    assert mgc.prob_single_group(4, sizes, 9) == pytest.approx(0.0)
+
+
+def test_poisson_binomial_is_exact_not_approximate():
+    probs = np.array([0.1, 0.5, 0.9])
+    # P[X >= 0] = 1; P[X >= 3] = product
+    assert mgc.poisson_binomial_sf(probs, 0) == pytest.approx(1.0)
+    assert mgc.poisson_binomial_sf(probs, 3) == pytest.approx(0.1 * 0.5 * 0.9)
+    # P[X >= 1] = 1 - product of complements
+    assert mgc.poisson_binomial_sf(probs, 1) == pytest.approx(
+        1 - (0.9 * 0.5 * 0.1)
+    )
+
+
+def test_poisson_binomial_mean_matches_sum_of_probs():
+    rng = np.random.default_rng(4)
+    probs = rng.uniform(0, 0.3, 40)
+    dist = np.array(
+        [
+            mgc.poisson_binomial_sf(probs, k) - mgc.poisson_binomial_sf(probs, k + 1)
+            for k in range(len(probs) + 1)
+        ]
+    )
+    assert dist.sum() == pytest.approx(1.0)
+    mean = (dist * np.arange(len(probs) + 1)).sum()
+    assert mean == pytest.approx(probs.sum())
+
+
+def build_concentration_meta(group_map, concentrated, prevalence):
+    """One cluster per entry in `concentrated`; True = all experiments drawn
+    from a single group, False = drawn across groups."""
+    by_group = {}
+    for e, g in group_map.items():
+        by_group.setdefault(g, []).append(e)
+    groups = sorted(by_group)
+    rows = []
+    for i, conc in enumerate(concentrated):
+        if conc:
+            pool = by_group[groups[i % len(groups)]]
+            members = set(pool[:prevalence])
+        else:
+            members = {by_group[groups[(i + j) % len(groups)]][0] for j in range(prevalence)}
+        rows.append({"exp_set": members, "prevalence": len(members)})
+    return pd.DataFrame(rows)
+
+
+def test_concentration_is_one_for_random_spread_and_low_for_concentrated():
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(5)}
+    n_total = len(group_map)
+    spread = build_concentration_meta(group_map, [False] * 8, prevalence=4)
+    conc = build_concentration_meta(group_map, [True] * 8, prevalence=4)
+
+    a_spread = mgc.annotate_concentration(spread, group_map, n_total)
+    a_conc = mgc.annotate_concentration(conc, group_map, n_total)
+
+    # spread clusters hit one group per experiment -> at or above expectation
+    assert a_spread["concentration"].median() > 1.0
+    assert (a_spread["n_groups"] == 4).all()
+    # concentrated clusters sit in exactly one group -> well below
+    assert (a_conc["n_groups"] == 1).all()
+    assert a_conc["concentration"].median() < 0.4
+    assert a_conc["is_single_group"].all()
+
+
+def test_summary_reports_single_group_enrichment():
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(5)}
+    n_total = len(group_map)
+    meta = pd.concat(
+        [
+            build_concentration_meta(group_map, [True] * 6, prevalence=3),
+            build_concentration_meta(group_map, [False] * 6, prevalence=3),
+        ],
+        ignore_index=True,
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    annotated["motif_class"] = ["conc"] * 6 + ["spread"] * 6
+    summary = mgc.summarize(annotated, ["motif_class"]).set_index("motif_class")
+
+    assert summary.loc["conc", "n_single_group"] == 6
+    assert summary.loc["spread", "n_single_group"] == 0
+    assert summary.loc["conc", "single_group_p"] < 1e-6
+    assert summary.loc["conc", "single_group_enrichment"] > 5
+    assert summary.loc["spread", "single_group_p"] == pytest.approx(1.0)
+
+
+def test_group_level_changes_the_expectation():
+    """Coarse grouping lowers E[n_groups], which is why a conclusion must hold
+    at both levels before it can be trusted."""
+    sizes_coarse = np.array([40, 30, 30])
+    sizes_fine = np.array([10] * 10)
+    n_total = 100
+    assert mgc.expected_n_groups(5, sizes_coarse, n_total) < mgc.expected_n_groups(
+        5, sizes_fine, n_total
+    )
+
+
+def test_concentration_cli_runs_at_both_levels(tmp_path):
+    exps = real_experiments(40)
+    rows = [("pos", exps, "SP1", 40 * 900) for _ in range(4)]
+    rows += [("pos", exps[:6], "GATA1", 6 * 400) for _ in range(4)]
+    rows += [("pos", exps[i : i + 3], None, 3 * 60) for i in range(0, 24, 3)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    for level in ("tissue", "biosample"):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+                "--cluster-metadata", str(meta), "--group-level", level,
+                "--out-dir", str(tmp_path / "out"),
+            ],
+            capture_output=True, text=True, env=SUBPROC_ENV,
+        )
+        assert result.returncode == 0, result.stderr
+        out = tmp_path / "out"
+        per_cluster = pd.read_csv(
+            out / f"motif_concentration_profile_{level}.tsv", sep="\t"
+        )
+        assert {"n_groups", "expected_n_groups", "concentration"} <= set(
+            per_cluster.columns
+        )
+        assert (per_cluster["expected_n_groups"] > 0).all()
+        summary = pd.read_csv(
+            out / f"motif_concentration_profile_{level}_summary.tsv", sep="\t"
+        )
+        assert "single_group_p" in summary.columns
+        assert (out / f"motif_concentration_profile_{level}.png").exists()
+
+
+def test_concentration_cli_rejects_mapping_input(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(tmp_path / "nope.tsv"),
+            "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "pattern-to-cluster mapping is not sufficient" in result.stderr
+
+
+def test_jaspar_score_threshold_reclassifies(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps, "WEAK", 20 * 500) for _ in range(6)]
+    rows += [("pos", exps[:5], "STRONG", 5 * 500) for _ in range(6)]
+    meta_path = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    m = pd.read_csv(meta_path, sep="\t")
+    m.loc[m.jaspar_name == "WEAK", "jaspar_score"] = 0.80
+    m.loc[m.jaspar_name == "STRONG", "jaspar_score"] = 0.95
+    m.to_csv(meta_path, sep="\t", index=False)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta_path), "--out-dir", str(tmp_path / "out"),
+            "--jaspar-score-threshold", "0.85",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "moved 6 clusters into the unmatched class" in result.stderr
+
+
+def test_prevalence_one_clusters_are_uninformative_for_concentration():
+    """At p=1 the statistics are degenerate: n_groups is always 1, and both
+    E[n_groups] and P[n_groups=1] are exactly 1. Singletons therefore cannot
+    provide evidence either way, which is why the script warns about them."""
+    sizes = np.array([41, 28, 21, 18, 15, 11, 8, 8, 8, 7, 7, 6, 5, 4, 3, 3, 2, 2, 1])
+    n_total = int(sizes.sum())
+    assert mgc.expected_n_groups(1, sizes, n_total) == pytest.approx(1.0)
+    assert mgc.prob_single_group(1, sizes, n_total) == pytest.approx(1.0)
+
+
+def test_singletons_dilute_enrichment_but_not_the_pvalue():
+    """Deterministic (q=1) terms shift observed and expected equally and add no
+    variance, so the tail probability is unchanged while the effect-size ratio
+    collapses -- the reason the warning targets the ratio specifically."""
+    sizes = np.array([41, 28, 21, 18, 15, 11, 8, 8, 8, 7, 7, 6, 5, 4, 3, 3, 2, 2, 1])
+    n_total = int(sizes.sum())
+    q = mgc.prob_single_group(2, sizes, n_total)
+    base = np.full(22, q)
+    with_singletons = np.concatenate([base, np.ones(235)])
+
+    p_base = mgc.poisson_binomial_sf(base, 9)
+    p_diluted = mgc.poisson_binomial_sf(with_singletons, 9 + 235)
+    assert p_diluted == pytest.approx(p_base, rel=1e-6)
+
+    enrich_base = 9 / base.sum()
+    enrich_diluted = (9 + 235) / with_singletons.sum()
+    assert enrich_base > 4.0
+    assert enrich_diluted < 1.1
+
+
+def test_concentration_cli_warns_on_min_cluster_experiments_one(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps[:4], "TF", 4 * 100) for _ in range(6)]
+    rows += [("pos", [exps[i]], None, 100) for i in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--min-cluster-experiments", "1",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "carry no information for this test" in result.stderr
+
+
+def test_concentration_records_which_groups_not_just_how_many():
+    """A restricted cluster is uninterpretable without knowing which lineage it
+    is restricted to, and the depth-confound check needs it too."""
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(6) for i in range(4)}
+    n_total = len(group_map)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": {"g0_e0", "g0_e1"}, "prevalence": 2},
+            {"exp_set": {"g1_e0", "g2_e0"}, "prevalence": 2},
+        ]
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    assert annotated.loc[0, "sole_group"] == "g0"
+    assert annotated.loc[0, "groups"] == "g0"
+    assert annotated.loc[1, "sole_group"] == ""  # spans two groups
+    assert annotated.loc[1, "groups"] == "g1,g2"
+
+
+def test_concentration_cli_reports_restricted_group_landing(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps, "SP1", 30 * 900) for _ in range(3)]
+    rows += [("pos", exps[:2], None, 2 * 100) for _ in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    per_cluster = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    assert "sole_group" in per_cluster.columns
+    assert "groups" in per_cluster.columns
+    assert "of restricted," in result.stderr
+
+
+def test_enrichment_flagged_unreliable_when_expectation_is_tiny():
+    """At high --min-cluster-experiments on fine groups the expected count
+    falls below 1, where the ratio is uninterpretable (0 observed against 0.004
+    reads as "0x") even though the exact p-value stays valid."""
+    group_map = {f"b{i}": f"b{i}" for i in range(60)}  # every group size 1
+    n_total = len(group_map)
+    meta = pd.DataFrame(
+        [{"exp_set": {f"b{i}", f"b{i+1}", f"b{i+2}"}, "prevalence": 3} for i in range(0, 30, 3)]
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    annotated["motif_class"] = "spread"
+    summary = mgc.summarize(annotated, ["motif_class"])
+    # no group is large enough to hold 3 experiments, so expectation is 0
+    assert summary.loc[0, "expected_single_group"] == pytest.approx(0.0)
+    assert not summary.loc[0, "enrichment_reliable"]
+    assert summary.loc[0, "single_group_p"] == pytest.approx(1.0)
+
+
+def test_enrichment_reliable_when_expectation_is_adequate():
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(4) for i in range(10)}
+    n_total = len(group_map)
+    meta = pd.concat(
+        [build_concentration_meta(group_map, [True] * 10, prevalence=2)],
+        ignore_index=True,
+    )
+    annotated = mgc.annotate_concentration(meta, group_map, n_total)
+    annotated["motif_class"] = "conc"
+    summary = mgc.summarize(annotated, ["motif_class"])
+    assert summary.loc[0, "expected_single_group"] >= 1.0
+    assert summary.loc[0, "enrichment_reliable"]
+
+
+# --------------------------------------------------------------------------
+# degree-preserving (curveball) null
+# --------------------------------------------------------------------------
+
+
+def _margins(sets, experiments):
+    rows = sorted(len(s) for s in sets)
+    cols = sorted(sum(e in s for s in sets) for e in experiments)
+    return rows, cols
+
+
+def test_curveball_preserves_both_margins_exactly():
+    """The whole point: cluster prevalence AND per-experiment motif count stay
+    fixed, so read depth cannot differ between observed and null."""
+    rng = np.random.default_rng(0)
+    experiments = [f"E{i}" for i in range(40)]
+    sets = [
+        set(rng.choice(experiments, size=int(p), replace=False))
+        for p in rng.integers(2, 15, 30)
+    ]
+    before = _margins(sets, experiments)
+    after = _margins(mcurve := mgc.curveball_randomize(sets, rng, n_trades=500), experiments)
+    assert before == after
+    assert [len(s) for s in sets] == [len(s) for s in mcurve]
+
+
+def test_curveball_actually_mixes():
+    rng = np.random.default_rng(1)
+    experiments = [f"E{i}" for i in range(30)]
+    sets = [set(experiments[i : i + 5]) for i in range(0, 25, 5)]
+    out = mgc.curveball_randomize(sets, rng, n_trades=2000)
+    assert any(a != b for a, b in zip(sets, out))
+
+
+def test_curveball_is_a_noop_on_a_single_cluster():
+    rng = np.random.default_rng(2)
+    sets = [{"E1", "E2"}]
+    assert mgc.curveball_randomize(sets, rng) == [{"E1", "E2"}]
+
+
+def test_swap_null_reproduces_the_analytic_uniform_expectation():
+    """Fixture-independent correctness check: on a matrix with no group
+    structure the degree-preserving null must land on the same expectation the
+    closed-form uniform null gives. The two nulls should only diverge when the
+    column margins actually carry information, which is the confound the swap
+    null exists to absorb."""
+    rng = np.random.default_rng(3)
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(6)}
+    experiments = list(group_map)
+    n_total = len(experiments)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": set(rng.choice(experiments, size=5, replace=False)), "prevalence": 5}
+            for _ in range(200)
+        ]
+    )
+    meta["motif_class"] = "spread"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 200, np.random.default_rng(4)
+    )
+    analytic = mgc.expected_n_groups(5, np.array([6] * 8), n_total)
+    assert swap.loc[0, "null_mean_n_groups"] == pytest.approx(analytic, abs=0.06)
+
+
+def test_swap_null_finds_no_concentration_when_there_is_none():
+    """A structureless matrix should sit at its own null. Uses many clusters so
+    the observed mean converges -- with only a few dozen, a single random draw
+    lands a couple of sd off the expectation and the p-value is meaningless."""
+    rng = np.random.default_rng(3)
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(6)}
+    experiments = list(group_map)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": set(rng.choice(experiments, size=5, replace=False)), "prevalence": 5}
+            for _ in range(300)
+        ]
+    )
+    meta["motif_class"] = "spread"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 200, np.random.default_rng(4)
+    )
+    assert swap.loc[0, "swap_concentration"] == pytest.approx(1.0, abs=0.04)
+    assert swap.loc[0, "swap_mean_p"] > 0.01
+
+
+def test_swap_null_detects_real_group_concentration():
+    """Clusters confined to one group must beat a null that already accounts
+    for per-experiment productivity."""
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(8) for i in range(6)}
+    by_group = {}
+    for e, g in group_map.items():
+        by_group.setdefault(g, []).append(e)
+    meta = pd.DataFrame(
+        [
+            {"exp_set": set(by_group[f"g{i % 8}"][:5]), "prevalence": 5}
+            for i in range(40)
+        ]
+    )
+    meta["motif_class"] = "conc"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 200, np.random.default_rng(5)
+    )
+    assert swap.loc[0, "swap_concentration"] < 0.5
+    assert swap.loc[0, "swap_mean_p"] < 0.01
+    assert swap.loc[0, "obs_single_group"] == 40
+    assert swap.loc[0, "null_single_group_mean"] < 5
+
+
+def test_swap_null_pvalues_are_add_one_bounded():
+    """An empirical p-value must never be exactly 0 -- (#{>=obs}+1)/(n+1)."""
+    group_map = {f"g{g}_e{i}": f"g{g}" for g in range(6) for i in range(5)}
+    by_group = {}
+    for e, g in group_map.items():
+        by_group.setdefault(g, []).append(e)
+    meta = pd.DataFrame(
+        [{"exp_set": set(by_group[f"g{i % 6}"][:4]), "prevalence": 4} for i in range(24)]
+    )
+    meta["motif_class"] = "conc"
+    swap = mgc.swap_null_test(
+        meta, group_map, ["motif_class"], 50, np.random.default_rng(6)
+    )
+    assert swap.loc[0, "swap_mean_p"] >= 1 / 51
+    assert swap.loc[0, "swap_single_group_p"] >= 1 / 51
+
+
+def test_swap_null_cli_writes_output(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps, "SP1", 30 * 900) for _ in range(4)]
+    rows += [("pos", exps[:4], "GATA1", 4 * 300) for _ in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--swap-permutations", "50",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    swap = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue_swapnull.tsv", sep="\t"
+    )
+    assert {"swap_concentration", "swap_mean_p", "obs_single_group"} <= set(swap.columns)
+    assert "Degree-preserving null" in result.stderr
+
+
+def test_swap_permutations_zero_skips_the_null(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps[:5], "TF", 5 * 200) for _ in range(6)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+            "--swap-permutations", "0",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert not (
+        tmp_path / "out" / "motif_concentration_profile_tissue_swapnull.tsv"
+    ).exists()
+
+
+# --------------------------------------------------------------------------
+# compendium redundancy (memelite TOMTOM self-comparison)
+# --------------------------------------------------------------------------
+
+import motif_redundancy as mr  # noqa: E402
+
+
+def write_meme(path, motifs):
+    """Minimal MEME file. `motifs` is {name: (length, 4) probability array}."""
+    with open(path, "w") as f:
+        f.write("MEME version 4\n\nALPHABET= ACGT\n\n")
+        f.write("strands: + -\n\nBackground letter frequencies\n")
+        f.write("A 0.25 C 0.25 G 0.25 T 0.25\n\n")
+        for name, pwm in motifs.items():
+            f.write(f"MOTIF {name}\n")
+            f.write(f"letter-probability matrix: alength= 4 w= {pwm.shape[0]} "
+                    "nsites= 100 E= 0\n")
+            for row in pwm:
+                f.write(" " + " ".join(f"{v:.6f}" for v in row) + "\n")
+            f.write("\n")
+    return path
+
+
+def realistic_pwm(length, seed, conc=8.0):
+    """Information-rich but non-degenerate PWM, shape (length, 4).
+
+    TOMTOM scores columns against a background estimated from the target set,
+    and near-deterministic columns (as onehot_pwm produces) make that
+    background degenerate -- identical motifs then come back with p = 1.0.
+    Real cluster-average CWMs are soft, so fixtures must be too.
+    """
+    rng = np.random.default_rng(seed)
+    return rng.dirichlet(np.full(4, 1.0 / conc), size=length)
+
+
+def onehot_pwm(seq, eps=0.001):
+    """Near-deterministic PWM for a sequence string, shape (len, 4)."""
+    idx = {c: i for i, c in enumerate("ACGT")}
+    pwm = np.full((len(seq), 4), eps)
+    for i, c in enumerate(seq):
+        pwm[i, idx[c]] = 1 - 3 * eps
+    return pwm
+
+
+@pytest.mark.parametrize(
+    "key,expected",
+    [
+        ("MOTIF pos_patterns.42", "pos_patterns.42"),
+        ("pos_patterns.7 some description", "pos_patterns.7"),
+        ("MOTIF neg_patterns.100 GATA1", "neg_patterns.100"),
+        ("MOTIF weird_name_no_match", "weird_name_no_match"),
+    ],
+)
+def test_parse_motif_name(key, expected):
+    assert mr.parse_motif_name(key) == expected
+
+
+def test_connected_components_merges_transitively():
+    names = ["a", "b", "c", "d", "e"]
+    pairs = pd.DataFrame({"motif_a": ["a", "b"], "motif_b": ["b", "c"]})
+    comps = mr.connected_components(names, pairs)
+    assert comps["a"] == comps["b"] == comps["c"]
+    assert comps["d"] != comps["a"]
+    assert comps["e"] != comps["d"]
+    assert len(set(comps.values())) == 3  # {a,b,c}, {d}, {e}
+
+
+def test_connected_components_no_pairs_is_all_singletons():
+    names = ["a", "b", "c"]
+    comps = mr.connected_components(names, pd.DataFrame({"motif_a": [], "motif_b": []}))
+    assert len(set(comps.values())) == 3
+
+
+def test_load_motifs_returns_alphabet_first(tmp_path):
+    meme = write_meme(
+        tmp_path / "m.meme",
+        {"pos_patterns.0": onehot_pwm("ACGTACGT"), "pos_patterns.1": onehot_pwm("TTTTAAAA")},
+    )
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    assert names == ["pos_patterns.0", "pos_patterns.1"]
+    for m in pwms:
+        assert m.shape[0] == 4, m.shape  # (alphabet, length)
+        assert m.shape[-1] == 8
+
+
+def build_redundancy_meme(path, n=24, seed=0):
+    """n distinct realistic motifs plus an exact duplicate of the first."""
+    motifs = {
+        f"pos_patterns.{i}": realistic_pwm(12, seed + i) for i in range(n)
+    }
+    motifs[f"pos_patterns.{n}"] = motifs["pos_patterns.0"].copy()
+    return write_meme(path, motifs), f"pos_patterns.{n}"
+
+
+def test_self_comparison_finds_duplicates_and_not_distinct_motifs(tmp_path):
+    """An exact CWM duplicate must merge; unrelated motifs must not."""
+    meme, dup_name = build_redundancy_meme(tmp_path / "m.meme")
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    res = mr.self_compare(pwms, n_jobs=1)
+    assert np.all(np.isinf(np.diag(res["p"])))  # diagonal masked
+
+    pairs = mr.build_pairs(names, pwms, res, p_threshold=1e-6, min_overlap_frac=0.7)
+    merged = {frozenset((a, b)) for a, b in zip(pairs.motif_a, pairs.motif_b)}
+    assert frozenset(("pos_patterns.0", dup_name)) in merged
+
+    comps = mr.connected_components(names, pairs)
+    assert comps["pos_patterns.0"] == comps[dup_name]
+    # the duplicate pair is the only thing that should have merged
+    assert len(set(comps.values())) == len(names) - 1
+
+
+def test_overlap_filter_rejects_short_inside_long(tmp_path):
+    """A short motif aligning inside a longer one can be significant without
+    being a duplicate; min_overlap_frac is what suppresses that."""
+    long_pwm = onehot_pwm("AAAAAAGGGGGGCCCCCC")
+    short_pwm = onehot_pwm("GGGG")
+    meme = write_meme(
+        tmp_path / "m.meme",
+        {"pos_patterns.0": long_pwm, "pos_patterns.1": short_pwm},
+    )
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    res = mr.self_compare(pwms, n_jobs=1)
+    lenient = mr.build_pairs(names, pwms, res, 1.0, min_overlap_frac=0.0)
+    assert len(lenient) == 1
+    # the alignment covers the short motif fully but only a fraction of the
+    # long one; requiring coverage of the *shorter* motif keeps it, so check
+    # the recorded fraction is what drives the filter
+    assert lenient.iloc[0]["overlap_frac"] <= 1.0
+
+
+def test_sweep_is_monotone_in_threshold(tmp_path):
+    """Looser thresholds can only merge more, never fewer."""
+    meme, _ = build_redundancy_meme(tmp_path / "m.meme", n=20, seed=100)
+    names, pwms = mr.load_motifs(meme, mr.NAME_RE)
+    res = mr.self_compare(pwms, n_jobs=1)
+    summary = mr.sweep(names, pwms, res, [1e-12, 1e-6, 1e-2, 1.0], 0.7)
+    for criterion in mr.MERGERS:
+        assert summary[f"excess_{criterion}"].is_monotonic_increasing, criterion
+        assert (summary[f"n_components_{criterion}"] <= summary["n_clusters"]).all()
+        assert (summary[f"excess_{criterion}"] >= 0).all()
+    # single linkage can only merge at least as much as complete or mutual
+    assert (summary["excess_single"] >= summary["excess_complete"]).all()
+    assert (summary["excess_complete"] >= summary["excess_mutual"]).all()
+
+
+def test_redundancy_cli_end_to_end(tmp_path):
+    n = 24
+    meme, dup_name = build_redundancy_meme(tmp_path / "m.meme", n=n, seed=7)
+    n_total = n + 1
+
+    meta = tmp_path / "meta.tsv"
+    pd.DataFrame(
+        {
+            "cluster_final": list(range(n_total)),
+            "posneg": ["pos"] * n_total,
+            "jaspar_name": ["AP1"] + [f"TF{i}" for i in range(1, n)] + ["AP1"],
+            "jaspar_score": [0.95] * n_total,
+            "total_seqlets": [100] * n_total,
+            "n_experiments": [5] * n_total,
+        }
+    ).to_csv(meta, sep="\t", index=False)
+
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(meme), "--cluster-metadata", str(meta),
+            "--out-dir", str(tmp_path / "out"), "--report-threshold", "1e-6",
+            "--n-jobs", "1",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    summary = pd.read_csv(out / "motif_redundancy_count_summary.tsv", sep="\t")
+    assert (summary["n_clusters"] == n_total).all()
+    assert "excess_complete" in summary.columns and "excess_mutual" in summary.columns
+    comps = pd.read_csv(out / "motif_redundancy_count_components.tsv", sep="\t")
+    dup_comp = comps[comps.motif.isin(["pos_patterns.0", dup_name])]
+    assert dup_comp["component"].nunique() == 1  # duplicates merged
+    assert "jaspar_name" in comps.columns
+    assert (out / "motif_redundancy_count.png").exists()
+    assert "Redundancy sweep" in result.stderr
+    # the duplicate pair shares a JASPAR name, so agreement should be reported
+    assert "JASPAR-name agreement within merged groups" in result.stderr
+
+
+def test_redundancy_cli_errors_without_meme(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(tmp_path / "missing.meme"), "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "MEME file not found" in result.stderr
+
+
+def test_information_content_bounds():
+    uniform = np.full((4, 5), 0.25)
+    assert mr.information_content(uniform) == pytest.approx(np.zeros(5), abs=1e-9)
+    determined = np.zeros((4, 3)); determined[0] = 1.0
+    assert mr.information_content(determined) == pytest.approx(np.full(3, 2.0), abs=1e-6)
+
+
+def test_trim_pwm_finds_the_informative_core():
+    """Uniform flanks carry no information and must be trimmed away."""
+    pwm = np.full((4, 30), 0.25)
+    pwm[:, 12:20] = 0.0
+    pwm[0, 12:20] = 1.0          # 8bp determined core at 12:20
+    start, end = mr.trim_pwm(pwm, threshold=0.3, min_len=6)
+    assert (start, end) == (12, 20)
+
+
+def test_trim_pwm_respects_min_len_floor():
+    """A 2bp core must be widened, or no comparison can use it -- the same
+    reason Fi-NeMo hit calling needed a min-length floor."""
+    pwm = np.full((4, 30), 0.25)
+    pwm[:, 14:16] = 0.0
+    pwm[0, 14:16] = 1.0
+    start, end = mr.trim_pwm(pwm, threshold=0.3, min_len=6)
+    assert end - start >= 6
+    assert start <= 14 and end >= 16
+
+
+def test_trim_pwm_clamps_to_motif_width():
+    pwm = np.full((4, 4), 0.25); pwm[0] = 1.0; pwm[1:] = 0.0
+    start, end = mr.trim_pwm(pwm, threshold=0.3, min_len=20)
+    assert (start, end) == (0, 4)
+
+
+def test_trim_pwm_handles_a_fully_uniform_motif():
+    pwm = np.full((4, 10), 0.25)
+    assert mr.trim_pwm(pwm) == (0, 10)
+
+
+def test_trimming_shrinks_fixed_width_windows(tmp_path):
+    """The real failure mode: 50bp windows with a small informative core."""
+    pwms = []
+    for seed in range(6):
+        m = np.full((4, 50), 0.25)
+        core = realistic_pwm(10, seed, conc=20.0).T
+        m[:, 20:30] = core
+        pwms.append(m)
+    trimmed, widths = mr.trim_motifs(pwms, 0.3, 6)
+    assert (widths == 50).all()
+    assert all(t.shape[-1] < 50 for t in trimmed)
+    assert all(t.shape[-1] >= 6 for t in trimmed)
+
+
+def test_mutual_best_cannot_chain():
+    """A~B~C with A far from C: single linkage merges all three, mutual best
+    merges at most one pair. This is the property that makes single linkage
+    unusable on the real compendium."""
+    names = ["a", "b", "c"]
+    p = np.array([[0.0, 1e-9, 0.9], [1e-9, 0.0, 1e-9], [0.9, 1e-9, 0.0]])
+    single = mr.connected_components(
+        names, pd.DataFrame({"motif_a": ["a", "b"], "motif_b": ["b", "c"]})
+    )
+    assert len(set(single.values())) == 1  # all chained together
+    mutual = mr.merge_mutual_best(names, p, 1e-6)
+    assert len(set(mutual.values())) >= 2  # chaining prevented
+
+
+def test_complete_linkage_requires_all_pairs():
+    names = ["a", "b", "c"]
+    # a~b tight, but c is far from both
+    p = np.array([[0.0, 1e-12, 0.5], [1e-12, 0.0, 0.5], [0.5, 0.5, 0.0]])
+    comps = mr.merge_complete(names, p, 1e-6)
+    assert comps["a"] == comps["b"]
+    assert comps["c"] != comps["a"]
+
+
+def test_complete_linkage_merges_a_true_clique():
+    names = ["a", "b", "c"]
+    p = np.full((3, 3), 1e-12); np.fill_diagonal(p, 0.0)
+    comps = mr.merge_complete(names, p, 1e-6)
+    assert len(set(comps.values())) == 1
+
+
+def test_symmetric_p_takes_the_conservative_side():
+    pwms = [np.full((4, 10), 0.25) for _ in range(2)]
+    res = {
+        "p": np.array([[0.0, 1e-9], [1e-3, 0.0]]),
+        "overlaps": np.full((2, 2), 10.0),
+        "scores": np.zeros((2, 2)), "offsets": np.zeros((2, 2)),
+        "strands": np.zeros((2, 2)),
+    }
+    p_sym = mr.symmetric_p(pwms, res, 0.7)
+    assert p_sym[0, 1] == pytest.approx(1e-3)  # larger of the two
+    assert p_sym[1, 0] == pytest.approx(1e-3)
+
+
+def test_symmetric_p_rejects_failing_overlap():
+    pwms = [np.full((4, 10), 0.25), np.full((4, 10), 0.25)]
+    res = {
+        "p": np.full((2, 2), 1e-12),
+        "overlaps": np.full((2, 2), 3.0),   # 3/10 = 0.3 < 0.7
+        "scores": np.zeros((2, 2)), "offsets": np.zeros((2, 2)),
+        "strands": np.zeros((2, 2)),
+    }
+    p_sym = mr.symmetric_p(pwms, res, 0.7)
+    assert p_sym[0, 1] == 1.0
+
+
+def test_load_subset_from_plain_list(tmp_path):
+    f = tmp_path / "s.txt"
+    f.write_text("pos_patterns.1\npos_patterns.2\n\n")
+    assert mr.load_subset(f) == {"pos_patterns.1", "pos_patterns.2"}
+
+
+def test_load_subset_from_tsv_column(tmp_path):
+    f = tmp_path / "s.tsv"
+    f.write_text("motif\twidth\npos_patterns.5\t12\npos_patterns.9\t14\n")
+    assert mr.load_subset(f) == {"pos_patterns.5", "pos_patterns.9"}
+
+
+def test_load_subset_from_concentration_output(tmp_path):
+    f = tmp_path / "s.tsv"
+    f.write_text("compendium_motif_name\tx\npos_patterns.3\t1\n")
+    assert mr.load_subset(f) == {"pos_patterns.3"}
+
+
+def test_redundancy_cli_subset_restricts(tmp_path):
+    meme, dup_name = build_redundancy_meme(tmp_path / "m.meme", n=20, seed=3)
+    sub = tmp_path / "sub.txt"
+    sub.write_text("\n".join(["pos_patterns.0", "pos_patterns.1", dup_name]))
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(meme), "--subset", str(sub),
+            "--out-dir", str(tmp_path / "out"), "--n-jobs", "1",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "restricted to 3 clusters" in result.stderr
+    summary = pd.read_csv(
+        tmp_path / "out" / "motif_redundancy_count_summary.tsv", sep="\t"
+    )
+    assert (summary["n_clusters"] == 3).all()
+
+
+def test_no_trim_flag_reports_untrimmed(tmp_path):
+    pwms = {}
+    for i in range(8):
+        m = np.full((50, 4), 0.25)
+        m[20:30] = realistic_pwm(10, i, conc=20.0)
+        pwms[f"pos_patterns.{i}"] = m
+    meme = write_meme(tmp_path / "m.meme", pwms)
+    result = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+            "--meme", str(meme), "--no-trim", "--out-dir", str(tmp_path / "out"),
+            "--n-jobs", "1",
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "UNTRIMMED" in result.stderr
+
+
+def write_cluster_h5(path, motifs):
+    """modisco-lite-shaped cluster-average h5. motifs is
+    {(group, key): (pfm (L,4), cwm (L,4))}."""
+    import h5py
+
+    with h5py.File(path, "w") as f:
+        for (group, key), (pfm, cwm) in motifs.items():
+            g = f.require_group(group).create_group(key)
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    return path
+
+
+def flanked_pair(core_len=10, width=50, seed=0, flank_gc=0.96, core_peak=0.6):
+    """A window whose PFM flanks are *more* informative than 0.3x its core max.
+
+    This reproduces the real pathology deterministically. Cluster-average PFMs
+    are soft, so the core's information content is modest (~1 bit here), while
+    GC-skewed flanks of a PRO-cap peak carry real composition. When flank IC
+    exceeds `trim_threshold * max(IC)`, information-content trimming keeps the
+    whole window -- which is why the real run came back at median 49 of 50bp.
+    The CWM has contribution only over the core, so contribution-based trimming
+    is unaffected.
+
+    `seed` shifts which base the core prefers, so distinct motifs differ.
+    """
+    pfm = np.zeros((width, 4))
+    pfm[:, [1, 2]] = flank_gc / 2
+    pfm[:, [0, 3]] = (1 - flank_gc) / 2
+    start = (width - core_len) // 2
+    rng = np.random.default_rng(seed)
+    for i in range(core_len):
+        col = np.full(4, (1 - core_peak) / 3)
+        col[rng.integers(0, 4)] = core_peak
+        pfm[start + i] = col
+    cwm = np.zeros((width, 4))
+    cwm[start:start + core_len] = pfm[start:start + core_len] - 0.25
+    return pfm, cwm, start, start + core_len
+
+
+def test_trim_cwm_finds_core_where_information_content_cannot():
+    """The real failure mode: informative flanks defeat IC trimming, while
+    contribution magnitude locates the core exactly."""
+    pfm, cwm, start, end = flanked_pair(seed=1)
+    ic = mr.information_content(pfm.T)
+    # the fixture's premise: flank IC clears the threshold set by the core
+    assert ic[0] > 0.3 * ic.max()
+
+    ic_start, ic_end = mr.trim_pwm(pfm.T, threshold=0.3, min_len=6)
+    cwm_start, cwm_end = mr.trim_cwm(cwm.T, threshold=0.3, min_len=6)
+    assert (cwm_start, cwm_end) == (start, end)
+    assert (ic_start, ic_end) == (0, pfm.shape[0])  # IC keeps the whole window
+
+
+def test_cwm_trim_is_insensitive_to_flank_composition():
+    """The property that matters: the contribution-derived span does not move
+    when the PFM's flanks get more or less informative, while the IC-derived
+    span does."""
+    spans_cwm, spans_ic = set(), set()
+    for flank_gc in (0.5, 0.7, 0.9, 0.99):
+        pfm, cwm, start, end = flanked_pair(seed=2, flank_gc=flank_gc)
+        spans_cwm.add(mr.trim_cwm(cwm.T, 0.3, 6))
+        spans_ic.add(mr.trim_pwm(pfm.T, 0.3, 6))
+    assert len(spans_cwm) == 1  # unchanged across all flank compositions
+    assert len(spans_ic) > 1    # IC trimming is at the mercy of the flanks
+
+
+def test_trim_cwm_respects_min_len():
+    cwm = np.zeros((4, 30))
+    cwm[0, 14:16] = 1.0
+    start, end = mr.trim_cwm(cwm, 0.3, min_len=6)
+    assert end - start >= 6
+
+
+def test_trim_cwm_handles_all_zero_contributions():
+    assert mr.trim_cwm(np.zeros((4, 12))) == (0, 12)
+
+
+def test_trim_by_cwm_applies_cwm_span_to_the_pfm():
+    pfms, cwms, spans = [], [], []
+    for seed in range(4):
+        pfm, cwm, s, e = flanked_pair(seed=seed)
+        pfms.append(pfm.T); cwms.append(cwm.T); spans.append(e - s)
+    trimmed, widths = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    assert (widths == 50).all()
+    assert [t.shape[-1] for t in trimmed] == spans
+    # the trimmed PFM must still be a probability matrix, not contributions
+    for t in trimmed:
+        assert (t >= 0).all()
+        assert t.sum(axis=0) == pytest.approx(np.ones(t.shape[-1]), abs=1e-6)
+
+
+def test_load_motifs_h5_roundtrip(tmp_path):
+    motifs = {}
+    for i in range(3):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        motifs[("pos_patterns", f"pattern_{i}")] = (pfm, cwm)
+    pfm, cwm, _, _ = flanked_pair(seed=9)
+    motifs[("neg_patterns", "7")] = (pfm, cwm)
+    h5 = write_cluster_h5(tmp_path / "c.h5", motifs)
+
+    names, pfms, cwms = mr.load_motifs_h5(h5)
+    assert set(names) == {
+        "pos_patterns.0", "pos_patterns.1", "pos_patterns.2", "neg_patterns.7"
+    }
+    for a, c in zip(pfms, cwms):
+        assert a.shape[0] == 4 and c.shape[0] == 4   # (alphabet, length)
+        assert a.shape[-1] == 50
+
+
+def test_h5_route_trims_to_the_core(tmp_path):
+    """End-to-end: the h5 route trims on contribution scores.
+
+    Note this test deliberately launches only one subprocess. Two back-to-back
+    subprocess runs of this script from inside a pytest process that has
+    already loaded memelite's OpenMP runtime reliably SIGABRT on macOS during
+    plotting -- the script itself is fine standalone (verified: exit 0, all
+    outputs written), so it is a harness interaction, not a script defect.
+    The MEME route's behaviour is covered in-process below instead.
+    """
+    motifs = {}
+    for i in range(12):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        motifs[("pos_patterns", f"pattern_{i}")] = (pfm, cwm)
+    h5 = write_cluster_h5(tmp_path / "c.h5", motifs)
+
+    run = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(h5), "--out-dir", str(tmp_path / "o1"), "--n-jobs", "1"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert run.returncode == 0, run.stderr
+    assert "contribution-trimmed" in run.stderr
+    assert "50-50bp -> 10-10bp" in run.stderr  # core is 10bp wide
+
+
+def test_trimming_ineffective_predicate():
+    """The condition behind the MEME route's warning, tested directly rather
+    than by asserting on a subprocess's stderr."""
+    assert mr.trimming_ineffective(np.array([49, 50, 48]), np.array([50, 50, 50]))
+    assert not mr.trimming_ineffective(np.array([10, 12, 9]), np.array([50, 50, 50]))
+    assert not mr.trimming_ineffective(np.array([]), np.array([]))
+
+
+def test_meme_and_h5_routes_disagree_on_these_motifs():
+    """In-process version of the route comparison: contribution trimming finds
+    the core, information-content trimming does not, and the predicate flags
+    the latter."""
+    pfms, cwms = [], []
+    for i in range(12):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T)
+        cwms.append(cwm.T)
+
+    by_cwm, raw = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    by_ic, raw_ic = mr.trim_motifs(pfms, 0.3, 6)
+    w_cwm = np.array([m.shape[-1] for m in by_cwm])
+    w_ic = np.array([m.shape[-1] for m in by_ic])
+
+    assert (raw == 50).all() and (raw_ic == 50).all()
+    assert (w_cwm == 10).all()          # exactly the core
+    assert (w_ic == 50).all()           # nothing removed
+    assert not mr.trimming_ineffective(w_cwm, raw)
+    assert mr.trimming_ineffective(w_ic, raw_ic)
+
+
+def test_h5_subset_filters_cwms_too(tmp_path):
+    motifs = {}
+    for i in range(10):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        motifs[("pos_patterns", f"pattern_{i}")] = (pfm, cwm)
+    h5 = write_cluster_h5(tmp_path / "c.h5", motifs)
+    sub = tmp_path / "s.txt"
+    sub.write_text("pos_patterns.0\npos_patterns.1\npos_patterns.2\n")
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(h5), "--subset", str(sub),
+         "--out-dir", str(tmp_path / "o"), "--n-jobs", "1"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "restricted to 3 clusters" in result.stderr
+
+
+def test_h5_loader_discovers_a_flat_layout(tmp_path):
+    """MotifCompendium's exporter need not use pos_patterns/pattern_N/, so the
+    loader walks the file rather than assuming a hierarchy. Zero motifs found
+    on the real file is what prompted this."""
+    import h5py
+
+    with h5py.File(tmp_path / "flat.h5", "w") as f:
+        for i in range(3):
+            pfm, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"cluster_{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    names, pfms, cwms = mr.load_motifs_h5(tmp_path / "flat.h5")
+    assert len(names) == 3
+    assert all(p.shape[0] == 4 for p in pfms)
+    assert all(c.shape[0] == 4 for c in cwms)
+
+
+def test_h5_loader_handles_nested_posneg_and_strips_pattern_prefix(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "n.h5", "w") as f:
+        for group, key in (("pos_patterns", "pattern_4"), ("neg_patterns", "11")):
+            pfm, cwm, _, _ = flanked_pair(seed=1)
+            g = f.require_group(group).create_group(key)
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    names, _, _ = mr.load_motifs_h5(tmp_path / "n.h5")
+    assert set(names) == {"pos_patterns.4", "neg_patterns.11"}
+
+
+def test_h5_loader_falls_back_to_normalized_contributions(tmp_path):
+    """A group with contributions but no probability matrix still yields a
+    comparison matrix, since TOMTOM needs probability-like columns."""
+    import h5py
+
+    with h5py.File(tmp_path / "c.h5", "w") as f:
+        for i in range(2):
+            _, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"m{i}")
+            g.create_dataset("contrib_scores", data=cwm)
+    names, pfms, cwms = mr.load_motifs_h5(tmp_path / "c.h5")
+    assert len(names) == 2
+    for p in pfms:
+        assert p.sum(axis=0) == pytest.approx(np.ones(p.shape[-1]), abs=1e-6)
+        assert (p >= 0).all()
+
+
+def test_h5_loader_accepts_alternate_dataset_names(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "alt.h5", "w") as f:
+        for i in range(2):
+            pfm, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"m{i}")
+            g.create_dataset("PFM", data=pfm)
+            g.create_dataset("CWM", data=cwm)
+    names, pfms, _ = mr.load_motifs_h5(tmp_path / "alt.h5")
+    assert len(names) == 2
+
+
+def test_h5_loader_ignores_non_motif_datasets(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "x.h5", "w") as f:
+        g = f.create_group("m0")
+        pfm, cwm, _, _ = flanked_pair(seed=0)
+        g.create_dataset("sequence", data=pfm)
+        g.create_dataset("contrib_scores", data=cwm)
+        g.create_dataset("seqlet_starts", data=np.arange(20))   # 1-D, ignored
+        f.create_dataset("metadata", data=np.zeros((7, 9)))     # not motif-shaped
+    names, _, _ = mr.load_motifs_h5(tmp_path / "x.h5")
+    assert names == ["m0"]
+
+
+def test_h5_tree_lists_datasets(tmp_path):
+    import h5py
+
+    with h5py.File(tmp_path / "t.h5", "w") as f:
+        f.create_group("a").create_dataset("b", data=np.zeros((4, 5)))
+    lines = mr.h5_tree(tmp_path / "t.h5")
+    assert any("a/b" in line and "(4, 5)" in line for line in lines)
+
+
+def test_unrecognized_h5_layout_errors_with_a_tree_dump(tmp_path):
+    """The failure mode that crashed with an UnboundLocalError: an h5 whose
+    layout yields no motifs must report what it actually contains."""
+    import h5py
+
+    with h5py.File(tmp_path / "bad.h5", "w") as f:
+        f.create_dataset("unexpected", data=np.zeros((10, 10)))
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(tmp_path / "bad.h5"),
+         "--out-dir", str(tmp_path / "o"), "--n-jobs", "1"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "layout is not what was expected" in result.stderr
+    assert "unexpected" in result.stderr          # tree dump
+    assert "UnboundLocalError" not in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_jaspar_agreement_perfect_and_zero():
+    comps = {"a": 0, "b": 0, "c": 1, "d": 1}
+    agree = {"a": "AP1", "b": "AP1", "c": "SP1", "d": "SP1"}
+    frac, n_groups, n_in, chance = mr.jaspar_agreement(comps, agree)
+    assert (frac, n_groups, n_in) == (1.0, 2, 4)
+    assert 0.0 < chance <= 1.0
+
+    disagree = {"a": "AP1", "b": "GATA1", "c": "SP1", "d": "TBP"}
+    frac, n_groups, _, _ = mr.jaspar_agreement(comps, disagree)
+    assert (frac, n_groups) == (0.0, 2)
+
+
+def test_jaspar_agreement_is_none_when_nothing_merged():
+    """None and 0% mean different things: nothing to check vs. checked and
+    inconsistent."""
+    comps = {"a": 0, "b": 1}
+    frac, n_groups, n_in, chance = mr.jaspar_agreement(comps, {"a": "AP1", "b": "SP1"})
+    assert frac is None and n_groups == 0 and n_in == 0 and chance == 0.0
+
+
+def test_jaspar_agreement_ignores_unnamed_clusters():
+    comps = {"a": 0, "b": 0, "c": 0}
+    # only two of the three carry a name; the unnamed one must not count
+    frac, n_groups, n_in, _ = mr.jaspar_agreement(comps, {"a": "AP1", "b": "AP1"})
+    assert (frac, n_groups, n_in) == (1.0, 1, 2)
+
+
+def test_sweep_reports_agreement_per_criterion():
+    """The criterion-specific agreement is the number that decides which
+    redundancy estimate to trust, so every criterion must carry its own."""
+    pfms, cwms, names = [], [], []
+    for i in range(20):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T); cwms.append(cwm.T); names.append(f"pos_patterns.{i}")
+    pfms.append(pfms[0].copy()); cwms.append(cwms[0].copy())
+    names.append("pos_patterns.20")
+    trimmed, _ = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    res = mr.self_compare(trimmed, n_jobs=1)
+    jaspar = {n: f"TF{i}" for i, n in enumerate(names)}
+    jaspar["pos_patterns.20"] = "TF0"  # the duplicate shares name with cluster 0
+
+    summary = mr.sweep(names, trimmed, res, [1e-6], 0.7, jaspar=jaspar)
+    for criterion in mr.MERGERS:
+        assert f"jaspar_agree_{criterion}" in summary.columns
+        assert f"jaspar_groups_{criterion}" in summary.columns
+
+
+def test_drop_untrimmable_removes_coreless_clusters(tmp_path):
+    """Clusters whose contributions are diffuse across the whole window have no
+    locatable core; they chain everything together and, in real Fi-NeMo runs,
+    receive almost no hits. They must be droppable."""
+    import h5py
+
+    with h5py.File(tmp_path / "c.h5", "w") as f:
+        for i in range(8):                      # normal: 10bp core
+            pfm, cwm, _, _ = flanked_pair(seed=i)
+            g = f.create_group(f"good{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+        for i in range(3):                      # diffuse: contribution everywhere
+            pfm, _, _, _ = flanked_pair(seed=100 + i)
+            flat = np.full((50, 4), 0.2)
+            g = f.create_group(f"diffuse{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=flat)
+
+    # One subprocess per test: two back-to-back runs from a pytest process that
+    # has already loaded memelite's OpenMP runtime SIGABRT on macOS (see
+    # test_h5_route_trims_to_the_core).
+    dropped = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(tmp_path / "c.h5"), "--n-jobs", "1",
+         "--out-dir", str(tmp_path / "o2"), "--drop-untrimmable"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert dropped.returncode == 0, dropped.stderr
+    assert "3 cluster(s) did not shrink at all" in dropped.stderr
+    assert "dropped 3 untrimmable cluster(s)" in dropped.stderr
+    summary = pd.read_csv(
+        tmp_path / "o2" / "motif_redundancy_count_summary.tsv", sep="\t"
+    )
+    assert (summary["n_clusters"] == 8).all()
+
+
+def test_untrimmable_clusters_are_identifiable_in_process():
+    """The predicate behind --drop-untrimmable, without a subprocess."""
+    pfms, cwms = [], []
+    for i in range(5):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T); cwms.append(cwm.T)
+    for i in range(2):
+        pfm, _, _, _ = flanked_pair(seed=50 + i)
+        pfms.append(pfm.T); cwms.append(np.full((4, 50), 0.2))
+
+    trimmed, raw = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    widths = np.array([t.shape[-1] for t in trimmed])
+    untrimmable = widths >= raw
+    assert untrimmable.sum() == 2
+    assert (widths[~untrimmable] == 10).all()
+
+
+def test_width_report_flags_cores_wider_than_finemo():
+    """The calibration check: a median far above Fi-NeMo's ~14bp means the
+    threshold is too permissive for cluster averages."""
+    assert mr.FINEMO_MEDIAN_TRIM_BP == 14
+    # a median of 25bp (the real 0.3-threshold result) must trip the notice
+    assert 25 <= 2 * mr.FINEMO_MEDIAN_TRIM_BP
+    assert 30 > 2 * mr.FINEMO_MEDIAN_TRIM_BP
+
+
+def test_stricter_trim_threshold_narrows_cores():
+    """Raising --trim-threshold must monotonically narrow the trimmed span, so
+    it is a usable dial for matching Fi-NeMo's effective width."""
+    pfms, cwms = [], []
+    for i in range(10):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        # give the CWM a decaying tail, as real CWM magnitude has
+        cwm = cwm.copy()
+        for off in range(1, 10):
+            cwm[20 - off] = cwm[20] * (0.9 ** off)
+            cwm[30 + off - 1] = cwm[29] * (0.9 ** off)
+        pfms.append(pfm.T); cwms.append(cwm.T)
+
+    medians = []
+    for thresh in (0.1, 0.3, 0.5, 0.7):
+        trimmed, _ = mr.trim_by_cwm(pfms, cwms, thresh, 6)
+        medians.append(float(np.median([t.shape[-1] for t in trimmed])))
+    assert medians == sorted(medians, reverse=True), medians
+    assert medians[0] > medians[-1]
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("SP9", "SP"), ("SP1", "SP"), ("SP2", "SP"),
+        ("ETV7", "ETV"), ("ELF2", "ELF"), ("Atf1", "ATF"),
+        ("POU2F1::SOX2", "POU2F"), ("Pou5f1::Sox2", "POU5F"),
+        ("ZNF143", "ZNF"), ("TBP", "TBP"), ("CTCF", "CTCF"),
+    ],
+)
+def test_jaspar_family_collapses_paralogues(name, expected):
+    assert mr.jaspar_family(name) == expected
+
+
+def test_agreement_chance_is_small_for_a_skewed_pool():
+    """The number that makes a ~50% observation interpretable: with names as
+    skewed as the real compendium's, random merging almost never agrees."""
+    pool = ["SP9"] * 31 + ["TBP"] * 15 + ["NFYA"] * 14 + [
+        f"TF{i}" for i in range(246)
+    ]
+    pairs = [["x", "y"]] * 50
+    chance = mr.agreement_chance(pairs, pool)
+    assert 0.0 < chance < 0.05
+
+
+def test_agreement_chance_is_one_when_every_name_is_identical():
+    assert mr.agreement_chance([["a", "a"]], ["N"] * 10) == pytest.approx(1.0)
+
+
+def test_agreement_chance_falls_with_group_size():
+    """Larger merged groups are harder to agree by chance, so the baseline
+    must depend on group size, not just the name distribution."""
+    pool = [f"TF{i % 10}" for i in range(100)]
+    c2 = mr.agreement_chance([["a", "b"]], pool)
+    c5 = mr.agreement_chance([["a"] * 5], pool)
+    assert c5 < c2
+
+
+def test_family_agreement_exceeds_exact_when_merges_are_within_family():
+    """The case that matters: two clusters that are the same motif but carry
+    different paralogue labels count as disagreement by name and agreement by
+    family."""
+    comps = {"a": 0, "b": 0, "c": 1, "d": 1}
+    jaspar = {"a": "SP1", "b": "SP9", "c": "ETV4", "d": "ETV7"}
+    by_name, _, _, _ = mr.jaspar_agreement(comps, jaspar, family=False)
+    by_family, _, _, _ = mr.jaspar_agreement(comps, jaspar, family=True)
+    assert by_name == 0.0
+    assert by_family == 1.0
+
+
+def test_family_agreement_does_not_rescue_cross_family_merges():
+    comps = {"a": 0, "b": 0}
+    jaspar = {"a": "SP1", "b": "GATA1"}
+    by_family, _, _, _ = mr.jaspar_agreement(comps, jaspar, family=True)
+    assert by_family == 0.0
+
+
+def test_sweep_records_chance_and_family_columns():
+    pfms, cwms, names = [], [], []
+    for i in range(20):
+        pfm, cwm, _, _ = flanked_pair(seed=i)
+        pfms.append(pfm.T); cwms.append(cwm.T); names.append(f"pos_patterns.{i}")
+    pfms.append(pfms[0].copy()); cwms.append(cwms[0].copy())
+    names.append("pos_patterns.20")
+    trimmed, _ = mr.trim_by_cwm(pfms, cwms, 0.3, 6)
+    res = mr.self_compare(trimmed, n_jobs=1)
+    jaspar = {n: f"TF{i}" for i, n in enumerate(names)}
+    jaspar["pos_patterns.20"] = "TF0"
+
+    summary = mr.sweep(names, trimmed, res, [1e-6], 0.7, jaspar=jaspar)
+    for criterion in mr.MERGERS:
+        for prefix in ("jaspar_agree", "jaspar_chance", "jaspar_enrich",
+                       "family_agree", "family_enrich"):
+            assert f"{prefix}_{criterion}" in summary.columns
+
+
+def test_mutual_best_pairs_are_reciprocated_only():
+    """A one-way best hit is not a mutual pair: b's closest is c, so a-b must
+    not appear even though b is a's closest."""
+    names = ["a", "b", "c"]
+    p = np.array([
+        [0.0,  1e-8, 0.5],
+        [1e-8, 0.0,  1e-12],
+        [0.5,  1e-12, 0.0],
+    ])
+    pairs = mr.mutual_best_pairs(names, p, 1e-6)
+    got = {frozenset((r.motif_a, r.motif_b)) for r in pairs.itertuples()}
+    assert got == {frozenset(("b", "c"))}
+
+
+def test_mutual_best_pairs_respects_threshold():
+    names = ["a", "b"]
+    p = np.array([[0.0, 1e-3], [1e-3, 0.0]])
+    assert mr.mutual_best_pairs(names, p, 1e-6).empty
+    assert len(mr.mutual_best_pairs(names, p, 1e-2)) == 1
+
+
+def test_annotate_pairs_flags_name_and_family_agreement(tmp_path):
+    pairs = pd.DataFrame({
+        "motif_a": ["pos_patterns.0", "pos_patterns.2", "pos_patterns.4"],
+        "motif_b": ["pos_patterns.1", "pos_patterns.3", "pos_patterns.5"],
+        "p_value": [1e-9, 1e-8, 1e-7],
+    })
+    meta = tmp_path / "meta.tsv"
+    pd.DataFrame({
+        "cluster_final": [0, 1, 2, 3, 4, 5],
+        "posneg": ["pos"] * 6,
+        "jaspar_name": ["AP1", "AP1", "SP1", "SP9", "GATA1", "TBP"],
+        "jaspar_score": [0.9] * 6,
+        "total_seqlets": [10, 20, 500, 400, 5, 6],
+        "n_experiments": [2] * 6,
+    }).to_csv(meta, sep="\t", index=False)
+
+    widths = {f"pos_patterns.{i}": 10 for i in range(6)}
+    out = mr.annotate_pairs(pairs, widths, meta, None, tmp_path)
+
+    row = out.set_index("motif_a")
+    assert row.loc["pos_patterns.0", "name_agree"]            # AP1 == AP1
+    assert not row.loc["pos_patterns.2", "name_agree"]        # SP1 != SP9
+    assert row.loc["pos_patterns.2", "family_agree"]          # ...but same family
+    assert not row.loc["pos_patterns.4", "family_agree"]      # GATA1 vs TBP
+    # highest-seqlet pair must sort first, since it matters most to the count
+    assert out.iloc[0]["motif_a"] == "pos_patterns.2"
+
+
+def test_annotate_pairs_resolves_logos_against_logo_root(tmp_path):
+    """Paths are stored absolute: the HTML lives in figures/ while the SVGs
+    live under motifcompendium/, and a relative path that depends on the
+    report's location is what broke the first version."""
+    root = tmp_path / "mc"
+    (root / "logos" / "fwd").mkdir(parents=True)
+    for name in ("a", "b"):
+        (root / "logos" / "fwd" / f"{name}.svg").write_bytes(SVG_A)
+    lp = tmp_path / "logos.tsv"
+    pd.DataFrame({
+        "cluster_final": [0, 1],
+        "logo_fwd_svg": ["logos/fwd/a.svg", "logos/fwd/b.svg"],
+        "logo_rev_svg": ["logos/rev/a.svg", "logos/rev/b.svg"],
+    }).to_csv(lp, sep="\t", index=False)
+    pairs = pd.DataFrame({
+        "motif_a": ["pos_patterns.0"], "motif_b": ["pos_patterns.1"],
+        "p_value": [1e-9],
+    })
+    out = mr.annotate_pairs(
+        pairs, {"pos_patterns.0": 8, "pos_patterns.1": 9}, None, lp,
+        tmp_path, logo_root=root,
+    )
+    assert Path(out.loc[0, "logo_a"]).is_absolute()
+    assert Path(out.loc[0, "logo_a"]).exists()
+    assert out.loc[0, "logo_a"].endswith("a.svg")
+
+
+def test_describe_logo_resolution_distinguishes_the_failure_modes(tmp_path):
+    """The diagnostic that separates "paths never resolved" from "files are
+    missing" from "all good" -- previously all three looked identical in the
+    report."""
+    pairs = pd.DataFrame({"motif_a": ["a"], "motif_b": ["b"], "p_value": [1e-9]})
+    assert "no logo column" in mr.describe_logo_resolution(pairs)
+
+    unresolved = pairs.assign(logo_a=[None], logo_b=[None])
+    assert "0/2 logo paths resolved" in mr.describe_logo_resolution(unresolved)
+
+    good = tmp_path / "g.svg"; good.write_bytes(SVG_A)
+    partial = pairs.assign(logo_a=[str(good)], logo_b=[str(tmp_path / "nope.svg")])
+    msg = mr.describe_logo_resolution(partial)
+    assert "2/2 logo paths resolved, 1 file(s) present" in msg
+    assert "example missing" in msg
+
+    both = pairs.assign(logo_a=[str(good)], logo_b=[str(good)])
+    assert "2 file(s) present" in mr.describe_logo_resolution(both)
+
+
+def test_html_warns_when_no_logos_are_available(tmp_path):
+    """A logo-less report must say so rather than silently showing dashes."""
+    pairs = html_pairs_fixture().drop(columns=["logo_a", "logo_b"])
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(pairs, out, "count", 1e-6, out_dir=tmp_path)
+    text = out.read_text()
+    assert "No logos available" in text
+    assert "cluster_logo_paths.tsv" in text
+    assert "pos_patterns.0" in text          # the table is still written
+
+
+def test_annotate_pairs_handles_empty_input():
+    assert mr.annotate_pairs(
+        pd.DataFrame({"motif_a": [], "motif_b": [], "p_value": []}),
+        {}, None, None, Path(".")
+    ).empty
+
+
+SVG_A = b"<svg xmlns='http://www.w3.org/2000/svg'><text>AAA</text></svg>"
+SVG_B = b"<svg xmlns='http://www.w3.org/2000/svg'><text>BBB</text></svg>"
+
+
+def test_embed_svg_returns_a_data_uri(tmp_path):
+    import base64
+
+    f = tmp_path / "a.svg"
+    f.write_bytes(SVG_A)
+    uri = mr.embed_svg(f)
+    assert uri.startswith("data:image/svg+xml;base64,")
+    assert base64.b64decode(uri.split(",", 1)[1]) == SVG_A
+
+
+def test_embed_svg_returns_none_for_missing_file(tmp_path):
+    assert mr.embed_svg(tmp_path / "nope.svg") is None
+
+
+def html_pairs_fixture():
+    return pd.DataFrame({
+        "motif_a": ["pos_patterns.0", "pos_patterns.2"],
+        "motif_b": ["pos_patterns.1", "pos_patterns.3"],
+        "p_value": [1e-9, 1e-8],
+        "jaspar_a": ["AP1", "GATA1"], "jaspar_b": ["AP1", "TBP"],
+        "seqlets_a": [100, 50], "seqlets_b": [90, 40],
+        "max_seqlets": [100, 50],
+        "name_agree": [True, False], "family_agree": [True, False],
+        "trimmed_len_a": [8, 9], "trimmed_len_b": [8, 9],
+        "logo_a": ["logos/a.svg", "logos/c.svg"],
+        "logo_b": ["logos/b.svg", "logos/d.svg"],
+    })
+
+
+def absolutize(pairs, out_dir):
+    for col in ("logo_a", "logo_b"):
+        pairs[col] = pairs[col].map(lambda v: str((out_dir / v).resolve()))
+    return pairs
+
+
+def write_logo_tree(out_dir):
+    (out_dir / "logos").mkdir(parents=True, exist_ok=True)
+    for name, data in (("a", SVG_A), ("b", SVG_B), ("c", SVG_A), ("d", SVG_B)):
+        (out_dir / "logos" / f"{name}.svg").write_bytes(data)
+
+
+def test_pairs_html_embeds_logos_so_it_travels(tmp_path):
+    """The report gets copied off the cluster, so a linked SVG is a broken SVG.
+    Embedded output must contain no file references at all."""
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    write_logo_tree(out_dir)
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=True,
+    )
+    text = html.read_text()
+    assert "data:image/svg+xml;base64," in text
+    assert text.count("data:image/svg+xml;base64,") == 4   # 2 pairs x 2 logos
+    assert "logos/a.svg'" not in text                      # nothing linked
+    assert "file not found" not in text
+
+
+def test_pairs_html_can_link_instead_of_embedding(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    write_logo_tree(out_dir)
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=False,
+    )
+    text = html.read_text()
+    assert "a.svg" in text
+    assert "data:image/svg+xml;base64," not in text
+
+
+def test_pairs_html_marks_missing_logos_without_failing(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()          # deliberately no logo files written
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=True,
+    )
+    text = html.read_text()
+    assert "file not found" in text
+    assert "data:image/svg+xml;base64," not in text
+
+
+def test_pairs_html_top_pairs_limits_rows_and_reports_total(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    write_logo_tree(out_dir)
+    html = out_dir / "p.html"
+    mr.write_pairs_html(
+        absolutize(html_pairs_fixture(), out_dir), html, "count", 1e-6,
+        out_dir=out_dir, embed=True, top_pairs=1,
+    )
+    text = html.read_text()
+    assert "1 of 2 pairs shown" in text
+    # the disagreeing pair is the one kept
+    assert "pos_patterns.2" in text
+    assert text.count("data:image/svg+xml;base64,") == 2
+
+
+def test_pairs_html_puts_disagreements_first(tmp_path):
+    pairs = pd.DataFrame({
+        "motif_a": ["pos_patterns.0", "pos_patterns.2"],
+        "motif_b": ["pos_patterns.1", "pos_patterns.3"],
+        "p_value": [1e-9, 1e-8],
+        "jaspar_a": ["AP1", "GATA1"], "jaspar_b": ["AP1", "TBP"],
+        "seqlets_a": [100, 50], "seqlets_b": [90, 40],
+        "max_seqlets": [100, 50],
+        "name_agree": [True, False], "family_agree": [True, False],
+        "trimmed_len_a": [8, 9], "trimmed_len_b": [8, 9],
+        "logo_a": ["a.svg", "c.svg"], "logo_b": ["b.svg", "d.svg"],
+    })
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(pairs, out, "count", 1e-6, embed=False)
+    text = out.read_text()
+    assert text.index("pos_patterns.2") < text.index("pos_patterns.0")
+    assert "c.svg" in text and "class='dis'" in text
+
+
+def test_pairs_html_written_even_without_logos(tmp_path):
+    """Contract change: the report is always written. Previously it was skipped
+    when no logo column existed, so a logo resolution failure produced no file
+    and no explanation -- indistinguishable from the script not running."""
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(
+        pd.DataFrame({"motif_a": ["a"], "motif_b": ["b"], "p_value": [1e-9]}),
+        out, "count", 1e-6,
+    )
+    assert out.exists()
+    text = out.read_text()
+    assert "No logos available" in text
+    assert "pos_patterns" not in text and "<code>a</code>" in text
+
+
+def test_pairs_html_still_skipped_when_there_are_no_pairs(tmp_path):
+    out = tmp_path / "p.html"
+    mr.write_pairs_html(
+        pd.DataFrame(columns=["motif_a", "motif_b", "p_value"]),
+        out, "count", 1e-6,
+    )
+    assert not out.exists()
+
+
+# memelite's p-value background collapses for some input configurations, and
+# not monotonically in size: measured on the flanked_pair fixture after
+# trimming, 41 motifs x 14bp cores behave correctly (duplicate p = 7e-9) while
+# 21 x 14bp, 81 x 10bp and 81 x 20bp all return exactly 1.0 everywhere --
+# including for identical motifs. Fixtures that exercise the p-value path must
+# use a configuration verified to work; 14bp also matches Fi-NeMo's own median
+# trimmed width.
+PVALUE_SAFE_N = 40
+PVALUE_SAFE_CORE = 14
+
+
+def test_mutual_pairs_written_by_cli(tmp_path):
+    import h5py
+
+    n = PVALUE_SAFE_N
+    with h5py.File(tmp_path / "c.h5", "w") as f:
+        g0 = f.require_group("pos_patterns")
+        for i in range(n):
+            pfm, cwm, _, _ = flanked_pair(core_len=PVALUE_SAFE_CORE, seed=i)
+            g = g0.create_group(f"pattern_{i}")
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+        pfm, cwm, _, _ = flanked_pair(core_len=PVALUE_SAFE_CORE, seed=0)
+        g = g0.create_group(f"pattern_{n}")       # exact duplicate of pattern_0
+        g.create_dataset("sequence", data=pfm)
+        g.create_dataset("contrib_scores", data=cwm)
+
+    meta = tmp_path / "meta.tsv"
+    pd.DataFrame({
+        "cluster_final": list(range(n + 1)),
+        "posneg": ["pos"] * (n + 1),
+        "jaspar_name": ["AP1"] + [f"TF{i}" for i in range(1, n)] + ["AP1"],
+        "jaspar_score": [0.9] * (n + 1),
+        "total_seqlets": [1000] + [10] * (n - 1) + [900],
+        "n_experiments": [5] * (n + 1),
+    }).to_csv(meta, sep="\t", index=False)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/motif_redundancy.py"),
+         "--modisco-h5", str(tmp_path / "c.h5"), "--cluster-metadata", str(meta),
+         "--out-dir", str(tmp_path / "o"), "--n-jobs", "1"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    mp = pd.read_csv(tmp_path / "o" / "motif_redundancy_count_mutual_pairs.tsv", sep="\t")
+    assert len(mp) >= 1
+    names = ["pos_patterns.0", f"pos_patterns.{PVALUE_SAFE_N}"]
+    dup = mp[mp.motif_a.isin(names) & mp.motif_b.isin(names)]
+    assert len(dup) == 1, mp.to_string()
+    assert bool(dup.iloc[0]["name_agree"]) is True
+    assert "mutual_pairs.tsv" in result.stderr
+
+
+def test_degenerate_pvalues_detects_a_collapsed_matrix():
+    """The guard that would have caught three separate fixture failures."""
+    collapsed = np.ones((6, 6)); np.fill_diagonal(collapsed, np.inf)
+    bad, extreme, distinct = mr.degenerate_pvalues(collapsed)
+    assert bad and extreme == pytest.approx(1.0) and distinct == 1
+
+    zeros = np.zeros((6, 6)); np.fill_diagonal(zeros, np.inf)
+    assert mr.degenerate_pvalues(zeros)[0]
+
+
+def test_degenerate_pvalues_accepts_a_healthy_matrix():
+    rng = np.random.default_rng(0)
+    p = 10 ** rng.uniform(-12, 0, (30, 30))
+    p = np.minimum(p, p.T)
+    np.fill_diagonal(p, np.inf)
+    bad, extreme, distinct = mr.degenerate_pvalues(p)
+    assert not bad
+    assert extreme < 0.01 and distinct > 100
+
+
+def test_degenerate_pvalues_flags_an_all_inf_matrix():
+    assert mr.degenerate_pvalues(np.full((3, 3), np.inf))[0]
+
+
+def test_mutual_best_pairs_keeps_schema_when_empty():
+    """An empty result must still be a readable TSV, not a zero-byte file."""
+    names = ["a", "b"]
+    p = np.array([[0.0, 0.9], [0.9, 0.0]])
+    empty = mr.mutual_best_pairs(names, p, 1e-9)
+    assert empty.empty
+    assert list(empty.columns) == ["motif_a", "motif_b", "p_value"]
+
+
+# --------------------------------------------------------------------------
+# identity-collapsed rarefaction
+# --------------------------------------------------------------------------
+
+
+def collapse_meta(rows):
+    """rows: (cluster_final, jaspar_name, exp_set)."""
+    return pd.DataFrame([
+        {"cluster_final": c, "jaspar_name": j, "posneg": "pos",
+         "exp_set": set(e), "prevalence": len(set(e)),
+         "total_seqlets": 100 * len(e), "n_motifs": len(e)}
+        for c, j, e in rows
+    ])
+
+
+def test_collapse_unions_experiment_sets_not_just_counts():
+    """The point of collapsing: a motif found in different experiments under
+    different cluster ids was still found in all of them, so prevalence is the
+    union -- never the sum, never the max."""
+    meta = collapse_meta([
+        (0, "SP9", ["E1", "E2"]),
+        (1, "SP9", ["E2", "E3"]),
+        (2, "GATA1", ["E4"]),
+    ])
+    out = rare.collapse_by_identity(meta, "jaspar_name")
+    row = out.set_index("jaspar_name")
+    assert row.loc["SP9", "prevalence"] == 3          # union {E1,E2,E3}
+    assert row.loc["SP9", "exp_set"] == {"E1", "E2", "E3"}
+    assert row.loc["SP9", "n_clusters"] == 2
+    assert row.loc["GATA1", "prevalence"] == 1
+    assert len(out) == 2
+
+
+def test_collapse_keeps_unnamed_clusters_as_singletons():
+    """37% of real clusters are unnamed and that class carries the strongest
+    tissue signal, so they must not be silently merged or dropped."""
+    meta = collapse_meta([
+        (0, "SP9", ["E1"]),
+        (1, None, ["E2"]),
+        (2, None, ["E3"]),
+    ])
+    out = rare.collapse_by_identity(meta, "jaspar_name")
+    assert len(out) == 3
+    unnamed = out[out.unit.str.startswith("__unnamed__")]
+    assert len(unnamed) == 2
+    assert set(unnamed.prevalence) == {1}
+
+
+def test_collapse_can_drop_unnamed_on_request():
+    meta = collapse_meta([(0, "SP9", ["E1"]), (1, None, ["E2"])])
+    out = rare.collapse_by_identity(meta, "jaspar_name", drop_unnamed=True)
+    assert len(out) == 1
+    assert out.iloc[0]["jaspar_name"] == "SP9"
+
+
+def test_collapse_at_family_level_is_coarser_than_name_level():
+    meta = collapse_meta([
+        (0, "SP1", ["E1"]), (1, "SP2", ["E2"]), (2, "SP9", ["E3"]),
+        (3, "GATA1", ["E4"]),
+    ])
+    by_name = rare.collapse_by_identity(meta, "jaspar_name")
+    by_family = rare.collapse_by_identity(meta, "jaspar_family")
+    assert len(by_name) == 4
+    assert len(by_family) == 2                       # SP* collapse, GATA1 alone
+    sp = by_family[by_family.unit == "SP"].iloc[0]
+    assert sp["prevalence"] == 3 and sp["n_clusters"] == 3
+
+
+def test_collapse_cluster_level_is_a_noop():
+    meta = collapse_meta([(0, "SP9", ["E1"]), (1, "SP9", ["E2"])])
+    assert rare.collapse_by_identity(meta, "cluster") is meta
+
+
+def test_collapse_requires_jaspar_column():
+    meta = pd.DataFrame({"cluster_final": [0], "exp_set": [{"E1"}], "prevalence": [1]})
+    with pytest.raises(ValueError, match="jaspar_name"):
+        rare.collapse_by_identity(meta, "jaspar_name")
+
+
+def test_collapse_sums_seqlets_across_members():
+    meta = collapse_meta([(0, "SP9", ["E1", "E2"]), (1, "SP9", ["E3"])])
+    out = rare.collapse_by_identity(meta, "jaspar_name")
+    assert out.iloc[0]["total_seqlets"] == 300        # 200 + 100
+    assert out.iloc[0]["n_motifs"] == 3
+
+
+def test_collapsed_lexicon_is_never_larger_than_the_cluster_lexicon():
+    rng = np.random.default_rng(0)
+    exps = [f"E{i}" for i in range(30)]
+    rows = [
+        (i, f"TF{i % 12}", list(rng.choice(exps, size=3, replace=False)))
+        for i in range(40)
+    ]
+    meta = collapse_meta(rows)
+    for level in ("jaspar_name", "jaspar_family"):
+        out = rare.collapse_by_identity(meta, level)
+        assert len(out) <= len(meta)
+        # and prevalence can only grow, never shrink
+        assert out["prevalence"].max() >= meta["prevalence"].max()
+
+
+def test_collapse_cli_end_to_end(tmp_path):
+    exps = real_experiments(20)
+    rows = [("pos", exps[:6], "SP9", 6 * 500) for _ in range(4)]   # 4 clusters, one TF
+    rows += [("pos", exps[6:10], "GATA1", 4 * 400)]
+    rows += [("pos", exps[10:13], None, 3 * 100) for _ in range(2)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+         "--cluster-metadata", str(meta), "--out-dir", str(tmp_path / "out"),
+         "--n-reps", "10", "--collapse-by", "jaspar_name"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "collapsed 7 clusters to 4 jaspar_name units" in result.stderr
+    assert "2 unnamed kept as singletons" in result.stderr
+    curves = pd.read_csv(tmp_path / "out" / "motif_rarefaction_profile.tsv", sep="\t")
+    full = curves[(curves.scheme == "uniform") & (curves.motif_class == "__all__")]
+    assert full.sort_values("k")["mean"].iloc[-1] == pytest.approx(4)
+
+
+def test_collapse_cli_rejects_mapping_input(tmp_path):
+    rows = [("pos", real_experiments(6), None)]
+    map_path = write_pattern_to_cluster(tmp_path / "map.tsv", rows)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_motif_rarefaction.py"),
+         "--pattern-to-cluster", str(map_path), "--out-dir", str(tmp_path / "out"),
+         "--collapse-by", "jaspar_name"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "jaspar_name" in result.stderr
+
+
+# --------------------------------------------------------------------------
+# annotation scaffold
+# --------------------------------------------------------------------------
+
+import make_annotation_scaffold as mas  # noqa: E402
+
+
+def scaffold_inputs(tmp_path, n_named=4, n_unnamed=3):
+    meta = tmp_path / "meta.tsv"
+    recs, logos = [], []
+    (tmp_path / "lg").mkdir(exist_ok=True)
+    for i in range(n_named + n_unnamed):
+        named = i < n_named
+        recs.append({
+            "cluster_final": i, "posneg": "pos", "n_motifs": 3,
+            "total_seqlets": 1000 - 10 * i, "n_experiments": 3,
+            "experiments": "E1,E2,E3",
+            "jaspar_name": f"TF{i}" if named else None,
+            "jaspar_score": 0.9 if named else None,
+        })
+        svg = tmp_path / "lg" / f"c{i}.svg"
+        svg.write_bytes(SVG_A)
+        logos.append({"cluster_final": i, "logo_fwd_svg": f"lg/c{i}.svg",
+                      "logo_rev_svg": f"lg/c{i}.svg"})
+    pd.DataFrame(recs).to_csv(meta, sep="\t", index=False)
+    lp = tmp_path / "logos.tsv"
+    pd.DataFrame(logos).to_csv(lp, sep="\t", index=False)
+    conc = tmp_path / "conc.tsv"
+    pd.DataFrame({
+        "cluster_final": list(range(n_named + n_unnamed)),
+        "prevalence": [5, 4, 3, 2, 6, 2, 1],
+        "n_groups": [4, 3, 2, 1, 1, 2, 1],
+        "sole_group": ["", "", "", "liver_biliary", "stem_ipsc", "", "gi_tract"],
+        "is_single_group": [False, False, False, True, True, False, True],
+    }).to_csv(conc, sep="\t", index=False)
+    return meta, conc, lp
+
+
+def test_scaffold_defaults_to_unnamed_clusters(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    out = mas.load_clusters(meta, conc, lp, tmp_path)
+    unnamed = out[out.jaspar_name.isna()]
+    assert len(unnamed) == 3
+    assert "prevalence" in out.columns and "sole_group" in out.columns
+    assert out["logo"].notna().all()
+    assert Path(out.loc[0, "logo"]).exists()
+
+
+def test_scaffold_computes_seqlets_per_motif(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    out = mas.load_clusters(meta, conc, lp, tmp_path)
+    assert out.loc[0, "seqlets_per_motif"] == pytest.approx(1000 / 3, abs=0.1)
+
+
+def test_scaffold_rejects_metadata_without_required_columns(tmp_path):
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame({"cluster_final": [0]}).to_csv(bad, sep="\t", index=False)
+    with pytest.raises(ValueError, match="posneg"):
+        mas.load_clusters(bad, None, None, tmp_path)
+
+
+def test_scaffold_cli_writes_fillable_tsv_and_html(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "3 with no JASPAR name" in result.stderr
+
+    tsv = tmp_path / "o" / "motif_annotation_count_scaffold.tsv"
+    d = pd.read_csv(tsv, sep="\t", comment="#")
+    assert len(d) == 3
+    assert list(d["class"].fillna("")) == ["", "", ""]   # blank, ready to fill
+    assert "notes" in d.columns
+    # sorted by seqlets descending, so the consequential ones come first
+    assert d["total_seqlets"].is_monotonic_decreasing
+    # the header comment documents the vocabulary
+    assert "Suggested classes" in tsv.read_text().splitlines()[1]
+
+    html = tmp_path / "o" / "motif_annotation_count_scaffold.html"
+    assert html.exists()
+    text = html.read_text()
+    assert text.count("data:image/svg+xml;base64,") == 3
+    assert "tandem_composite" in text
+
+
+def test_scaffold_completed_tsv_feeds_annotation_tsv(tmp_path):
+    """The scaffold's output must be directly consumable by the rarefaction
+    script's --annotation-tsv, or the annotation work doesn't connect."""
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o")],
+        capture_output=True, text=True, env=SUBPROC_ENV, check=True,
+    )
+    tsv = tmp_path / "o" / "motif_annotation_count_scaffold.tsv"
+    d = pd.read_csv(tsv, sep="\t", comment="#")
+    d["class"] = ["tandem_composite", "core_promoter", "repeat"]
+    d.to_csv(tsv, sep="\t", index=False)
+
+    presence = pd.DataFrame([
+        {"cluster_final": c, "exp_set": {"E1", "E2"}, "prevalence": 2}
+        for c in d.cluster_final
+    ])
+    classes = rare.classify_clusters(presence, tsv)
+    assert set(classes) == {"tandem_composite", "core_promoter", "repeat"}
+
+
+def test_scaffold_all_flag_includes_named_clusters(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o2"), "--all"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    d = pd.read_csv(tmp_path / "o2" / "motif_annotation_count_scaffold.tsv",
+                    sep="\t", comment="#")
+    assert len(d) == 7
+
+
+def test_scaffold_min_prevalence_filters(tmp_path):
+    meta, conc, lp = scaffold_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/make_annotation_scaffold.py"),
+         "--head", "count", "--cluster-metadata", str(meta),
+         "--concentration-tsv", str(conc), "--logo-paths", str(lp),
+         "--logo-root", str(tmp_path), "--out-dir", str(tmp_path / "o3"),
+         "--min-prevalence", "2"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "at prevalence >= 2" in result.stderr
+    d = pd.read_csv(tmp_path / "o3" / "motif_annotation_count_scaffold.tsv",
+                    sep="\t", comment="#")
+    assert len(d) == 2          # unnamed clusters 4 and 5 (prevalence 6 and 2)
+
+
+# --- concentration on identity-collapsed units -------------------------------
+#
+# The MotifCompendium --across-threshold default moved 0.85 -> 0.90 on
+# 2026-08-21, which splits motifs into more, narrower clusters. If any of that
+# splitting correlates with tissue, it would manufacture single-group clusters
+# and inflate the concentration result. Collapsing to JASPAR identity removes
+# the splitting, so the test can be repeated on units the threshold cannot
+# have created. On the real count head the enrichment survives and strengthens
+# (5.1x at cluster level, 7.3x at name and family level).
+
+
+def test_concentration_cli_collapses_before_filtering_prevalence(tmp_path):
+    exps = real_experiments(40)
+    # Three SP1 clusters, each in a single distinct experiment: every one is
+    # prevalence 1 and would be dropped by --min-cluster-experiments 2 at
+    # cluster level, but their union is prevalence 3 and must survive.
+    rows = [("pos", [exps[i]], "SP1", 300) for i in range(3)]
+    rows += [("pos", exps[:8], "GATA1", 4000)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--collapse-by", "jaspar_name",
+            "--min-cluster-experiments", "2", "--swap-permutations", "0",
+            "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    per_unit = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    names = set(per_unit["jaspar_name"])
+    assert "SP1" in names, "collapse must precede the prevalence filter"
+    assert (per_unit.loc[per_unit["jaspar_name"] == "SP1", "prevalence"] == 3).all()
+
+
+def test_concentration_cli_reports_the_collapse(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps[:6], "SP1", 600) for _ in range(4)]
+    rows += [("pos", exps[:8], "GATA1", 800) for _ in range(2)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--collapse-by", "jaspar_name",
+            "--swap-permutations", "0", "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "merged 6 clusters into 2 units" in result.stderr
+    per_unit = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    assert len(per_unit) == 2
+
+
+def test_concentration_cli_collapse_by_family_is_coarser(tmp_path):
+    exps = real_experiments(30)
+    # SP1/SP2/SP9 are one family, three names.
+    rows = [("pos", exps[:6], f"SP{n}", 600) for n in (1, 2, 9)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    counts = {}
+    for level in ("cluster", "jaspar_name", "jaspar_family"):
+        out = tmp_path / f"out_{level}"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+                "--cluster-metadata", str(meta), "--collapse-by", level,
+                "--swap-permutations", "0", "--out-dir", str(out),
+            ],
+            capture_output=True, text=True, env=SUBPROC_ENV,
+        )
+        assert result.returncode == 0, result.stderr
+        counts[level] = len(
+            pd.read_csv(out / "motif_concentration_profile_tissue.tsv", sep="\t")
+        )
+    assert counts["cluster"] == 3
+    assert counts["jaspar_name"] == 3
+    assert counts["jaspar_family"] == 1
+
+
+def test_concentration_cli_can_drop_unnamed_units(tmp_path):
+    exps = real_experiments(30)
+    rows = [("pos", exps[:6], "SP1", 600), ("pos", exps[:6], None, 600)]
+    meta = write_cluster_metadata_with_seqlets(tmp_path / "meta.tsv", rows)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/motif_group_concentration.py"),
+            "--cluster-metadata", str(meta), "--collapse-by", "jaspar_name",
+            "--drop-unnamed", "--swap-permutations", "0",
+            "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    per_unit = pd.read_csv(
+        tmp_path / "out" / "motif_concentration_profile_tissue.tsv", sep="\t"
+    )
+    assert len(per_unit) == 1
+    assert set(per_unit["jaspar_name"]) == {"SP1"}
+
+
+# --- exemplar selection -----------------------------------------------------
+#
+# The failure mode this guards against is real and was caught on live data: a
+# low-abundance split of a ubiquitous motif looks exactly like a lineage motif
+# in a sorted table. Cluster 192 ("NFYA", blood_immune only, 154 seqlets) sits
+# next to cluster 1 ("NFYA", all 19 groups, 1.5M seqlets). Picking the former
+# for a figure would have been wrong in a way reviewers spot instantly.
+
+import select_motif_exemplars as exemplars  # noqa: E402
+
+
+def exemplar_frame():
+    return pd.DataFrame([
+        # ubiquitous, two clusters sharing one name
+        dict(cluster_final=0, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=3_867_685, sole_group=None),
+        dict(cluster_final=1, jaspar_name="NFYA", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=1_511_338, sole_group=None),
+        dict(cluster_final=8, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=76, n_groups=17, total_seqlets=450_623, sole_group=None),
+        # genuine lineage motifs
+        dict(cluster_final=179, jaspar_name="Pou5f1::Sox2", motif_class="TF-matched",
+             prevalence=4, n_groups=1, total_seqlets=31_323, sole_group="stem_ipsc"),
+        dict(cluster_final=88, jaspar_name="SPIB", motif_class="TF-matched",
+             prevalence=11, n_groups=1, total_seqlets=1_689, sole_group="blood_immune"),
+        dict(cluster_final=209, jaspar_name="GATA2", motif_class="TF-matched",
+             prevalence=2, n_groups=1, total_seqlets=9_501, sole_group="blood_immune"),
+        # split of a ubiquitous motif, masquerading as lineage-specific
+        dict(cluster_final=192, jaspar_name="NFYA", motif_class="TF-matched",
+             prevalence=4, n_groups=1, total_seqlets=154, sole_group="blood_immune"),
+        # named like a lineage factor but far too weak to show
+        dict(cluster_final=338, jaspar_name="SPI1", motif_class="TF-matched",
+             prevalence=2, n_groups=1, total_seqlets=44, sole_group="blood_immune"),
+    ])
+
+
+def test_broad_names_are_taken_from_broad_clusters():
+    d = exemplar_frame()
+    assert exemplars.broad_names(d) == {"SP9", "NFYA"}
+
+
+def test_split_of_a_ubiquitous_motif_is_flagged():
+    d = exemplars.annotate(exemplar_frame())
+    flagged = d.set_index("cluster_final")["name_also_broad"]
+    assert flagged[192], "blood-only NFYA shares its name with the 19-group NFYA"
+    assert not flagged[179], "Pou5f1::Sox2 has no broad namesake"
+    assert not flagged[88]
+
+
+def test_flagged_splits_are_excluded_by_default():
+    d = exemplars.annotate(exemplar_frame())
+    got = set(exemplars.select_restricted(d, min_seqlets=100)["cluster_final"])
+    assert 192 not in got
+    assert {179, 88, 209} <= got
+
+
+def test_flagged_splits_can_be_kept_on_request():
+    d = exemplars.annotate(exemplar_frame())
+    got = set(exemplars.select_restricted(
+        d, min_seqlets=100, keep_shared_name=True)["cluster_final"])
+    assert 192 in got
+
+
+def test_seqlet_floor_separates_spib_from_spi1():
+    d = exemplars.annotate(exemplar_frame())
+    got = set(exemplars.select_restricted(d, min_seqlets=1000)["cluster_final"])
+    assert 88 in got, "SPIB has 1,689 seqlets over 11 experiments"
+    assert 338 not in got, "SPI1 has 44 seqlets over 2"
+
+
+def test_sort_by_prevalence_prefers_recurrence_over_depth():
+    d = exemplars.annotate(exemplar_frame())
+    # blood has SPIB (11 experiments, 1.7k seqlets) and GATA2 (2, 9.5k).
+    by_prev = exemplars.select_restricted(
+        d, min_seqlets=100, per_group=1, sort_by="prevalence")
+    by_seq = exemplars.select_restricted(
+        d, min_seqlets=100, per_group=1, sort_by="seqlets")
+    blood_prev = by_prev[by_prev["sole_group"] == "blood_immune"]
+    blood_seq = by_seq[by_seq["sole_group"] == "blood_immune"]
+    assert blood_prev["jaspar_name"].iloc[0] == "SPIB"
+    assert blood_seq["jaspar_name"].iloc[0] == "GATA2"
+
+
+def test_per_group_caps_each_lineage():
+    d = exemplars.annotate(exemplar_frame())
+    got = exemplars.select_restricted(d, min_seqlets=100, per_group=1)
+    assert got.groupby("sole_group").size().max() == 1
+
+
+def test_ubiquitous_collapses_duplicate_names():
+    d = exemplars.annotate(exemplar_frame())
+    got = exemplars.select_ubiquitous(d)
+    assert len(got) == len(set(got["jaspar_name"]))
+    # keeps the better-supported SP9 of the two
+    assert got[got["jaspar_name"] == "SP9"]["cluster_final"].iloc[0] == 0
+
+
+def test_ubiquitous_can_keep_duplicate_names():
+    d = exemplars.annotate(exemplar_frame())
+    got = exemplars.select_ubiquitous(d, one_per_name=False)
+    assert list(got["jaspar_name"]).count("SP9") == 2
+
+
+def test_prevalence_one_clusters_are_excluded():
+    d = exemplars.annotate(pd.DataFrame([
+        dict(cluster_final=500, jaspar_name="FOO", motif_class="TF-matched",
+             prevalence=1, n_groups=1, total_seqlets=99_999, sole_group="heart"),
+    ]))
+    # prevalence-1 clusters are single-group by construction.
+    assert len(exemplars.select_restricted(d, min_seqlets=100)) == 0
+
+
+def test_load_concentration_rejects_the_wrong_table(tmp_path):
+    bad = tmp_path / "bad.tsv"
+    pd.DataFrame({"cluster_final": [0]}).to_csv(bad, sep="\t", index=False)
+    with pytest.raises(ValueError, match="motif_concentration"):
+        exemplars.load_concentration(bad)
+
+
+def test_embed_svg_returns_none_for_a_missing_file(tmp_path):
+    assert exemplars.embed_svg(tmp_path / "nope.svg") is None
+
+
+def test_embed_svg_round_trips(tmp_path):
+    svg = tmp_path / "a.svg"
+    svg.write_text("<svg/>")
+    uri = exemplars.embed_svg(svg)
+    assert uri.startswith("data:image/svg+xml;base64,")
+    import base64 as b64
+    assert b64.b64decode(uri.split(",", 1)[1]) == b"<svg/>"
+
+
+def test_resolve_logos_is_empty_without_a_paths_file(tmp_path):
+    assert exemplars.resolve_logos(exemplar_frame(), None, tmp_path) == {}
+    assert exemplars.resolve_logos(
+        exemplar_frame(), tmp_path / "nope.tsv", tmp_path) == {}
+
+
+def test_exemplar_cli_end_to_end(tmp_path):
+    conc = tmp_path / "motif_concentration_count_tissue.tsv"
+    exemplar_frame().to_csv(conc, sep="\t", index=False)
+    logos = tmp_path / "logos"
+    (logos / "fwd").mkdir(parents=True)
+    rows = []
+    for cid in exemplar_frame()["cluster_final"]:
+        rel = f"fwd/c{cid}.svg"
+        (logos / rel).write_text(f"<svg><!--{cid}--></svg>")
+        rows.append({"cluster_final": cid, "logo_fwd_svg": rel,
+                     "logo_rev_svg": rel})
+    lp = tmp_path / "logo_paths.tsv"
+    pd.DataFrame(rows).to_csv(lp, sep="\t", index=False)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+            "--head", "count", "--concentration-tsv", str(conc),
+            "--logo-paths", str(lp), "--logo-root", str(logos),
+            "--min-seqlets", "100", "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    restricted = pd.read_csv(out / "motif_exemplars_count_restricted.tsv", sep="\t")
+    assert 192 not in set(restricted["cluster_final"])
+    assert (out / "motif_exemplars_count_ubiquitous.tsv").exists()
+    page = (out / "motif_exemplars_count.html").read_text()
+    assert "data:image/svg+xml;base64," in page      # logos embedded, not linked
+    assert "NAME ALSO BROAD" in page                 # the flag is visible
+    assert "192" in page                             # excluded, but shown
+    # the exclusion is reported on stderr/stdout, not silent
+    assert "also labels a broad cluster" in result.stdout
+
+
+def test_exemplar_cli_errors_without_the_concentration_table(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+            "--head", "count", "--out-dir", str(tmp_path),
+            "--concentration-tsv", str(tmp_path / "nope.tsv"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "motif_group_concentration.py" in result.stderr
+
+
+def test_exemplar_cli_warns_when_no_logos_resolve(tmp_path):
+    conc = tmp_path / "c.tsv"
+    exemplar_frame().to_csv(conc, sep="\t", index=False)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+            "--head", "count", "--concentration-tsv", str(conc),
+            "--min-seqlets", "100", "--out-dir", str(tmp_path / "out"),
+        ],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "no logos embedded" in result.stderr
+    assert "No logos could be read" in (
+        tmp_path / "out" / "motif_exemplars_count.html"
+    ).read_text()
+
+
+# --- figure assembly --------------------------------------------------------
+#
+# plot_figure2.py reads only files the other scripts wrote, so the risk is not
+# arithmetic but plumbing: the h5 stores contrib_scores as (length, 4) while
+# trim_cwm expects (4, length), and getting that backwards silently collapses
+# the per-position magnitude to four numbers and trims to nonsense rather than
+# raising.
+
+import plot_figure2 as fig2  # noqa: E402
+
+
+def write_cwm_h5(path, clusters, width=50, core=(20, 30)):
+    """An h5 shaped like MotifCompendium's cluster averages.
+
+    Signal only inside `core`, so a correct trim recovers that span and an
+    incorrect one recovers the whole window.
+    """
+    import h5py
+
+    with h5py.File(path, "w") as f:
+        for cid, posneg in clusters:
+            cwm = np.full((width, 4), 0.001)
+            cwm[core[0]:core[1], 0] = 1.0
+            f.create_dataset(f"{posneg}_patterns/{cid}/contrib_scores", data=cwm)
+    return path
+
+
+def test_load_cwm_returns_length_by_four(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")])
+    cwm = fig2.load_cwm(h5, 7)
+    assert cwm.shape == (50, 4)
+
+
+def test_load_cwm_is_none_for_absent_cluster(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")])
+    assert fig2.load_cwm(h5, 999) is None
+    assert fig2.load_cwm(h5, 7, posneg="neg") is None
+
+
+def test_trimmed_cwm_recovers_the_core_not_the_window(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")], core=(20, 30))
+    df = fig2.trimmed_cwm(h5, 7, pad=0)
+    # 10bp core, not the 50bp window: proves the (4, length) transpose is right
+    assert len(df) == 10
+    assert list(df.columns) == ["A", "C", "G", "T"]
+
+
+def test_trimmed_cwm_pads_symmetrically(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")], core=(20, 30))
+    assert len(fig2.trimmed_cwm(h5, 7, pad=2)) == 14
+
+
+def test_trimmed_cwm_pad_cannot_run_off_the_window(tmp_path):
+    h5 = write_cwm_h5(tmp_path / "a.h5", [(7, "pos")], core=(0, 50))
+    assert len(fig2.trimmed_cwm(h5, 7, pad=5)) == 50
+
+
+def test_group_labels_are_figure_ready():
+    # internal keys are snake_case; a figure should not show them
+    assert fig2.GROUP_LABEL["blood_immune"] == "blood / immune"
+    assert fig2.GROUP_LABEL["stem_ipsc"] == "stem / iPSC"
+
+
+def fig2_inputs(tmp_path, head="count"):
+    d = tmp_path
+    pd.DataFrame({
+        "k": [1, 5, 10] * 3,
+        "scheme": ["uniform"] * 3 + ["diverse"] * 3 + ["redundant"] * 3,
+        "motif_class": ["__all__"] * 9,
+        "mean": [20, 70, 110, 22, 75, 115, 18, 60, 95],
+        "lo": [15, 60, 100, 17, 65, 105, 13, 50, 85],
+        "hi": [25, 80, 120, 27, 85, 125, 23, 70, 105],
+        "n_clusters_total": [343] * 9,
+    }).to_csv(d / f"motif_rarefaction_{head}.tsv", sep="\t", index=False)
+    null_draws = np.random.default_rng(0).integers(3, 14, 50)
+    pd.DataFrame({
+        "motif_class": ["TF-matched"] * 50,
+        "permutation": range(50),
+        "n_single_group": list(null_draws),
+    }).to_csv(d / f"motif_concentration_{head}_tissue_nulldraws.tsv",
+              sep="\t", index=False)
+    pd.DataFrame({
+        "motif_class": ["TF-matched"],
+        "obs_single_group": [45],
+        # the draws' own mean, as the real script writes it. A hardcoded round
+        # number here is inconsistent with the draws beside it, which is the
+        # exact condition panel_concentration now refuses to plot.
+        "null_single_group_mean": [round(float(null_draws.mean()), 2)],
+        "null_single_group_p95": [13.0],
+        "swap_concentration": [0.83],
+    }).to_csv(d / f"motif_concentration_{head}_tissue_swapnull.tsv",
+              sep="\t", index=False)
+    ub = pd.DataFrame({
+        "cluster_final": [0, 1], "jaspar_name": ["SP9", "NFYA"],
+        "prevalence": [198, 198], "n_groups": [19, 19],
+        "total_seqlets": [3_867_685, 1_511_338], "posneg": ["pos", "pos"],
+    })
+    ub.to_csv(d / f"motif_exemplars_{head}_ubiquitous.tsv", sep="\t", index=False)
+    re_ = pd.DataFrame({
+        "cluster_final": [88, 222], "jaspar_name": ["SPIB", "NEUROG2"],
+        "prevalence": [11, 3], "n_groups": [1, 1],
+        "total_seqlets": [1689, 22570], "posneg": ["pos", "pos"],
+        "sole_group": ["blood_immune", "neural"],
+    })
+    re_.to_csv(d / f"motif_exemplars_{head}_restricted.tsv", sep="\t", index=False)
+    h5 = write_cwm_h5(d / "avg.h5", [(0, "pos"), (1, "pos"), (88, "pos"),
+                                     (222, "pos")])
+    return h5
+
+
+def test_figure2_cli_end_to_end(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path),
+         "--modisco-h5", str(h5), "--n-ubiquitous", "2", "--n-restricted", "2"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "figure2_count.pdf").exists()
+    # per-panel files are written by default, for hand-alignment
+    for panel in ("a_exemplars", "b_rarefaction", "c_concentration"):
+        assert (tmp_path / f"figure2_count_{panel}.pdf").exists(), panel
+    assert "4 logos drawn" in result.stdout
+
+
+def test_figure2_cli_can_skip_the_split_panels(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2", "--no-split-panels"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "figure2_count.pdf").exists()
+    assert not (tmp_path / "figure2_count_b_rarefaction.pdf").exists()
+
+
+def test_figure2_cli_writes_individual_logos(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2", "--split-logos"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    logo_dir = tmp_path / "figure2_count_logos"
+    names = {p.name for p in logo_dir.glob("*.pdf")}
+    assert any("SPIB" in n for n in names)
+    # "::" is not filesystem-friendly on every platform, so it is replaced
+    assert not any("::" in n for n in names)
+
+
+def test_figure2_cli_names_every_missing_input(tmp_path):
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path),
+         "--modisco-h5", str(tmp_path / "nope.h5")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    # every missing file listed, plus the commands that produce them
+    for token in ("motif_rarefaction", "nulldraws", "motif_exemplars",
+                  "cluster-average h5", "plot_motif_rarefaction.py"):
+        assert token in result.stderr, token
+
+
+def test_figure2_cli_tells_you_the_profile_row_is_missing(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2"],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    # JASPAR has no Inr/TATA/DPE, so --include-unmatched is load-bearing
+    assert "--include-unmatched" in result.stderr
+
+
+def test_figure2_cli_warns_on_a_missing_profile_table(tmp_path):
+    h5 = fig2_inputs(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+         "--head", "count", "--in-dir", str(tmp_path), "--modisco-h5", str(h5),
+         "--n-ubiquitous", "2", "--n-restricted", "2",
+         "--profile-exemplars", str(tmp_path / "absent.tsv")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "omitting the" in result.stderr
+
+
+# --- multi-group lineages ---------------------------------------------------
+#
+# A single-group criterion cannot see a factor whose lineage spans several of
+# the 19 keyword groups, and the atlas's clearest lineage motifs are exactly
+# those: MEF2A in {heart, muscle} (concentration 0.211, third most concentrated
+# cluster in the lexicon) and HNF1B in {GI, liver, pancreas} -- endoderm. Both
+# read as "not restricted" under n_groups == 1.
+
+
+def multigroup_frame():
+    return pd.DataFrame([
+        dict(cluster_final=46, jaspar_name="MEF2A", motif_class="TF-matched",
+             prevalence=17, n_groups=2, total_seqlets=130_013,
+             sole_group=None, groups="heart,muscle"),
+        dict(cluster_final=44, jaspar_name="HNF1B", motif_class="TF-matched",
+             prevalence=22, n_groups=3, total_seqlets=89_403, sole_group=None,
+             groups="gi_tract,liver_biliary,pancreas"),
+        dict(cluster_final=222, jaspar_name="NEUROG2", motif_class="TF-matched",
+             prevalence=3, n_groups=1, total_seqlets=22_570,
+             sole_group="neural", groups="neural"),
+        # CTCF: narrow cluster with real support, but the same name is
+        # discovered across 13 groups elsewhere.
+        dict(cluster_final=87, jaspar_name="CTCF", motif_class="TF-matched",
+             prevalence=11, n_groups=3, total_seqlets=63_421, sole_group=None,
+             groups="gi_tract,hek,stem_ipsc"),
+        dict(cluster_final=15, jaspar_name="CTCF", motif_class="TF-matched",
+             prevalence=67, n_groups=13, total_seqlets=38_508, sole_group=None,
+             groups=",".join(f"g{i}" for i in range(13))),
+    ])
+
+
+def test_lineage_label_falls_back_to_the_group_list():
+    d = exemplars.annotate(multigroup_frame())
+    lab = d.set_index("cluster_final")["lineage"]
+    assert lab[46] == "heart,muscle"
+    assert lab[222] == "neural"      # single-group still uses sole_group
+
+
+def test_max_groups_above_one_is_not_silently_a_noop():
+    d = exemplars.annotate(multigroup_frame())
+    # sole_group is NaN for multi-group clusters and groupby drops NaN keys,
+    # so capping per group on sole_group discarded every multi-group candidate.
+    got = exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
+                                      per_group=2)
+    assert 46 in set(got["cluster_final"]), "MEF2A must survive --max-groups 3"
+    assert 44 in set(got["cluster_final"]), "HNF1B must survive"
+
+
+def test_per_group_cap_applies_per_multi_group_lineage():
+    d = exemplars.annotate(multigroup_frame())
+    got = exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
+                                      per_group=1)
+    assert got.groupby("lineage").size().max() == 1
+
+
+def test_single_group_default_still_excludes_multi_group_clusters():
+    d = exemplars.annotate(multigroup_frame())
+    got = set(exemplars.select_restricted(d, min_seqlets=1000)["cluster_final"])
+    assert got == {222}
+
+
+def test_a_broadly_discovered_factor_is_flagged_below_the_ubiquitous_floor():
+    d = exemplars.annotate(multigroup_frame())
+    flagged = d.set_index("cluster_final")["name_also_broad"]
+    # CTCF's broad cluster spans 13 groups: clears the split-flag floor of 10
+    # but not the ubiquitous floor of 15, which is why one threshold let it
+    # through as a lineage candidate.
+    assert flagged[87], "narrow CTCF cluster must be flagged"
+    assert not flagged[46], "MEF2A is not discovered broadly anywhere"
+    assert not flagged[222]
+
+
+def test_split_flag_floor_is_configurable():
+    d = exemplars.annotate(multigroup_frame(), split_floor=14)
+    # raised above CTCF's 13-group cluster: no longer flagged
+    assert not d.set_index("cluster_final")["name_also_broad"][87]
+
+
+def test_ubiquitous_floor_and_split_floor_are_independent():
+    d = exemplars.annotate(multigroup_frame(), floor=15, split_floor=10)
+    # CTCF's 13-group cluster is flagged-broad but not ubiquitous-broad
+    assert d.set_index("cluster_final")["name_also_broad"][87]
+    assert 15 not in set(exemplars.select_ubiquitous(d)["cluster_final"])
+
+
+def test_ctcf_is_excluded_from_a_multi_group_selection():
+    d = exemplars.annotate(multigroup_frame())
+    got = set(exemplars.select_restricted(d, max_groups=3, min_seqlets=1000,
+                                          per_group=3)["cluster_final"])
+    assert 87 not in got
+
+
+# --- shape-based exclusion --------------------------------------------------
+#
+# Two failures that survived every name- and abundance-based filter and reached
+# a rendered figure: cluster 59 ("SP2") draws the same GC-box as the ubiquitous
+# SP9, cluster 119 ("ZNF800") the same CGCG box as Banp, and cluster 96
+# ("ZNF800", 5,103 seqlets) has no locatable core at all -- it trims to 31bp
+# and renders as a smear.
+
+
+def make_cwm(pattern, width=50, start=20, amp=1.0):
+    """A (length, 4) contribution matrix with `pattern` written into it."""
+    idx = {"A": 0, "C": 1, "G": 2, "T": 3}
+    cwm = np.full((width, 4), 0.001)
+    for i, ch in enumerate(pattern):
+        cwm[start + i, idx[ch]] = amp
+    return cwm
+
+
+def write_shape_h5(path, spec, width=50):
+    import h5py
+
+    with h5py.File(path, "w") as f:
+        for cid, cwm in spec.items():
+            f.create_dataset(f"pos_patterns/{cid}/contrib_scores", data=cwm)
+    return path
+
+
+def test_best_correlation_is_one_for_identical_motifs():
+    a = make_cwm("GGGGCGGGGC")[20:30].T
+    assert exemplars._best_correlation(a, a) == pytest.approx(1.0)
+
+
+def test_best_correlation_finds_the_reverse_complement():
+    a = make_cwm("GGGGCGGGGC")[20:30].T
+    rc = a[::-1, ::-1]
+    # a duplicate discovered on the other strand must still score ~1
+    assert exemplars._best_correlation(a, rc) == pytest.approx(1.0)
+
+
+def test_best_correlation_is_low_for_unrelated_motifs():
+    a = make_cwm("GGGGCGGGGC")[20:30].T
+    b = make_cwm("TTTTATTTTA")[20:30].T
+    assert exemplars._best_correlation(a, b) < 0.5
+
+
+def test_best_correlation_finds_a_shorter_motif_inside_a_longer_one():
+    short = make_cwm("CCAAT")[20:25].T
+    long_ = make_cwm("GGCCAATGG")[20:29].T
+    assert exemplars._best_correlation(short, long_) > 0.9
+
+
+def test_shape_duplicate_is_flagged_across_different_names(tmp_path):
+    h5 = write_shape_h5(tmp_path / "s.h5", {
+        0: make_cwm("GGGGCGGGGC"),     # ubiquitous SP9
+        59: make_cwm("GGGGCGGGGC"),    # same shape, labelled SP2
+        46: make_cwm("CTAAAAATAG"),    # genuinely different
+    })
+    ub = pd.DataFrame([dict(cluster_final=0, jaspar_name="SP9", posneg="pos")])
+    re_ = pd.DataFrame([
+        dict(cluster_final=59, jaspar_name="SP2", posneg="pos"),
+        dict(cluster_final=46, jaspar_name="MEF2A", posneg="pos"),
+    ])
+    out = exemplars.flag_shape_duplicates(re_, ub, h5).set_index("cluster_final")
+    assert out.loc[59, "dup_of"] == "SP9"
+    assert out.loc[59, "dup_corr"] >= 0.8
+    assert out.loc[46, "dup_of"] is None
+
+
+def test_flag_shape_duplicates_is_a_noop_without_an_h5():
+    re_ = pd.DataFrame([dict(cluster_final=1, jaspar_name="X", posneg="pos")])
+    out = exemplars.flag_shape_duplicates(re_, re_, None)
+    assert out["dup_of"].isna().all()
+
+
+def test_trim_widths_separates_a_diffuse_cluster_from_a_long_one(tmp_path):
+    diffuse = np.full((50, 4), 0.5)              # no locatable core
+    long_real = make_cwm("ACTACAATTCCCAGGAATGC", start=15)
+    h5 = write_shape_h5(tmp_path / "w.h5", {96: diffuse, 2: long_real})
+    df = pd.DataFrame([
+        dict(cluster_final=96, posneg="pos"), dict(cluster_final=2, posneg="pos"),
+    ])
+    w = exemplars.trim_widths(h5, df)
+    assert w[96] > 25, "a flat CWM has no core and must not squeeze under the cap"
+    assert w[2] <= 25
+
+
+def test_exemplar_cli_excludes_shape_duplicates_and_says_so(tmp_path):
+    conc = tmp_path / "c.tsv"
+    pd.DataFrame([
+        dict(cluster_final=0, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=3_867_685,
+             sole_group=None, groups="", posneg="pos"),
+        dict(cluster_final=59, jaspar_name="SP2", motif_class="TF-matched",
+             prevalence=15, n_groups=1, total_seqlets=3070,
+             sole_group="blood_immune", groups="blood_immune", posneg="pos"),
+        dict(cluster_final=46, jaspar_name="MEF2A", motif_class="TF-matched",
+             prevalence=17, n_groups=1, total_seqlets=130_013,
+             sole_group="heart", groups="heart", posneg="pos"),
+    ]).to_csv(conc, sep="\t", index=False)
+    h5 = write_shape_h5(tmp_path / "s.h5", {
+        0: make_cwm("GGGGCGGGGC"), 59: make_cwm("GGGGCGGGGC"),
+        46: make_cwm("CTAAAAATAG"),
+    })
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+         "--head", "count", "--concentration-tsv", str(conc),
+         "--modisco-h5", str(h5), "--min-seqlets", "1000",
+         "--out-dir", str(tmp_path / "out")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    kept = pd.read_csv(tmp_path / "out" / "motif_exemplars_count_restricted.tsv",
+                       sep="\t")
+    assert set(kept["cluster_final"]) == {46}
+    assert "CWM shape" in result.stdout and "SP9" in result.stdout
+
+
+def test_exemplar_cli_can_keep_shape_duplicates(tmp_path):
+    conc = tmp_path / "c.tsv"
+    pd.DataFrame([
+        dict(cluster_final=0, jaspar_name="SP9", motif_class="TF-matched",
+             prevalence=198, n_groups=19, total_seqlets=3_867_685,
+             sole_group=None, groups="", posneg="pos"),
+        dict(cluster_final=59, jaspar_name="SP2", motif_class="TF-matched",
+             prevalence=15, n_groups=1, total_seqlets=3070,
+             sole_group="blood_immune", groups="blood_immune", posneg="pos"),
+    ]).to_csv(conc, sep="\t", index=False)
+    h5 = write_shape_h5(tmp_path / "s.h5", {
+        0: make_cwm("GGGGCGGGGC"), 59: make_cwm("GGGGCGGGGC"),
+    })
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+         "--head", "count", "--concentration-tsv", str(conc),
+         "--modisco-h5", str(h5), "--min-seqlets", "1000",
+         "--keep-shape-duplicates", "--out-dir", str(tmp_path / "out")],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 0, result.stderr
+    kept = pd.read_csv(tmp_path / "out" / "motif_exemplars_count_restricted.tsv",
+                       sep="\t")
+    assert 59 in set(kept["cluster_final"])
+
+
+def test_exemplar_cli_errors_on_a_missing_h5(tmp_path):
+    conc = tmp_path / "c.tsv"
+    exemplar_frame().to_csv(conc, sep="\t", index=False)
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/select_motif_exemplars.py"),
+         "--head", "count", "--concentration-tsv", str(conc),
+         "--modisco-h5", str(tmp_path / "nope.h5"), "--out-dir", str(tmp_path)],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert result.returncode == 1
+    assert "not found" in result.stderr
+
+
+# --- caption rendering ------------------------------------------------------
+
+
+def test_lineage_caption_renders_multi_group_lineages():
+    assert fig2.lineage_caption("heart,muscle") == "heart+muscle"
+    # endoderm, abbreviated to fit a column
+    assert fig2.lineage_caption("gi_tract,liver_biliary,pancreas") == "GI+liver+panc"
+
+
+def test_lineage_caption_handles_the_nan_from_multi_group_rows():
+    # sole_group is literally the string "nan" once round-tripped through TSV
+    assert fig2.lineage_caption("nan") == ""
+    assert fig2.lineage_caption(float("nan")) == ""
+
+
+def test_lineage_caption_summarizes_very_broad_lineages():
+    assert fig2.lineage_caption(",".join(f"g{i}" for i in range(9))) == "9 tissues"
+
+
+def test_rank_for_panel_reranks_by_support_not_table_order():
+    df = pd.DataFrame([
+        dict(cluster_final=1, jaspar_name="A", total_seqlets=10, lineage="blood"),
+        dict(cluster_final=2, jaspar_name="B", total_seqlets=999, lineage="zzz"),
+    ])
+    # the table is sorted by lineage, so head() alone would take "blood" first
+    assert list(rank := fig2.rank_for_panel(df, 1)["jaspar_name"]) == ["B"], rank
+
+
+def test_rank_for_panel_collapses_duplicate_names():
+    df = pd.DataFrame([
+        dict(cluster_final=1, jaspar_name="Arid5a", total_seqlets=12404,
+             lineage="liver+met"),
+        dict(cluster_final=2, jaspar_name="Arid5a", total_seqlets=7738,
+             lineage="GI+met"),
+        dict(cluster_final=3, jaspar_name="MEF2A", total_seqlets=130013,
+             lineage="heart+muscle"),
+    ])
+    got = fig2.rank_for_panel(df, 3)
+    assert list(got["jaspar_name"]) == ["MEF2A", "Arid5a"]
+    assert got[got["jaspar_name"] == "Arid5a"]["cluster_final"].iloc[0] == 1
+
+
+def test_lineage_caption_wraps_instead_of_overrunning():
+    # "blood+breast+kidney" is the widest lineage in the panel and overran its
+    # column on one line.
+    assert fig2.lineage_caption("blood_immune,breast,kidney_urinary") == (
+        "blood+breast+\nkidney"
+    )
+    assert "\n" not in fig2.lineage_caption("heart,muscle")
+
+
+def test_lineage_caption_omission_still_works_if_asked():
+    # nothing is omitted by default now that metastases are filed by origin,
+    # but the mechanism stays for presentation choices
+    assert fig2.lineage_caption("blood_immune,heart", omit=("heart",)) == "blood"
+
+
+def test_lineage_caption_keeps_an_omitted_sole_group_rather_than_blank():
+    assert fig2.lineage_caption("heart", omit=("heart",)) == "heart"
+
+
+# --- panel a layout ---------------------------------------------------------
+#
+# Caption overlap escaped review twice. `_logo_grid` set `hspace` -- a fraction
+# of the *axis* height -- from the caption's line count, but a caption is sized
+# in points, so a value tuned on the standalone panel drew the third line
+# straight through the logos of the row above once the same grid was packed
+# into figure2_count.pdf, where the band is about a third as tall. These tests
+# render at both sizes and check the geometry rather than eyeballing a PNG.
+
+
+def exemplar_tables(n_ubiquitous=10, n_restricted=14):
+    ub = pd.DataFrame({
+        "cluster_final": range(n_ubiquitous),
+        "jaspar_name": [f"UB{i}" for i in range(n_ubiquitous)],
+        "prevalence": np.arange(n_ubiquitous)[::-1] + 50,
+        "n_groups": 21,
+        "total_seqlets": np.arange(n_ubiquitous)[::-1] + 1000,
+        "posneg": "pos",
+        # Real ubiquitous rows carry every group they were seen in, which
+        # `lineage_caption` collapses to "N tissues" past --max-groups.
+        "lineage": ",".join(f"tissue_{i}" for i in range(21)),
+    })
+    re_ = pd.DataFrame({
+        "cluster_final": range(100, 100 + n_restricted),
+        "jaspar_name": [f"RE{i}" for i in range(n_restricted)],
+        "prevalence": np.arange(n_restricted)[::-1] + 2,
+        "n_groups": 2,
+        "total_seqlets": np.arange(n_restricted)[::-1] + 100,
+        "posneg": "pos",
+        # three-line caption: name / lineage / n exp
+        "lineage": "lymphoid_b,lymphoid_t",
+    })
+    return ub, re_
+
+
+def exemplar_h5(tmp_path, ub, re_):
+    import h5py
+
+    path = tmp_path / "ex.h5"
+    with h5py.File(path, "w") as f:
+        for cl in list(ub["cluster_final"]) + list(re_["cluster_final"]):
+            pfm, cwm, _, _ = flanked_pair(seed=int(cl) % 4)
+            # MotifCompendium keys by cluster id, not "pattern_N"
+            g = f.require_group("pos_patterns").create_group(str(int(cl)))
+            g.create_dataset("sequence", data=pfm)
+            g.create_dataset("contrib_scores", data=cwm)
+    return path
+
+
+def _title_collisions(fig):
+    """Axes whose title box intersects another axis's drawing area."""
+    fig.canvas.draw()
+    boxes = [(ax, ax.get_window_extent()) for ax in fig.axes]
+    hits = []
+    for ax, _ in boxes:
+        t = ax.title
+        if not t.get_text():
+            continue
+        tb = t.get_window_extent(fig.canvas.get_renderer())
+        for other, ob in boxes:
+            if other is ax:
+                continue
+            if tb.overlaps(ob):
+                hits.append((t.get_text().split("\n")[0], other))
+    return hits
+
+
+@pytest.mark.parametrize(
+    "figsize,band",
+    [
+        ((7.4, 3.4), None),          # the standalone panel
+        ((7.4, 6.2), (1.45, 0.52)),  # as packed into the combined figure
+    ],
+)
+def test_exemplar_captions_do_not_overlap_the_logos_above(tmp_path, figsize, band):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=figsize)
+    if band is None:
+        spec = GridSpec(1, 1, figure=fig)[0, 0]
+    else:
+        ratio, hspace = band
+        spec = GridSpec(2, 1, figure=fig, height_ratios=[1.0, ratio],
+                        hspace=hspace)[1, 0]
+    drew = fig2.panel_exemplars(
+        fig, spec, ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=10, n_restricted=14,
+    )
+    assert drew == 24
+    hits = _title_collisions(fig)
+    plt.close(fig)
+    assert not hits, f"captions overlap logos at figsize={figsize}: {hits}"
+
+
+def test_category_labels_do_not_overlap_each_other(tmp_path):
+    """The two rotated band labels sat on one sub-row each and collided."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(7.4, 6.2))
+    spec = GridSpec(2, 1, figure=fig, height_ratios=[1.0, 1.45], hspace=0.52)[1, 0]
+    fig2.panel_exemplars(
+        fig, spec, ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=10, n_restricted=14,
+    )
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    rotated = [t for t in fig.texts if t.get_rotation() == 90]
+    assert len(rotated) == 2, "expected one label per category"
+    a, b = (t.get_window_extent(r) for t in rotated)
+    plt.close(fig)
+    assert not a.overlaps(b), "the two category labels overlap"
+
+
+# --- supplementary: the lexicon-size bracket --------------------------------
+
+
+def bracket_curves(total, scale=1.0, k_max=198):
+    """A saturating rarefaction curve with the shape of the real ones."""
+    ks = np.arange(1, k_max + 1)
+    mean = total * (1 - np.exp(-ks / (25.0 * scale)))
+    return pd.DataFrame({
+        "k": np.tile(ks, 3),
+        "scheme": np.repeat(["uniform", "diverse", "redundant"], len(ks)),
+        "motif_class": "__all__",
+        "mean": np.concatenate([mean, mean * 1.03, mean * 0.85]),
+        "n_clusters_total": float(total),
+    })
+
+
+def test_lexicon_bracket_plots_both_levels_with_their_own_asymptotes():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    fig2.panel_lexicon_bracket(ax, bracket_curves(343), bracket_curves(155),
+                               mark_k=5)
+    lines = [ln for ln in ax.get_lines() if len(ln.get_xdata()) > 2]
+    assert len(lines) == 2, "one curve per collapse level"
+    # asymptote guides carry the two totals
+    labels = {t.get_text().strip() for t in ax.texts}
+    assert {"343", "155"} <= labels, labels
+    # the band between them is drawn
+    assert ax.collections, "no shaded band between the bounds"
+    plt.close(fig)
+
+
+def test_lexicon_bracket_reports_each_levels_own_recovery_fraction():
+    """20.7% of 343 and 29.2% of 155 are different claims; both must appear."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    # scale the lower curve so its k=5 fraction differs from the upper one
+    fig2.panel_lexicon_bracket(ax, bracket_curves(343, scale=1.0),
+                               bracket_curves(155, scale=0.6), mark_k=5)
+    pct = sorted(t.get_text() for t in ax.texts if t.get_text().endswith("%"))
+    plt.close(fig)
+    assert len(pct) == 2, f"expected one fraction per level, got {pct}"
+    assert pct[0] != pct[1], "fractions should be each level's own, not shared"
+
+
+def test_lexicon_bracket_annotations_do_not_overlap():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(3.8, 2.9))
+    fig2.panel_lexicon_bracket(ax, bracket_curves(343), bracket_curves(155),
+                               mark_k=5)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    boxes = [t.get_window_extent(r) for t in ax.texts if t.get_text().strip()]
+    plt.close(fig)
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            assert not a.overlaps(b), "bracket annotations overlap"
+
+
+# --- panel c: the histogram and the caption must be one run -----------------
+
+
+def concentration_tables(draws_mean=6.07, null_mean=None, obs=37,
+                         classes=("TF-matched",), n=1000):
+    """Draws plus the swap-null row that the same run would have written.
+
+    `null_single_group_mean` defaults to the draws' own mean rounded to 2dp,
+    which is exactly what motif_group_concentration.py writes -- so the
+    consistent case is genuinely consistent. Pass `null_mean` explicitly to
+    simulate the two files coming from different runs.
+    """
+    rng = np.random.default_rng(0)
+    draws = pd.DataFrame({
+        "motif_class": np.repeat(list(classes), n),
+        "n_single_group": np.concatenate(
+            [rng.poisson(draws_mean, n) for _ in classes]
+        ),
+    })
+    reported = (
+        null_mean if null_mean is not None
+        else round(float(draws["n_single_group"].mean()), 2)
+    )
+    swap = pd.DataFrame({
+        "motif_class": list(classes),
+        "obs_single_group": [obs] * len(classes),
+        "null_single_group_mean": [reported] * len(classes),
+        "swap_concentration": [0.81] * len(classes),
+    })
+    return draws, swap
+
+
+def test_panel_c_rejects_null_draws_from_a_different_run():
+    """The exact bug: 18-group draws (mean 8.31) beside 21-group numbers."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=8.31, null_mean=6.07)
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="different runs"):
+        fig2.panel_concentration(ax, draws, swap)
+    plt.close(fig)
+
+
+def test_panel_c_accepts_draws_from_the_same_run():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=6.07)
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap)   # must not raise
+    plt.close(fig)
+
+
+def test_panel_c_reports_a_motif_class_missing_from_the_swap_table():
+    """A --drop-unnamed run writes the same filenames with one class only."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(classes=("TF-matched",))
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="absent from the swap-null table"):
+        fig2.panel_concentration(ax, draws, swap, motif_class="unmatched")
+    plt.close(fig)
+
+
+def test_panel_c_leaves_headroom_above_the_tallest_bar_for_the_legend():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables()
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap)
+    tallest = max(p.get_height() for p in ax.patches)
+    top = ax.get_ylim()[1]
+    plt.close(fig)
+    assert top > tallest * 1.15, "no room for the legend above the null mode"
+
+
+def test_panel_c_title_is_overridable_for_the_collapsed_version():
+    """The supplementary copy must not be captioned 'c'."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=1.47, obs=11)
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap,
+                             title="Discovery is lineage-confined\n"
+                                   "(one unit per JASPAR name)")
+    t = ax.get_title(loc="left")
+    plt.close(fig)
+    assert "JASPAR name" in t and not t.startswith("c")
+
+
+def test_panel_c_default_title_still_carries_the_panel_letter():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables()
+    fig, ax = plt.subplots()
+    fig2.panel_concentration(ax, draws, swap)
+    t = ax.get_title(loc="left")
+    plt.close(fig)
+    assert t.startswith("c")
+
+
+def test_collapsed_panel_c_guard_also_applies(tmp_path):
+    """The consistency guard is not bypassed by the collapsed route."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    draws, swap = concentration_tables(draws_mean=1.47, null_mean=6.07, obs=11)
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="different runs"):
+        fig2.panel_concentration(ax, draws, swap, title="collapsed")
+    plt.close(fig)
+
+
+def test_collapsed_concentration_is_supplementary_only(tmp_path):
+    """The main figure must keep MotifCompendium clusters.
+
+    JASPAR-name collapse is a supplementary robustness panel, not the headline
+    result, so `--collapse-concentration` must add a file and leave the main
+    figure untouched. Asserted by rendering twice and comparing bytes: if the
+    collapsed tables ever leak into panel c of the main figure, the PNGs
+    diverge and this fails.
+    """
+    h5 = fig2_inputs(tmp_path)
+    base = [sys.executable, str(REPO_ROOT / "src/analysis/plot_figure2.py"),
+            "--head", "count", "--in-dir", str(tmp_path),
+            "--modisco-h5", str(h5), "--n-ubiquitous", "2",
+            "--n-restricted", "2"]
+
+    plain_stem = tmp_path / "plain"
+    r = subprocess.run(base + ["--out-stem", str(plain_stem)],
+                       capture_output=True, text=True, env=SUBPROC_ENV)
+    assert r.returncode == 0, r.stderr
+    plain_main = (tmp_path / "plain.png").read_bytes()
+
+    # a collapsed directory whose numbers differ from the canonical ones
+    coll = tmp_path / "collapsed"
+    coll.mkdir()
+    draws, swap = concentration_tables(draws_mean=1.47, obs=11)
+    draws.to_csv(coll / "motif_concentration_count_tissue_nulldraws.tsv",
+                 sep="\t", index=False)
+    swap.to_csv(coll / "motif_concentration_count_tissue_swapnull.tsv",
+                sep="\t", index=False)
+
+    coll_stem = tmp_path / "withcoll"
+    r = subprocess.run(
+        base + ["--out-stem", str(coll_stem), "--collapse-concentration", str(coll)],
+        capture_output=True, text=True, env=SUBPROC_ENV,
+    )
+    assert r.returncode == 0, r.stderr
+    assert (tmp_path / "withcoll_s_concentration_jaspar_name.pdf").exists(), \
+        "the supplementary panel was not written"
+    assert (tmp_path / "withcoll.png").read_bytes() == plain_main, \
+        "collapsed tables changed the main figure; panel c must stay cluster-level"
+
+
+def test_presentation_headers_clear_the_first_row_of_captions(tmp_path):
+    """`category_style="header"` put the band label on the first logo's caption.
+
+    The header is drawn above `band.y1`, but each logo's caption is drawn
+    above its own axes, so clearing the band is not enough -- at the 11pt
+    presentation caption size "ubiquitous" landed on top of "198 exp". The
+    offset has to include the caption's own height.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(10.0, 5.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=6, n_restricted=6, per_row=3,
+        label_fontsize=11.0, min_label_fontsize=11.0,
+        category_style="header", label_fields="auto",
+        uppercase_names=True, hspace=0.72,
+    )
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    headers = [t for t in fig.texts if t.get_rotation() == 0]
+    assert len(headers) == 2, "expected one header per category"
+
+    caption_boxes = [
+        (ax.title.get_text().split("\n")[0],
+         ax.title.get_window_extent(r))
+        for ax in fig.axes if ax.title.get_text()
+    ]
+    hits = [
+        (h.get_text(), name)
+        for h in headers
+        for name, box in caption_boxes
+        if h.get_window_extent(r).overlaps(box)
+    ]
+    plt.close(fig)
+    assert not hits, f"category headers overlap logo captions: {hits}"
+
+
+def test_presentation_labels_are_two_lines_and_uppercased(tmp_path):
+    """`--presentation` trades the third caption line for legibility.
+
+    Both count blocks carry the lineage, so "21 tissues" sits beside
+    "heart+muscle" and the contrast reads without anyone parsing a count.
+    Uppercasing stops mouse- and human-convention JASPAR names
+    (`Pou5f1::Sox2` beside `POU2F3`) from mixing on a projected slide.
+    """
+    ub, re_ = exemplar_tables()
+    fields = fig2.resolve_label_fields("auto")
+    row = next(re_.assign(jaspar_name="Pou5f1::Sox2").itertuples())
+
+    label = fig2.motif_label(fields["restricted"], uppercase=True)(row)
+    assert label.split("\n")[0] == "POU5F1::SOX2"
+    assert len(label.split("\n")) == 2, f"expected two lines, got {label!r}"
+    assert "exp" not in label, "restricted captions drop the prevalence line"
+
+    ubi_row = next(ub.itertuples())
+    ubi = fig2.motif_label(fields["ubiquitous"], uppercase=True)(ubi_row)
+    assert ubi.split("\n")[1] == "21 tissues", \
+        f"ubiquitous should carry the lineage, got {ubi!r}"
+    assert "exp" not in ubi, "presentation captions drop the prevalence line"
+
+    # The manuscript preset stays three lines, so Figure 2 cannot drift.
+    default = fig2.resolve_label_fields("default")
+    assert default["restricted"] == ("name", "lineage", "prevalence")
+    assert fig2.motif_label(default["restricted"], uppercase=False)(row) \
+        .split("\n")[0] == "Pou5f1::Sox2"
+
+
+def test_unknown_label_field_is_rejected():
+    with pytest.raises(SystemExit, match="unknown field"):
+        fig2.resolve_label_fields("name,lineage,tissue")
+
+
+def profile_table():
+    """A profile-head exemplar table as `--include-unmatched` produces one.
+
+    JASPAR2026 has no Inr/TATA/DPE entries, so the core promoter clusters --
+    the whole point of the profile block -- arrive with a null `jaspar_name`.
+    """
+    import numpy as np
+    return pd.DataFrame({
+        "cluster_final": [11, 12, 13, 14],
+        "posneg": ["pos"] * 4,
+        "jaspar_name": [np.nan, np.nan, np.nan, "NFYA"],
+        "total_seqlets": [900, 800, 700, 600],
+        "prevalence": [190, 180, 120, 150],
+    })
+
+
+def test_unnamed_profile_clusters_are_not_collapsed_onto_each_other():
+    """`drop_duplicates` treats nulls as equal, so all but one was dropped."""
+    rows = profile_table()
+    kept = fig2.rank_for_panel(rows, 4)
+    assert len(kept) == 4, (
+        "unnamed core promoter clusters were deduped against each other: "
+        f"kept {sorted(kept['cluster_final'])}"
+    )
+    # Named rows are still deduped, and ordering stays by support.
+    assert list(kept["cluster_final"]) == [11, 12, 13, 14]
+
+
+def test_named_profile_rows_still_dedup_by_name():
+    rows = profile_table()
+    rows = pd.concat([rows, rows.assign(cluster_final=15, total_seqlets=10)])
+    kept = fig2.rank_for_panel(rows, 10)
+    assert (kept["jaspar_name"] == "NFYA").sum() == 1, \
+        "a repeated JASPAR name should still collapse to one logo"
+
+
+def test_unnamed_clusters_fall_back_to_a_cluster_id_not_the_string_nan():
+    rows = profile_table()
+    label = fig2.motif_label(("name",))
+    rendered = [label(r) for r in rows.itertuples()]
+    assert "nan" not in rendered, f"rendered the literal string nan: {rendered}"
+    assert rendered[:3] == ["cl11", "cl12", "cl13"]
+    assert rendered[3] == "NFYA"
+
+
+def test_profile_names_tsv_overrides_the_fallback():
+    """The core promoter motifs have to be nameable by hand."""
+    rows = profile_table()
+    names = {11: "TATA", 12: "Inr", 13: "DPE"}
+    label = fig2.motif_label(("name",), uppercase=False, names=names)
+    assert [label(r) for r in rows.itertuples()] == \
+        ["TATA", "Inr", "DPE", "NFYA"]
+    # A hand-given name wins over a JASPAR one, so a cluster can be relabelled.
+    assert fig2.motif_label(("name",), names={14: "NF-Y"})(
+        list(rows.itertuples())[3]) == "NF-Y"
+
+
+def test_three_block_panel_has_no_caption_collisions(tmp_path):
+    """The profile block makes panel a three bands; headers must still clear."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 6.5))
+    drew = fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=6, n_restricted=6, n_profile=4, per_row=3,
+        label_fontsize=11.0, min_label_fontsize=11.0,
+        category_style="header", label_fields="auto",
+        uppercase_names=True, hspace=0.72,
+        profile_names={c: n for c, n in
+                       zip(prof["cluster_final"], ["TATA", "Inr", "DPE", "NFYA"])},
+    )
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    headers = [t for t in fig.texts if t.get_rotation() == 0]
+    assert len(headers) == 3, f"expected three headers, got {len(headers)}"
+    captions = [(ax.title.get_text().split("\n")[0],
+                 ax.title.get_window_extent(r))
+                for ax in fig.axes if ax.title.get_text()]
+    hits = [(h.get_text(), name) for h in headers
+            for name, box in captions
+            if h.get_window_extent(r).overlaps(box)]
+    plt.close(fig)
+    assert drew == 16, f"expected 16 logos, drew {drew}"
+    assert not hits, f"headers overlap captions in the three-block panel: {hits}"
+
+
+def test_hand_given_names_are_not_uppercased():
+    """`--uppercase-names` homogenizes JASPAR symbols, not curated labels.
+
+    The core promoter elements are named by hand (`CA-Inr`, `TA-Inr`), and
+    `Inr` is a standard abbreviation rather than a gene symbol -- uppercasing
+    it to `CA-INR` is simply wrong. A typed name is used verbatim.
+    """
+    rows = profile_table()
+    names = {11: "CA-Inr", 12: "TATA", 13: "TA-Inr"}
+    label = fig2.motif_label(("name",), uppercase=True, names=names)
+    assert [label(r) for r in rows.itertuples()][:3] == \
+        ["CA-Inr", "TATA", "TA-Inr"]
+    # A JASPAR name in the same panel is still homogenized.
+    assert label(list(rows.itertuples())[3]) == "NFYA"
+
+
+def test_cluster_id_fallback_is_not_uppercased():
+    rows = profile_table()
+    label = fig2.motif_label(("name",), uppercase=True)
+    assert [label(r) for r in rows.itertuples()][:3] == ["cl11", "cl12", "cl13"]
+
+
+def test_non_positive_n_means_every_row():
+    """`--presentation` shows the whole lexicon, not a picked handful."""
+    ub, _ = exemplar_tables(n_ubiquitous=10)
+    assert len(fig2.rank_for_panel(ub, 0)) == 10
+    assert len(fig2.rank_for_panel(ub, None)) == 10
+    assert len(fig2.rank_for_panel(ub, -1)) == 10
+    assert len(fig2.rank_for_panel(ub, 4)) == 4
+
+
+@pytest.mark.parametrize("blocks,expected_headers", [
+    (("ubiquitous", "restricted"), ["ubiquitous", "lineage-restricted"]),
+    (("profile",), ["core promoter"]),
+])
+def test_blocks_render_independently(tmp_path, blocks, expected_headers):
+    """Counts and profile go to separate figures, so each renders alone.
+
+    A block rendered without the other head also drops the "count head:" /
+    "profile head:" prefix, which only earns its width when both are on the
+    same figure to contrast.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 5.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=0, n_restricted=0, n_profile=4, per_row=5,
+        label_fontsize=11.0, category_style="header", label_fields="auto",
+        blocks=blocks,
+    )
+    fig.canvas.draw()
+    headers = sorted(t.get_text() for t in fig.texts if t.get_rotation() == 0)
+    plt.close(fig)
+    assert headers == sorted(expected_headers)
+
+
+def test_pad_to_equalizes_logo_length_without_truncating(tmp_path):
+    """Trimmed CWMs run 10-25bp, which makes one text size impossible."""
+    ub, re_ = exemplar_tables(n_ubiquitous=3, n_restricted=3)
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    tk = dict(threshold=0.3, min_len=4)
+    raw = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos", **tk))
+           for r in ub.itertuples()]
+    padded = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos",
+                                   pad_to=30, **tk))
+              for r in ub.itertuples()]
+    assert set(padded) == {30}, f"expected one length, got {sorted(set(padded))}"
+    # A pad_to below the trimmed length is ignored rather than cropping signal.
+    tiny = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos",
+                                 pad_to=2, **tk))
+            for r in ub.itertuples()]
+    assert tiny == raw, "pad_to must never truncate a CWM"
+
+
+def test_max_trimmed_len_spans_every_block(tmp_path):
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    tk = dict(threshold=0.3, min_len=4)
+    longest = fig2.max_trimmed_len([(ub, h5), (re_, h5)], tk)
+    per_row = [len(fig2.trimmed_cwm(h5, int(r.cluster_final), "pos", **tk))
+               for r in pd.concat([ub, re_]).itertuples()]
+    assert longest == max(per_row)
+    # A stray pad_to in trim_kwargs must not feed back into the measurement.
+    assert fig2.max_trimmed_len([(ub, h5)], dict(tk, pad_to=99)) == \
+        fig2.max_trimmed_len([(ub, h5)], tk)
+
+
+def test_solve_figure_height_hits_the_target_axes_height(tmp_path):
+    """The two presentation files must share a glyph scale, so this is solved.
+
+    Axes height is affine in figure height -- the grid scales, captions are in
+    points and do not -- so two probes should land the target closely.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+
+    def draw(f):
+        fig2.panel_exemplars(
+            f, GridSpec(1, 1, figure=f)[0, 0], ub, re_, h5,
+            trim_kwargs=dict(threshold=0.3, min_len=4),
+            n_ubiquitous=0, n_restricted=0, per_row=5,
+            label_fontsize=11.0, category_style="header",
+            label_fields="auto", blocks=("ubiquitous",),
+        )
+
+    target = 0.5
+    h = fig2.solve_figure_height(draw, 10.0, target)
+    got = fig2.logo_axes_size(draw, (10.0, h))[1]
+    assert abs(got - target) < 0.05 * target, \
+        f"solved height gave {got:.3f} in, wanted {target:.3f} in"
+
+
+@pytest.mark.parametrize("head_prefixes,expected", [
+    # Figure 2 draws both heads on one panel, so the prefix is the only thing
+    # distinguishing the bands.
+    (True, ["profile head: initiation shape", "count head: ubiquitous",
+            "count head: lineage-restricted"]),
+    # A slide wants the biological grouping; which head produced it is an
+    # internal detail.
+    (False, ["core promoter", "ubiquitous", "lineage-restricted"]),
+])
+def test_band_headers_name_the_grouping(tmp_path, head_prefixes, expected):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 9.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=0, n_restricted=0, n_profile=3, per_row=5,
+        label_fontsize=11.0, category_style="header", label_fields="auto",
+        hspace=0.72, head_prefixes=head_prefixes,
+    )
+    fig.canvas.draw()
+    got = [t.get_text() for t in fig.texts if t.get_rotation() == 0]
+    plt.close(fig)
+    assert got == expected
+
+
+def test_all_three_bands_share_one_column_grid(tmp_path):
+    """Consolidating must not rescale a band: one pitch, one glyph size."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(10.0, 9.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof, profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4, pad_to=25),
+        n_ubiquitous=0, n_restricted=0, n_profile=3, per_row=5,
+        label_fontsize=11.0, category_style="header", label_fields="auto",
+        hspace=0.72, head_prefixes=False, equalize_band_heights=True,
+    )
+    fig.canvas.draw()
+    fw, fh = fig.get_size_inches()
+    widths = {round(a.get_position().width * fw, 3) for a in fig.axes}
+    heights = [a.get_position().height * fh for a in fig.axes]
+    plt.close(fig)
+    assert len(widths) == 1, f"logo widths differ across bands: {widths}"
+    # `_logo_grid` may raise hspace above the nominal value to clear a tall
+    # caption, so allow a little slack rather than demanding exactness.
+    spread = (max(heights) - min(heights)) / max(heights)
+    assert spread < 0.05, (
+        f"logo heights differ across bands by {spread:.1%}: "
+        f"{min(heights):.3f}-{max(heights):.3f} in")
+
+
+def test_sidebar_fills_each_band_and_keeps_one_logo_size(tmp_path):
+    """Per-band column counts, core promoter as a right-hand column.
+
+    A single shared column count cannot fill both bands -- 10 ubiquitous and
+    15 lineage-restricted over two rows want 5 and 8 columns -- and a band
+    with holes in it reads worse than a ragged right edge. Everything still
+    sits in one grid, so the logos cannot drift out of size relative to
+    each other.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables(n_ubiquitous=10, n_restricted=15)
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    prof = profile_table().assign(cluster_final=list(ub["cluster_final"])[:4])
+    fig = plt.figure(figsize=(18.0, 6.0))
+    drew = fig2.panel_sidebar(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        profile_rows=prof.head(3), profile_h5=h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4, pad_to=25),
+        band_rows=2, label_fontsize=11.0, label_fields="auto",
+        profile_names={11: "CA-Inr", 12: "TATA", 13: "TA-Inr"},
+    )
+    fig.canvas.draw()
+    fw, fh = fig.get_size_inches()
+    widths = {round(a.get_position().width * fw, 3) for a in fig.axes}
+    heights = {round(a.get_position().height * fh, 3) for a in fig.axes}
+    xs = sorted({round(a.get_position().x0, 3) for a in fig.axes})
+    headers = sorted(t.get_text() for t in fig.texts if t.get_rotation() == 0)
+    plt.close(fig)
+
+    assert drew == 28
+    assert len(widths) == 1, f"logo widths drifted: {widths}"
+    assert len(heights) == 1, f"logo heights drifted: {heights}"
+    assert headers == ["core promoter", "lineage-restricted", "ubiquitous"]
+    # 8 body columns (the wider band) plus the core promoter column.
+    assert len(xs) == 9, f"expected 9 distinct columns, got {len(xs)}"
+
+
+def test_sidebar_band_rows_zero_falls_back_to_one_column_count(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables(n_ubiquitous=10, n_restricted=15)
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(14.0, 6.0))
+    fig2.panel_sidebar(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4), cols=6, band_rows=0,
+        label_fontsize=11.0, label_fields="auto",
+    )
+    fig.canvas.draw()
+    xs = {round(a.get_position().x0, 3) for a in fig.axes}
+    plt.close(fig)
+    assert len(xs) == 6, f"expected 6 columns from --logos-per-row, got {len(xs)}"
+
+
+def test_row_gap_clearance_runs_even_when_the_font_is_pinned(tmp_path):
+    """Caption clearance was skipped whenever shrinking was disallowed.
+
+    The solve lived in a `while label_fontsize > min_label_fontsize` loop, so
+    pinning the font (as --presentation does, to hold a legible size) skipped
+    the body entirely and no clearance was computed. A generous default floor
+    hid it until the floor was lowered for slides, at which point captions
+    landed on the logos above.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    ub, re_ = exemplar_tables()
+    h5 = exemplar_h5(tmp_path, ub, re_)
+    fig = plt.figure(figsize=(10.0, 4.0))
+    fig2.panel_exemplars(
+        fig, GridSpec(1, 1, figure=fig)[0, 0], ub, re_, h5,
+        trim_kwargs=dict(threshold=0.3, min_len=4),
+        n_ubiquitous=0, n_restricted=0, per_row=5,
+        # Pinned font *and* a row gap far too small to clear a caption.
+        label_fontsize=11.0, min_label_fontsize=11.0, min_hspace=0.01,
+        category_style="header", label_fields="auto", hspace=0.45,
+        equalize_band_heights=True,
+    )
+    hits = _title_collisions(fig)
+    plt.close(fig)
+    assert not hits, f"captions overlap the logos above: {hits}"

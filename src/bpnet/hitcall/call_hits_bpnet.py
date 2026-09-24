@@ -47,6 +47,7 @@ import argparse
 import subprocess
 import sys
 import zipfile
+from contextlib import ExitStack
 from itertools import chain
 from pathlib import Path
 
@@ -56,8 +57,6 @@ from pathlib import Path
 # available" the same way.
 HITS_FILE_STAGES = [
     "hits_filtered.tsv",
-    "hits_flank_filtered.tsv",
-    "hits_seqlet_filtered.tsv",
     "hits_confidence_filtered.tsv",
     "hits_dedensified.tsv",
     "hits_unique.tsv",
@@ -66,6 +65,8 @@ HITS_FILE_STAGES = [
 import pandas as pd
 import yaml
 from tangermeme.io import extract_loci
+
+import compressed_io
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -96,6 +97,34 @@ def trim_suffix(cwm_trim_threshold, cwm_trim_thresholds, cwm_trim_coords):
     return ("_" + "_".join(parts)) if parts else ""
 
 
+def resolve_experiment_paths(experiment, head, min_trim_len=None, model_dir=None):
+    """Resolve (exp_dir, hits_dir, trim_coords, suffix) from --min-trim-len
+    alone -- the block every hitcall/ script otherwise duplicated by hand.
+
+    model_dir_name defaults to `experiment` when model_dir is None. exp_dir
+    is regions.npz/peaks.narrowPeak's trim-independent home; hits_dir is its
+    trim-suffixed subdirectory (or exp_dir itself for default trimming)
+    where hits/report/ actually live. trim_coords is the modisco/bpnet
+    trim-coords TSV path this --min-trim-len implies, or None -- existence
+    isn't checked here; resolve_hits_path/compressed_io.exists() do that
+    where it matters. Scripts driven by the full --cwm-trim-threshold/
+    --cwm-trim-thresholds/--cwm-trim-coords flag surface directly (this
+    module, report_bpnet.py) call trim_suffix() themselves instead, since
+    --min-trim-len is just one convenience layered on top of that surface.
+    """
+    model_dir_name = Path(model_dir).name if model_dir else experiment
+    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
+    trim_coords = (
+        modisco_dir / f"{experiment}_{head}_trim_coords_min{min_trim_len}bp.tsv"
+        if min_trim_len is not None
+        else None
+    )
+    suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, trim_coords)
+    exp_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{head}"
+    hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
+    return exp_dir, hits_dir, trim_coords, suffix
+
+
 def resolve_hits_path(hits_dir, stages=HITS_FILE_STAGES, verbose=False):
     """Find the most-processed hits file in `stages` (most- to
     least-processed order) that actually exists in `hits_dir`, treating a
@@ -109,12 +138,18 @@ def resolve_hits_path(hits_dir, stages=HITS_FILE_STAGES, verbose=False):
     looks preferable by name alone -- report_bpnet.py and friends would keep
     reading it and never see the rerun's effect at all.
     """
-    paths = [hits_dir / name for name in stages]
+    # Resolve each stage to whichever of its plain/.gz forms is present, so a
+    # partially compressed tree still resolves. Staleness is then compared on
+    # the files that actually exist, which is the same check as before.
+    paths = [
+        compressed_io.resolve(hits_dir / name, missing_ok=True) for name in stages
+    ]
     for i, path in enumerate(paths):
-        if not path.exists():
+        if path is None:
             continue
         stale_against = next(
-            (later for later in paths[i + 1 :] if later.exists() and later.stat().st_mtime > path.stat().st_mtime),
+            (later for later in paths[i + 1 :]
+             if later is not None and later.stat().st_mtime > path.stat().st_mtime),
             None,
         )
         if stale_against is not None:
@@ -181,7 +216,7 @@ def build_peaks_narrowpeak(peaks_path, chrom_splits, out_path):
             "summit": 0,
         }
     )
-    narrowpeak.to_csv(out_path, sep="\t", header=False, index=False)
+    compressed_io.write_bgzip(narrowpeak, out_path)
     return len(narrowpeak)
 
 
@@ -189,6 +224,60 @@ def run(cmd, verbose):
     if verbose:
         print(" ".join(str(c) for c in cmd))
     subprocess.run(cmd, check=True)
+
+
+def ensure_regions_npz(peaks_path, chrom_splits, ohe_path, attr_path, out_dir,
+                        region_width, verbose=False):
+    """Return out_dir/regions.npz, reusing it if present and valid, else
+    rebuilding it (and its peaks.narrowPeak input) from the experiment's own
+    filtered peaks + saved OHE/attribution arrays.
+
+    Factored out of call_hits_bpnet.py's main() so extract_regions_bpnet.py
+    can rebuild just this cache -- e.g. after regions.npz was deleted
+    directly while hits.tsv and every downstream filter/report stage were
+    left alone -- without also unconditionally re-running finemo call-hits,
+    which has no skip-if-unchanged logic of its own and would overwrite
+    those later stages for no reason.
+    """
+    peaks_narrowpeak = compressed_io.compressed_name(out_dir / "peaks.narrowPeak")
+    regions_npz = out_dir / "regions.npz"
+    if regions_npz.exists() and zipfile.is_zipfile(regions_npz):
+        print(f"Reusing existing {regions_npz}")
+        return regions_npz
+
+    if regions_npz.exists():
+        print(
+            f"WARNING: existing {regions_npz} is not a valid .npz file "
+            "(likely left behind by an interrupted run, e.g. a "
+            "pre-empted/OOM-killed SLURM job) -- regenerating it.",
+            file=sys.stderr,
+        )
+    n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
+    print(f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}")
+    # Write to a temporary path and rename into place only once finemo
+    # finishes successfully, so a job killed mid-write (pre-emption, OOM,
+    # walltime) can never leave a truncated/corrupt regions.npz at the
+    # canonical cache path for a later run to silently "reuse".
+    tmp_regions_npz = out_dir / "regions.tmp.npz"
+    run(
+        [
+            "finemo",
+            "extract-regions-modisco-fmt",
+            "-s",
+            str(ohe_path),
+            "-a",
+            str(attr_path),
+            "-p",
+            str(peaks_narrowpeak),
+            "-o",
+            str(tmp_regions_npz),
+            "-w",
+            str(region_width),
+        ],
+        verbose,
+    )
+    tmp_regions_npz.rename(regions_npz)
+    return regions_npz
 
 
 def main():
@@ -345,7 +434,10 @@ def main():
         (args.cwm_trim_thresholds, "cwm-trim-thresholds mapping"),
         (args.cwm_trim_coords, "cwm-trim-coords mapping"),
     ]:
-        if path is not None and not Path(path).exists():
+        # compressed_io.exists() accepts either a path's plain or .gz form,
+        # since compute_trim_floor.py's trim-coords/-thresholds mapping
+        # files get compressed like any other .tsv in this tree.
+        if path is not None and not compressed_io.exists(path):
             print(f"Error: {label} not found: {path}", file=sys.stderr)
             sys.exit(1)
 
@@ -359,45 +451,12 @@ def main():
     out_dir = REPO_ROOT / "hitcalls" / "bpnet" / f"{model_dir_name}_{args.head}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    peaks_narrowpeak = out_dir / "peaks.narrowPeak"
-    regions_npz = out_dir / "regions.npz"
-    if regions_npz.exists() and zipfile.is_zipfile(regions_npz):
-        print(f"Reusing existing {regions_npz}")
-    else:
-        if regions_npz.exists():
-            print(
-                f"WARNING: existing {regions_npz} is not a valid .npz file "
-                "(likely left behind by an interrupted run, e.g. a "
-                "pre-empted/OOM-killed SLURM job) -- regenerating it.",
-                file=sys.stderr,
-            )
-        n_peaks = build_peaks_narrowpeak(peaks_path, chrom_splits, peaks_narrowpeak)
-        print(
-            f"Wrote {n_peaks} peaks aligned to saved attributions: {peaks_narrowpeak}"
-        )
-        # Write to a temporary path and rename into place only once finemo
-        # finishes successfully, so a job killed mid-write (pre-emption, OOM,
-        # walltime) can never leave a truncated/corrupt regions.npz at the
-        # canonical cache path for a later run to silently "reuse".
-        tmp_regions_npz = out_dir / "regions.tmp.npz"
-        run(
-            [
-                "finemo",
-                "extract-regions-modisco-fmt",
-                "-s",
-                str(ohe_path),
-                "-a",
-                str(attr_path),
-                "-p",
-                str(peaks_narrowpeak),
-                "-o",
-                str(tmp_regions_npz),
-                "-w",
-                str(args.region_width),
-            ],
-            args.verbose,
-        )
-        tmp_regions_npz.rename(regions_npz)
+    # bgzipped. `finemo extract-regions` reads this with polars.scan_csv,
+    # which decompresses gzip transparently; bgzip is a valid gzip stream.
+    regions_npz = ensure_regions_npz(
+        peaks_path, chrom_splits, ohe_path, attr_path, out_dir,
+        args.region_width, args.verbose,
+    )
 
     suffix = trim_suffix(
         args.cwm_trim_threshold, args.cwm_trim_thresholds, args.cwm_trim_coords
@@ -421,13 +480,20 @@ def main():
         "-b",
         str(args.batch_size),
     ]
-    if args.cwm_trim_thresholds:
-        call_hits_cmd += ["-T", args.cwm_trim_thresholds]
-    if args.cwm_trim_coords:
-        call_hits_cmd += ["-R", args.cwm_trim_coords]
-    if args.compile:
-        call_hits_cmd.append("-J")
-    run(call_hits_cmd, args.verbose)
+    with ExitStack() as stack:
+        if args.cwm_trim_thresholds:
+            trim_thresholds = stack.enter_context(
+                compressed_io.ensure_plain(args.cwm_trim_thresholds)
+            )
+            call_hits_cmd += ["-T", str(trim_thresholds)]
+        if args.cwm_trim_coords:
+            trim_coords = stack.enter_context(
+                compressed_io.ensure_plain(args.cwm_trim_coords)
+            )
+            call_hits_cmd += ["-R", str(trim_coords)]
+        if args.compile:
+            call_hits_cmd.append("-J")
+        run(call_hits_cmd, args.verbose)
 
     print(f"\nFi-NeMo hits saved to {call_hits_dir}")
 

@@ -8,8 +8,15 @@ sbatch job per (experiment, head) pair via link_hits_to_compendium.py.
 Jobs are skipped if hits_linked.tsv already exists or if neither
 hits_filtered.tsv nor hits_unique.tsv exists yet (run
 call_hits_bpnet.py/hitcall/launch.py, and optionally
-report_bpnet.py/hitcall/launch_report.py, first). This step does not use a
-GPU, so it runs as its own cheap CPU-only launcher, like launch_report.py.
+report_bpnet.py/hitcall/launch_post_hoc_pipeline.py, first). This step does
+not use a GPU, so it runs as its own cheap CPU-only launcher.
+
+Jobs are submitted with --requeue, matching launch_post_hoc_pipeline.py's
+reasoning: the default --partition includes `owners`, which is preemptible
+(`normal`/`akundaje`/`gpu` are not), and without --requeue a preempted job
+just dies with no automatic resubmission. A requeued job reruns
+link_hits_to_compendium.py from scratch, which is safe -- it deterministically
+overwrites its own hits_linked.tsv from the same inputs every time.
 
 Usage:
     python src/bpnet/hitcall/launch_link.py                    # submit all experiments, profile head
@@ -28,7 +35,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from call_hits_bpnet import DEFAULT_CWM_TRIM_THRESHOLD, trim_suffix
+import compressed_io
+from call_hits_bpnet import resolve_experiment_paths
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
@@ -93,8 +101,6 @@ def main():
     )
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
 
-    hitcalls_dir = REPO_ROOT / "hitcalls" / "bpnet"
-    modisco_dir = REPO_ROOT / "modisco" / "bpnet"
     log_dir = REPO_ROOT / "logs" / "bpnet_hitcall_link"
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -108,27 +114,19 @@ def main():
             skipped_reads += 1
             continue
 
-        model_dir_name = exp_id
-
         for head in heads:
-            cwm_trim_coords = (
-                modisco_dir
-                / f"{exp_id}_{head}_trim_coords_min{args.min_trim_len}bp.tsv"
-                if args.min_trim_len is not None
-                else None
+            _, hits_dir, _, suffix = resolve_experiment_paths(
+                exp_id, head, args.min_trim_len
             )
-            suffix = trim_suffix(DEFAULT_CWM_TRIM_THRESHOLD, None, cwm_trim_coords)
-            exp_dir = hitcalls_dir / f"{model_dir_name}_{head}"
-            hits_dir = exp_dir / suffix.lstrip("_") if suffix else exp_dir
 
             hits_filtered = hits_dir / "hits_filtered.tsv"
             hits_unique = hits_dir / "hits_unique.tsv"
-            if not hits_filtered.exists() and not hits_unique.exists():
+            if not compressed_io.exists(hits_filtered) and not compressed_io.exists(hits_unique):
                 skipped_missing += 1
                 continue
 
             hits_linked = hits_dir / "hits_linked.tsv"
-            if hits_linked.exists():
+            if compressed_io.exists(hits_linked):
                 skipped_done += 1
                 continue
 
@@ -154,6 +152,7 @@ def main():
                 #SBATCH --output={log_dir}/{job_name}.out
                 #SBATCH --error={log_dir}/{job_name}.err
                 #SBATCH -C NO_GPU
+                #SBATCH --requeue
 
                 ml biology
                 ml htslib
