@@ -304,8 +304,36 @@ time:
 1. Selects experiments from `configs/experiment_config.yaml`, dropping
    `--blacklist` IDs (default: `ENCSR973QQI`), any experiment whose
    `library_construction` metadata contains "uncapped", and any experiment
-   below `--min-reads` total reads (default: 10M, read from
-   `configs/n_reads.txt`).
+   below `--min-reads` total reads (**default: 0, i.e. no depth filter**, read
+   from `configs/n_reads.txt`). The atlas compendium was therefore built over
+   all 219 QC-passing experiments; the >10M-read restriction to 198 is applied
+   by the downstream analyses in [`src/analysis/`](../analysis/README.md), not
+   here.
+
+Use `--out-dir` to build a variant compendium without disturbing the existing
+one. Outputs default to `motifcompendium/bpnet/` and a rerun there overwrites
+in place, which is not recoverable cheaply -- the `.mc` save files alone run to
+hundreds of MB per head (1.5 GB for the profile raw), so copying the directory
+first is not a practical alternative:
+
+```bash
+python src/bpnet/motifcompendium/cluster_motifs.py --head count \
+    --min-reads 10000000 --out-dir motifcompendium/bpnet_198 \
+    --skip-svg-logos
+```
+
+`--logo-report-top-n 0` is **not** a cheap setting: 0 means *no cap*, so every
+cluster's logo gets embedded in the HTML report (24 MB on the real count head).
+The default of 500 is already the cheap path, and a small positive number is
+cheaper still.
+
+Two things to know about a variant compendium. `cluster_final` ids are **not
+stable across runs**, so its hits are not comparable until
+`hitcall/launch_link.py` has been rerun against its own
+`pattern_to_cluster.tsv`; and the logo paths in its
+`cluster_logo_paths.tsv` are relative to its own `--out-dir`, so
+`src/analysis/motif_redundancy.py` needs `--logo-root` pointed there to embed
+logos.
 2. Loads every surviving experiment's `modisco/bpnet/{experiment}_{head}.modisco.h5`
    into one `MotifCompendium` via `build_from_modisco` — this is also where
    MotifCompendium collapses each source pattern down to a single averaged CWM,
@@ -350,6 +378,588 @@ motifcompendium_{head}_cluster_logo_paths.tsv            # cluster_final -> logo
 motifcompendium_{head}_clusters/{pos,neg}_cluster_NNNN.html  # per-cluster motif collection (opt-in)
 ```
 
+#### Cluster redundancy: measured, not corrected
+
+Compendium clusters include near-duplicate variants of one motif. This is
+measured and stated rather than corrected; a similarity-based collapse was
+built, tested and rejected. Recorded here so it is not re-litigated.
+
+**What redundancy costs.** The compendium *relabels* Fi-NeMo hits
+([`../hitcall/link_hits_to_compendium.py`](../hitcall/link_hits_to_compendium.py))
+rather than serving as the scan set, so near-duplicate CWMs never compete for
+a site and no hit is suppressed. The cost is to **prevalence**: if one
+experiment's TATA links to cluster 8 and another's to cluster 21, "cluster 8"
+is not the same motif atlas-wide, and a count of how many experiments share a
+motif splits across the family.
+
+**How large it is.** On the profile head (v1.1.0, within 0.95 / across 0.90),
+families identified by eye span far more clusters than they appear to. Taking
+mean motif-to-motif similarity between clusters and comparing it to each
+cluster's own internal similarity
+(`gap = min(within_a, within_b) - cross_ab`), TATA spans >= 8 clusters
+(gaps -0.001..+0.034 among 8/21/48 alone) and AP-1 >= 7 (+0.005..+0.046).
+CA-Inr is the counter-example: clusters 15 and 17 sit at gap +0.155 and are
+genuinely separable, so not every visually similar pair is redundant.
+
+**Lowering the thresholds does not fix it.** Sweeping `--across-threshold`
+with `--within-threshold` held at 0.95, tracking where each family's motifs
+land and how many foreign motifs join them:
+
+| across | clusters | prev>=2 | TATA | AP-1 | ETV | CA-Inr |
+|---|---|---|---|---|---|---|
+| **0.90** | 5529 | **987** | **3c (+0)** | **4c (+0)** | **3c (+0)** | **3c (+0)** |
+| 0.8875 | 5097 | 975 | 5c (+38) | 7c (+35) | 3c (+11) | 5c (+34) |
+| 0.875 | 4718 | 945 | 4c (+64) | 6c (+20) | 5c (+86) | 4c (+38) |
+| 0.85 | 4016 | 936 | 3c (+37) | 5c (+30) | 3c (+95) | 5c (+51) |
+
+The total falls (5529 -> 4016) but the target families go *up* and
+non-monotonically -- TATA 3->5->4->3, AP-1 4->7->6->5 -- while absorbing
+foreign motifs and losing reproducible clusters (987 -> 936 at prevalence
+>= 2). The threshold only decides which **edges exist**; `cpm_leiden`'s
+`resolution_parameter` (fixed at 1.0) decides how aggressively communities
+form. Lowering the threshold hands Leiden a different graph, so it returns a
+different partition rather than a coarser one. **0.90 is the best of the four
+on every measure**, and lowering `--within-threshold` is worse still: it
+changes *what* the across stage clusters, so the comparison is confounded
+(0.925/0.8875 gave TATA 5c(+107), CA-Inr 6c(+51)).
+
+`--within-threshold` is also close to a no-op at these values: 0.925 leaves
+13,956 within-clusters from 14,691 motifs.
+
+**Why not a post-hoc collapse.** One was implemented and discarded:
+
+- Its threshold was **fitted and then validated on the same families**,
+  pinned between AP-1's worst internal pair (+0.046) and CA-Inr's tightest
+  separable pair (+0.053). "AP-1 merges, CA-Inr does not" at t=0.05 is
+  arithmetic, not evidence.
+- Single-linkage **percolates** on these families, which are gradients rather
+  than cliques: the largest connected component grew 4 -> 15 -> 48 -> 70 ->
+  137 as the gap threshold went 0.00 -> 0.05, and the group *count* peaked at
+  79 (t=0.03) then fell to 58 (t=0.05) while coverage kept rising, i.e.
+  groups fusing. Greedy representative selection avoids chaining but is
+  order-dependent.
+- Even at its best it only took TATA 7 -> 2, because no threshold in the
+  admissible window fuses a gradient without merging something distinct.
+
+**Two traps for anyone revisiting this.** Do not measure redundancy on
+similarity between *cluster averages*: a label-permutation null on the count
+head had randomly-composed clusters scoring **higher** pairwise than real
+ones (60.6% vs 58.1% of nearest neighbours above 0.90), because averaging
+blurs toward a bland consensus and bland averages resemble each other. And do
+not group candidate duplicates by JASPAR name; see below.
+
+**What is reported instead.** Raw cluster counts, with JASPAR-name collapse
+as a **lower bound** -- names can only merge clusters, never split them, so
+the distinct-name count bounds the number of distinct motifs from below and
+the raw count from above. Rarefaction is count-head only. Manual
+refinement of annotations into a consensus set, for both the report and
+Fi-NeMo labelling, is deferred until after the preprint.
+
+JASPAR names are the wrong granularity for *measuring* redundancy, which is
+why they bound rather than correct it. A name is a TF-identity label, and the
+two disagree in both directions: names **split what similarity fuses** (the
+ETV family is cluster 13/ETV7 plus 35 and 10, both ELF2, at gaps +0.030 and
++0.007) and **fuse what similarity separates** (clusters 4 and 17 are both
+Hand1::Tcf3 at gap +0.053). Some elements have no JASPAR entry at all --
+CA-Inr is a core promoter initiator, so its clusters come back as
+Hand1::Tcf3, ISL2 and Hand1::Tcf3 at 0.83-0.86, since the lookup must return
+some TF. Where a canonical entry exists the names are right (TBP for TATA,
+ETS for ETV), and distinguishing CRE from TRE variants is the lookup working
+rather than failing.
+
+#### Comparing two builds' clusterings
+
+`compare_clusterings.py` quantifies how much two builds actually disagree.
+Written to decide what to do about the v1.0.19 `k_centroids` default, but it
+applies to any pair of builds.
+
+It compares `pattern_to_cluster.tsv`, **not** `cluster_metadata.tsv`.
+`cluster_final` ids are not stable across runs, so metadata rows cannot be
+joined at all; the pattern mapping keys on `(experiment,
+local_motif_name)`, which is the same MoDISco pattern in every build.
+
+```bash
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    leiden=mc_leiden/motifcompendium_count_pattern_to_cluster.tsv \
+    capped5=mc_capped5/motifcompendium_count_pattern_to_cluster.tsv \
+    uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+`frac_same_clustermates` is the fraction of patterns whose set of
+cluster-mates is identical in both builds. It is invariant to relabelling and
+directly readable, but **read it alongside ARI, not instead of it**: it
+amplifies. One pattern moving from cluster A to cluster B flags every member
+of both, so at the count head's mean cluster size of ~5.9 (5,639 patterns /
+950 clusters) a single reassignment marks up to ~12 patterns as changed.
+Dividing `n_patterns_moved` by the mean size of two clusters gives a lower
+bound on the number of actual reassignments. Merge/split counts are reported
+directionally, so a cluster splitting in two is distinguishable from two
+merging.
+
+`posneg` is **not** in the cluster key. `cluster_final` is a global label —
+clustering runs `cluster_within="model"` then `cluster_on`, neither of which
+stratifies on `posneg` — so a cluster may hold both pos and neg motifs. An
+earlier version keyed on `f"{posneg}:{cluster_final}"` and split those,
+reporting the count head as 950 clusters where `cluster_metadata.tsv` has
+945 rows (exactly the 5 mixed clusters). Every cluster count this README
+attributes to `compare_clusterings.py` output — the three-way table, the
+capped25 table, the v1.1.0 table — is therefore 950 where the build's own
+metadata says 945. The ARI/AMI figures compared both builds under the same
+inflated key, so their ordering stands, but the counts do not.
+
+#### The three-way count-head comparison
+
+The controlled experiment for the `k_centroids` question. Clustering is ~4 min
+per run at count-head scale, and `--skip-svg-logos --logo-report-top-n 0`
+would be wrong here (0 means *no cap*, not "skip"); pass a small cap instead,
+or skip the logos and accept the report:
+
+```bash
+# Run against MotifCompendium v1.0.19; --kmeans-iterations has since been
+# removed (see below), so reproducing steps 2 and 3 needs `git show 30adbab`.
+MC=src/bpnet/motifcompendium/cluster_motifs.py
+# 1. pre-v1.0.19 behaviour: Leiden only
+python $MC --head count --algorithm cpm_leiden \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_leiden
+# 2. Leiden + bounded refinement
+python $MC --head count --kmeans-iterations 5 \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_capped5
+# 3. the current uncapped build already exists in motifcompendium/bpnet/
+
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    leiden=mc_leiden/motifcompendium_count_pattern_to_cluster.tsv \
+    capped5=mc_capped5/motifcompendium_count_pattern_to_cluster.tsv \
+    uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+Measured, 2026-09-14 (count head, 5,639 patterns, `--across-threshold` 0.90):
+
+| a | b | frac_same_clustermates | n_patterns_moved | ARI | AMI |
+|---|---|---|---|---|---|
+| leiden | capped5 | 0.2451 | 4,257 | 0.7773 | 0.9013 |
+| leiden | uncapped | 0.2444 | 4,261 | 0.7657 | 0.8976 |
+| capped5 | uncapped | 0.7349 | 1,495 | 0.9601 | 0.9757 |
+
+**All three builds produced exactly 950 clusters.** Chained after
+`cpm_leiden`, `k_centroids` receives the Leiden partition as
+`init_membership`, and `clustering.py` then sets `k` from it:
+
+```python
+_, init_membership = np.unique(init_membership, return_inverse=True)
+k = len(np.unique(init_membership))  # Set k
+seeds = [None]      # No random seed, run once
+init_method = None  # No initialization method
+```
+
+So `k` is inherited, not chosen — and `kmeans++`/`maximin` init and the
+two-seed default (`seeds=[100, 200]`) are all bypassed on the chained path.
+`k` is an **upper bound that can only shrink**: each iteration re-runs
+`_remap_membership` first, so a cluster that gets fully emptied disappears and
+the next round builds one fewer centroid. Assignment is `argmax` over the
+surviving centroids, so nothing can ever split. Two consequences:
+
+- The refinement is doing real work — Leiden-only and refined partitions
+  differ at ARI 0.77, roughly 350+ actual reassignments — and **five
+  iterations capture nearly all of it.** `leiden`-vs-`capped5` and
+  `leiden`-vs-`uncapped` are indistinguishable (0.2451 vs 0.2444), so by
+  iteration 5 the partition has already moved as far from Leiden as it ever
+  gets. The residual `capped5`-vs-`uncapped` difference (ARI 0.96, >= ~125
+  reassignments) is the slow tail.
+- It **cannot** explain the count head going from 944 to 946 clusters, which
+  this README previously attributed to it. The stage is monotone
+  non-increasing in `k`, so it can never raise a cluster count; here it
+  emptied nothing and left all 950 standing. That drift has some other cause
+  (most likely the `--across-threshold` 0.85 -> 0.90 change, or a differing
+  build set); it is still unexplained.
+
+How to read the result:
+
+- **capped ~= uncapped** -> cap it and rebuild profile with a bounded
+  refinement. It is doing real work and converges quickly; only the tail is
+  pathological. (This is what happened; v1.1.0 then made the bound
+  unnecessary.)
+- **leiden ~= uncapped** -> `k_centroids` changes nothing here, and
+  `--algorithm cpm_leiden` is both the cheapest and the safest option.
+- **all three differ materially** -> this is a question about which partition
+  is correct, not which is faster, and the cluster-average logos are the
+  evidence to look at (`k_centroids` exists to make members resemble the
+  average that represents them, which is exactly what Figure 2c draws).
+
+Whichever is chosen, **both heads must use the same setting** or a
+count-vs-profile contrast confounds head with clustering algorithm.
+
+#### Why `k_centroids` explodes at profile-head scale
+
+Traced through MotifCompendium `7e9d1c2`. Two defects, both in the per-iteration
+centroid step, and the cost model explains the count/profile gap exactly.
+
+**1. Every iteration recomputes a full k x k similarity that is never read.**
+`k_centroids_clustering` calls `mc.cluster_averages(...)` per iteration
+(`utils/clustering.py:871`), which ends in `build(cluster_motif_avgs, metadata,
+safe=False)` (`MotifCompendium.py:1889`) — and `build` unconditionally computes
+all-pairs similarity on what it is given (`MotifCompendium.py:220`):
+
+```python
+similarity, alignment_rc, alignment_h = utils_similarity.compute_similarities(
+    [motifs], [(0, 0)]
+)[0]
+```
+
+The loop passes `compute_quality_stats=False`, so that k x k matrix is
+discarded unused. The only matrix the iteration needs is the N x k
+motif-to-centroid block computed right after.
+
+Counting motif-pair alignments, with `r = k/N`, per-iteration cost is
+`N*k + k^2 = N^2 * (r + r^2)` against a one-time `N^2` build:
+
+| head | N | k | r | per-iteration | as % of full build |
+|---|---|---|---|---|---|
+| count | 5,639 | 950 | 0.168 | 6.3 M | **19.7%** |
+| profile | 14,691 | 5,527 | 0.376 | 111.7 M | **51.8%** |
+
+A profile iteration is **17.9x** a count iteration, and each one costs about
+half of building the entire compendium from scratch. The profile head is
+punished twice: N^2 is 6.8x larger *and* its motifs are more distinct, so
+`r` more than doubles and the wasted `k^2` term quadruples relative to the
+useful term. Twenty iterations is ten full compendium builds.
+
+**2. The centroid's alignment frame is the cluster's lowest-index member, so
+the centroid step does not optimise the assignment step's objective.**
+`cluster_averages` takes the alignment vectors from row 0 of the cluster's
+submatrix (`MotifCompendium.py:1840-1846`):
+
+```python
+alignment_rc_c = self.alignment_rc[c_idxs, :][:, c_idxs][0, :]
+alignment_h_c  = self.alignment_h[c_idxs, :][:, c_idxs][0, :]
+```
+
+`average_motifs` then aligns every member to that member before averaging. So
+when a cluster's lowest-index member leaves, the survivors are re-averaged in
+a **different frame** and the centroid jumps for reasons unrelated to the
+membership change. Lloyd's algorithm only converges because the centroid step
+minimises the same objective the assignment step evaluates; that guarantee is
+void here, which is what permits a limit cycle rather than convergence.
+`n_iterations=-1` exits only on `np.array_equal(membership_old,
+membership_new)` (`utils/clustering.py:890`), so a cycle never terminates, and
+`score_old` is assigned but never read — there is no objective-based stopping
+rule to fall back on.
+
+Incidentally that indexing is itself quadratic: it materialises a `(|c|, N)`
+gather and then a `(|c|, |c|)` slice to read one row. Summed over clusters
+that is `N^2` gathered elements per iteration, per matrix, where
+`self.alignment_rc[c_idxs[0], c_idxs]` would be `O(|c|)`.
+
+Both are worth reporting upstream. Neither is worked around by `--algorithm
+cpm_leiden` alone (that drops the stage, and the measured comparison shows the
+stage changes the partition materially), so the cap below stays the
+near-term answer.
+
+#### Choosing the iteration cap
+
+**Superseded by v1.1.0**, which makes the refinement bound itself and led to
+`--kmeans-iterations` being removed. Kept because the measurement below is
+what established that the pre-fix refinement converges on the count head but
+not on the profile head — the evidence for the alignment-frame diagnosis.
+
+The three-way result is "capped is close to uncapped but not equal", so the
+open question is where the refinement actually converges. The count head is
+the cheap place to find out — uncapped converges there in ~4 min, so a cap can
+be compared against the converged partition directly:
+
+```bash
+python $MC --head count --kmeans-iterations 25 \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_capped25
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    capped25=mc_capped25/motifcompendium_count_pattern_to_cluster.tsv \
+    uncapped=motifcompendium/bpnet/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+`k` needs no flag: on the chained path it is always inherited from Leiden
+(see above), and `--kmeans-iterations` bounded the refinement without
+touching it.
+
+Measured, 2026-09-14:
+
+| a | b | frac_same_clustermates | n_patterns_moved | ARI | AMI |
+|---|---|---|---|---|---|
+| capped25 | uncapped | **1.0** | **0** | 1.0 | 1.0 |
+
+**25 iterations reproduce the converged count-head partition exactly** — on
+that head the cap was not an approximation at all, but byte-identical to the
+uncapped output. This was the setting for both heads until v1.1.0 removed the
+need for a cap.
+
+The count head therefore converges in <= 25 iterations while the profile head
+had not converged after 24 h on an A100. Per-iteration cost only accounts for
+17.9x of that gap (see above), so the remainder is iteration *count*: the
+profile head is running hundreds of iterations where the count head needs
+tens. That is the predicted signature of the alignment-frame defect, and it
+scales with cluster count because more clusters means more chances for a
+cluster's lowest-index member to leave and re-frame the survivors.
+
+Convergence at 25 is established **only for the count head**. For the profile
+head the cap is a deliberate approximation until shown otherwise, so either
+say so in the methods, or confirm it by running the profile head at 25 and
+again at 50 and comparing — identical partitions mean iterations 26-50 changed
+nothing. Do the 25 run first and let its wall time decide whether the
+confirmation run is affordable.
+
+#### MotifCompendium v1.1.0 (`next_version`): the k_centroids fix
+
+Commit
+[`ddd279f`](https://github.com/kundajelab/MotifCompendium/commit/ddd279f) on
+the `next_version` branch fixes all three defects traced above: it adds
+`select_alignments()` so a cluster's frame comes from its membership rather
+than its row order, aligns each motif to the centroid it was assigned to
+(making the averaging step the exact spherical-k-means M-step), drops the
+throwaway `MotifCompendium` and its unread k x k similarity, and adds a
+`_ConvergenceTracker` that stops on a repeated membership, a stalled
+objective, or a `max_iterations=100` cap that applies even at
+`n_iterations=-1`. An unbounded run is no longer possible.
+
+**It is a version jump, not a patch.** `next_version` is v1.1.0 against
+v1.0.19: 1,448 insertions across five files, including a new
+`utils/composite.py` and 646 changed lines in `MotifCompendium.py`, plus a
+serial-clustering bug fix and reworked clustering-quality calculations. The
+branch is also a moving target, so **pin the commit**, do not track the
+branch.
+
+Two independent reasons "rerun with defaults" does not reproduce prior
+outputs:
+
+1. **The partition changes.** That is the fix working as intended.
+2. **`cluster_averages`' alignment frame changes even at a fixed partition.**
+   v1.1.0 adds `reference: str = "medoid"`; before it, a cluster average was
+   always framed on the cluster's lowest-indexed member.
+   `cluster_average_with_metadata` does not pass `reference`, so the default
+   applies — which moves `cluster_averages.h5`, `cluster_averages.meme`, the
+   cluster logos, Figure 2c and `select_motif_exemplars.py`. Passing
+   `reference="first"` would reproduce the old framing, but the new default is
+   the better one; the point is that it must be recorded, not avoided.
+
+**`--kmeans-iterations` has been removed.** It existed to bound a loop that is
+now self-bounding, and a cap would mask whether the fix actually converges —
+which is the thing worth learning. `--algorithm` stays, since reproducing the
+pre-v1.0.19 Leiden-only partition is still worth being able to do, and
+`--algorithm-kwarg ALGORITHM.KEY=VALUE` (repeatable) replaces it as a
+*diagnostic* escape hatch onto any per-step clustering argument — it sets no
+defaults, so omitting it leaves the library's own defaults alone. It targets
+a step by name and raises if that step is not in the algorithm list, since a
+silently ignored kwarg looks like it applied. The resulting setting lands in
+`cluster_metadata.tsv`'s `cluster_algorithm`, so a tuned build is not
+indistinguishable from an untuned one. The `mc_capped5`/`mc_capped25`
+builds are therefore no longer reproducible from the CLI; their outputs on
+disk are the record, and `git show 30adbab` has the flag if it is ever needed
+again. Watch stderr for
+`membership is cycling`, `objective stopped improving`, and `did not converge
+within 100 iterations`; the first two are now warnings rather than silent
+behaviour.
+
+One thing to watch: `_ConvergenceTracker.should_stop` stops the run at the
+*first* iteration that fails to improve by more than `tol=1e-9`. Since
+averaging is lossy the objective is not guaranteed monotone, so a run can dip
+and recover; this rule would stop at the dip. It returns the best-scoring
+iteration, so the result is sound, but it may under-iterate relative to true
+convergence. Compare against a `max_iterations`-only run if the count head
+comes back materially different from `mc_capped25`.
+
+Measured, 2026-09-14 (count head, v1.1.0 defaults, no cap):
+
+| a | b | frac_same_clustermates | n_patterns_moved | ARI | AMI |
+|---|---|---|---|---|---|
+| capped25 | v110 | 0.8837 | 656 | 0.9963 | 0.9950 |
+
+**The fix is a refinement, not a re-partitioning.** 950 clusters again, ARI
+0.9963, and ~55 actual reassignments (656 / ~12 amplification) out of 5,639
+patterns, with splits near-symmetric in both directions (16 vs 15) — local
+reshuffling, not systematic merging or splitting. In context on the
+count head:
+
+| comparison | ARI |
+|---|---|
+| leiden vs uncapped v1.0.19 | 0.766 |
+| capped5 vs uncapped v1.0.19 | 0.960 |
+| capped25 vs uncapped v1.0.19 | 1.000 |
+| capped25 vs v1.1.0 | 0.996 |
+
+v1.1.0's correction is roughly **a tenth the size of adding `k_centroids` at
+all**, which is what a genuine bug fix should look like rather than a
+different algorithm. Count-head downstream numbers should move very little.
+
+**That run stopped early, so the comparison above confounds two changes.**
+It emitted `k_centroids: objective stopped improving; returning the
+best-scoring iteration`. In the v1.1.0 loop the membership-equality check
+runs *before* `should_stop`, so a true fixed point breaks without warning:
+
+```python
+if np.array_equal(membership, membership_new):
+    break                      # true fixed point, no warning
+membership_next = _remap_membership(membership_new)
+if tracker.should_stop(membership_next, score):
+    break                      # the stall warning fires here
+```
+
+The warning therefore means membership was **still changing** when the run
+quit. The v1.1.0 count-head partition is `tracker.best_membership` — the
+best-scoring iteration — not a fixed point, whereas `mc_capped25` was a
+genuine one (it equals the uncapped v1.0.19 build exactly). So the ARI 0.9963
+gap mixes the alignment-frame fix with early stopping and cannot be
+attributed to either.
+
+The stall rule is too aggressive, and by the authors' own rationale: the
+tracker exists *because* lossy averaging makes the objective non-monotone, so
+a run can dip and recover — but `should_stop` exits at the **first** iteration
+failing to improve by more than `tol=1e-9`. Knowing the objective can dip
+calls for a patience counter (stop after *p* consecutive non-improvements),
+not an immediate exit. Worth reporting upstream.
+
+**One printed warning does not say how much stalled.** `mc.cluster` invokes
+`k_centroids` once per `cluster_within` group — one per experiment, so 219
+times for the within-model stage — plus once for the `cluster_on` stage, and
+`warnings.warn`'s default filter prints a given warning once per code
+location. A single line therefore means "at least one of ~220 calls", at an
+unknown stage.
+
+The stage is what matters. `cluster_on` produces `cluster_final` directly, so
+a stall there moves the atlas partition; a stall inside one `cluster_within`
+group perturbs only that experiment's own pre-clustering. `cluster_motifs.py`
+now counts them per stage with `simplefilter("always")`, prints
+
+```
+count: clustering convergence -- within-model: 3 stalled; across-model: converged
+```
+
+and stamps that string into `cluster_metadata.tsv`'s `cluster_convergence`,
+so a build records whether its own partition converged. Unrelated warnings
+are re-emitted at their original location rather than swallowed.
+
+To separate the two effects, re-run with the stall rule disabled and only the
+cycle and `max_iterations` guards active. `tol=-inf` makes
+`score <= previous + tol` unsatisfiable for any finite score:
+
+```bash
+python $MC --head count --algorithm-kwarg k_centroids.tol=-inf \
+    --skip-svg-logos --logo-report-top-n 1 --out-dir mc_v110_notol
+python src/bpnet/motifcompendium/compare_clusterings.py --head count \
+    v110=mc_v110/motifcompendium_count_pattern_to_cluster.tsv \
+    v110_notol=mc_v110_notol/motifcompendium_count_pattern_to_cluster.tsv
+```
+
+If those agree, early stopping cost nothing and ARI 0.9963 is the frame fix
+alone. If they differ, `mc_v110` is under-iterated and the no-stall build is
+the one to keep.
+
+Note also that this run does not yet demonstrate the 85 h problem is fixed:
+the count head converged before the fix too (`capped25 == uncapped`). **The
+profile head is the discriminating test.**
+
+**It passed.** On v1.1.0 the profile head cleared clustering and reached
+`cluster_averages.h5` and report generation in a fraction of the time, against
+85 h on an L40S and 24 h on an A100 without finishing under v1.0.19. Per the
+cost model, removing the unread `k x k` similarity only accounts for ~27% of
+a per-iteration saving, so the rest is iteration *count* — which confirms the
+alignment-frame defect, not raw scale, was what the profile head was stuck on.
+That asymmetry between heads is the strongest evidence for the diagnosis and
+belongs in the upstream report: 950-cluster count head converged either way,
+5,527-cluster profile head only after the fix.
+
+Note that this understates the change to the *outputs*, because
+`cluster_averages`' frame moved from row-0 to medoid for **all 950** clusters,
+including the ones whose membership is unchanged. The cluster-average h5, the
+MEME export and the Figure 2c logos therefore change more broadly than the
+partition does.
+
+Order of operations: rebuild the **count** head first and diff it against the
+`mc_capped25` baseline with `compare_clusterings.py`. That is ~4 min and
+sizes the change before committing the profile head to it. Then rebuild both
+heads on the same pinned commit, and re-run everything downstream
+(`plot_motif_rarefaction.py`, `motif_group_concentration.py`,
+`select_motif_exemplars.py`, Figure 2, hit calling) — cluster ids are not
+stable across builds, so nothing downstream carries over.
+
+#### What a build's settings were, after the fact
+
+Nothing in a compendium's outputs records how it was produced. The cluster
+metadata, MEME export, cluster-average h5 and HTML reports are identical in
+shape regardless of thresholds, and the only 0.85/0.90 strings in the reports
+are JASPAR match scores. That matters because several inputs have changed over
+the project's life, and every one of them moves the partition:
+
+- **`--across-threshold`'s default changed from 0.85 to 0.90** on 2026-08-21,
+  in commit `31d4f24`. A build predating that commit was clustered at 0.85
+  unless overridden. The manuscript methods described 0.85 because they were
+  written against a pre-August build.
+- **MotifCompendium was updated mid-project, and one update changed
+  clustering behaviour through a default.** v1.0.19 (commit
+  [`7e9d1c2`](https://github.com/kundajelab/MotifCompendium/commit/7e9d1c2),
+  2026-08-19) changed `mc.cluster`'s signature:
+
+  ```python
+  -        algorithm: str = "cpm_leiden",
+  +        algorithm: list[str] | str = ["cpm_leiden", "k_centroids"],
+  ```
+
+  `cluster_motifs.py` passed no `algorithm`, so the update silently added a
+  second stage: an **uncapped** k-means refinement (`n_iterations=-1`, exiting
+  only when the membership vector is *exactly* equal between consecutive
+  iterations, so an oscillation never terminates). Each iteration rebuilds
+  every centroid and recomputes an N x k float64 similarity on the GPU.
+
+  This is why a profile-head build ran for 85 h having previously completed on
+  v1.0.18. The cost is invisible at count-head scale (5,639 motifs, ~4 min of
+  clustering) and ruinous at profile-head scale (14,691 motifs). Note that the
+  raw `.mc` sizes — 1.5 GB profile against 223 MB count — are *not* a linear
+  read on motif count: the `.mc` holds three N x N matrices, so its size goes
+  as n^2. 14,691 motifs predict 863 + 216 + 432 = 1,511 MB and 5,639 predict
+  127 + 32 + 64 = 223 MB, both matching what is on disk.
+
+  It was **not** the cause of the count head going from 944 to 946 clusters,
+  which an earlier version of this README proposed. The three-way comparison
+  above shows `k_centroids` inherits `k` from Leiden and can only reduce it.
+
+  `--algorithm cpm_leiden` restores the pre-v1.0.19 behaviour. **Both heads
+  must use the same setting** or a count-vs-profile contrast confounds head
+  with clustering algorithm.
+
+  Since Sep 2026 `cluster_metadata.tsv` carries five provenance columns —
+  `mc_version`, `cluster_algorithm`, `cluster_reference`,
+  `cluster_convergence`, `within_threshold`, `across_threshold` —
+  so this class of change leaves a trace in the outputs. `mc_version` reads
+  the installed distribution metadata, not `MotifCompendium.__version__`,
+  which does not exist on any branch — stamping it via `getattr` recorded
+  `"unknown"` on every build until this was fixed. `cluster_reference`
+  records `cluster_averages`' alignment frame, which v1.1.0 made
+  configurable. They are constant
+  down each column and additive; the analysis scripts that read this table
+  (`motif_group_concentration.py`, `plot_motif_rarefaction.py`,
+  `select_motif_exemplars.py`) were verified to give byte-identical results
+  with and without them, and compendia built before the change simply lack
+  the columns.
+- **The build set is `filters INTERSECT h5 files present when the job ran`.**
+  `collect_modisco_paths` silently skips a selected experiment whose MoDISco
+  output is not on disk yet, so the experiment set can change with no change to
+  `--min-reads` or `--blacklist`. At the default `--min-reads 0` this is the
+  only thing that can move it.
+- **Compute options are partition inputs, not just performance knobs.** GPU
+  float reductions are not order-deterministic and `--max-chunk` changes that
+  order, so they can flip pairs sitting on the across-threshold boundary.
+
+Clustering is also **not known to be reproducible**: no seed is passed to
+`mc.cluster`, Leiden is a randomized algorithm, and the GPU path adds its own
+nondeterminism. Two builds on identical inputs are not guaranteed to agree,
+and that has never been tested here. Do not treat a small difference in
+cluster count between two builds as evidence of anything until it is.
+
+To compare two existing builds, use their metadata TSVs. `sum(n_motifs)` is
+the number of input MoDISco patterns and is invariant to the clustering
+threshold, while the row count is what the threshold moves, so equal input
+motifs with materially different cluster counts points at the threshold or the
+library version. The `experiments` column gives each build's experiment set
+directly, so whether the inputs changed is a lookup rather than an inference.
+Comparing the set of `(posneg, experiments)` signatures measures how much of
+the partition actually agrees, which the row count alone cannot -- two clusters
+merging while another splits nearly cancels in the total.
+
 The pipeline writes a full TSV plus a lightweight summary HTML for every
 cluster, with links to exported forward/reverse SVG logo files for every
 cluster — no motifs are dropped in `cluster_motifs.py`. To keep the
@@ -362,6 +972,57 @@ to write them. SVG logo export is enabled by default; use `--skip-svg-logos`
 to disable it, or `--svg-logo-batch-size` to tune rendering batch size.
 
 ## Hit Calling
+
+### Outputs are compressed
+
+Hit-call tables are stored compressed: **gzip for `.tsv`, bgzip for `.bed`
+and `.narrowPeak`**. Hit calling runs over all 224 experiments (198 is the
+minimum-quality filtered set used for the integrative analyses, not the
+hit-call set), with one output set per experiment x head x trim
+configuration, so this is a large amount of disk.
+
+`compressed_io.py` holds the three things every script needs:
+
+- `resolve(path)` — takes the *logical* (uncompressed) path and returns
+  whichever of it and its `.gz` sibling exists, preferring the compressed
+  one. It warns when both exist, since that state follows an interrupted
+  compression pass and the two can disagree; it raises naming **both**
+  candidates when neither does.
+- `write_tsv(frame, path)` — always writes `path.gz`, returning the path
+  actually written so the caller's log line names the real file.
+- `write_bgzip(frame, path)` — bgzip via the `bgzip` binary (`htslib`, already
+  in `environment.yml`). It **raises** rather than falling back to plain gzip:
+  a plain-gzip file named `.bed.gz` is indistinguishable until something tries
+  to tabix-index it, and then fails far from here.
+
+**Reads accept either form**, so a partially compressed tree still works —
+builds predating compression, Fi-NeMo output compressed after the fact, and
+freshly written `.gz` all coexist. `resolve_hits_path` resolves every stage
+through it, which covers most consumers; `cleanup_hitcalls.py` compares
+against `logical_name(path)` so its name sets still match compressed files.
+
+This is the hazard `cleanup_hitcalls.py` originally called out: it compressed
+only `hits.bed` because nothing read that back by exact filename, "so
+gzipping it can't break any downstream script's file resolution the way
+gzipping `hits_unique.tsv` would." `resolve()` is what removes that
+constraint.
+
+Two notes:
+
+- **bgzip is a valid gzip stream**, so `gzip`, `pandas` and `polars` all read
+  it transparently. Nothing tabix-indexes these yet; bgzip is used so that
+  compressing them now does not foreclose it.
+- **`peaks.narrowPeak` is ours but is *input* to `finemo extract-regions`**,
+  which reads it with `polars.scan_csv`. That handles gzip (verified on
+  polars 1.44.2), so a compressed cache works — but confirm the cluster's
+  polars is recent, because the failure mode is breakage at region
+  extraction rather than at write time.
+
+Fi-NeMo's own writers are untouched: it writes `hits.tsv`, `hits_unique.tsv`,
+`hits.bed` and `motif_report.tsv` uncompressed, and those are compressed
+afterward.
+
+### Calling hits
 
 [Fi-NeMo](https://github.com/kundajelab/Fi-NeMo) calls individual motif
 instances from attributions. By default it runs per experiment against that
@@ -425,6 +1086,21 @@ take the same `--cwm-trim-threshold`/`--cwm-trim-thresholds`/
 `--cwm-trim-coords`/`--min-trim-len` values purely to resolve this same
 directory layout, not to re-derive trimming themselves.
 
+If `regions.npz` itself goes missing (e.g. deleted directly, or removed by a
+disk cleanup) while `hits.tsv` and every later-stage file are still there,
+don't rerun `call_hits_bpnet.py` to get it back: `finemo call-hits` has no
+skip-if-unchanged logic, so that would unconditionally recall hits and
+require redoing every downstream filter/report stage just to regenerate one
+cache file. `extract_regions_bpnet.py` calls `call_hits_bpnet.py`'s own
+`ensure_regions_npz` directly instead, rebuilding only `peaks.narrowPeak`/
+`regions.npz` from the experiment's filtered peaks and saved OHE/attribution
+arrays, with `finemo call-hits` never invoked:
+
+```bash
+python src/bpnet/hitcall/extract_regions_bpnet.py -e ENCSR882DWM
+python src/bpnet/hitcall/extract_regions_bpnet.py -e ENCSR882DWM --force  # rebuild even if a valid regions.npz is already there
+```
+
 `call_hits_bpnet.py` first rebuilds the peak coordinates behind the saved
 `{experiment}_ohe.npz`/attribution arrays: `extract_loci` (used by
 `save_ohe.py`/`attribute_bpnet.py`) silently drops peaks that fall off a
@@ -468,6 +1144,19 @@ python src/bpnet/hitcall/launch_trim_floor.py --head profile --head count
 python src/bpnet/hitcall/launch_trim_floor.py --min-len 8
 ```
 
+Pass either the plain `.tsv` or a manually-gzipped `.tsv.gz` — `--cwm-trim-thresholds`/`--cwm-trim-coords`
+accept both. `call_hits_bpnet.py` checks existence via `compressed_io.exists()`
+and, unlike `peaks.narrowPeak` (read by `finemo extract-regions` via
+`polars.scan_csv`, which decompresses gzip transparently), decompresses a
+`.gz` mapping file to a temp file first (`compressed_io.ensure_plain()`)
+before handing it to Fi-NeMo's own `-T`/`-R` CLI args, since that reader
+isn't confirmed to handle gzip itself. `diagnose_background_energy_ratio.py`
+does the same before its own direct `load_mapping_tuple` call, and
+`report_bpnet.py` does it for its deprecated single-file `-H` mode too --
+that dispatches on a literal `.tsv` suffix, so a `.tsv.gz` hits path (e.g.
+`hits_dedensified.tsv.gz` after `filter_repeat_density.py`) was silently
+misread as a directory instead of failing loudly.
+
 `launch_trim_floor.py` submits one cheap CPU-only job per (experiment, head)
 to generate these atlas-wide, skipping any experiment/head whose per-experiment
 modisco.h5 is missing or whose floor TSV already exists at that `--min-len`.
@@ -501,11 +1190,10 @@ python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM
 python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM --head count
 python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM --min-trim-len 6
 python src/bpnet/hitcall/filter_repeat_density.py -e ENCSR882DWM --min-cluster-hits 5 --cluster-window 80
-
-python src/bpnet/hitcall/launch_filter_repeat_density.py --dry-run
-python src/bpnet/hitcall/launch_filter_repeat_density.py --head profile --head count
-python src/bpnet/hitcall/launch_filter_repeat_density.py --min-trim-len 6
 ```
+
+Atlas-wide, this runs as part of `launch_post_hoc_pipeline.py` below rather than
+its own separate launcher.
 
 Output:
 
@@ -550,11 +1238,9 @@ python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --head cou
 python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --min-trim-len 6
 python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_similarity
 python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR882DWM --score-column hit_importance --log-scale --min-bin-frac 0.001
-
-python src/bpnet/hitcall/launch_low_confidence_hits.py --dry-run
-python src/bpnet/hitcall/launch_low_confidence_hits.py --head profile --head count
-python src/bpnet/hitcall/launch_low_confidence_hits.py --min-trim-len 6
 ```
+
+Atlas-wide, this also runs as part of `launch_post_hoc_pipeline.py` below.
 
 `--score-column` is deliberately not fixed to `hit_correlation`: that column
 is a scale-invariant *shape* match to the motif template, which a
@@ -591,132 +1277,32 @@ Neither of the above fixes every motif: some show no internal bimodal
 structure at all by `hit_correlation`/`hit_similarity` (e.g. TATA in the
 same K562 run stayed at ~50% implausible peak prevalence through both
 filters), so there's nothing for `filter_low_confidence_hits.py` to find.
-`filter_by_seqlet_importance.py` anchors to a different, external reference
-instead: the TF-MoDISco discovery seqlets that built the motif's CWM in the
-first place. Any hit scoring below what even the weakest ~1% of those real
-discovery examples showed is hard to defend as a real site, independent of
-whether the hit population itself shows any visible structure. This is the
-same idea as Kelly Cochran's ProCapNet notebook (filters per-hit on
-`hit_importance`/`hit_score_combo = hit_correlation * hit_importance`
-against fixed constants, `0.01`/`0.015` for Inr, chosen by eyeballing
-histograms) made data-driven: derive the floor from each motif's own
-seqlets instead of a hand-picked constant. `hit_importance` (Fi-NeMo's own
-per-hit column) is exactly `sum(|contribution|)` over the hit's trimmed
-span, with no coefficient scaling -- directly and exactly reproducible for
-seqlets too from `regions.npz`'s raw contribution track and
-`report/seqlets.tsv`'s own trimmed coordinates (already written by
-`report_bpnet.py`'s `finemo report` call as a side effect, independent of
-hit-calling settings). Before trusting any of this, it self-checks by
-recomputing `hit_importance` for the *existing* hits from `regions.npz` and
-comparing against Fi-NeMo's own recorded value, refusing to proceed if they
-don't match closely:
+Two more targeted approaches were tried against exactly this and both came
+back null results on real K562 ENCSR220XSM data; both have since been
+deleted from the codebase (their small still-useful helpers moved to
+`region_utils.py`), but the negative results are worth recording so they
+aren't re-attempted:
 
-```bash
-python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM
-python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM --min-trim-len 6
-python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM --percentile 1 --percentile-multiplier 0.5
-python src/bpnet/hitcall/filter_by_seqlet_importance.py -e ENCSR882DWM --score-column hit_score_combo
+- **Anchoring a floor to TF-MoDISco discovery seqlets** (`hit_importance`,
+  or `hit_correlation * hit_importance`, below the weakest ~1% of a motif's
+  own seqlets -- Kelly Cochran's ProCapNet notebook's fixed-constant
+  approach made data-driven): dropped 0/414643 hits across all 45 motifs
+  on real data, including TATA. TATA's overcalled hits carry real
+  `hit_importance` comparable to genuine seqlets -- the model confidently
+  attributes importance to the AT-rich sequence, so there's no magnitude
+  gap for a magnitude-anchored floor to exploit.
+- **Extending each hit to its full untrimmed CWM window and scoring cosine
+  similarity against the motif's full CWM** (the per-instance analog of
+  `cwm_similarity`, floor again anchored to seqlets): also null, for a
+  different reason -- seqlets score systematically *lower* than hits on
+  this metric for every motif checked, including healthy ones. MoDISco
+  seqlets are an intentionally diverse cluster of variant/degenerate
+  instances averaged into one consensus CWM, while Fi-NeMo hit-calling's
+  sparse regression explicitly searches for the single best-fitting
+  window, so seqlets are the wrong reference population for this score.
 
-python src/bpnet/hitcall/launch_seqlet_importance.py --dry-run
-python src/bpnet/hitcall/launch_seqlet_importance.py --head profile --head count
-python src/bpnet/hitcall/launch_seqlet_importance.py --min-trim-len 6
-```
-
-Requires `report_bpnet.py` to have already been run at least once for this
-experiment/head (for `report/seqlets.tsv`). `--score-column hit_score_combo`
-approximates each seqlet's own correlation as ~1.0 rather than computing it
--- unlike `hit_importance`, `hit_correlation` depends on `importance_scale`,
-a per-window normalization Fi-NeMo computes inside its iterative optimizer
-with no closed form outside it, so it isn't reproducible for positions (like
-seqlets) that were never part of that fit. The script says this explicitly
-at runtime; it isn't a silent assumption.
-
-Output:
-
-```text
-hitcalls/bpnet/{model_dir_name}_{head}/hits_seqlet_filtered.tsv
-```
-
-`report_bpnet.py` prefers this over `hits_confidence_filtered.tsv` (which it
-prefers over `hits_dedensified.tsv`, over raw `hits_unique.tsv`) the same
-staleness-aware way described above.
-
-None of the above touch a real, distinct failure mode: a hit's trimmed core
-(the ~6bp window `--min-trim-len`/`--cwm-trim-threshold` actually fits
-against) can match the motif template almost perfectly while the ~44bp of
-flanking sequence outside that core is generic AT-repeat content that
-actively *disagrees* with the motif's real flanking pattern. Direct review
-of the real CWM comparison data (`report/CWMs/{motif}/hits_fc.txt` vs.
-`modisco_fc.txt`) for TATA/GATA/TA-Inr in K562 ENCSR220XSM showed exactly
-this: per-position cosine similarity 0.85-1.0 at the trimmed core, down to
--0.92 in the flanks. `hit_correlation`/`hit_importance`/`hit_similarity`
-(and the seqlet-importance floor above) are all computed only over that
-same trimmed core, so no threshold on any of them can ever see this --
-there's no per-hit signal that looks at the flanks at all. Forcing a wider
-fitting window at call-hits time (raising `--min-trim-len`/
-`--cwm-trim-threshold` globally) was considered and rejected: CWM magnitude
-decays gradually and similarly across nearly every motif, so there's no
-single threshold that widens only the broken motifs without widening (and
-adding fitting collinearity risk to) every motif in every experiment.
-
-`filter_by_flank_consistency.py` adds the missing signal as a separate,
-motif-identity-agnostic post-hoc check instead: for each hit, extend out to
-the *full* (untrimmed) CWM window -- hits already carry
-`start_untrimmed`/`end_untrimmed` for exactly this span -- and compute
-cosine similarity between the hit's own observed contribution track and
-the motif's full CWM, loaded directly from the `.modisco.h5` via
-`finemo.data_io.load_modisco_motifs` (`motif_type="cwm"`, matching the
-`"pp"` hit-calling mode this pipeline uses by default: both sides are the
-*projected*, true-base-only contribution, not the hypothetical one). This
-is the per-instance analog of what aggregates into `hits_fc.txt`/
-`cwm_similarity`, so it directly measures the thing `cwm_similarity` fails
-on. The floor is anchored to each motif's own seqlets the same way as
-`filter_by_seqlet_importance.py` (seqlets carry the same
-`start_untrimmed`/`end_untrimmed`/`strand` schema, so the identical score
-is computable for them). Because this score is a cosine similarity bounded
-at 1.0 and real seqlets cluster close to it (unlike `hit_importance`'s
-unbounded magnitude), the floor is a *distance-from-a-perfect-match*
-scaling rather than a plain multiplier: `floor = 1 - (1 - percentile_value)
-/ percentile_multiplier` -- smaller `--percentile-multiplier` is still more
-lenient, just applied to the gap from 1.0 instead of to the raw value:
-
-```bash
-python src/bpnet/hitcall/filter_by_flank_consistency.py -e ENCSR220XSM
-python src/bpnet/hitcall/filter_by_flank_consistency.py -e ENCSR220XSM --min-trim-len 6 -v
-python src/bpnet/hitcall/filter_by_flank_consistency.py -e ENCSR220XSM --percentile 1 --percentile-multiplier 0.5
-
-python src/bpnet/hitcall/launch_flank_consistency.py --dry-run
-python src/bpnet/hitcall/launch_flank_consistency.py --head profile --head count
-python src/bpnet/hitcall/launch_flank_consistency.py --min-trim-len 6
-```
-
-Requires `report_bpnet.py` to have already been run at least once for this
-experiment/head (for `report/seqlets.tsv`) and the `.modisco.h5` to still be
-present. Unlike `hit_importance`, this new full-window similarity score has
-no exact Fi-NeMo-computed ground truth to validate against, so there's no
-hard pass/fail self-check gate -- `-v` instead prints a soft sanity table
-comparing each motif's mean hit-level score against its already-known
-`cwm_similarity` from `report/motif_report.tsv`, if present.
-
-Output:
-
-```text
-hitcalls/bpnet/{model_dir_name}_{head}/hits_flank_filtered.tsv
-```
-
-`report_bpnet.py` prefers this over `hits_seqlet_filtered.tsv` (which it
-prefers over `hits_confidence_filtered.tsv`, over `hits_dedensified.tsv`,
-over raw `hits_unique.tsv`) the same staleness-aware way described above.
-
-None of the above actually resolved TATA/TA-Inr on real K562 ENCSR220XSM
-data: `filter_by_flank_consistency.py`'s seqlet-anchored floor turned out
-null there (real seqlets score systematically *lower* than hits on
-full-window similarity for every motif checked -- MoDISco seqlets are an
-intentionally diverse cluster of variant instances, while Fi-NeMo's sparse
-regression explicitly searches for the single best-fitting window, so
-seqlets are the wrong reference population for this particular score). The
-actual distinguishing property, found by direct visual review of real hit
-logo plots: real core-promoter hits sit on a genuine local spike in the
+The actual distinguishing property, found by direct visual review of real
+hit logo plots: real core-promoter hits sit on a genuine local spike in the
 attribution track, while spurious same-shape hits sit in generally
 noisy/repeat-dense regions with no local prominence at all -- and both
 types occur at every distance from the real PRO-cap TSS summit, which is
@@ -760,18 +1346,16 @@ python src/bpnet/hitcall/filter_low_confidence_hits.py -e ENCSR220XSM --score-co
 This substantially improves but doesn't fully resolve these motifs past
 `cwm_similarity` 0.9 (K562 ENCSR220XSM TATA: 0.765 -> 0.853;
 `neg_patterns.pattern_8`: 0.869 -> 0.895). Looser/stricter
-`--seqlet-threshold`, `--seqlet-additional-flanks`, and layering
-`filter_by_seqlet_importance.py`'s floor on top were all tried and either
-made things worse or were a no-op -- see `filter_low_confidence_hits.py`'s
+`--seqlet-threshold`/`--seqlet-additional-flanks` were also tried and made
+things worse or were a no-op -- see `filter_low_confidence_hits.py`'s
 module docstring for the full comparison. `report_bpnet.py`'s
 `--cwm-similarity-threshold` default below was lowered to retain these
 substantially-improved motifs instead of dropping them wholesale at 0.9.
 
 After `call_hits_bpnet.py` (and `filter_repeat_density.py`/
-`filter_low_confidence_hits.py`/`filter_by_seqlet_importance.py`/
-`filter_by_flank_consistency.py`, if used), run
-`report_bpnet.py` to QC and filter hits by
-per-motif CWM similarity, following the same principle as the [Human
+`filter_low_confidence_hits.py`, if used), run `report_bpnet.py` to QC and
+filter hits by per-motif CWM similarity, following the same principle as
+the [Human
 Development Multiomic Atlas fetal-atlas
 paper](https://github.com/GreenleafLab/HDMA/blob/main/code/03-chrombpnet/02-compendium/06b-reconcile_hits.py):
 drop all hits for any motif whose hit-derived CWM correlates poorly with the
@@ -791,17 +1375,14 @@ wholesale despite the substantial improvement):
 python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM
 python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --head count
 python src/bpnet/hitcall/report_bpnet.py -e ENCSR882DWM --cwm-similarity-threshold 0.9
-
-python src/bpnet/hitcall/launch_report.py --dry-run
-python src/bpnet/hitcall/launch_report.py --head profile --head count
-python src/bpnet/hitcall/launch_report.py --report-args '--cwm-similarity-threshold 0.9'
 ```
 
-`launch_report.py` is a separate launcher from `hitcall/launch.py`, mirroring
-`modisco/launch.py` vs `modisco/launch_report.py`: `finemo report` doesn't use
-a GPU, so it runs as its own cheap CPU-only SLURM job (`-C NO_GPU`) rather
-than being folded into hit calling's GPU job, and the `--cwm-similarity-threshold`
-QC cutoff stays quick to retune without rerunning hit calling itself.
+Atlas-wide, this runs (twice -- baseline and final pass) as part of
+`launch_post_hoc_pipeline.py` below rather than its own separate launcher:
+`finemo report` doesn't use a GPU, so that consolidated job stays CPU-only
+(`-C NO_GPU`) rather than needing hit calling's GPU job, and the
+`--cwm-similarity-threshold` QC cutoff (via `--report-args`) stays quick to
+retune without rerunning hit calling itself.
 
 Outputs:
 
@@ -834,6 +1415,72 @@ overrides from `compute_trim_floor.py` can't be exactly reproduced at report
 time, and `cwm_similarity` for those specific motifs may be computed against
 a slightly different template width than was actually used to call hits.
 
+`extract_regions_bpnet.py` (rebuilds `regions.npz` only if missing/corrupt,
+without recalling hits) -> `filter_repeat_density.py` -> `report_bpnet.py`
+(baseline, needed for `--seqlet-low-similarity-only`'s scoping) ->
+`filter_low_confidence_hits.py` -> `report_bpnet.py` (final) is the whole
+locked-in post-hoc pipeline, and all five stages are fully self-contained
+per experiment (each only ever reads/writes that one experiment's own
+files) and individually fast. `launch_post_hoc_pipeline.py` consolidates
+them into one SLURM job per experiment that runs all five in sequence, so
+there's no need to submit each stage separately and wait for it to finish
+across the whole atlas before starting the next one:
+
+```bash
+python src/bpnet/hitcall/launch_post_hoc_pipeline.py --dry-run
+python src/bpnet/hitcall/launch_post_hoc_pipeline.py --min-trim-len 6
+python src/bpnet/hitcall/launch_post_hoc_pipeline.py --low-confidence-args '--score-column hit_seqlet_confidence --seqlet-low-similarity-only --seqlet-similarity-threshold 0.85'
+python src/bpnet/hitcall/launch_post_hoc_pipeline.py --min-trim-len 6 --force  # reprocess with CA_INR_COMPENDIUM_ARGS added below
+```
+
+For profile head only, `filter_low_confidence_hits.py` also always gets
+`--seqlet-compendium-clusters` for CA-Inr's 8 hand-identified MotifCompendium
+clusters (`CA_INR_COMPENDIUM_ARGS`, both `pos_patterns.N`/`neg_patterns.N`
+since `cluster_final` doesn't stratify by posneg) -- independent of
+`--low-confidence-args`, so overriding that flag for an unrelated reason
+(e.g. a different `--seqlet-similarity-threshold`) can't silently drop CA-Inr
+coverage. This exists because `cwm_similarity` is structurally blind to
+CA-Inr's overcalling (~4bp trimmed core scores >0.9 regardless of real
+background contamination), so `--seqlet-low-similarity-only`'s QC-failure
+scoping never brings it into scope at any threshold, and neither
+`lookup_compendium_cluster.py`'s automatic JASPAR-based identity check nor
+`diagnose_background_energy_ratio.py`'s identity-agnostic elbow detection
+reliably substitutes for it (see `filter_low_confidence_hits.py`'s module
+docstring). Count head is untouched: these cluster ids come from
+`motifcompendium_profile_pattern_to_cluster.tsv` specifically and would be
+meaningless -- or wrongly matched to an unrelated motif -- against count
+head's separate clustering. Already-complete experiments need `--force` to
+be reprocessed with this added.
+
+Jobs are submitted with `--requeue` (the default `--partition` includes
+`owners`, which is preemptible -- `normal`/`akundaje`/`gpu` are not), which
+is safe here since there's no per-stage
+skip logic inside the job itself -- a requeued job just reruns all five
+stages from scratch, and each one overwrites its own output
+deterministically, so redoing an already-succeeded stage can't corrupt
+anything. `--requeue` doesn't help with a genuine failure though (a real
+bug/bad data, OOM, hitting `--time`), so
+`check_post_hoc_pipeline_failures.py` reports jobs that started but never
+reached a genuinely-complete state, without needing to check SLURM job
+states or scan `.err` logs by hand -- naive non-empty-stderr scanning
+isn't reliable for this pipeline specifically, since finemo/numpy/
+matplotlib routinely print non-fatal warnings to stderr even on success:
+
+```bash
+python src/bpnet/hitcall/check_post_hoc_pipeline_failures.py --min-trim-len 6
+```
+
+Rerunning `launch_post_hoc_pipeline.py` with the same arguments afterward
+resubmits only the flagged experiments, since it uses the same completion
+check.
+
+`link_hits_to_compendium.py` below is deliberately excluded from this
+consolidated job: unlike the five stages above, it depends on the
+atlas-wide MotifCompendium cluster-average h5, built separately by
+aggregating motifs across *every* experiment, so it isn't safe to fold
+into each experiment's own independent job -- run it as its own later,
+atlas-scope step once the compendium is up to date.
+
 Finally, run `link_hits_to_compendium.py` to relabel each experiment's
 per-experiment hits with the atlas-wide MotifCompendium cluster identity they
 belong to (`motifcompendium_{head}_pattern_to_cluster.tsv` from Motif
@@ -854,12 +1501,10 @@ python src/bpnet/hitcall/launch_link.py --min-trim-len 6
 
 It prefers the most-processed hits available (same staleness-aware
 resolution as `report_bpnet.py` above): `hits_filtered.tsv` (post
-`report_bpnet.py` QC) if present and not stale, else `hits_flank_filtered.tsv`
-(post `filter_by_flank_consistency.py`), else `hits_seqlet_filtered.tsv`
-(post `filter_by_seqlet_importance.py`), else `hits_confidence_filtered.tsv`
-(post `filter_low_confidence_hits.py`), else `hits_dedensified.tsv` (post
-`filter_repeat_density.py`), else raw `hits_unique.tsv`. It
-adds a `compendium_motif_name` column
+`report_bpnet.py` QC) if present and not stale, else
+`hits_confidence_filtered.tsv` (post `filter_low_confidence_hits.py`), else
+`hits_dedensified.tsv` (post `filter_repeat_density.py`), else raw
+`hits_unique.tsv`. It adds a `compendium_motif_name` column
 (e.g. `pos_patterns.42`) alongside the original per-experiment `motif_name`
 (e.g. `pos_patterns.pattern_3`) rather than replacing it, so both identities
 stay available:
@@ -872,9 +1517,147 @@ Requires `cluster_motifs.py` to have already been run for the requested head
 (it builds the mapping from every experiment's own motifs, so needs rerunning
 whenever new experiments are added) and `call_hits_bpnet.py` to have been run
 for this experiment/head with the default per-experiment motif source, not
-`--modisco-h5` pointed at the compendium. `launch_link.py` mirrors
-`launch_report.py`: no GPU needed, so it runs as its own cheap CPU-only SLURM
-job.
+`--modisco-h5` pointed at the compendium. No GPU needed, so `launch_link.py`
+runs as its own cheap CPU-only SLURM job.
+
+### Consolidated QC
+
+`report_bpnet.py`'s final pass writes one `motif_report.tsv` per experiment
+(`motif_name`, `num_hits_total`, `num_hits_restricted`, `cwm_similarity`), but
+nothing else in this codebase aggregates that across the atlas -- every other
+script here reads one experiment's own report at a time.
+`consolidate_motif_reports.py` sweeps every experiment/head the same way
+`launch_post_hoc_pipeline.py` does and concatenates them into one table, plus
+prints atlas-wide totals (summed hit counts, median `cwm_similarity`, fraction
+of motif rows at or below the 0.8 QC threshold):
+
+```bash
+python src/bpnet/hitcall/consolidate_motif_reports.py
+python src/bpnet/hitcall/consolidate_motif_reports.py --head profile --head count
+python src/bpnet/hitcall/consolidate_motif_reports.py --min-trim-len 6
+```
+
+Reads the *final* pass's report (after both `filter_repeat_density.py` and
+`filter_low_confidence_hits.py`), not the baseline pass `report_bpnet.py` also
+writes for `--seqlet-low-similarity-only` scoping -- that one reflects
+pre-corroboration-filter hit counts and would overstate what actually
+survived. Output: `figures/motif_atlas/hitcall_motif_report_consolidated.tsv`.
+
+### Hit-Call Diagnostics
+
+Read-only investigation scripts, plus one plotting script. None of them filter
+hits or write into the pipeline's own output files, so they are safe to run at
+any point. Each one's module docstring carries the full reasoning for why it
+exists; this is the index.
+
+Most of them were written while root-causing motif-specific overcalling
+(TATA/TA-Inr in K562, then CA-Inr in B-cell/neuron/liver), and the lesson that
+produced the whole set is worth repeating: **an identity-agnostic filter plus
+two clean spot-checks is not validation.** `hit_seqlet_confidence` looked safe
+that way and turned out to touch 28/45 motifs at 0–89% drop rates, including
+motifs with no contamination problem at all. Run the full per-motif breakdown
+before trusting a filter atlas-wide.
+
+Positional evidence — does a motif sit at a fixed offset from the real TSS?
+
+```bash
+python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --min-trim-len 6
+python src/bpnet/hitcall/diagnose_hit_summit_distance.py -e ENCSR220XSM --plot-motifs pos_patterns.pattern_2
+python src/bpnet/hitcall/plot_motif_spacing_syntax.py -e ENCSR220XSM --motifs pos_patterns.pattern_12 --motifs pos_patterns.pattern_1
+```
+
+`diagnose_hit_summit_distance.py` prints a per-motif summary over every motif
+and writes individual histograms for a named subset. It joins hits back to the
+*real* PRO-cap summit from
+`data/processed/peaks/{experiment}_{biosample}_filtered.bed.gz`, because
+Fi-NeMo never sees one — `call_hits_bpnet.py` feeds it a synthetic narrowPeak
+whose "summit" is just the peak window's midpoint. That file's summit
+coordinate convention is undocumented upstream, so the script tests both
+interpretations against the peak window and prints which one it inferred.
+`plot_motif_spacing_syntax.py` turns the same machinery into one comparative
+violin plot (the core-promoter spacing-syntax view: TATA at -25 to -30, Inr at
+0); pass an explicit `--motifs` subset for anything paper-facing, since
+plotting every motif is unreadable.
+
+Is a suspicious hit set real? These two answer it with evidence that is not
+downstream of Fi-NeMo's own thresholding:
+
+```bash
+python src/bpnet/hitcall/diagnose_hit_signal_metaplot.py -e ENCSR342WAR --min-trim-len 6 --motif-name pos_patterns.pattern_2
+python src/bpnet/hitcall/diagnose_seqlet_confidence_by_group.py -e ENCSR342WAR --min-trim-len 6 --motif-name pos_patterns.pattern_2
+```
+
+Both split a motif's hits into "normal" (peaks with exactly one call) and
+"excess" (peaks with several), the shape of the overcalling problem. The first
+pulls real observed PRO-cap signal around each group (reusing
+`metaplot_tss.py`'s own extraction), which is the only ground truth available:
+every per-hit statistic Fi-NeMo reports describes agreement with the *model's*
+attributions, not whether initiation actually happens there. The second checks
+`tangermeme.seqlet.recursive_seqlets` corroboration rates per group, the signal
+that originally exposed the TATA defect.
+
+Which motifs need the corroboration floor, atlas-wide, without naming any of
+them:
+
+```bash
+python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR220XSM --min-trim-len 6
+python src/bpnet/hitcall/diagnose_background_energy_ratio.py -e ENCSR220XSM --out-tsv tmp/bg_energy_ENCSR220XSM.tsv
+python src/bpnet/hitcall/launch_background_energy_ratio.py --head profile --head count --min-trim-len 6
+```
+
+Measures how much more attribution energy sits outside a motif's trimmed core
+in the hits-averaged CWM than in its MoDISco archetype. This is the scoping
+signal behind `filter_low_confidence_hits.py --seqlet-background-excess-only`,
+and it exists because `cwm_similarity` is structurally blind to the problem:
+CA-Inr's trimmed core is only ~4bp, short enough that almost any hit
+containing it scores >0.9 against a near-zero-flank archetype. Reported as a
+difference, not a ratio — `background_ratio(modisco_fc)` is often ~0 for a
+cleanly discovered motif, and dividing by it blows the number up. The launcher
+runs it across every experiment/head so `detect_elbow_count`'s cutoffs can be
+reviewed by hand before being trusted atlas-wide.
+
+How hard did a filter actually hit each motif, and what is a motif's shared
+identity?
+
+```bash
+python src/bpnet/hitcall/diagnose_repeat_density_impact.py -e ENCSR220XSM --min-trim-len 6
+python src/bpnet/hitcall/lookup_compendium_cluster.py --pair ENCSR220XSM:pos_patterns.pattern_1 --pair ENCSR342WAR:pos_patterns.pattern_2
+```
+
+`diagnose_repeat_density_impact.py` diffs `hits_unique.tsv` against
+`hits_dedensified.tsv` per motif — no recomputation, the data is already
+there — giving `filter_repeat_density.py` the full per-motif breakdown that
+`hit_seqlet_confidence` should have had.
+`lookup_compendium_cluster.py` resolves `(experiment, local motif name)` pairs
+to their MotifCompendium cluster and reports whether they all agree, which is
+the identification step required before scoping a filter with
+`--seqlet-compendium-clusters`.
+
+### Housekeeping
+
+`call_hits_bpnet.py` and the post-hoc pipeline leave large redundant files
+behind. `cleanup_hitcalls.py` finds and removes them, in increasing order of
+judgment: always-safe deletes (`hits.tsv`, whose deduplicated
+`hits_unique.tsv` is what every downstream script actually reads; abandoned
+`hits_flank_filtered.tsv`/`hits_seqlet_filtered.tsv` stages; orphaned
+`regions.tmp.npz`), gzip-in-place (`hits.bed`), and opt-in removal of
+call-hits output superseded by a sibling trim-suffixed directory:
+
+```bash
+python src/bpnet/hitcall/cleanup_hitcalls.py                              # dry-run report (default)
+python src/bpnet/hitcall/cleanup_hitcalls.py --execute
+python src/bpnet/hitcall/cleanup_hitcalls.py --execute --include-abandoned-trim-dirs
+```
+
+It reports without touching anything unless `--execute` is passed, and skips
+anything modified in the last `--min-age-hours` (default 24) so an in-flight
+job's outputs are never removed underneath it.
+
+The abandoned-stage deletes are not merely about disk: `HITS_FILE_STAGES` in
+`call_hits_bpnet.py` still ranks those filenames *ahead* of the current
+outputs for staleness detection, so a leftover file that happens to be newer
+than the real current output would make `resolve_hits_path` silently prefer
+the stale abandoned one.
 
 ## Notes
 

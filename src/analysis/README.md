@@ -88,6 +88,2911 @@ are compared by default, since they're present in every archived version's
 TSV. `compare_bpnet_cherimoya.py` and `compare_cherimoya_versions.py` share
 their plotting logic via `_metric_comparison_plots.py`.
 
+## Motif Atlas Panels
+
+Cross-experiment motif analyses behind the manuscript's motif-lexicon figure.
+All five scripts here are atlas-scope (they read every experiment at once),
+unlike the per-experiment scripts under
+[`src/bpnet/hitcall/`](../bpnet/README.md#hit-calling), and they share the
+biosample-to-tissue grouping in `_biosample_groups.py`. See
+[Manuscript Panels](#manuscript-panels) for which of them produces which
+figure panel.
+
+That grouping is keyword-based curation, not computation. Write it out, edit
+it, and pass it back so the groups are explicit rather than implicit:
+
+```bash
+python src/analysis/motif_hit_density.py --write-group-tsv configs/biosample_groups.tsv
+python src/analysis/motif_hit_density.py --biosample-groups configs/biosample_groups.tsv
+```
+
+Biosamples matching no rule land in `other` and are always reported to stderr.
+Metastases are assigned to their tissue of **origin**, parsed from the
+biosample name, so "Metastatic Breast Carcinoma in the Brain" is a breast
+sample rather than a neural one or a `metastatic_carcinoma` one — see
+[Metastases are grouped by tissue of origin](#metastases-are-grouped-by-tissue-of-origin).
+
+### Manuscript Panels
+
+The manuscript is targeted at a Brief Communication (Nature
+Methods/Genetics: <1600 words, ~2 display items), so Figure 2 has to carry the
+entire motif-lexicon story in one multi-panel figure and everything else moves
+to supplement. Panel letters below are **proposed, not fixed** — the point of
+the table is which script produces which piece of evidence.
+
+**All reported results are from the `count` head.** Both
+`plot_motif_rarefaction.py` and `motif_group_concentration.py` default to
+`--head profile`, so every manuscript command below passes `--head count`
+explicitly. The profile head is built as of Sep 2026 (MotifCompendium
+v1.1.0); before running a count-vs-profile contrast, confirm both heads agree
+on `mc_version` and `cluster_reference` in `cluster_metadata.tsv`, or the
+contrast confounds head with clustering algorithm.
+
+| Proposed panel | Script | Status |
+| --- | --- | --- |
+| Fig 2 — tissue concentration of motif discovery | `motif_group_concentration.py` | done, `count` head |
+| Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
+| Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
+| Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
+| Supp — concentration at JASPAR-name level | `plot_figure2.py --collapse-concentration` | done, `figure2_count_s_concentration_jaspar_name.pdf` |
+| Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
+| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure** |
+| Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
+
+Figure 1e already shows a neuron-specific gene carrying neuron-specific
+motifs, so it is the single-locus counterpart to these atlas-scale panels.
+
+The three commands that produced the reported numbers:
+
+```bash
+# 2c: lineage-restricted and ubiquitous exemplars (--max-groups 2, see below)
+python src/analysis/select_motif_exemplars.py --head count --max-groups 2 \
+    --per-group 3 --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5 \
+    --logo-paths compendium/motifcompendium_count_cluster_logo_paths.tsv \
+    --logo-root compendium/
+python src/analysis/plot_figure2.py --head count --n-restricted 14 \
+    --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5
+
+# S: JASPAR-name robustness panels. The MAIN figure stays cluster-level;
+# these write separate _s_* files.
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level tissue --collapse-by jaspar_name --save-null-draws \
+    --out-dir figures/motif_atlas/collapsed
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level biosample --collapse-by jaspar_name --save-null-draws \
+    --out-dir figures/motif_atlas/collapsed
+
+# S: the lexicon-size bracket, for "how many of these are really distinct?"
+python src/analysis/plot_motif_rarefaction.py --head count \
+    --min-cluster-experiments 2 --collapse-by jaspar_name --sweep \
+    --out-dir figures/motif_atlas/collapsed
+python src/analysis/plot_figure2.py --head count --n-restricted 14 \
+    --modisco-h5 compendium/motifcompendium_count_cluster_averages.h5 \
+    --collapse-curves figures/motif_atlas/collapsed/motif_rarefaction_count.tsv \
+    --collapse-concentration figures/motif_atlas/collapsed
+
+# 2a/2b: discovery concentration, both group levels.
+# --save-null-draws is REQUIRED: it writes the histogram panel b draws, and
+# without it a previous run's draws are silently reused (see below).
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level tissue --save-null-draws
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level biosample --save-null-draws
+
+# 2b: rarefaction, prevalence-filtered, with the abundance-threshold sweep
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --sweep
+
+# S: redundancy at the calibrated trim threshold, with the visual review HTML
+python src/analysis/motif_redundancy.py --head count --modisco-h5 auto \
+    --trim-threshold 0.5 --drop-untrimmable --report-threshold 1e-6
+```
+
+#### Results the figure rests on
+
+Every number here is measured, on the real `count`-head compendium, and is
+derived in the section linked in the right-hand column.
+
+| Claim | Value | Where |
+| --- | --- | --- |
+| Lexicon size (prevalence ≥ 2) | 343 clusters of the 869 seen in the 198-experiment analysis universe (945 in the raw 219-experiment build); **155 distinct JASPAR names**, 118 requiring a name — quote as a bracket | [Rarefaction](#motif-lexicon-rarefaction) |
+| Discovery is tissue-concentrated (TF-matched) | swap-null concentration 0.811 tissue / 0.918 biosample, `p < 0.001` vs degree-preserving null | [Concentration](#discovery-concentration) |
+| Confinement is lineage, not replication | 37 single-group clusters vs 6.01 expected exactly (`p = 2.5e-20`) or 6.07 under the swap null (`p < 0.001`), over 21 tissue groups | [Concentration](#discovery-concentration) |
+| Small studies miss most of the lexicon | 6.8% recovered at k=1, 20.7% at k=5; ≥55% missed at k=5 under every abundance threshold, and **≥47% missed even collapsed to distinct JASPAR names** | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Tissue diversity matters, but second to count | single-tissue sampling recovers 15% fewer motifs at k=5, ~19–20% at k=10–25 | [Rarefaction](#interpreting-the-sampling-schemes-on-real-data) |
+| Redundancy does not explain the lexicon size | 3–6% containment-free near-duplicates; collapsing to JASPAR names cuts the count but **raises** concentration enrichment 6.15×→7.73× | [Redundancy](#measured-results) |
+| Not an artifact of the experiment universe | the 198-only control build reproduces every figure above | [Experiment universe](#experiment-universe-224-219-198) |
+
+Three claims were checked and **withdrawn**; do not reintroduce them:
+
+- The non-JASPAR class as novel lineage-specific motifs, and its +65%
+  diversity gap — the class is dominated by tandem composites.
+- Redundancy at 15–18% — that counts tandem-vs-core containment as duplication.
+- "Tissue structure is weak" — an artifact of reading per-band medians instead
+  of pooling.
+
+#### Pending
+
+- **Count-vs-profile concentration contrast.** The falsifiable test of the
+  manuscript's two-lexicon claim, and it needs no Fi-NeMo output. Both heads
+  are now built, so this is unblocked — but check that they share
+  `mc_version`, `cluster_reference` and both thresholds first, and that they
+  cover the same experiment set, so the contrast compares *heads* rather
+  than clustering settings or inputs.
+- **`motif_hit_density.py` has never been run on real data.** It is tested
+  against synthetic fixtures only. It reads per-experiment `hits_linked.tsv`,
+  which requires `hitcall/launch_link.py --head count` first.
+- **Fi-NeMo hit calls** are distributed as part of the resource regardless of
+  whether they appear in the manuscript, so the hit-density panel is worth
+  finishing even if Figure 2 ships without it.
+- **Alternate TSS usage** was proposed as an additional panel and has no script
+  yet. The atlas-scale version is a per-gene comparison of which annotated TSS
+  dominates across biosample groups; nothing in this directory computes it.
+- **PISA / attribution tracks** are deliberately out of scope for this figure.
+  They are either a supplement or their own manuscript on spatial syntax.
+
+### Motif Lexicon Rarefaction
+
+How the size of the deduplicated MotifCompendium lexicon grows as experiments
+are added, and whether that growth is driven by experiment count or by
+biosample diversity. Reads only
+`motifcompendium/bpnet/motifcompendium_{head}_cluster_metadata.tsv`, whose
+`experiments` column is already a cluster x experiment presence matrix — no
+attributions or hit calls needed.
+
+```bash
+python src/analysis/plot_motif_rarefaction.py
+python src/analysis/plot_motif_rarefaction.py --head count
+python src/analysis/plot_motif_rarefaction.py --min-cluster-experiments 2
+python src/analysis/plot_motif_rarefaction.py --annotation-tsv configs/motif_classes.tsv
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_rarefaction_{head}.tsv        # long-form curves (k, scheme, motif_class, mean, lo, hi)
+figures/motif_atlas/motif_rarefaction_{head}.{png,pdf}
+figures/motif_atlas/motif_prevalence_{head}.tsv         # per-cluster prevalence and group breadth
+```
+
+Three sampling schemes are compared at each subset size: `uniform` (random
+experiments), `diverse` (round-robin across biosample groups), and `redundant`
+(one biosample group exhausted before starting the next). `diverse` above
+`redundant` is the panel's claim — that tissue diversity, not experiment
+count, is what recovers the lexicon.
+
+The `uniform` mean is computed in closed form, not sampled: a cluster present
+in `p` of `N` experiments is detected by a random size-`k` subset with
+probability `1 - C(N-p, k)/C(N, k)`. That closed form is also why the script
+deliberately has **no permutation null**. The obvious one — hold each cluster's
+prevalence fixed but randomize which experiments it appears in — is provably
+vacuous, since the expectation depends only on `p` and never on which
+experiments, so it reproduces the observed `uniform` curve exactly. Only a
+structured sampling scheme can see structure here; do not re-add a
+uniform-subsampling null.
+
+If `cluster_metadata.tsv` does not exist yet, the script falls back to
+`motifcompendium_{head}_pattern_to_cluster.tsv` automatically (or pass
+`--pattern-to-cluster` explicitly). `cluster_motifs.py` writes the mapping at
+line 361, right after clustering, but the metadata only at line 386 — after
+the cluster-average h5 export, JASPAR annotation of the averages,
+forward/reverse logo generation, MEME export and per-cluster SVG logo
+rendering, which it waits on solely to merge the logo paths in. On a full
+atlas run those stages take hours, and this panel needs none of them:
+grouping the mapping's `experiment` column by `compendium_motif_name`
+recovers exactly the same presence sets (tested against the metadata loader
+in `tests/test_motif_atlas_panels.py`). Only `total_seqlets`, `n_motifs` and
+`jaspar_name` are lost, so stratified curves collapse to a single class
+unless `--annotation-tsv` is supplied.
+
+To skip the SVG-logo stage on future runs, `cluster_motifs.py` takes
+`--skip-svg-logos`. Note that `--logo-report-top-n 0` does **not** skip the
+embedded-logo HTML report — 0 means *no cap*, i.e. every cluster is embedded,
+which is the most expensive setting and produced a 24 MB report on the real
+count head. The default of 500 is already the cheap path; pass a small
+positive number to make it cheaper.
+
+Two things to set deliberately:
+
+- `--min-reads` (default 10M, matching `cluster_motifs.py`) holds discovery
+  power roughly fixed. Motif discovery scales with library size, so a curve
+  over all experiments partly measures read depth rather than biology.
+- `--min-cluster-experiments 2` drops single-experiment clusters. Singletons
+  are both the least reproducible clusters and, being numerous, the dominant
+  contribution to the all-motifs curve's slope — they make the lexicon look
+  unsaturated on their own. Prefer this setting for the figure.
+
+#### Abundance thresholds and the sensitivity sweep
+
+The obvious noise filter — drop clusters with few seqlets — is prevalence
+confounded. `total_seqlets` is summed over a cluster's contributing motifs and
+`n_motifs` tracks prevalence closely (within-model clustering collapses each
+experiment to ~one motif per cluster), so `total_seqlets` is largely a
+prevalence proxy: thresholding it preferentially deletes tissue-restricted
+clusters, which is exactly backwards for this panel.
+
+`--min-seqlets-per-motif` uses the normalized ratio `total_seqlets /
+n_motifs` instead, but that is only *partly* decoupled — measured
+`r = 0.40` against prevalence on the real count-head compendium. So it
+defaults to 0, **and on the real data it should stay there** (see below).
+Raising it makes the surviving lexicon more ubiquitous, so a small experiment
+sample recovers a larger fraction of it; on real count-head data the k=5
+fraction rises monotonically 20.7% → 44.8% from no floor to ≥1000
+seqlets/motif.
+
+Note what that rise does *not* establish. Two hypotheses predict it
+identically: low-abundance clusters may be real but tissue-restricted (hence
+low-prevalence), or they may be spurious (and spurious clusters also appear in
+few experiments). The sweep cannot distinguish them, so do not read the rise
+as evidence either way.
+
+`--sweep` reports that sensitivity instead of hiding it:
+
+```bash
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --sweep
+python src/analysis/plot_motif_rarefaction.py --sweep-thresholds 0 50 100 500 --sweep-mark 5
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_rarefaction_sweep_{head}.tsv          # long-form (threshold, k, mean, fraction, n_clusters)
+figures/motif_atlas/motif_rarefaction_sweep_{head}_summary.tsv  # fraction recovered at each --sweep-marks k
+figures/motif_atlas/motif_rarefaction_sweep_{head}.{png,pdf}
+```
+
+Both absolute counts and fractions are plotted, because neither is honest
+alone: absolute counts keep a fixed meaning across thresholds but each curve
+ends at a different total, while fractions read directly as "what a
+k-experiment study sees" but have a denominator that moves with the threshold.
+Fractions are therefore **not comparable across thresholds**, and no single row
+of the summary is "the" answer.
+
+What the sweep does support is the weakest-form claim, which the run prints:
+the largest fraction recovered at a given k over every threshold tested is an
+upper bound on what a k-experiment study can see. On real count-head data that
+is *at most 45% at k=5*, so at least 55% of the lexicon is missed by a
+five-experiment study regardless of abundance threshold. Quote that rather
+than any single-threshold number.
+
+The sweep uses the closed-form uniform expectation only — it is about
+abundance sensitivity, not sampling scheme, and the structured schemes would
+add Monte-Carlo noise to a comparison that is exact without it. It requires
+`cluster_metadata.tsv`; the pattern-to-cluster fallback carries no seqlet
+counts and the sweep refuses rather than silently sweeping nothing.
+
+#### What discriminates real from spurious clusters
+
+Abundance does not; group concentration does — see
+[Discovery Concentration](#discovery-concentration) below for the script.
+Measured on the real count-head compendium, by `seqlets_per_motif` band:
+
+```text
+band       n   median_prevalence  concentration  jaspar_rate  median_jaspar_score
+<25       20                 2.0           1.05         0.80                0.840
+25-50    105                 3.0           0.96         0.91                0.870
+50-100    46                 4.0           0.96         0.91                0.873
+100-500   99                 6.0           0.86         0.83                0.862
+>=500     73                15.0           0.82         0.96                0.959
+```
+
+The useful conclusion here is the second column: low-abundance clusters carry
+solid JASPAR matches (median 0.84–0.87; the lower means reflect the ~20% with
+no match at all, not weak matches), so they are real motifs that happen to be
+under-discovered rather than noise. That is why no abundance floor is applied —
+it would delete real biology without removing anything spurious.
+
+**Do not read the `concentration` column above as evidence about tissue
+structure.** It is a per-band *median*, and the median is near-useless here: at
+prevalence 2–4 the ratio takes only a couple of distinct values (with `p = 2`,
+expected is 1.90 and observed can only be 1 or 2, so the ratio is 0.53 or
+1.05). Pooling classes together by abundance band dilutes it further. Measured
+properly — split by `motif_class`, using pooled concentration and the
+single-group test — discovery *is* strongly tissue-concentrated; see
+[Discovery Concentration](#discovery-concentration).
+
+#### What none of this addresses
+
+Cluster **redundancy**. One real motif split across two clusters inflates every
+count in this section, and it biases in the flattering direction. Bound it
+separately with a tomtom self-comparison of
+`motifcompendium_{head}_cluster_averages.meme`, or by re-running
+`cluster_motifs.py --across-threshold 0.85`.
+
+Also note the abundance ratio is computed over all motifs the compendium
+assigned to a cluster, including any from experiments dropped by
+`--min-reads`, since `cluster_metadata.tsv` carries only aggregates — it is an
+abundance proxy, not an exact count over the retained subset.
+
+#### Interpreting the sampling schemes on real data
+
+Measured on the real count-head compendium (343 clusters, 198 experiments):
+
+```text
+k     diverse  redundant  uniform
+10      115.4       97.5    109.5
+25      189.1      157.7    180.9
+50      254.1      217.9    246.7
+```
+
+At the small end, a single experiment recovers 6.8% of the 343-cluster lexicon
+and five recover 20.7% — i.e. a study of five PRO-cap experiments, a typical
+size before this atlas, misses roughly four-fifths of the motifs. That is the
+resource argument for the atlas, and the sweep below bounds it from the weak
+side too: at least 55% is missed at k=5 under *every* abundance threshold
+tested, so the claim does not depend on keeping low-abundance clusters in.
+
+`uniform` sits close to `diverse` because a random draw from 198 experiments
+spanning 21 tissue groups is already tissue-diverse. The informative contrast
+is `redundant` against the others: a study confined to one tissue recovers
+fewer motifs at matched experiment count, by a margin that grows with k:
+
+```text
+k        diverse  uniform  redundant   redundant below diverse
+1           24.4     23.2       23.1                     5.1%
+5           73.2     71.0       61.9                    15.4%
+10         116.0    109.5       93.6                    19.3%
+25         193.8    180.9      157.2                    18.9%
+50         258.8    246.7      222.7                    13.9%
+```
+
+The gap peaks near k=10–25 at ~20% and closes at both ends — at k=1 there is
+no diversity to differ over, and by k=50 every scheme is sampling most groups.
+Experiment count, not tissue diversity, remains the primary driver: `diverse`
+at k=5 recovers 73 clusters where `redundant` at k=10 recovers 94, so five
+more experiments beat rebalancing. State the diversity effect at a stated k
+and do not overclaim it.
+
+These numbers moved with the [haematopoietic lineage
+split](#haematopoietic-lineages-are-split-not-pooled). The earlier
+18-group map gave ~14-17%; the gap widened because `redundant` exhausts a
+single group sooner once the largest group is 31 experiments rather than 41.
+The uniform curve is unaffected by grouping (6.8% at k=1, 20.7% at k=5 before
+and after), which is the check that the change is in the scheme and not in the
+lexicon.
+
+The unmatched (non-JASPAR) class appears to be a dramatic exception — 37
+clusters, diverse 18.0 vs uniform 13.3 vs redundant 10.9 at k=25, a +65% gap —
+but **that figure is withdrawn**: logo review showed the class is dominated by
+tandem composites discovered idiosyncratically, not by novel lineage-specific
+TF motifs, so the gap measures discovery happenstance. Do not quote it. See
+[Decision: the non-JASPAR class is not analyzed
+further](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026).
+
+This panel measures where motifs are **discovered**, not where they are
+**used**. Tissue-specificity claims belong to the hit-density panel below;
+weak discovery-level tissue structure does not bound usage-level specificity,
+since a motif can be discovered in two arbitrary experiments and still be used
+in only one lineage.
+
+#### Collapsing the lexicon by motif identity
+
+`--collapse-by {cluster,jaspar_name,jaspar_family}` changes what counts as one
+lexicon unit. Cluster level is the default and is a slight **upper bound** on
+lexicon size, since ~3–6% of prevalence≥2 clusters are containment-free
+near-duplicates of another (see
+[Compendium Redundancy](#compendium-redundancy)). Collapsing by JASPAR identity
+removes that by construction — 31 clusters best-matching SP9 become one unit —
+with no threshold to defend.
+
+It errs the other way, so read the two as a bracket rather than picking one:
+JASPAR annotation is a nearest-neighbour lookup, so genuinely distinct variants
+can share a label and be merged when they shouldn't. Identity level is the
+**lower bound**.
+
+A unit's experiment set is the union over its member clusters, never the sum or
+the max: a motif discovered in different experiments under different cluster
+ids was still discovered in all of them, so prevalence can only grow.
+
+Unnamed clusters stay as their own units by default. On the real count head 37%
+of clusters carry no JASPAR name, and that unmatched class is where the
+strongest tissue concentration sits, so dropping it would discard the most
+interesting part of the lexicon. `--drop-unnamed` excludes them if a purely
+annotation-based lexicon is wanted.
+
+```bash
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --collapse-by jaspar_name
+python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experiments 2 --collapse-by jaspar_family
+```
+
+Requires `cluster_metadata.tsv` (the pattern-to-cluster mapping carries no
+JASPAR names).
+
+Measured on the canonical build (945 clusters over 219 experiments; 869 of
+them present in the 198-experiment analysis universe):
+
+```text
+prevalence  clusters   name units  names only   family units  families only
+>= 1             869          454         160            396            102
+>= 2             343          155         118            116             79
+>= 3             239          114          99             82             67
+```
+
+"name units"/"family units" keep unnamed clusters as their own units, which is
+the default; the "only" columns are `--drop-unnamed`.
+
+**Order of operations matters, and the script collapses before filtering.** A
+unit's prevalence is the union over its members, so a name seen once under
+cluster A and once under cluster B has unit prevalence 2 and belongs in a
+prevalence≥2 lexicon. Filtering clusters first would discard both
+prevalence-1 members before they could combine and undercount: 149 name units
+instead of 155 at prevalence≥2, 102 instead of 114 at ≥3. (An earlier version
+of this table reported the filter-first numbers; they were wrong for this
+purpose.)
+
+**Do not read 343 → 155 as 55% redundancy.** It is 2.2x, against a
+containment-free near-duplicate estimate of 3-6%, and the gap is JASPAR's
+resolution rather than the compendium's. The collapse is concentrated in a few
+labels — 31 clusters best-match SP9, and at family level SP alone absorbs ~40 —
+and SP/KLF family members are near-identical GC-boxes that a nearest-neighbour
+lookup cannot separate. Cluster 34, a tandem SP/KLF composite, would merge into
+the same unit as a single GC-box. Quote the two levels as a bracket (343 upper,
+155 lower) and expect the truth nearer the upper end.
+
+##### The reviewer question: how many of the 343 are real?
+
+Both Figure 2 panels were rerun at JASPAR-name level. The counts fall, as they
+must, but **every effect size holds or strengthens** — which is the direction
+to expect if the effects are real and cluster splitting was adding units
+without adding signal.
+
+Lexicon growth (panel a):
+
+```text
+                          lexicon   k=1    k=5    k=10   k=25   >=k5 missed
+cluster                       343  6.8%  20.7%  31.9%  52.7%      >=55%
+JASPAR name                   155 12.5%  29.2%  40.5%  59.4%      >=49%
+JASPAR name, named only       118 15.8%  35.2%  47.6%  66.7%      >=47%
+JASPAR family                 116 13.9%  29.3%  40.1%  58.9%
+```
+
+The "missed" column is the weakest-form bound: the largest k=5 recovery across
+every abundance threshold in `--sweep`, so it holds however aggressively
+low-abundance units are discarded. **Even counting only distinct JASPAR-named
+motifs under the harshest abundance floor, a five-experiment study misses at
+least 47% of the lexicon.** That is the version to quote at a reviewer, and it
+needs no position on whether the 343 clusters are each distinct.
+
+The tissue-diversity gap is essentially **invariant** to the collapse, so the
+redundancy concern does not touch it at all:
+
+```text
+                     k=5    k=10   k=25   k=50
+cluster            15.4%   19.3%  18.9%  13.9%
+JASPAR name        14.5%   18.8%  20.6%  15.9%
+names only         12.6%   16.1%  17.5%  12.9%
+```
+
+Discovery concentration (panel b), TF-matched, 21 tissue groups:
+
+```text
+                  units  single-group  expected  enrichment         p
+cluster             306            37      6.01       6.15x   2.5e-20
+JASPAR name         118            11      1.42       7.73x   3.0e-08
+```
+
+Single-group units fall 37 → 11 while enrichment **rises** 6.15x → 7.73x, and
+the swap-null concentration is unchanged (0.810 → 0.833). The weaker p is the
+smaller n, not a weaker effect. So the concentration result is not an artifact
+of counting splits of the same motif as separate lineage-restricted motifs.
+
+```bash
+# the reviewer-proof pair. --out-dir is REQUIRED on both: a collapsed run
+# writes the same filenames as the canonical one and will otherwise overwrite
+# the figure's inputs with a 118-row, TF-matched-only table.
+python src/analysis/plot_motif_rarefaction.py --head count \
+    --min-cluster-experiments 2 --collapse-by jaspar_name --sweep \
+    --out-dir figures/motif_atlas/collapsed
+python src/analysis/motif_group_concentration.py --head count \
+    --group-level tissue --collapse-by jaspar_name \
+    --out-dir figures/motif_atlas/collapsed
+```
+
+**The main figure stays at MotifCompendium cluster level.** Both collapses are
+supplementary robustness panels, not the headline result, and
+`plot_figure2.py` writes them to separate `_s_*` files. A test renders the
+figure with and without `--collapse-concentration` and asserts the main PNG is
+byte-identical, so a collapsed table can never leak into panel b.
+
+`plot_figure2.py --collapse-concentration DIR` writes the name-level panel b
+(`figure2_{head}_s_concentration_jaspar_name.pdf`). It is visually the
+stronger version: the null never reaches 6 single-group units in 1,000
+permutations while the observed value is 11.
+
+```text
+                          units  observed  swap null mean  x null  biosample conc
+cluster level               306        37            6.07    6.1x            0.92
+one unit per JASPAR name    118        11            1.47    7.5x            0.94
+```
+
+Those are swap-null ratios, which is what the panel annotates; the exact
+Poisson-binomial expectations are 6.01 (6.2x) and 1.42 (7.7x). The panel and
+the text have to agree on which null they mean.
+
+`plot_figure2.py --collapse-curves` turns the first of those into a
+supplementary panel (`figure2_{head}_s_lexicon_bracket.pdf`): both uniform
+curves with their own asymptotes (343 and 155) and the band between them, with
+each level's own k=5 recovery marked (21% and 29%). The panel's argument is
+that the claim does not depend on which bound you take — at k=5 both curves
+are far from their own asymptote — so a reader can accept the lower bound and
+the conclusion is unchanged. `panel_lexicon_bracket` deliberately labels each
+level's fraction *of its own total*, since 21% of 343 and 29% of 155 are
+different statements and averaging them would be meaningless.
+
+Caveat to state alongside it: `jaspar_name` is the only identifier the
+compendium metadata carries — there is no JASPAR matrix-ID column. Collapsing
+by name is arguably the better choice regardless, since `MA0079.1/.2/.3` are
+versions of one motif and should merge, but it also merges distinct paralogues
+that share a name, which is why identity level is a lower bound rather than
+the answer.
+
+`--annotation-tsv` takes a curated `cluster_final<TAB>class` table for
+stratified curves. Without it the script falls back to a JASPAR-match proxy
+(matched vs. unmatched), which is only a proxy: JASPAR2026 has essentially no
+coverage of core promoter elements, which is why `cluster_motifs.py`'s reports
+annotate Inr/TATA and repeats by hand.
+
+### Motif Exemplars
+
+Picks the lineage-restricted and ubiquitous motifs worth showing, and renders
+their logos for inspection. Reads the concentration script's per-cluster TSV,
+so it needs no compendium access of its own beyond the logo SVGs.
+
+```bash
+python src/analysis/select_motif_exemplars.py --head count \
+    --logo-paths motifcompendium/bpnet/motifcompendium_count_cluster_logo_paths.tsv
+python src/analysis/select_motif_exemplars.py --head count --min-seqlets 200
+python src/analysis/select_motif_exemplars.py --head count --sort-by seqlets
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_exemplars_{head}_restricted.tsv
+figures/motif_atlas/motif_exemplars_{head}_ubiquitous.tsv
+figures/motif_atlas/motif_exemplars_{head}.html   # logos embedded, three tables
+```
+
+**`metastatic_carcinoma` is omitted from figure captions.** It is 21
+experiments named for where a tumour spread *to*, not a lineage, so it
+fragments real ones — HNF1B's `{gi_tract, liver_biliary, pancreas,
+metastatic_carcinoma}` is endoderm plus endoderm-derived metastases, one
+lineage counted as four groups — and it is not interpretable in aggregate: a
+bulk metastasis carries tumour, stroma and immune infiltrate together, so IRF1
+appearing there may be infiltrating immune cells rather than tumour-intrinsic
+regulation.
+
+This is now handled at the source: metastases are grouped by tissue of origin,
+so there is no `metastatic_carcinoma` label to print. See
+[Metastases are grouped by tissue of origin](#metastases-are-grouped-by-tissue-of-origin)
+for what that changed.
+
+Captions are abbreviated (`gi_tract` → `GI`, `pancreas` → `panc`) and **wrap**
+rather than truncate, since the three-group lineages are the interesting ones
+— `GI+liver+panc` is endoderm — and the widest, `blood+breast+kidney`, overran
+its column on one line. `CAPTION_OMIT_GROUPS` is empty but retained, so a
+group can be suppressed in a caption without touching the grouping.
+
+**The trap this exists to avoid.** A low-abundance split of a ubiquitous motif
+is indistinguishable from a lineage motif in a sorted table. Cluster 192 is
+labelled NFYA, is confined to `blood_immune`, and reads as "blood-specific
+NFYA" — but cluster 1 is *also* NFYA, spans every tissue group and carries
+1.5M seqlets against cluster 192's 154. On the real count head 10 restricted
+candidates are this: ZNF131, TBP, Atf1, SP9 (110 seqlets vs cluster 0's
+3.87M), CEBPD ×3, ELF2, TFEC, Nrf1. So a restricted cluster whose
+JASPAR name also labels a broad cluster (`--broad-groups`, default ≥15 groups)
+is flagged and excluded, but still printed and shown in the HTML so the
+exclusion is visible rather than silent.
+
+This matters for panel selection specifically: `heart` and
+`metastatic_carcinoma` have **no** single-group candidate better than a
+~150-seqlet Atf1 fragment, so a panel promising one motif per tissue cannot be
+built honestly. Only four groups have defensible exemplars.
+
+`--min-seqlets` (default 1000) does related work: it is what separates SPIB
+(1,689 seqlets over 11 blood experiments) from SPI1 (44 over 2), which carry
+equally suggestive names. `--sort-by prevalence` (the default) ranks by how
+many experiments of the lineage a motif recurs in rather than absolute depth,
+because recurrence across 11 experiments is the lineage claim while depth
+within 2 is consistent with one peculiar sample.
+
+#### Two filters that only shape can provide
+
+Name-based and abundance-based filters both miss failure modes that reached a
+rendered figure. Both need `--modisco-h5`.
+
+**A duplicate under a different JASPAR name.** `name_also_broad` compares
+labels, so it cannot see that cluster 59 ("SP2", 15 experiments) draws the same
+GC-box as the ubiquitous SP9, or that cluster 119 ("ZNF800") draws the same
+TCTCGCGAGA CGCG box as Banp. Both appeared in panel c *beside their own
+ubiquitous twin*. `flag_shape_duplicates` correlates each candidate's trimmed
+CWM against every ubiquitous motif over all offsets and both strands, and drops
+matches at `--dup-corr-threshold` (default 0.8):
+
+```text
+cluster  name     lineage                 seqlets  duplicates  r
+     59  SP2      blood+GI+lung              3070  SP9         0.807
+    119  ZNF800   HEK+neural                 8614  Banp        0.961
+```
+
+**A cluster with no locatable core.** Cluster 96 ("ZNF800", 5,103 seqlets, 3
+tissue groups) passed every filter and rendered as a smear: its trimmed CWM is
+**31bp** wide. `--max-trim-width` (default 25) drops it. A seqlet floor cannot:
+ZNF143 is a legitimately long motif at 23bp with 354,000 seqlets, and the
+diffuse cluster has more seqlets than several motifs worth showing. This is the
+same pathology `motif_redundancy.py` handles with `--drop-untrimmable`.
+
+**`--max-groups 2` is the setting to use, not 1.** After the haematopoietic
+lineage split, `--max-groups 1` returns only four candidates (Arid5a, GATA2,
+NEUROG2, Pou5f1::Sox2): pan-immune factors such as RELA and SPIB span two or
+three of the four blood lineages and so are no longer single-group. They were
+only ever "single-group" because the old grouping pooled all of blood.
+
+At `--max-groups 2 --min-seqlets 1000 --per-group 3` plus both shape filters
+the panel is 16 candidates over 9 lineages, every logo matching its label:
+
+```text
+motif          lineage                  experiments  seqlets
+MEF2A          heart+muscle                      17  130,013
+Pou5f1::Sox2   stem_ipsc                          4   31,323
+POU2F3         lymphoid_b+bulk                    8   26,490
+NEUROG2        neural                             3   22,570
+Arid5a         liver_biliary                     10   12,404
+RELA           lymphoid_b+lymphoid_t              6   10,101
+GATA2          myeloid_erythroid                  2    9,501
+Tcf12          lymphoid_b+neural                  2    7,980
+Arid5a         breast+gi_tract                    7    7,738
+ZBTB8A         lymphoid_bulk+vascular             8    4,596
+ZBTB11         lymphoid_b+lymphoid_t              2    3,317
+REL            lymphoid_bulk+lymphoid_t           4    3,251
+Bcl11B         lymphoid_b+lymphoid_t              6    2,931
+EBF3           lymphoid_b+neural                  3    2,786
+Erg            lymphoid_bulk+vascular             3    1,352
+```
+
+The split made this panel **more** interpretable, not less. GATA2 now resolves
+to `myeloid_erythroid` rather than the uninformative "blood"; ERG reads as
+`lymphoid_bulk+vascular`, which is its actual endothelial/haematopoietic
+dual role; and NF-kB (RELA, REL) and BCL11B read as pan-lymphoid rather than
+pan-blood. Every logo is the textbook site: MEF2A's A/T-rich box, POU2F3's
+octamer ATGCAAAT, GATA2's TTATC, EBF3's TCCC..GGGA palindrome, RELA/REL's
+GGGATTTCC.
+
+Ubiquitous, by seqlets, one cluster per name: SP9 (3.87M), NFYA (1.51M), Atf1
+(1.03M), ELF2 (890k), Atf3 (760k), Nrf1 (663k), ZNF143 (354k), TFEC (168k),
+Banp (130k), ELK1::SREBF2 (126k). Name deduplication is on by default because
+ELF2 and Atf1 each otherwise appear twice in the top ten.
+
+#### Why HNF, IRF, MEF2 and SOX1 are not in the restricted list
+
+They are not missing from the analysis. Asked of the canonical count head,
+each has a different and instructive answer.
+
+**HNF and MEF2 are there, and are among the most concentrated motifs in the
+lexicon.** They fail only the binary `n_groups == 1` filter:
+
+```text
+cluster  name     experiments  groups                                  concentration
+     46  MEF2A             17  heart, muscle                                   0.211
+     44  HNF1B             22  gi_tract, liver_biliary, pancreas               0.370
+     39  HNF4A             24  gi_tract, liver_biliary, lymphoid_bulk          0.355
+     99  MEF2C              9  heart, lymphoid_b, vascular                     0.468
+     15  CTCF              67  13+ groups                                      0.799
+```
+
+MEF2A's 0.211 is among the lowest (most concentrated) values in the lexicon,
+and `{heart, muscle}` is exactly striated muscle; HNF1B's `{GI, liver,
+pancreas}` is exactly endoderm. **The 21 keyword tissue groups are finer than
+real lineages precisely where these factors act**, so a single-group criterion
+structurally cannot detect them. CTCF at 13 groups is the control that says the
+statistic is not simply calling everything concentrated.
+
+**IRF1 exists in both forms.** A blood-only IRF1 cluster (228) is among the 45
+single-group clusters, but carries 82 seqlets — below any sensible exemplar
+floor — while its abundance sits in the 3-group cluster 98 (19,988 seqlets).
+
+**SOX1 is absent as a label, and probably not as a motif.** The SOX-family
+clusters are Pou5f1::Sox2, SOX4 (×2), POU2F1::SOX2 (×2) and Sox11, and every
+*restricted* one is `stem_ipsc`, not neural. Two reasons: SOX family members
+bind near-identical `(A/T)(A/T)CAA(A/T)G` sites, so JASPAR's nearest-neighbour
+lookup assigns whichever profile scores highest and a neural SOX1 would most
+likely be labelled SOX2 or SOX4 (cluster 122, 7 experiments including neural,
+is the plausible carrier) — the same resolution limit that makes 31 clusters
+best-match SP9. And the count head captures initiation *strength*; a factor
+acting on positioning belongs to the profile head, which is not built yet.
+
+**Group size is the master variable**, and it biases the restricted list:
+
+```text
+gi_tract 31  reproductive 18  lymphoid_bulk 17  breast 17  heart 15
+liver_biliary 15  lymphoid_t 12  lung_airway 9  pancreas 9  neural 8
+lymphoid_b 7  muscle 7  vascular 7  kidney_urinary 6  myeloid_erythroid 5
+stem_ipsc 4  hek 3  endocrine 3  bone 2  skin 2  adipose 1
+```
+
+A GI-restricted motif needs to be confined to one group of 31 experiments;
+a neural one to a group of 8, a stem one to 4. That is why the single-group
+list is blood-heavy, and it is a property of the grouping rather than of
+transcription.
+
+**Consequence: use `--max-groups 2` or `3` for the exemplar panel.** At
+`--max-groups 3 --min-seqlets 1000 --per-group 2` the candidate list grows from
+5 to 19 and spans far more lineages, adding MEF2A (heart/muscle), Irf1, MEF2C,
+Foxo3 (GI/liver) and Arid5a. The 45-single-group headline stays as the
+statistic because it is conservative — it *understates* lineage structure — but
+it makes a poor selection rule for a figure.
+
+Two bugs this exposed, both fixed:
+
+- `--max-groups` above 1 was **silently a no-op**. `sole_group` is NaN for any
+  multi-group cluster and `groupby` drops NaN keys, so the per-group cap
+  discarded every multi-group candidate. Selection now groups on a `lineage`
+  column that falls back to the group list.
+- The "name also labels a broad cluster" guard needs a **lower floor than the
+  ubiquitous row does**. CTCF cluster 87 sits in 3 groups with 63,421 seqlets
+  and read as a lineage motif, while cluster 15 carries the same name across
+  13 — which clears a floor of 10 but not the ubiquitous floor of 15, so one
+  shared threshold flagged nothing. Note a seqlet-ratio rule would not have
+  caught it either: the narrow cluster has *more* seqlets than the broad one
+  (63,421 vs 38,508). `--split-flag-groups` (default 10) is now separate from
+  `--broad-groups` (default 15), and excludes 70 narrow splits of broadly
+  discovered factors including NFYA, TBP, SP9, ETV7 and ZNF362.
+
+**Planned: hit-based ranking.** Every criterion here is a *discovery*
+quantity — prevalence and seqlets describe where TF-MoDISco found a motif, not
+where it is used. Once `hits_linked.tsv` exists atlas-wide,
+`motif_hit_density.py` produces per-cluster `specificity` and
+`mean_hits_per_peak_detected` over the same biosample groups, and those are the
+better criteria: a discovery-restricted motif that turns out to receive hits in
+every tissue is a false exemplar, and the current filters cannot see that. Hit
+data would also subsume the `name_also_broad` heuristic, since a split of a
+ubiquitous motif carries the compendium-linked identity and so would show hits
+everywhere. Until then, treat the selection as candidates to be confirmed
+rather than confirmed exemplars.
+
+Two corrections to earlier notes, from running this on the canonical build:
+
+- **MEF2A is not heart-restricted.** The real MEF2A cluster (46) spans 2 tissue
+  groups with 130,013 seqlets over 17 experiments; the heart-only MEF2A (264)
+  is 92 seqlets over 2 experiments. Do not cite MEF2A as a lineage recovery.
+- **SPI1 and KLF1** are quotable only as prevalence-2 clusters with 44 and 66
+  seqlets. SPIB is the defensible myeloid recovery. HNF4A remains correctly
+  unrestricted (4 groups, 24 experiments, 157,498 seqlets).
+
+### Figure 2 Assembly
+
+Composites panels a-c from files the other scripts already wrote, so it does
+no analysis and can be re-run freely while iterating on layout.
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --n-ubiquitous 12 --n-restricted 10 --logos-per-row 6 --split-logos
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/figure2_{head}.{pdf,png}                  # composite
+figures/motif_atlas/figure2_{head}_a_rarefaction.{pdf,png}    # per-panel,
+figures/motif_atlas/figure2_{head}_b_concentration.{pdf,png}  #   for hand-
+figures/motif_atlas/figure2_{head}_c_exemplars.{pdf,png}      #   alignment
+figures/motif_atlas/figure2_{head}_logos/*.{pdf,png}          # --split-logos
+```
+
+Per-panel files are written by default: the composite is for judging the
+story, the separate files are what get aligned to a house style in a vector
+editor. `--split-logos` additionally writes one small transparent PDF per
+motif, unlabelled, so panel c can be rearranged freely. Text stays as text in
+the PDFs; logomaker glyphs come through as paths.
+
+Prerequisites, in order — the script names every missing one and the command
+that produces it:
+
+```bash
+plot_motif_rarefaction.py --head count --min-cluster-experiments 2
+motif_group_concentration.py --head count --group-level tissue --save-null-draws
+select_motif_exemplars.py --head count --logo-paths ...
+```
+
+**Panel c's two enemies are low-complexity clusters and weak ones**, and
+widening the rows finds both. Past rank 12 the ubiquitous list turns
+low-complexity: cluster 9 ("ZNF362", 86 experiments) is a poly-T run and
+cluster 14 ("ZNF131", 70 experiments) a CGC repeat — and their JASPAR scores
+are 0.96 and 0.94, so `--jaspar-score-threshold` does not catch them either.
+JASPAR contains low-complexity profiles, so a repeat CWM matches one well.
+Rank 12 is TBP, whose TATA box you want, so `--n-ubiquitous 12` is the clean
+cut. Among the restricted, POU2F1::SOX2 (213 seqlets) is visibly noisy and
+"BNC2" (253) reads as a TGA(G)TCA AP-1 site rather than anything GI-specific;
+raising `--min-seqlets` to 500 drops both, at the cost of the `gi_tract` row.
+
+There is no substitute for looking at the logos before quoting anything from
+this panel.
+
+`--modisco-h5` reads `{pos,neg}_patterns/{cluster_final}/contrib_scores`,
+shape `(length, 4)`. `trim_cwm` wants `(4, length)`, so the loader transposes;
+getting that backwards silently collapses per-position magnitude to four
+numbers and trims to nonsense instead of raising, which is why
+`tests/test_motif_atlas_panels.py` checks that a synthetic 10bp core inside a
+50bp window trims back to 10bp.
+
+#### Presentation output
+
+`--presentation` writes **only** the exemplar panel, restyled for projection,
+and splits the count and profile lexicons into **separate files**:
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --logos-per-row 5 --out-stem figures/motif_atlas/talk_motifs
+# -> talk_motifs_presentation_counts.{pdf,png}    ubiquitous + lineage-restricted
+# -> talk_motifs_presentation_profile.{pdf,png}   core promoter (if --profile-* given)
+```
+
+They are separate because on a slide the count lexicon is the main figure and
+the core promoter motifs are a different claim; compositing them only forces
+both to be smaller. The profile figure's width scales to the columns actually
+filled, so three logos are not stretched to 1.7× the glyph size of every other
+logo in the deck.
+
+`--consolidate` instead writes **one** file with all three bands on a single
+column grid:
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --consolidate --logos-per-row 5 --n-profile 3 \
+    --profile-exemplars ... --profile-h5 ... \
+    --profile-names configs/core_promoter_names.tsv
+# -> talk_motifs_presentation_all.{pdf,png}
+```
+
+The bands stay separate and labelled — an undifferentiated array loses the
+core promoter / ubiquitous / lineage-restricted split, which is the claim the
+panel exists to make. Two things are specific to this layout:
+
+- **Band heights are equalized.** `height_ratios` is normally the sub-row
+  count, but within a band of `n` sub-rows the axes height is
+  `band / (n + (n-1) * INNER_HSPACE_FLOOR)`, so bands of 1, 2 and 3 sub-rows
+  came out at 0.78, 0.51 and 0.46 inches. `equalize_band_heights` charges each
+  band for its own internal gaps. It is on only under `--presentation`, so
+  Figure 2 is untouched.
+`--layout sidebar` rearranges that one file for a slide's aspect: the two
+count bands stack on the left and the core promoter motifs run down a column
+on the right.
+
+```bash
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --consolidate --layout sidebar \
+    --profile-exemplars ... --profile-h5 ... \
+    --profile-names configs/core_promoter_names.tsv
+# -> figure 18.4 x 6.0 in (3.08:1); logo axes 1.250 x 0.500 in
+```
+
+- **Logo size is the invariant; the figure is derived from it.**
+  `--logo-size` (default 1.25 × 0.5 in) fixes one logo's axes, and the figure
+  grows to fit the grid, so `--logos-per-row` rearranges the layout instead of
+  resizing the motifs. Before this, widening the grid silently halved the
+  glyphs, because figure width was fixed and the columns divided it. The
+  chosen size and the resulting aspect are printed on every run.
+- **Each band gets its own column count.** `--band-rows` (default 2) makes
+  every count band fill exactly that many rows, deriving the column count per
+  band -- 10 ubiquitous over two rows is 5 wide, 15 lineage-restricted is 8.
+  One shared count cannot fill both (at 8, the ubiquitous band's second row
+  holds two logos and six blanks), and a full band reads better than a
+  rectangular outline with holes. `--band-rows 0` reverts to
+  `--logos-per-row` for both. The cost is a ragged right edge, and the
+  ubiquitous band being narrower than the core promoter column's position
+  leaves a gap in the top right.
+- **Everything is in one grid**, not two nested ones, so all 28 logos are the
+  same size by construction rather than by matching two grids after the fact.
+- **Band headers are named for the grouping, not the head.** The
+  `count head:` / `profile head:` prefixes exist because Figure 2 draws both
+  heads on one panel and the prefix is the only thing telling them apart. On a
+  slide the biological grouping is the point and the attribution head is an
+  internal detail, so `--presentation` drops them and the first band is simply
+  `core promoter`.
+
+It bundles defaults for seven options, each of which still wins if set
+explicitly:
+
+| Option | Manuscript | `--presentation` |
+| --- | --- | --- |
+| `--n-ubiquitous` | 12 | 0 (every row) |
+| `--n-restricted` | 12 | 0 (every row) |
+| `--label-fontsize` | 6.2 | 11 |
+| `--label-fields` | `default` (3 lines) | `auto` (2 lines) |
+| `--category-label` | `rotated` | `header` |
+| `--uppercase-names` | off | on |
+| `--exemplar-figsize` | scales from `--figsize` | 10 × 7.5 in |
+| `--logo-length` | off | 0 (auto: the longest motif drawn) |
+
+Why each differs from the figure default:
+
+- **The full lexicon.** `--n-ubiquitous 0` / `--n-restricted 0` take every row
+  of the exemplar tables. A talk slide is showing that a lexicon exists, so a
+  top-`n` cut undercuts the point; Figure 2 still defaults to 12.
+- **Two caption lines, not three, and lineage rather than prevalence.** `auto`
+  puts the lineage on both count blocks, so `21 tissues` sits beside
+  `heart+muscle` and the contrast reads without anyone parsing a count. The
+  `default` preset keeps all three lines and is what Figure 2 uses;
+  `--label-fields name,prevalence` sets both blocks explicitly.
+- **Horizontal headers.** Projected, a rotated 7pt grey label in the left
+  margin is the least legible thing on the slide, and the
+  ubiquitous/lineage-restricted split is the panel's entire claim.
+- **Uppercased names.** The compendium carries JASPAR names verbatim, so
+  mouse- and human-convention spellings mix (`Pou5f1::Sox2` beside `POU2F3`).
+  That is correct provenance in a figure caption and reads as a typo on a
+  slide.
+- **The caption font does not shrink.** The manuscript path drops the label
+  size in 0.4pt steps to resolve the spacing solve below; presentation mode
+  pins `min_label_fontsize` to the requested size instead, so an overfull
+  panel is a cue to lower `--n-ubiquitous`/`--n-restricted` rather than
+  silently shrink the text.
+- **Transparent background**, for dropping onto a slide of any colour.
+- **Tight spacing.** `--row-gap` (0.15 under `--presentation`) and
+  `--band-gap` (0.45) are separate knobs because they clear different things:
+  a row gap only has to clear a caption, while a band gap must clear the next
+  band's header *and* its first caption. A single value for both is what made
+  the figure loose. **Their units differ** — matplotlib measures the row gap
+  against logo height and the band gap against average *band* height — so
+  they are not comparable numbers.
+- **The profile figure can be a column.** `--profile-cols 1` stacks the core
+  promoter motifs vertically in their own file, to be placed beside the count
+  figure on a slide and rearranged there.
+- **One glyph size everywhere.** Trimmed CWMs run 10-25bp across the atlas, so
+  a grid of equal-width axes draws a 25bp motif's letters 2.5x narrower than a
+  10bp one, and no single text size fits the slide. `--logo-length` pads every
+  trimmed CWM to a common width (`0` = the longest motif being drawn, measured
+  across *all* blocks including the one going to the other file). Padding is
+  centred and never truncates, so a `--logo-length` below a motif's trimmed
+  length is ignored rather than cropping signal.
+
+  The two output files are then matched geometrically rather than by eye: the
+  profile grid is given only the columns it fills, its width is corrected by
+  one probe (`wspace` is a fraction of axes width, so a 3-column grid does not
+  divide its figure like a 5-column one), and its height is *solved* for the
+  counts figure's axes height. Both are reported on stderr:
+
+  ```text
+  padding every logo to 25 bp for a uniform glyph size
+  logo axes: counts 1.250 x 0.500 in, profile 1.249 x 0.501 in
+  ```
+
+  Check that line if the text on the slide ever stops matching between the two
+  figures. Both figures derive their size from `--logo-size`; with the figure
+  size pinned instead, tightening the gaps silently inflated the axes to
+  1.25 x 0.92in. Padding to the longest motif does leave whitespace around the short
+  ones; `--logo-length 14` trades exact uniformity for tighter logos, at the
+  cost of the two longest motifs (ZNF143 at 25bp, ERG at 18bp) rendering wider
+  than the rest.
+
+#### The profile / core promoter block
+
+`--profile-exemplars` adds a third band above the two count-head blocks, and
+`--presentation` styles it the same way. **It needs the profile-head
+compendium, which is not built yet** (see Pending above), so this path is
+covered by tests and synthetic fixtures only:
+
+```bash
+select_motif_exemplars.py --head profile --include-unmatched
+python src/analysis/plot_figure2.py --head count --modisco-h5 auto \
+    --presentation --profile-exemplars figures/motif_atlas/motif_exemplars_profile_restricted.tsv \
+    --profile-h5 compendium/motifcompendium_profile_cluster_averages.h5 \
+    --profile-names configs/core_promoter_names.tsv \
+    --n-profile 4 --n-ubiquitous 6 --n-restricted 6 --logos-per-row 3
+```
+
+Two things about this block are specific to the core promoter motifs, and both
+were bugs until Sep 2026:
+
+- **JASPAR cannot name them.** JASPAR2026 has no Inr/TATA/DPE entries, which is
+  why selection needs `--include-unmatched` — and it means `jaspar_name` is
+  null for exactly the motifs the block exists to show. Unnamed clusters now
+  fall back to `cl<id>` rather than rendering the literal string `nan`, and
+  `--profile-names` (a `cluster_final`/`name` TSV) gives them real labels. A
+  hand-given name also wins over a JASPAR one, so any cluster can be
+  relabelled for a figure.
+- **Nulls dedup against each other.** `rank_for_panel` calls
+  `drop_duplicates(subset="jaspar_name")`, and pandas treats nulls as equal, so
+  an all-unnamed profile table collapsed to a **single** logo. Only the named
+  rows are deduped now; the count head is unaffected because its tables are
+  TF-matched and always named.
+
+`--n-profile` sizes this block independently (default: `--n-restricted`).
+
+Rendered on its own, the block's header is simply `core promoter` — a block
+drops the `count head:` / `profile head:` prefix unless both heads share a
+figure, where the prefix is the only thing distinguishing them.
+
+Presentation mode reads only the two `motif_exemplars_{head}_*.tsv` tables and
+the cluster-average h5 — the rarefaction and concentration tables are not
+inputs to it, since those panels are arguments about sampling that a talk
+makes verbally.
+
+The manuscript path is unchanged: `figure2_count_{a,b,c}*.png` re-render
+byte-identical.
+
+#### Panel c layout: spacing has to be solved in inches
+
+`_logo_grid` sizes row spacing from the caption height in **inches**, not from
+a constant `hspace`. `hspace` is a fraction of the *axis* height while a
+caption is sized in points, so any value tuned on the standalone panel draws
+the third caption line (name / lineage / n exp) straight through the logos of
+the row above once the same grid is packed into `figure2_count.pdf`, where the
+band is about a third as tall. For `n` sub-rows, `ax = band/(n + (n-1)h)` and
+`gap = h*ax`, so requiring `gap >= caption` gives:
+
+```text
+h = caption * n / (band - caption * (n - 1))
+```
+
+If that has no solution the label font shrinks in 0.4pt steps rather than the
+figure silently overlapping. Two other layout rules worth keeping:
+
+- The rotated category labels are centred on the **band**, via `fig.text` in
+  figure coordinates. Anchored to the first sub-row's axes they were both
+  centred on a single logo row and overlapped each other.
+- Those labels drop the `count head:` prefix unless a profile row is present
+  to contrast with — with the prefix they are wider than the bands they label.
+- Panel b's statistics block is anchored to the observed line in **data**
+  coordinates, not to 0.97 of the axes. The line sits at the right edge, so an
+  axes-fraction anchor put the last line of text underneath it.
+
+`tests/test_motif_atlas_panels.py` renders the panel at both the standalone and
+the packed figure size and asserts no caption box intersects another axis, so
+this cannot regress silently again — it escaped review twice before the test
+existed.
+
+### Compendium Redundancy
+
+Measures how much of the lexicon is the same motif counted twice. Every count
+derived from the compendium — lexicon size, rarefaction curves, the number of
+tissue-restricted clusters — is inflated when `cluster_motifs.py
+--across-threshold` fails to merge variants of one motif, and unlike the other
+caveats in this directory redundancy biases in the **flattering** direction.
+
+```bash
+python src/analysis/motif_redundancy.py --head count
+python src/analysis/motif_redundancy.py --head count --report-threshold 1e-6
+python src/analysis/motif_redundancy.py --head count --min-overlap-frac 0.8     --cluster-metadata motifcompendium/bpnet/motifcompendium_count_cluster_metadata.tsv
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_redundancy_{head}_pairs.tsv       # passing pairs, loosest threshold
+figures/motif_atlas/motif_redundancy_{head}_summary.tsv     # excess clusters per threshold
+figures/motif_atlas/motif_redundancy_{head}_components.tsv  # cluster -> merged component
+figures/motif_atlas/motif_redundancy_{head}.{png,pdf}
+```
+
+Uses TOMTOM from `memelite` (the "tomtom-lite" reimplementation), which is a
+Python API with **no command-line entry point** — hence a script rather than a
+shell command. Self-compares `motifcompendium_{head}_cluster_averages.meme`
+with the diagonal masked, symmetrizing each pair on the larger of the two
+p-values since TOMTOM is asymmetric (the query sets the background scale).
+
+Redundancy is reported as **excess clusters** — how many clusters would
+disappear if each near-duplicate group collapsed to one motif. Two properties
+of the real data make the computation delicate, and the first run got both
+wrong:
+
+**Use the h5, not the MEME export.** MotifCompendium exports fixed-width CWM
+windows — all 944 count-head clusters are exactly 50bp — while the informative
+core is typically 6–15bp. Untrimmed, TOMTOM largely aligns low-information
+flanks, which resemble background and so resemble each other, and
+`--min-overlap-frac` goes inert (35bp of a 50-vs-50 comparison is satisfied at
+nearly any offset). The untrimmed run reported 77.6% excess at `p ≤ 1e-6`, which
+is flank similarity, not redundancy.
+
+Information content on the MEME PFMs does **not** fix this, as the real data
+showed: trimming at `0.3 × max(IC)` went from 50bp to a median of 49bp, barely
+shrinking anything. Cluster-average PFMs are soft, so the core's IC is modest,
+while PRO-cap peaks are GC-rich enough that flanking columns carry real
+composition and clear the threshold. Contribution magnitude is the only signal
+that marks where a motif is — which is what Fi-NeMo's own `trim_motif` uses:
+
+```bash
+python src/analysis/motif_redundancy.py --head count --modisco-h5 auto
+```
+
+`--modisco-h5` reads `motifcompendium_{head}_cluster_averages.h5`, takes the
+trim span from each cluster's `contrib_scores`, and applies it to the
+`sequence` PFM for the TOMTOM comparison (TOMTOM needs probability-like
+columns, so the span comes from contributions while the comparison runs on
+probabilities). `--min-trim-len 6` mirrors Kelly Cochran's ProCapNet floor. The
+MEME route still works and warns when its trimming barely shrank anything;
+`--no-trim` reproduces the original behaviour.
+
+**Single linkage chains.** Connected components merge A~B~C even when A and C
+are unrelated. On the untrimmed run one component held 142 clusters at
+`p ≤ 1e-12` and 919 of 944 at `p ≤ 1e-2` — the sweep cannot fix that. Three
+criteria are now reported side by side:
+
+| criterion | behaviour |
+|---|---|
+| `mutual` | only mutual best hits merge; cannot chain — a lower bound |
+| `complete` | complete linkage: a group merges only if *every* pair passes — the usable middle estimate |
+| `single` | connected components; chaining-prone upper bound, kept for contrast |
+
+A large `single` − `complete` gap means the threshold is too loose for this
+data, not that redundancy is high; the run warns when it exceeds 20% of the
+lexicon. `--linkage` picks which criterion's components get written out
+(default `complete`).
+
+No single p-value threshold is defensible either — significance scales with
+motif length and information content, and family members are genuinely similar
+without being duplicates — so the output stays a sweep. Flat across orders of
+magnitude means redundancy is well determined; steadily climbing means lexicon
+size is threshold-dependent and should be quoted as a range.
+
+**Measure over the clusters a claim rests on, not all 944.** `--subset` takes a
+name list or any TSV with a `motif`/`compendium_motif_name` column, so the
+prevalence-filtered set (343) or the tissue-restricted set (59) can be tested
+directly. That is both the number actually at risk of inflation and far less
+prone to chaining, since chaining scales with how many motifs are in play. The
+59 restricted clusters already show 6 excess by JASPAR name alone (RELA ×3,
+SP2 ×2, ATF1 ×2, POU2F3 ×2, POU2F1::SOX2 ×2), which is the figure to check
+against.
+
+Why this needs measuring rather than eyeballing: on the real count-head
+compendium 306 clusters carry only **112 distinct JASPAR names** (SP9 claimed
+by 31 clusters, TBP by 15, NFYA by 14), which looks like ~57% redundancy. But
+JASPAR annotation is a nearest-neighbour lookup, so a bare GC-box and a GC-box
+with an ETS half-site can both best-match SP9 while being genuinely distinct.
+
+`--cluster-metadata` therefore reports **JASPAR agreement within merged groups,
+per criterion, against its chance baseline** — the only external check
+available on whether a merge is real.
+
+Read the enrichment, not the raw percentage. Names are heavily skewed (306
+named clusters, 112 names, SP9 alone claiming 31), but the measured chance that
+two randomly merged clusters share a name is only **2.6%** (4.1% at family
+level), so a ~50% observation is a **~20× enrichment** and is evidence the
+merges are real, not the "low agreement" it superficially resembles. Family
+agreement additionally absorbs JASPAR's own redundancy: SP1/SP2/SP9 and
+ETV4/ETV6/ETV7 are near-identical PWMs, so two clusters can be the same motif
+while carrying different best-hit labels.
+
+#### Measured results
+
+Trim threshold matters, and the calibration target below fixes it. Across
+`--trim-threshold` 0.3 / 0.5 / 0.7 with `--drop-untrimmable`, at `p ≤ 1e-6`:
+
+```text
+trim  median   n      mutual excess   complete excess   name agree (mutual)
+0.3    25bp   897   159 (17.7%)      422 (47.0%)       43%
+0.5    16bp   941   147 (15.6%)      325 (34.5%)       51%
+0.7     7bp   945   123 (13.0%)      224 (23.7%)       52%
+```
+
+`mutual` is stable at **13–18%** across the whole range while `complete` halves,
+and at 0.7 the chaining warning stops firing entirely (largest complete-linkage
+group falls 11 → 6).
+
+The criteria are separated decisively by how agreement behaves as the p-value
+threshold loosens (at `--trim-threshold 0.5`):
+
+```text
+p       mutual excess   mutual name   complete name   single name
+1e-08   101 (10.7%)     51% (26x)     62%             36%
+1e-06   147 (15.6%)     51% (26x)     44%             20%
+1e-04   171 (18.2%)     47% (24x)     23%              0%
+1e-02   172 (18.3%)     46% (23x)     15%              0%
+```
+
+`mutual` holds ~46–56% name agreement (57–64% at family level) over seven
+orders of magnitude while its excess grows five-fold and then saturates:
+
+```text
+p        mutual excess   name agree   family agree
+1e-11     36 (3.8%)      56%          61%
+1e-09     70 (7.4%)      50%          60%
+1e-06    147 (15.6%)     51%          59%
+1e-04    171 (18.2%)     47%          58%
+1e-02    172 (18.3%)     46%          57%
+```
+
+Agreement staying flat while the pair count grows five-fold is the key result:
+if loosening the threshold were adding spurious merges, agreement would decay
+toward the 2% chance level. It goes 56% → 46%, and the pairs added across that
+whole range have ~44% agreement on their own — still 22× chance. So there is no
+principled place to stop short, and `mutual` saturates at 172.
+
+`complete` degrades from 62% to 15% agreement and `single` collapses to 0% over
+the same range, so both are upper bounds only.
+
+**But `mutual` itself over-counts, because of containment.** Many clusters are
+tandem composites — the same core repeated in one 50bp window — and a tandem
+mutual-best-matches its own single-core counterpart. That is a hierarchy, not
+"the same motif counted twice", and `--min-overlap-frac` cannot catch it since
+it measures coverage of the *shorter* motif, which containment satisfies by
+construction. Cluster 34 is the clearest case: prevalence 31 across 13 tissue
+groups, 11,704 seqlets, no JASPAR name — a tandem SP/KLF, i.e. a double
+GC-box, which is unnamed precisely because a 50bp window holding two GC-boxes
+does not best-match a single short SP motif.
+
+Splitting the 147 mutual pairs by JASPAR-name status shows the signature
+directly:
+
+```text
+pair class             n    med min/max len   >=25bp member   weaker member seqlets
+>=1 unnamed           78        19 / 27           49/78              27.5
+both named, agree     35        10 / 22           14/35              84
+both named, disagree  34      13.5 / 15            5/34              80
+```
+
+The unnamed-involving pairs are the majority, the widest, and have by far the
+weakest second member — and they were **never externally validated**, since the
+51% agreement figure could only be computed on the 69 evaluable pairs. The
+disagreeing pairs are the narrow, near-symmetric, well-supported ones: the
+profile of genuine near-duplicates with ambiguous labels.
+
+Excluding containment:
+
+```text
+filter                                 pairs   of 941   of 343
+no filter                                147    15.6%    11.7%
+exclude any unnamed member                69     7.3%     5.5%
+exclude any member >=25bp                 79     8.4%     6.3%
+both named AND narrow AND symmetric       42     4.5%     3.3%
+```
+
+**Quote 4–8%, not 15–18%.** The higher figures count tandem-vs-core containment
+as duplication. For the prevalence≥2 lexicon of 343 the containment-free
+estimate is ~3–6%, which is small enough that the lexicon size needs no
+material correction — a change from what this README previously recorded.
+
+Downstream, at the containment-free 3–6% the prevalence-filtered lexicon of 343
+becomes ~325–335 and the 59 tissue-restricted clusters ~56–57 — a correction
+small enough not to affect any claim. The concentration *ratios* in
+[Discovery Concentration](#discovery-concentration) are unaffected: duplicates
+share an experiment set, so they are equally restricted under both observed and
+null. Only the counts move.
+
+The residual uncertainty is the ~41% of mutual pairs that disagree even at
+family level — either real cross-family over-merges or JASPAR mislabelling.
+That is what the visual review below resolves.
+
+`--trim-threshold 0.5` best matches Fi-NeMo's own per-motif median (16bp vs
+14bp); 0.7 matches its hit-weighted median (7bp vs 6bp) but over-trims relative
+to the per-motif distribution.
+
+Earlier sweep, before trimming was calibrated (945 clusters at median 25bp):
+
+```text
+p_threshold  excess_mutual  excess_complete  excess_single  largest_single
+1e-12             0.0%            0.0%           0.0%              1
+1e-10            12.0%           20.9%          34.6%            116
+1e-08            15.0%           32.4%          59.6%            265
+1e-06            17.5%           47.8%          85.5%            737
+1e-04            17.6%           65.0%          97.3%            917
+1e-02            17.7%           79.3%          99.9%            945
+```
+
+`mutual` plateaus at ~17.5% from `1e-6` onward with a largest group of 2, while
+`complete` and `single` keep climbing — the signature of the looser criteria
+absorbing family members rather than finding duplicates. Note there is no
+threshold at which all three agree, so the lexicon size should be quoted with
+this range attached rather than as a single corrected number.
+
+#### Reproducibility across MotifCompendium versions
+
+The canonical count build was rebuilt on a newer MotifCompendium (the library
+was updated mid-project), taking the raw cluster count from 869 to 945 over the
+same 219 experiments and unchanged MoDISco inputs. Every analysis number here
+is **unchanged** by that: the 343-cluster prevalence≥2 lexicon, all 343
+clusters' prevalence and `n_groups`, the 306/37 class split, 45 single-group vs
+8.50 expected, `p = 1.989652e-22`, and redundancy's 147 excess pairs (15.6%) all
+reproduce identically, cluster id for cluster id. (Measured under the earlier
+`metastatic_carcinoma` grouping, on both sides, so the comparison is valid;
+under origin grouping the same build gives 49 vs 8.82.)
+
+The added clusters are therefore all prevalence-1 in the 198-experiment
+analysis universe -- low-prevalence splits that the prevalence≥2 filter removes
+anyway. That is a useful robustness fact rather than a coincidence: the
+prevalence filter absorbs exactly the kind of churn a library update produces.
+
+Note that 869 and 945 are both correct and describe different things, which is
+easy to confuse: 945 is the raw build over 219 experiments, 869 is how many of
+those clusters appear in at least one of the 198 experiments above 10M reads.
+The 76-cluster gap is clusters discovered only in the shallow libraries.
+
+#### Experiment universe: 224, 219, 198
+
+Three counts appear and all three are correct for different steps:
+
+- **224** — every ENCODE PRO-cap experiment.
+- **219** — after dropping the 4 uncapped experiments and the one anomalous
+  TSS-positioning experiment (ENCSR973QQI). This is the set the MotifCompendium
+  clustering was run over, and what the manuscript methods quote.
+- **198** — the subset of those with >10M reads. The compendium was clustered
+  over all 219, but downstream analysis switched to 198 because of recall and
+  discovery problems in the shallow libraries (consistent with the read-depth
+  dependence in Fig. 1d). Every script in this directory defaults to this via
+  `--min-reads`.
+
+The data corroborates that switch: of the 945 count-head clusters, **76 have no
+experiment in the 198-set at all**, so they were discovered only in sub-10M
+libraries and no deep library ever reproduced them. That is 8% of the lexicon
+resting entirely on the least reliable experiments — and it also confirms the
+compendium really was built from 219, since those clusters could not exist
+otherwise.
+
+Lexicon sizes reported here are therefore on the 198-experiment subset while
+the compendium spans 219. Both numbers are correct; they just describe
+different steps, and any text quoting one should say which. Do not "fix" this
+by rerunning with `--min-reads 0` — that would reintroduce the shallow-library
+recall problem the restriction exists to avoid.
+
+**Tested, and the design holds.** The one real risk was that MotifCompendium's
+across-experiment Leiden pass clusters all motifs jointly, so the 21 shallow
+experiments could have perturbed the *partition* of the retained ones rather
+than merely adding clusters. A control build on 198 only
+(`cluster_motifs.py --head count --min-reads 10000000 --out-dir ...`)
+reproduces the 219 build almost exactly:
+
+```text
+                         219-build (restricted to 198)   198-build
+clusters, prevalence>=2              343                    340
+TF-matched clusters                  306                    304
+pooled concentration               0.832                  0.836
+swap-null concentration            0.827                  0.830
+single-group clusters                 45                     45
+expected single-group               8.50                   8.84
+exact p                          2.0e-22                1.6e-21
+```
+
+Only 13 of 869 clusters differ at the partition boundary (1.5%), and the
+tissue-concentration result is identical to rounding error — 45 single-group
+TF-matched clusters in both. So discovery stays on 219 and analysis on 198, and
+the profile head should be built the same way to keep the count-vs-profile
+contrast a comparison of heads rather than of experiment sets.
+
+#### Calibrating the trim threshold against Fi-NeMo
+
+Contribution trimming at `--trim-threshold 0.3` leaves a median of 25bp out of
+a 50bp window on the cluster averages. That is about twice as wide as Fi-NeMo
+achieves at the same threshold. Measured over a real profile-head run
+(ENCSR342WAR, 2.24M hits, 65 motifs, via `start`/`end` vs
+`start_untrimmed`/`end_untrimmed` in `hits_unique.tsv`):
+
+```text
+Fi-NeMo trimmed widths, 50bp windows, --cwm-trim-threshold 0.3
+  median across motifs        14 bp
+  median weighted by hits      6 bp   (the high-volume motifs are the narrow ones)
+  motifs at the 6bp floor      8 / 65
+  motifs never trimmed         7 / 65  (these received 1-140 hits out of 2.2M)
+```
+
+Cluster averages are wider at the same threshold because averaging variably
+offset instances smears contribution into the flanks. So `0.3` is not
+transferable from per-experiment CWMs to cluster averages: raise
+`--trim-threshold` until the reported median width approaches ~14bp. The run
+prints width quartiles and how many clusters failed to shrink, and warns when
+the median exceeds twice Fi-NeMo's.
+
+`--drop-untrimmable` removes clusters whose contributions are diffuse enough
+that trimming does not shrink them at all. These have no locatable core, so any
+comparison against them is meaningless, and they act as chaining hubs — the
+equivalent motifs in a real Fi-NeMo run received 1–140 hits out of 2.2M, so
+little is lost by excluding them.
+
+Finally, `--subset` on the 59 tissue-restricted clusters is the cleanest
+calibration available, since those show 6 excess by JASPAR name alone.
+
+`--min-overlap-frac` (default 0.7) requires the best alignment to cover that
+fraction of the shorter motif, suppressing significant-but-spurious
+short-inside-long matches.
+
+#### Reviewing the merges by eye
+
+Statistics can only go so far here; the merges are checkable directly. Every
+run writes the **mutual-best-hit pairs** — each cluster's reciprocated closest
+match, so each row is a self-contained claim that two clusters are the same
+motif, with no chaining involved:
+
+```text
+figures/motif_atlas/motif_redundancy_{head}_mutual_pairs.tsv
+figures/motif_atlas/motif_redundancy_{head}_mutual_pairs.html
+```
+
+The TSV carries both clusters' JASPAR name and score, seqlet counts, trimmed
+widths, the p-value, and `name_agree`/`family_agree` flags. The HTML shows the
+two forward logos side by side (resolved from
+`motifcompendium_{head}_cluster_logo_paths.tsv`), **sorted to put disagreeing
+pairs first** — those are where over-merging would be visible, so they are what
+a reviewer should spend time on. Pairs are otherwise ordered by seqlet count,
+so the ones that most affect the lexicon size come first.
+
+Logos are **embedded as base64 data URIs**, so the HTML is self-contained and
+survives being copied off the cluster — which is how these reports get read.
+The report is written to `figures/` while the logos live under
+`motifcompendium/`, so a linked copy renders only in place. `--link-logos`
+references them instead when a smaller file is wanted, and `--top-pairs N`
+limits how many rows are shown (priority order preserved). The run prints the
+resulting file size.
+
+**Check the `logos:` line the run prints.** It reports how many paths resolved,
+how many SVG files were actually found, their total size, and a concrete
+example path. Three failure modes previously looked identical in the report —
+no path table, paths that resolved to nothing, and paths whose files were
+missing — and all three simply rendered as dashes in every row. If the paths
+point somewhere unexpected, `--logo-paths` overrides the table and
+`--logo-root` overrides the directory its entries are relative to. A report
+with no usable logos is still written, now carrying an explicit banner rather
+than silently omitting the images.
+
+Embedding uses `<img src="data:...">` rather than inline `<svg>` markup because
+matplotlib SVGs carry internal ids referenced through `<defs>`, and inlining
+several hundred into one document risks id collisions that silently break
+rendering; an `<img>` keeps each logo in its own rendering context. A logo file
+that cannot be read is marked in place rather than failing the run.
+
+A disagreeing pair is not automatically a bad merge: JASPAR contains
+near-identical motifs, so `family_agree` distinguishes SP1-vs-SP9 (benign) from
+SP1-vs-GATA1 (not).
+
+The review set is much smaller than the pair count suggests. On the real count
+head at `p ≤ 1e-6`: 147 mutual pairs, but only 69 have both clusters
+JASPAR-named, of which 35 agree and **34 disagree** — and family-level
+agreement rescues 6 of those, leaving **28 pairs** that disagree even at family
+level. Those 28 are the entire question, and they sort to the top of the HTML.
+
+#### Footgun: panel b's histogram and caption can come from different runs
+
+`motif_group_concentration.py` writes the swap-null summary on every run but
+the per-permutation draws **only with `--save-null-draws`**. `plot_figure2.py`
+reads them as two separate files, so a rerun that omits the flag leaves the
+previous run's histogram beside the new run's numbers, and nothing downstream
+notices.
+
+This happened for real. After the 18-to-21 group lineage split, panel b drew a
+null centred on 8.31 (18 groups) while its caption read "37 vs 6.1 expected"
+(21 groups) — an internally contradictory panel that looks entirely normal.
+
+Two guards now exist, both in `panel_concentration`:
+
+- The draws' mean must match the swap table's `null_single_group_mean` to
+  within 0.05, or it raises. They are the same permutations, and the table
+  stores that mean rounded to 2dp, so any real discrepancy means two runs.
+- A motif class missing from the swap table raises with the classes it does
+  have, which is what a `--drop-unnamed` run leaves behind.
+
+The related trap is output collision: a `--collapse-by` or `--drop-unnamed`
+run writes the *same filenames* as the canonical run. One such sensitivity run
+overwrote `motif_concentration_count_tissue.tsv` with a 118-row,
+TF-matched-only table. Always pass `--out-dir` for anything that is not the
+canonical build.
+
+#### Footgun: degenerate p-values
+
+TOMTOM estimates its column background from the target set, and that estimate
+can collapse — returning p-values of exactly 0.0 or 1.0 for everything,
+including **p = 1.0 for two identical motifs**. It is not simply a matter of
+having too few motifs, and it is not monotone in size: measured on the test
+fixture after trimming, 41 motifs of 14bp behave correctly (duplicate
+p = 7e-9) while 21 of 14bp, 81 of 10bp and 81 of 20bp all collapse entirely.
+
+Nothing in the output reveals this, so the script checks for it and warns when
+more than 90% of off-diagonal p-values are exactly 0 or 1, or fewer than 10
+distinct values appear. If that fires, every redundancy figure in the run is
+meaningless — change `--trim-threshold`, or drop `--subset` so more motifs
+contribute to the background. This is also why synthetic one-hot fixtures
+cannot test the p-value path; the tests use Dirichlet-drawn PWMs and a
+verified-safe motif count and width.
+
+### Annotation Scaffold
+
+JASPAR misses whole categories that matter here — core promoter elements
+(Inr, TATA, DPE), repeats, and composite arrangements — so 37 of the 343
+reproducible count-head clusters carry no name. Reviewing those by eye showed
+the class is largely **tandem composites**: a double CCAAT box (cluster 150), a
+double GGAAT (cluster 329), whose cores *are* in JASPAR but not as repeats, so
+the nearest-neighbour lookup fails. Those need a human label, which the
+manuscript methods already commit to providing.
+
+```bash
+python src/analysis/make_annotation_scaffold.py --head count
+python src/analysis/make_annotation_scaffold.py --head count --min-prevalence 2
+python src/analysis/make_annotation_scaffold.py --head count --all
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_annotation_{head}_scaffold.tsv    # blank `class` column to fill
+figures/motif_atlas/motif_annotation_{head}_scaffold.html   # the same rows with logos embedded
+```
+
+Fill the TSV's `class` column while looking at the HTML; both are keyed on
+`cluster_final` and sorted by seqlet count so the consequential clusters come
+first. The completed TSV is exactly what `plot_motif_rarefaction.py
+--annotation-tsv` and `motif_group_concentration.py --annotation-tsv` consume,
+so stratified curves and per-class concentration follow with no further work.
+Suggested vocabulary (kept short, since stratified curves are only readable
+with a handful of classes): `core_promoter`, `tandem_composite`,
+`hetero_composite`, `repeat`, `tf_unannotated`, `unclear`.
+
+#### Decision: the non-JASPAR class is not analyzed further (Sep 2026)
+
+The non-JASPAR class was where the strongest apparent tissue restriction sat
+(6.4× single-group enrichment, `p = 2e-9`), but on review that rests on 14
+clusters, 12 of them at prevalence ≤4, and 7 from `stem_ipsc` — a group with
+only 4 experiments. Direct inspection of the logos showed the class is
+dominated by **tandem composites** (cluster 150 is a double CCAAT box, 329 a
+double GGAAT), whose cores are in JASPAR but not as repeats. 22 of the 37 sit
+at prevalence 2.
+
+So the restriction describes recurring promoter architecture discovered
+idiosyncratically, not novel lineage-specific TF motifs, and the class is
+**excluded from analysis** rather than annotated. Consequences:
+
+- Quote concentration for the TF-matched class only: swap-null concentration
+  0.811 at tissue level (37 single-group vs 6.07 expected, `p < 0.001`) and
+  0.918 at biosample level. Those are already reported separately, so nothing
+  needs recomputing.
+- The +65% diverse-over-redundant figure for the unmatched class is withdrawn;
+  it rested entirely on these 37 clusters.
+- They stay *in* the lexicon count (343, not 306). Excluding them would need
+  its own justification and would shift every recovery figure; making no claim
+  about them costs nothing.
+- They stay in the released compendium, with a methods sentence noting ~11% of
+  clusters had no JASPAR match, were predominantly composite or tandem, and
+  were retained without further analysis.
+
+**Five exceptions worth a look if the class is ever revisited**: clusters 34
+(prevalence 31 across 13 tissue groups, 11,704 seqlets), 57, 68, 95 and 149
+(prevalence 6–18). Cluster 34 is broad, deep and unrestricted, which looked
+like the profile of a genuine core promoter element (JASPAR carries no
+Inr/TATA/DPE entries at all) — but direct inspection identified it as a
+**tandem composite of an SP/KLF motif**, i.e. the same architecture as the
+rest of the class, just far more widely discovered. Treat the remaining four
+as unexamined rather than promising, and check the logo before believing any
+breadth-based argument about this class.
+
+The scaffold remains available for the profile head, whose unmatched class will
+be larger (63–93 motifs per experiment vs 23–30 for count).
+
+### Discovery Concentration
+
+Tests whether the experiments a cluster was discovered in come from fewer
+biosample groups than chance allows. This is the discriminating test that
+abundance thresholds cannot provide: a lineage-restricted motif in 8 liver
+experiments has `n_groups = 1`, while a cluster spread over 8 arbitrary
+experiments sits near the random expectation, and the two can have identical
+seqlet counts.
+
+```bash
+python src/analysis/motif_group_concentration.py --head count
+python src/analysis/motif_group_concentration.py --head count --group-level biosample
+python src/analysis/motif_group_concentration.py --head count --min-cluster-experiments 3
+python src/analysis/motif_group_concentration.py --head count --jaspar-score-threshold 0.85
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_concentration_{head}_{level}.tsv          # per-cluster observed/expected/ratio
+figures/motif_atlas/motif_concentration_{head}_{level}_summary.tsv  # per-split aggregate + enrichment test
+figures/motif_atlas/motif_concentration_{head}_{level}.{png,pdf}    # n_groups vs prevalence against expectation
+```
+
+Two exact statistics, for a cluster of prevalence *p* over *N* experiments in
+groups of size *n_g*:
+
+```text
+E[n_groups | p]   = Σ_g [1 - C(N - n_g, p) / C(N, p)]
+P[n_groups = 1|p] = Σ_g C(n_g, p) / C(N, p)
+```
+
+`concentration = n_groups / E[n_groups]` is ~1 for a random spread and ≪1 when
+concentrated. At low prevalence it has almost no dynamic range, so the
+single-group count is the sharper test; it is compared against its **exact
+Poisson-binomial** distribution (by DP, not a Poisson or normal approximation —
+the per-cluster probabilities are small and very unequal, which is where those
+approximations fail). Read `pooled_concentration` and `single_group_p` rather
+than `median_concentration`, which is granular enough to jump between adjacent
+values.
+
+**Run both `--group-level` values.** They answer different questions, and a
+conclusion holding at both is not a grouping artifact:
+
+- `tissue` — the keyword grouping in `_biosample_groups.py`. Asks whether a
+  motif is *lineage-restricted*. Still coarse — the largest group, `gi_tract`,
+  is 31 of 198 experiments — but no longer pools distinct lineages: the former
+  `blood_immune` spanned erythroid, T/NK, B, myeloid and bulk lymphoid
+  biosamples and so could not see restriction *within* blood, which is why it
+  was [split into four](#haematopoietic-lineages-are-split-not-pooled). Coarse
+  grouping lowers `E[n_groups]`, which inflates the ratio and biases toward
+  "not concentrated".
+- `biosample` — the raw ENCODE biosample string (112 groups over the 198
+  retained experiments). Asks whether discovery is *replicate-driven*
+  (HCT116 ×16, brain metastases ×10, PBMC ×8, K562 ×7). Assumption-free and
+  higher resolution, but most biosamples appear once, so `P[n_groups = 1]` is
+  near zero for `p > 1` and the single-group test loses power.
+
+Measured on the real count-head compendium, both classes are strongly
+tissue-concentrated, and the conclusion holds at both group levels:
+
+```text
+tissue level (21 groups)
+motif_class   n    pooled_conc  n_single  expected  enrichment  p
+TF-matched    306  0.810        37        6.01      6.2x       2.5e-20
+unmatched      37  0.776        11        1.57      7.0x        9.3e-08
+
+biosample level (112 groups)
+TF-matched    306  0.928         8        1.24      6.5x        3.6e-05
+unmatched      37  0.872         1        0.33      3.1x        0.28 (underpowered)
+```
+
+The sharpest result comes from comparing the two levels. Biosample groups nest
+inside tissue groups, so every biosample-confined cluster is necessarily
+tissue-confined: of the 59 clusters confined to one tissue group, only 9 are
+confined to a single biosample, so **50 span two or more distinct biosamples
+within one tissue**. That is lineage restriction rather than replicate
+redundancy from the heavily repeated biosamples (HCT116 ×16, brain metastases
+×10, PBMC ×8, K562 ×7).
+
+At biosample level the single-group test is underpowered by construction —
+most biosamples appear once, so `P[n_groups = 1]` is tiny for `p > 1` — which
+is why `pooled_concentration` is the statistic to read there.
+
+`--min-cluster-experiments 3` checks whether a result rests on clusters sitting
+at the reproducibility floor. It does not — the effect strengthens sharply once
+prevalence-2 clusters are dropped (239 clusters remain of 343):
+
+```text
+tissue level, prevalence >= 3
+motif_class   n    pooled_conc  median_conc  n_single  expected  enrichment  p
+TF-matched    224  0.829        0.864        16        0.57      28x         2.2e-19
+unmatched      15  0.729        0.624         5        0.06      82x         4.7e-10
+```
+
+`pooled_concentration` barely moves (0.832 → 0.829 and 0.767 → 0.729) while the
+single-group enrichment rises an order of magnitude, because the expectation
+collapses much faster than the observed count. At this prevalence
+`median_concentration` finally becomes informative too, and it shows the
+unmatched class is the more concentrated of the two (0.624 vs 0.864).
+
+Two things to watch when raising the floor. `expected_single_group` can fall
+below 1, at which point `single_group_enrichment` is uninterpretable — 2
+observed against 0.02 expected reads as "90×" and 0 against 0.004 reads as
+"0×", when both mean the test had almost nothing to detect. The summary carries
+an `enrichment_reliable` flag and the run warns about affected rows; read
+`single_group_p` (still exact) and `pooled_concentration` there instead. And at
+biosample level with a raised floor, the single-group test is unpowered by
+construction, so only `pooled_concentration` is usable.
+
+#### Footgun: the swap null ignored its own seed
+
+`curveball_randomize` materialized each trade's candidate pool with
+`list(only_a | only_b)` — a **set of experiment-ID strings**. Python randomizes
+string hashing per process unless `PYTHONHASHSEED` is set, so that set iterated
+in a different order in every run, `rng.shuffle` permuted a differently-ordered
+list against the same RNG draws, and `--seed 0` produced a different null each
+time: the TF-matched null single-group mean came out 7.94, 8.09 and 7.97 on
+three runs over identical data.
+
+Fixed by sorting (`sorted(only_a | only_b)`), after which two runs write
+byte-identical draw files. The conclusions were never at risk — every run gave
+`swap_concentration` 0.826 and `p < 0.001`, and the wobble was within
+Monte-Carlo error for 1000 permutations — but a figure quoting an expected
+value should reproduce, and it now does. (Diagnosed under the earlier
+grouping; the current numbers are 49 observed against a null mean of 8.31.)
+
+Worth noting the parallel: unseeded randomness in
+[`cluster_motifs.py`](../bpnet/README.md#motif-clustering) is flagged there as
+untested, and this is the same class of bug caught in code where it *could* be
+tested. Any container-of-strings whose iteration order reaches an RNG needs
+sorting.
+
+#### Is the enrichment an artifact of cluster splitting?
+
+The MotifCompendium `--across-threshold` default moved 0.85 -> 0.90 on
+2026-08-21 (see [`src/bpnet/`](../bpnet/README.md#motif-clustering)). A
+stricter threshold splits one motif across several clusters with lower
+prevalence each, and if any of that splitting correlated with tissue -- subtle
+CWM shape differences between lineages -- it would manufacture single-group
+clusters. The swap null holds prevalence fixed but cannot see tissue-correlated
+splitting, so it does not address this.
+
+`--collapse-by {jaspar_name,jaspar_family}` tests it directly, by repeating the
+whole test on units the clustering threshold cannot have created. Collapse
+happens *before* the prevalence filter, since a unit's experiment set is the
+union over its members and prevalence can only grow:
+
+```bash
+python src/analysis/motif_group_concentration.py --head count --collapse-by jaspar_name
+python src/analysis/motif_group_concentration.py --head count --collapse-by jaspar_family
+```
+
+Measured on the real count head (198-build metadata, tissue level, TF-matched):
+
+```text
+level          units  pooled  swap   single-group  expected  enrichment  exact p
+cluster          340   0.836  0.830            45      8.84        5.1x  1.6e-21
+jaspar_name      121   0.853  0.844            15      2.05        7.3x  6.8e-11
+jaspar_family     81   0.833  0.828             9      1.23        7.3x  4.1e-07
+```
+
+The enrichment **survives and strengthens**: absolute counts fall because there
+are fewer units, but the ratio rises from 5.1x to 7.3x and is flat between the
+two identity levels. Concentration itself barely moves (0.830 -> 0.844 ->
+0.828). Had over-splitting been generating the signal, collapsing 340 clusters
+into 121 identity units would have erased it. So the threshold change is not a
+threat to this panel, and the result can be quoted at cluster level without
+apology.
+
+#### Does one tiny tissue group carry the result?
+
+`stem_ipsc` is 4 of 198 experiments (2.0%) and a group that small is
+structurally prone to single-group status, so it is worth checking whether it
+supplies the enrichment.
+
+Under the 21-group map `stem_ipsc` **is** the largest contributor: 10 of the 37
+TF-matched single-group clusters (27% of restricted clusters from 2.0% of
+experiments). That is the artifact signature, so it has to be tested rather
+than argued away. Before the lineage split the largest contributor was
+`blood_immune` with 20 of 49, and that reassurance is no longer available.
+
+Discarding **every** `stem_ipsc`-restricted cluster while holding the
+expectation at 6.01 -- deliberately conservative, since removing the group
+would also lower the expectation -- leaves 27 vs 6.01 = 4.5x, exact
+`p = 2.0e-11` (against 37, 6.2x, `p = 2.5e-20`). Recomputing the expectation
+instead gives 27 vs 5.52 = 4.9x, `p = 2.0e-12`. Dropping the two largest
+contributors (`stem_ipsc` and `liver_biliary`, 18 clusters between them)
+still leaves 19 vs 6.01 = 3.2x, `p = 6.6e-06`. The result does not depend on
+the smallest group -- the enrichment survives removing the two groups that
+contribute most to it.
+
+Two caveats on reading the collapsed rows. The swap p-values floor at
+`1/(permutations+1)`, so 0.0033 at 300 permutations means `p < 0.005`, not a
+weak result -- raise `--swap-permutations` if a smaller bound is wanted. And
+small tissue groups are structurally prone to single-group status: `stem_ipsc`
+holds 12 of 28 restricted units on 2% of experiments, which is the same
+small-group caveat that applies at cluster level.
+
+#### Haematopoietic lineages are split, not pooled
+
+Sep 2026: the single `blood_immune` group was replaced by four —
+`lymphoid_t` (12 experiments), `lymphoid_b` (7), `myeloid_erythroid` (5) and
+`lymphoid_bulk` (17, mixed populations: PBMC, spleen, four lymph nodes,
+Peyer's patch). 21 tissue groups in total.
+
+The old group pooled 41 of 198 experiments — 20 biosamples spanning erythroid
+(K562), T/NK, B (REH, NALM6, SEM, three DLBCL lines), myeloid (monocyte) and
+bulk lymphoid organs — into one "tissue". It is not a tissue in the sense the
+other 17 groups are: its members straddle the first branch point of
+haematopoiesis, and it mixed transformed cell lines with primary bulk organs.
+Two measured consequences:
+
+- In the cross-cell-type comparison it generated 46% of all same-tissue pairs
+  at the lowest model agreement of any group, which pushed the pooled
+  same-tissue tier *below* different-tissue and inverted the ordering that
+  analysis rests on.
+- In the concentration test it could not see restriction *within* blood, a
+  limitation this README already documented before the split.
+
+What the split does to each result:
+
+```text
+                                    18 groups   21 groups
+cross-cell-type same-tissue tier       0.3959      0.4368   (inversion fixed)
+top-1 tissue naming, tau>=0.99         0.392       0.334
+  ... as a multiple of chance           6.67x       6.67x   (invariant)
+differential attained, cross-tissue     26.8%       26.7%   (invariant)
+single-group clusters (TF-matched)         49          37
+  ... enrichment over expectation       5.56x       6.15x   (stronger)
+swap-null concentration                 0.820       0.811   (tighter)
+biosample-level concentration           0.918       0.918   (unaffected)
+```
+
+Nothing gets worse. The invariance of the *over-chance* tissue-naming ratio is
+the load-bearing check: splitting adds categories without changing the models'
+discriminative power, so the split is not inflating a metric.
+
+Twelve of the 20 former blood-restricted clusters now span more than one
+haematopoietic lineage, leaving 8. Those twelve were never lineage-restricted
+— they were restricted to an artificial super-group, which is precisely the
+error the split removes.
+
+**This was a post-hoc regrouping**, prompted by the inverted tier ordering, and
+should be disclosed as such. Its justification is independent of that outcome
+(standard haematopoietic taxonomy; cell lines versus primary bulk tissue), it
+repairs a limitation documented before the inversion was found, and it was
+adopted only after checking that it does not improve any headline number.
+
+#### Metastases are grouped by tissue of origin
+
+All eight metastatic biosamples name their origin, so they are assigned to it
+rather than to a `metastatic_carcinoma` bucket — see
+[`_biosample_groups.py`](_biosample_groups.py). The old bucket put 21 of 198
+experiments into a clinical category that is not a tissue, and it fragmented
+real lineages: HNF1B read as `{gi_tract, liver_biliary, pancreas,
+metastatic_carcinoma}`, endoderm plus endoderm-derived metastases, one lineage
+counted as four groups. It was also uninterpretable in aggregate, since a bulk
+metastasis carries tumour, stroma and immune infiltrate together — an immune
+motif "in metastatic carcinoma" may be infiltrate rather than tumour-intrinsic.
+
+This is 18 groups rather than 19, and moves several group sizes:
+
+```text
+blood_immune 41  gi_tract 31  reproductive 18  breast 17  liver_biliary 15
+heart 15  pancreas 9  lung_airway 9  neural 8  vascular 7  muscle 7
+kidney_urinary 6  stem_ipsc 4  endocrine 3  hek 3  bone 2  skin 2  adipose 1
+```
+
+(`blood_immune` was later [split into four
+lineages](#haematopoietic-lineages-are-split-not-pooled), giving the 21 groups
+the current numbers are computed over.)
+
+`breast` goes from 5 experiments to 17, because the metastatic breast
+carcinoma biosample alone carries 10.
+
+**It strengthens the result**, which is the expected direction: merging a
+motif's organ group with that organ's metastases turns two groups into one.
+TF-matched single-group clusters go 45 → **49** against 8.82 expected, exact
+`p` from 2.0e-22 → **1.1e-25** (the later lineage split moves these to 37
+against 6.01, `p = 2.5e-20`), and it is what finally surfaces HNF4A
+(`{blood, gi_tract, liver_biliary}`, 24 experiments) and HNF1B
+(`{gi_tract, liver_biliary, pancreas}` — textbook endoderm, 22 experiments) as
+restricted candidates at `--max-groups 3`.
+
+Numbers recorded elsewhere in this file that predate the change are marked
+where they appear.
+
+#### The read-depth confound, and the null that fixes it
+
+The uniform null treats all retained experiments as exchangeable. **On the real
+atlas they are not**: library size differs across biosample groups
+(Kruskal–Wallis `p = 1.2e-4`, group medians from 19.5M for
+`metastatic_carcinoma` to 41.6M for `reproductive`), and deeper experiments
+contribute more discovered motifs for reasons unrelated to lineage. A motif
+restricted to a deep group would look tissue-concentrated under a uniform null.
+`--min-reads` only sets a floor; it does not equalize depth.
+
+`--swap-permutations` (default 1000) is the fix, and it is on by default. It
+randomizes the cluster × experiment presence matrix with the curveball trade
+(Strona et al. 2014), preserving **both** margins exactly: each cluster's
+prevalence and each experiment's total discovered-motif count. Holding the
+latter fixed absorbs read depth, peak count and model quality together, without
+having to model any of them — whatever made an experiment productive, it stays
+equally productive in the null. The only thing randomized is *which*
+experiments a cluster's motifs came from.
+
+Output (`..._swapnull.tsv`) reports observed vs null single-group counts and
+mean `n_groups`, with empirical one-sided p-values in add-one form
+`(#{null ≥ obs} + 1)/(n + 1)`, so a p-value is never reported as exactly zero.
+Read `swap_concentration` (observed mean `n_groups` / null mean): below 1 means
+concentrated beyond what per-experiment discovery propensity can explain.
+
+On a matrix with no group structure the swap null lands on the same value as
+the closed-form uniform expectation (verified in the tests), so the two nulls
+diverge only when the column margins genuinely carry information.
+
+Measured on the real count-head compendium, they barely diverge — the depth
+confound is detectable in the depth distribution but has almost no effect on
+the estimate:
+
+```text
+                       swap_conc  pooled_conc (uniform)  obs_single  null_mean  swap_p
+tissue     TF-matched   0.827     0.832                  45          7.87       <0.001
+           unmatched    0.762     0.767                  14          2.08       <0.001
+biosample  TF-matched   0.919     0.928                   8          0.95       <0.001
+           unmatched    0.865     0.872                   1          0.27       <0.001 (mean stat)
+```
+
+Concentration estimates move by under 0.01, and the swap null's expected
+single-group counts come out slightly *lower* than the analytic ones
+(7.87 vs 8.50; 2.08 vs 2.19), so conditioning on per-experiment productivity
+makes the enrichment marginally stronger, not weaker (45/7.87 = 5.7×). The
+finding is robust to the confound.
+
+Quote `swap_concentration` and `swap_mean_p`, since the uniform null's
+exchangeability assumption is known to be violated. Two reporting notes:
+permutation p-values floor at `1/(n+1)` — every real cell hits 0.000999 at
+n=1000, so report `p < 0.001` and cite the analytic p separately if a
+smaller number is wanted. And for the unmatched class at biosample level the
+single-group test is underpowered (1 observed, 0.27 expected, p = 0.23); the
+mean-`n_groups` statistic is significant there and is the one to use.
+
+**Redundancy caveat.** Duplicate clusters inflate the *counts* (45, 59, 343)
+without much biasing the *ratio*: split a real motif into three clusters and
+all three carry the same experiment set, so each is equally restricted under
+both observed and null. What it does inflate is confidence, since those three
+are not independent observations. Treat the counts as clusters rather than
+distinct motifs, and see the tomtom cross-check noted above.
+
+The run also prints where restricted clusters land alongside each group's share
+of experiments, and `sole_group` in the per-cluster TSV names the lineage, so a
+pile-up in the deepest groups is still visible directly.
+
+`--jaspar-score-threshold` matters because the default `motif_class` proxy is
+JASPAR *name presence* with no score floor, which admits matches as weak as
+~0.82. Raising the floor moves those clusters into the unmatched class and
+changes both the class sizes and any per-class result.
+
+Note this measures where motifs are **discovered**. Usage-level tissue
+specificity is the hit-density panel below, and weak discovery-level structure
+does not bound it — a motif can be discovered in two arbitrary experiments and
+still be used in only one lineage.
+
+### Motif Hit Density
+
+Motif x experiment hit-density matrix and tissue-specificity scores, rendered
+as a clustered heatmap with biosample-group and read-depth column strips.
+
+> **This script has never been run on real data.** It is covered by unit tests
+> against synthetic fixtures only, so treat its defaults (especially the
+> `balanced` row selection and the peak-count fallback) as unvalidated until a
+> real run has been inspected. It needs `hitcall/launch_link.py --head count`
+> to have produced `hits_linked.tsv` for each experiment first.
+
+Reads each experiment's `hits_linked.tsv` (from
+[`link_hits_to_compendium.py`](../bpnet/README.md#hit-calling)), whose
+`compendium_motif_name` column is the only cross-experiment-comparable motif
+identity available — hits are called per experiment against that experiment's
+own MoDISco motifs, so the raw `motif_name` means a different motif in every
+experiment.
+
+```bash
+python src/analysis/motif_hit_density.py
+python src/analysis/motif_hit_density.py --head count --min-trim-len 6
+python src/analysis/motif_hit_density.py --mask-undiscovered
+python src/analysis/motif_hit_density.py --top-n 60 --sort-by specificity
+```
+
+Outputs:
+
+```text
+figures/motif_atlas/motif_hit_density_{head}.tsv          # cluster x experiment hits/peak, unfiltered
+figures/motif_atlas/motif_hit_density_{head}_status.tsv   # per-cell discovered/undiscovered mask
+figures/motif_atlas/motif_hit_density_{head}_columns.tsv  # per-experiment peak counts, depth, biosample group
+figures/motif_atlas/motif_specificity_{head}.tsv          # per-cluster specificity, breadth, top group
+figures/motif_atlas/motif_hit_density_{head}.{png,pdf}
+```
+
+`--min-trim-len` must match whatever `hitcall/launch.py` was run with, since it
+resolves the same trim-coords-suffixed hits directory. Peak counts come from
+`peaks.narrowPeak` (cached at the `{experiment}_{head}/` level, outside any
+trim suffix); if it is missing, the count falls back to `max(peak_id) + 1`,
+which underestimates whenever trailing peaks got no hits, so the
+`peak_count_source` column in `_columns.tsv` records which was used.
+
+Two confounds are reported rather than hidden:
+
+- **Discovery power.** A cluster can only receive hits in an experiment whose
+  own MoDISco run discovered a motif assigned to it, so a zero is ambiguous:
+  unused, or never discovered at that depth. The `_status.tsv` mask separates
+  the two from the compendium's own `experiments` lists, the run prints what
+  fraction of cells are structurally zero, and `--mask-undiscovered` leaves
+  those cells blank instead of drawing them as true zeros.
+- **Read depth.** Hits are normalized per peak, and a depth strip is drawn
+  next to the biosample-group strip so depth-driven column structure is
+  visible rather than being read as tissue structure.
+
+Specificity is scored over biosample *groups*, not experiments: per-group mean
+hits/peak is normalized to a distribution `q` over the groups where the cluster
+was detected, and specificity is `1 - H(q)/log(G)` (0 = ubiquitous, 1 = one
+group only). Averaging within group first is what keeps heavily replicated
+biosamples (HCT116 n=16, Metastatic Breast Carcinoma in the Brain n=10, PBMC
+n=8) from dominating the score.
+
+`--sort-by balanced` (the default) splits the drawn rows between the most-used
+clusters and the most tissue-restricted ones. Ranking purely by total hits
+fills every row with ubiquitous motifs and crowds out the lineage motifs the
+panel exists to show; ranking purely by specificity fills it with
+low-abundance noise. The tissue-restricted half is gated on
+`mean_hits_per_peak_detected` (density among experiments where the motif was
+actually called) rather than summed density, which shrinks in direct
+proportion to how few tissues a motif is restricted to and so would exclude
+exactly those motifs.
+
+## Cross-Cell-Type Prediction
+
+Does a model predict its own cell type's initiation better than another's? The
+ProCapNet analysis (Cochran et al.) asked this across six cell lines; the atlas
+asks it across every experiment at once. Destined for a supplementary panel.
+
+Four tiers, in increasing distance:
+
+```text
+matched           model i on experiment i
+same biosample    different experiment, same biosample (a replicate)
+same tissue       different biosample, same tissue group
+different tissue  different group
+```
+
+The ordering is the claim, and the two middle tiers are what make it a
+statement about cell-type specificity rather than about memorization.
+**`same biosample` is split out because the atlas is heavily replicated** —
+HCT116 has 16 experiments, the metastatic breast biosample 10, PBMC 8 — so
+without the split a replicate pair would count as "same tissue" and could carry
+that tier, reducing the claim to "models predict a rerun of their own sample".
+The informative comparison is transfer to a *different* sample of the same
+lineage.
+
+`--balanced-per-group` is biosample-aware for the same reason: it takes the
+deepest experiment from each distinct biosample in a group before a second from
+one already chosen. Without that, two groups on the current atlas come back as
+replicate-only and contribute no same-tissue pair at all.
+
+Two steps, split by where they can run.
+
+**Extraction — Sherlock.** Needs the reference genome, processed BigWigs, union
+peaks and every fold model:
+
+```bash
+python src/analysis/count_correlation.py --model bpnet --device cuda \
+    --held-out-folds --min-reads 10000000 --max-peaks 100000 \
+    --out-dir figures/count_correlation_all198
+```
+
+`224 -> 219` (one blacklisted, four uncapped) `-> 198` above 10M reads. No
+`--balanced-per-group` or `--replicates-per-group`: both are superseded by
+running everything. Give it a distinct `--out-dir`, since the default
+(`figures/count_correlation/`) holds the 50-experiment matrices. With the same
+union-peaks file and `--peak-seed 0` the subsample is identical, so the 50 are
+a strict subset of the 198 and the old numbers can be reproduced on those rows
+as a check.
+
+### Supplementary Figure: cross-cell-type prediction
+
+One figure, four panels, 2x2. The ordering is deliberate: each panel answers
+the objection the previous one raises.
+
+```text
++---------------------------+---------------------------+
+| a  tissue-naming top-k    | b1 differential by tier   |
+|    vs tau threshold       |    (the ordering control) |
+|    (the positive result)  |                           |
++---------------------------+---------------------------+
+| b2 model vs reproducible  | c  homogenization:        |
+|    differential, per pair |    measured vs predicted  |
+|    (magnitude vs ceiling) |    (the limitation)       |
++---------------------------+---------------------------+
+| d  198 x 198 matrix, ordered by tissue (raw object)   |
+|    -- drop to text if it reads as noise at final size |
++-------------------------------------------------------+
+```
+
+Five panels rather than four, because the differential needs two. If space
+forces a cut, **b2 is the one to keep and b1 the one to move to text**: the
+tier gradient can be stated in a sentence with its three medians, while the
+constant-slope result cannot be conveyed without the scatter.
+
+**Panel a — tissue naming** (`draw_topk`, written every run to
+`cross_celltype_topk.pdf`). x = tau quantile threshold, y = accuracy; three
+lines (top-1/3/5) with their chance rates `k/G` as dotted horizontals and the
+over-chance multiple annotated at each line's right end.
+
+Two deliberate choices. **Accuracy is plotted raw, not as an over-chance
+ratio**: the ratio alone reads as a large effect (6.7x) while hiding that
+top-1 is 33%, and both facts belong in the panel. And **the thresholds are
+spaced evenly rather than linearly** — 0, 0.5, 0.8, 0.9, 0.95, 0.99 on a
+linear axis crushes the four that matter into the right fifth of the panel.
+The tick labels carry the peak count, because the rightmost point rests on 962
+peaks against 96,121 at the left and is correspondingly noisier; a reader
+cannot weigh the right end of the curve without that. This leads because it is
+ordering-only: immune to units, to `log1p` regime, and to the
+predict-signal-everywhere bias, and the shared sequence component cancels *by
+construction* since every model sees the same base pairs at a given peak. It
+also has the cleanest shape — monotone in tau, 2.55x chance over all peaks
+rising to 4.83x in the top 1%:
+
+```text
+tau q    n_peaks   top1    chance   x chance
+0.00      93,018   0.178   0.0588      3.0
+0.90       9,302   0.316   0.0588      5.4
+0.99         931   0.392   0.0588      6.7
+```
+
+The monotonicity is the internal control: a metric picking up depth or batch
+structure would not track tau.
+
+**Panel b — differential prediction. Two panels, not one** (implemented Sep
+2026 as `draw_differential_tiers` and `draw_differential_ceiling`; both are
+written on every run to `cross_celltype_differential_{tiers,ceiling}.pdf`).
+
+They were split because a single axes cannot carry both claims. The tier
+gradient needs all 19,503 pairs including the replicate tier, which has no
+ceiling estimate at all; the ceiling view is restricted to the 1,058
+quadruples where both biosamples are replicated. Forcing them together would
+mean a twin axis over two different row sets.
+
+**b1, by tier** — box of `differential_r` from
+`cross_celltype_differential_pairs.tsv`, one box per tier, each labelled with
+its n and median. Box rather than violin: a violin at 18,135 points beside 289
+implies a density comparison those sample sizes do not support. The gradient
+is the internal control and it holds — 0.064 / 0.128 / 0.176 — with replicate
+pairs correctly lowest, since they differ only by measurement noise and so
+offer nothing to predict.
+
+**b2, against the ceiling** — scatter of model differential against the
+replicate-derived reproducible differential, one point per quadruple, with the
+diagonal (perfect prediction) and the through-origin fit.
+
+The reason this is a scatter and not a bar of the median attained fraction is
+that **the constancy of the slope is the finding**:
+
+```text
+ceiling quintile   median ceiling   median model   median attained
+0.04-0.52                   0.443          0.127             0.330
+0.52-0.65                   0.593          0.150             0.253
+0.65-0.74                   0.693          0.174             0.251
+0.74-0.81                   0.774          0.204             0.265
+0.81-0.97                   0.858          0.224             0.259
+```
+
+The ceiling ranges over roughly 0.4-0.95 across biosample pairs while the
+attained fraction sits at 0.25-0.27 in the top four quintiles, and
+Pearson(ceiling, model) = 0.574. So the models recover a **fixed share of
+whatever is reproducible**, not a fixed correlation — a much stronger
+statement than "r = 0.18", and one a median bar would hide. The fitted
+through-origin slope is 0.260.
+
+The lowest quintile reads higher (0.330) because a ratio with a small
+denominator is noisy, which is also why `ceiling_fit` uses
+`sum(xy)/sum(x^2)` rather than the mean of per-quadruple ratios: the
+through-origin fit weights each quadruple by how much reproducible signal it
+actually had. On the real data the mean ratio would overstate the slope.
+
+15 of the 1,058 quadruples have a **non-positive ceiling** — the two
+replicate-derived differentials anticorrelate, so the pair is noise-dominated
+and the ratio is meaningless rather than small. They are omitted, and the
+panel says so on its face, because a reader counting points against the
+reported 1,058 would otherwise find them missing.
+
+Note that only `same tissue` (50) and `different tissue` (993) appear in b2:
+the ceiling needs replication on *both* sides of a pair, which the matched and
+same-biosample tiers cannot provide by construction.
+
+This panel is the one that reconciles the two literatures: differencing cancels
+the shared promoter program analytically, so it is the projection an edit or
+perturbation experiment measures, which is why matched-vs-unmatched can be
+decisive there while looking modest in a level correlation.
+
+`differential_ceiling` (implemented Sep 2026) supplies the second axis: for
+biosamples that are each replicated, `corr(obs_i' - obs_j', obs_i - obs_j)` is
+two independent measurements of the same difference. The 50-experiment subset
+supported exactly one such quadruple; at 198 there are **1,058 quadruples over
+30 replicated biosamples**, so the ceiling is a distribution and "attained"
+can be plotted per tier: **26.8% cross-tissue (IQR 23-32%)**, 23.4%
+same-tissue. Plot `attained` on the second axis, not the raw ceiling.
+
+**Panel c — homogenization, measured vs predicted** (`plot_homogenization`,
+written every run to `cross_celltype_homogenization.pdf`). Two sub-panels,
+specific and ubiquitous, sharing a y axis; measured and predicted as lines
+over the ordinal tier axis with IQR bands.
+
+**Lines, not grouped bars, because the comparison is of slopes.** Measured
+similarity should fall as cell types get less related; the models' failure is
+that theirs does not fall nearly as fast. Bars show six numbers, lines show
+the one thing that matters about them:
+
+```text
+specific peaks     measured   predicted        ubiquitous   measured  predicted
+same biosample        0.821       0.745                        0.941      0.931
+same tissue           0.198       0.655                        0.869      0.912
+different tissue      0.016       0.574                        0.786      0.894
+```
+
+The gap at `different tissue` is annotated on the specific panel only (0.56).
+The ubiquitous panel deliberately carries no annotation — there is no
+interesting gap there, and marking one would imply a failure the numbers do
+not show. Showing it beside the specific panel is what makes the specific
+panel interpretable rather than looking like a generic accuracy shortfall. This is ProCapNet's own
+comparison and it is where the models fail, so it belongs in the figure rather
+than in the text:
+
+```text
+specific peaks      measured   predicted
+same biosample         0.831        ----
+same tissue            0.210        ----
+different tissue       0.013       0.575
+ubiquitous, diff.      0.798       0.896
+```
+
+Measured signal at specific peaks is essentially *uncorrelated* across tissues
+(0.013) while predictions stay at 0.575 — the models compress the cell-type
+axis. Show the ubiquitous stratum beside it, because there the two nearly
+agree (0.798 vs 0.896) and the failure is invisible.
+
+**Panel d — the matrix.** `cross_celltype_matrix.pdf`, already produced by
+`plot_matrix`, rows/columns ordered by tissue group with group boundaries
+drawn. At 198 x 198 individual cells stop being readable, which is fine: its
+job is to show that block structure exists at all and that the diagonal is not
+the only signal. If it reads as noise at final size, drop it to panel-a
+position in a 3-panel figure rather than shrinking it.
+
+#### What this figure does not claim
+
+The level correlations (`cross_celltype_tiers.tsv`: matched 0.461, different
+tissue 0.405) are **text, not a panel** — and at 198 the pooled `same tissue`
+tier actually falls *below* `different tissue`, a composition artifact of one
+41-experiment group. A 0.06 gap against a replicate ceiling of 0.899 is not a
+figure-worthy effect, and the honest reading is in
+[What the correlations measure](#what-the-correlations-measure-and-against-what-ceiling):
+an observed same-tissue *measurement* (0.679) beats the matched model (0.461),
+so on level correlation alone another sample of the same lineage is the better
+predictor. Panels a-c exist because they are the projections where the models
+do carry cell-type information; putting the level correlation in the figure
+would invite the reader to weigh it equally.
+
+Also deliberately absent: the depth confound is reported in text (matched
+accuracy vs `log10` depth, Spearman 0.404) and needs a depth-matched check
+before any tier gap is quoted, but it is a caveat, not a panel.
+
+#### Build order
+
+1. ~~Run the all-198 extraction.~~ Done; `figures/count_correlation_all198/`.
+2. ~~Verify the 50-experiment numbers reproduce on the subset rows.~~ Done:
+   observed byte-identical, predicted to 1.6e-5 relative.
+3. ~~Implement `differential_ceiling` + its test.~~ Done.
+4. ~~Add `plot_differential_tiers` and the ceiling scatter.~~ Done; both are
+   written on every run, with `ceiling_fit` split out so the annotated slope
+   is testable without parsing a PDF.
+5. ~~Add `plot_topk` (panel a) and `plot_homogenization` (panel c).~~ Done.
+6. **Next:** assemble the five panels into one figure, then hand over the
+   per-panel PDFs for manual restyling, as with Figure 2. Every panel is now
+   written on each run of `cross_celltype_prediction.py`:
+
+```text
+cross_celltype_topk.pdf                    panel a
+cross_celltype_differential_tiers.pdf      panel b1
+cross_celltype_differential_ceiling.pdf    panel b2
+cross_celltype_homogenization.pdf          panel c  (two sub-panels)
+cross_celltype_matrix.pdf                  panel d
+cross_celltype_tiers.pdf                   not used -- level correlations
+```
+
+### Thresholding on tissue specificity
+
+`--specificity-quantile` (default 0.1) also reports the tiers separately among
+the most and least tissue-specific peaks. The gap should be large among
+specific peaks and small among ubiquitous ones; a similar gap in both would
+mean the comparison is tracking something other than cell-type identity —
+read depth, or overall model quality.
+
+Specificity is **quantitative, from observed signal**, not from breadth of peak
+calls. Peak calling is too low a bar at this scale: with 224 experiments a
+promoter with modest lineage-biased activity is still called nearly
+everywhere, so call-breadth is dominated by near-ubiquitous peaks and its
+narrow tail is weak singletons rather than strong lineage-specific promoters —
+the same reason prevalence-1 motif clusters are noise rather than rare biology.
+
+The default index is **tau** (Yanai et al. 2005), `sum_i (1 - x_i/x_max) /
+(n - 1)` over per-tissue-group mean log1p signal, which benchmarks as the
+best-performing specificity index (Kryuchkova-Mostacci & Robinson-Rechavi
+2017) and so is citable rather than invented here. `--specificity-index
+entropy` gives the normalized-entropy form `1 - H(q)/log(G)` that
+`motif_hit_density.py` uses for motifs. Tau is markedly more sensitive in the
+range that matters here: for a peak twice as active in one of two groups, tau
+gives 0.26 where entropy gives 0.016, and with most peaks broadly reproduced
+the index has to separate mostly-broad peaks from each other.
+
+Both indices average **within tissue group first**, so a group with 41
+experiments does not outvote one with 4, and replicated biosamples do not
+inflate their group's weight.
+
+`count_correlation.py` also has `--peaks-max-groups` / `--peaks-min-groups`,
+which filter on breadth of peak *calls* using contributor columns that
+`make_union_peaks.py` now writes. Those are a coarse pre-filter only, for the
+reason above; the quantitative stratification is the real mechanism.
+
+**Subsample the peaks.** The atlas has 905,540 union peaks, and at 50 models
+that is 45.3M peak-predictions — several GPU-hours, and ~360 MB per output
+matrix. For a correlation it is precision nobody needs: the standard error of
+`r` is ~0.001 at 905k peaks and ~0.003 at 100k, against tier gaps of order
+0.1–0.3. `--max-peaks 100000` is ~9x cheaper for no usable loss, and
+`--peak-seed` fixes the draw so reruns stay comparable. The subsample is taken
+once, before the fold split, because every experiment must see the same peaks —
+the correlated vectors line up only if the draw is identical, and a
+per-experiment draw would break that silently.
+
+**Analysis — local**, from the two count matrices that writes:
+
+```bash
+python src/analysis/cross_celltype_prediction.py \
+    --observed figures/count_correlation/observed_counts.tsv \
+    --predicted figures/count_correlation/predicted_counts.tsv
+python src/analysis/cross_celltype_prediction.py --variable-peaks 20000
+```
+
+Outputs:
+
+```text
+figures/cross_celltype/cross_celltype_matrix.tsv      # model x experiment r
+figures/cross_celltype/cross_celltype_pairs.tsv       # long form, with tiers
+figures/cross_celltype/cross_celltype_tiers.tsv       # per-tier summary
+figures/cross_celltype/cross_celltype_per_model.tsv   # one row per model
+figures/cross_celltype/cross_celltype_{matrix,tiers}.pdf
+```
+
+### `--held-out-folds` is not optional for this comparison
+
+`extract_predicted_counts` averages all seven fold models at every peak. A
+model predicting its **own** experiment then benefits from six folds that
+trained on those exact peaks, while predicting a different experiment gets no
+such help — so the matched diagonal is inflated by construction, which is
+precisely the quantity being measured. `cross_celltype_prediction.py` says so
+on every run and takes `--i-know-these-are-fold-averaged` to proceed anyway,
+for looking at the shape of the result only.
+
+Note what fold averaging does *not* invalidate: neither the `same tissue` nor
+the `different tissue` tier involves a model predicting its own experiment, so
+that contrast survives it. A predicted-vs-predicted clustering is likewise
+unaffected. Only the diagonal is compromised.
+
+`--held-out-folds` predicts each peak with the one fold model that did not
+train on its chromosome. **This uses every peak, not one fold's test set** —
+the seven folds partition all 24 chromosomes, so their union is complete and
+each peak is simply scored out-of-fold. It is 7x *cheaper* than averaging, one
+prediction per peak instead of seven, and it holds the diagonal and
+off-diagonal to the same standard. It also removes sequence memorization and
+not just label memorization: peaks are a shared union set, so a model did
+train on those regions even for off-diagonal pairs.
+
+Peaks on chromosomes no fold claims (`chrM`, alt contigs) are dropped and
+reported. `fold_by_chrom` raises if a chromosome appears in two folds, since
+then nothing held it out.
+
+### Run all 198, not a subset
+
+The balanced subset existed to find out cheaply whether the effect was there.
+It is, so run everything above 10M reads:
+
+```bash
+python src/analysis/count_correlation.py --model bpnet --device cuda \
+    --held-out-folds --min-reads 10000000 --max-peaks 100000
+```
+
+At 4.1x the extraction cost of 50 experiments it bought far more than four times
+the analysis:
+
+```text
+                          50-experiment subset   all >=10M
+experiments                                 50         198
+same-biosample pairs                          2         307
+same-tissue pairs                            45       1,826
+different-tissue pairs                    1,178      18,370
+biosamples with >=2 replicates                2          30
+ceiling estimates available                   1         435
+```
+
+The last row is the decisive one. The differential ceiling needs two
+replicated biosamples, and the subset happened to contain exactly two, giving
+one estimate. The full set gives 435, turning an anecdote into a distribution.
+It also removes a selection choice from the methods: "every experiment above
+10M reads" needs no defending, where "the three deepest per tissue group plus
+two replicates" does.
+
+**The quality filter matters here.** This script had no experiment-level
+exclusions -- its five "blacklist" references are the *genomic* hg38 blacklist
+-- so a naive run took in 203 experiments including the four uncapped
+libraries and ENCSR973QQI, whose models are poor for reasons unrelated to cell
+type. `--exclude-experiments` (default `ENCSR973QQI`) plus the uncapped check
+now reproduce `cluster_motifs.py`'s filter exactly: 224 -> 219 -> **198**, the
+same universe as every other analysis in the paper.
+
+With all 198, pooled tier medians are dominated by the largest groups --
+the largest group, `gi_tract`, is 31 of 198 -- so `summarize_tiers()` also
+reports `median_group_balanced`, taking each group's median first and then the
+median across groups. Quote that one. Before the haematopoietic lineages were
+split this mattered enormously: `blood_immune`'s 41 experiments generated 46%
+of the same-tissue tier and inverted it, and only the group-balanced median
+preserved the ordering.
+
+### Why a balanced subset (superseded)
+
+`--balanced-per-group 3` takes the three deepest experiments from each tissue
+group: 50 experiments over 18 groups on the current atlas, 17 of them with at
+least two members, giving ~50 matched, ~100 same-tissue and ~2,300
+different-tissue pairs. An unbalanced subset would make the same-tissue tier
+mostly `blood_immune` (41 of 198 experiments, before that group was split
+into four lineages), and the full all-pairs
+matrix is far more GPU time than the contrast needs. Taking the deepest also
+holds model quality roughly fixed, since accuracy tracks read depth.
+
+`--min-reads` is applied *inside* the selection rather than by the caller's
+later filter, because picking a group's three deepest and then dropping the
+shallow ones can leave one usable experiment and no within-group pair — the
+tier the analysis exists to measure. Groups contributing a single experiment
+are reported (`adipose`, at `--min-reads 10000000`).
+
+### Naming the dominant tissue: the metric to lead with
+
+For each peak, rank tissue groups by predicted signal and ask where the
+observed most-active group lands. This is the cleanest framing available,
+because **every model sees the identical sequence at a given peak**, so all
+variation across models there is model-specific — the shared promoter program
+cancels by construction rather than by peak selection or differencing. It is
+also immune to the units and transformation problems that afflict the
+correlations, since only the ordering of groups matters.
+
+Over 17 tissue groups with at least two experiments each:
+
+```text
+tau quantile   peaks   median rank   top1    top3    top5
+0.00 (all)    93,018             6  0.178   0.366   0.499
+0.50          46,509             5  0.217   0.416   0.545
+0.80          18,604             4  0.272   0.479   0.603
+0.90           9,302             3  0.316   0.520   0.639
+0.95           4,651             3  0.363   0.570   0.677
+0.99             931             2  0.392   0.603   0.707
+chance                              0.059   0.176   0.294
+```
+
+**At the most tissue-specific loci the models name the correct tissue out of 17
+in 39% of cases — 6.7x chance — and place it in their top 3 60% of the time,
+with a median rank of 2.** Accuracy rises monotonically with tau, which is the
+expected shape: the more tissue-specific a locus is, the more there is to get
+right. Even over all peaks it is 3.0x chance.
+
+This is the number to lead a supplementary panel with. It is interpretable
+without any of the caveats the correlations need, and it states the positive
+result plainly while leaving the magnitude limitation to the differential
+section below.
+
+### Differential prediction, and its ceiling
+
+Level correlations and the homogenization comparison both say the models look
+largely cell-type-agnostic. That conflicts with work showing promoter-edit and
+cell-type-specific-locus predictions succeed in matched cell types and fail in
+unmatched ones. The conflict is one of projection, not of fact.
+
+A level correlation is dominated by sequence-intrinsic promoter strength, which
+every model learns. Two models can correlate at 0.614 across tissue-specific
+peaks because both capture that shared component, while the deviations encoding
+cell type — small in variance, but the entire question — contribute almost
+nothing to the correlation. **Edit prediction is differential**: `f(mutant) -
+f(reference)` within one model cancels the baseline exactly, leaving only the
+cell-type-specific part. So the two literatures measure different projections
+of the same model.
+
+`differential_prediction()` computes the same projection here, as
+`corr(pred_i - pred_j, obs_i - obs_j)` per pair:
+
+```text
+tier              n_pairs  median  frac > 0  sign test p
+same biosample        289  0.064      0.979       1.6e-75
+same tissue          1666  0.139      0.999           ~0
+different tissue    17548  0.177     >0.999           ~0
+```
+
+**17,546 of 17,548 cross-tissue pairs are positive.** The models do predict the
+direction of cell-type differences; the level correlation simply cannot see it.
+
+The tier ordering is the internal check, and it comes out right: predictability
+scales with how large the true difference is. Replicate pairs differ only by
+noise and so offer nothing to predict (0.064); same tissue has some (0.139);
+different tissue has most (0.177). A metric that confused shared signal for
+cell-type signal would not produce that ordering.
+
+Magnitude is modest, and `r²` is the wrong way to say so. It answers "what
+fraction of Δobs variance does a rescaling of Δpred capture", which conflates
+the model being wrong with Δobs being noisy — and a difference of two noisy
+measurements has amplified noise, so the attainable r² is far below 1. It also
+says nothing about the quantity an edit needs, which is the sign.
+
+Directional accuracy on the differential, stratified by how large the true
+difference is, says it better:
+
+```text
+|Δobs| percentile   peaks    median sign accuracy   pairs above chance
+0-50%              32,650                   0.519                 76%
+80-90%             10,026                   0.578                 88%
+95-99%              3,997                   0.662                 98%
+99-100%             1,000                   0.712                 99%
+```
+
+At the peaks with the largest true cell-type differences the model gets the
+direction right 71% of the time, rising monotonically with effect size — and
+near chance where the "difference" is mostly noise, which is the expected
+shape. So: *direction reliably where the difference is real, magnitude
+poorly*. That is consistent both with edits working in matched cell types and
+with ProCapNet's cell-type-agnostic conclusion, which a level correlation is
+what measures.
+
+### An upper bound for differential accuracy
+
+A differential correlation has a measurable ceiling: the **reproducibility of
+the differential itself**. If cell types A and B each have two replicates, then
+`A1 - B1` and `A2 - B2` are two independent measurements of the same biological
+difference, and their correlation is the most any predictor could reach — the
+rest is measurement noise, which is amplified by differencing two noisy
+quantities.
+
+The current subset happens to contain two replicated biosamples (thyroid gland
+and HEK293T), giving one such estimate:
+
+```text
+reproducible fraction of the differential (ceiling)   0.765
+model differential r for the same comparison          0.220
+fraction of the ceiling attained                      28.8%
+```
+
+So the model recovers roughly **29% of the reproducible cell-type difference**
+between those two — a far more meaningful statement than r = 0.22 alone, and
+notably close to the 28% top-1 tissue-naming accuracy.
+
+This rests on a single pair, which is why it is not yet quotable. The all-198
+extraction fixes it outright rather than by subset engineering: the
+`same biosample` tier goes from 4 pairs to **289**, over 30 replicated
+biosamples, so the ceiling becomes a distribution rather than one number.
+`--replicates-per-group` was the earlier workaround and is superseded — see
+[Run all 198, not a subset](#run-all-198-not-a-subset).
+
+Tier sizes at full scale, for reference when reading any of the tables below:
+
+```text
+matched            198
+same biosample     289   (30 replicated biosamples)
+same tissue      1,079   (20 of 21 groups have >=2 experiments)
+different tissue 18,135
+```
+
+`differential_ceiling` is implemented (Sep 2026) and gives **1,058
+quadruples** over those 30 replicated biosamples, against the single one the
+50-experiment subset supported. Measured result: 26.7% of the reproducible
+cross-tissue difference attained, IQR 22-32%. The ad hoc 0.765/28.8% above is
+superseded but sits inside that IQR.
+
+### Units: both sides must be rescaled first
+
+`count_correlation.py` RPM-normalizes observed signal but leaves predictions in
+whatever count scale each model was trained on. On the real matrices that is
+not a constant factor:
+
+```text
+              row sums        tracks read depth   median value   entries < 1
+observed      ~122,000 (tight)            0.184          0.039           92%
+predicted   ~9,065,000 (4x spread)        0.879         34.014          0.13%
+```
+
+So `log1p` sat in a **linear** regime on the observed side and a
+**logarithmic** one on the predicted side — not log fold-change on either, and
+not comparable between them. Differencing then carried a per-model offset of
+roughly `log(scale_i / scale_j)`, which a correlation is immune to but sign
+accuracy is not. `--normalize within-peaks` (the default) rescales both to a
+common total first; it lifts the cross-tissue differential from 0.146 to 0.175.
+
+What remains after normalization is a property of the predictions rather than
+of units, and it is the known behaviour of local sequence models — ChromBPNet
+included — of putting some signal at inactive loci:
+
+```text
+observed:  median 0.316, 34.3% exact zeros
+predicted: median 3.762,  0% zeros
+at peaks where an experiment observes exactly zero, its own model
+predicts a median of 3.20, against 4.15 at active peaks
+```
+
+A 1.3x ratio where the truth is zero-versus-something. This is ProCapNet's
+"predisposition to predict initiation activity at regions that are inactive in
+that cell-line but active in others", and it explains the rest of this section:
+the models predict "this is a promoter" across the union set, so level
+correlations are dominated by shared signal and differential magnitude is
+capped, while the residual modulation stays lineage-correct. It also means the
+atlas-wide **union peak set is a hostile evaluation set** for cell-type
+specificity, since most of it is inactive in any given experiment — another
+reason to lead with the differential.
+
+### The metric ProCapNet actually uses
+
+Cochran et al. 2024 support their central claim -- "a largely cell-type-agnostic
+*cis*-regulatory code of initiation" -- not with matched-vs-mismatched accuracy
+but by comparing **predicted-vs-predicted against measured-vs-measured across
+cell-type pairs**, over the union of peaks from all cell lines. Their numbers:
+predictions correlate at `r = 0.8-0.97` where the measurements correlate at
+only `r = 0.5-0.71`. The models represent cell types as far more alike than
+they are.
+
+That is a more demanding question than the tiers ask, and the two are
+complementary. The tiers ask whether a model carries *any* cell-type-specific
+information; `homogenization()` asks how much of the real cell-type difference
+it reproduces. A model can beat every mismatched competitor while still
+predicting nearly the same thing everywhere.
+
+On this atlas, over all 99,907 peaks the two are nearly equal — measured 0.737
+against predicted 0.758 across different tissues — which already says the
+models do not exaggerate cell-type similarity *on average*. Stratifying shows
+that average to be hiding the entire effect:
+
+```text
+across different-tissue pairs    measured   predicted
+all peaks                           0.737       0.758
+ubiquitous peaks                    0.821       0.913
+tissue-specific peaks              -0.009       0.614
+```
+
+**At tissue-specific peaks the measurements are uncorrelated across tissue
+groups while the predictions correlate at 0.614.** Exactly where the biology
+is cell-type-specific, the models predict nearly the same thing whatever cell
+type trained them. This replicates ProCapNet's conclusion far more starkly
+than their own numbers do, because the specificity stratification isolates it
+rather than averaging it against the shared program.
+
+So the complete statement has two halves, both true:
+
+- The models **do** carry cell-type-specific information: at specific peaks a
+  matched model beats the 50-model ensemble 48/50 (`p = 2.3e-12`), 0.086
+  against 0.011.
+- The models **drastically under-represent** cell-type differences: predicted
+  cross-tissue correlation 0.614 where the measured value is 0.000.
+
+Both are what ProCapNet reports at six cell lines, reproduced at 50 and
+localized to the peaks where it matters. Note also that their measured
+cross-cell-line range (0.5-0.71) is lower than our different-tissue median
+(0.737), as expected: six deliberately distinct cell lines differ more than a
+draw across 21 tissue groups that includes many related ones.
+
+### Measured results (198 experiments, 99,907 peaks, held-out folds)
+
+Superseded the 50-experiment subset in Sep 2026, and rerun again after the
+haematopoietic lineage split (21 tissue groups). The 50 are a strict subset of
+the 198: observed counts reproduce byte-identically and predictions agree to
+1.6e-5 relative (float32 rounding), so the runs are directly comparable.
+
+```bash
+python src/analysis/cross_celltype_prediction.py \
+    --observed figures/count_correlation_all198/observed_counts.tsv \
+    --predicted figures/count_correlation_all198/predicted_counts.tsv \
+    --out-dir figures/cross_celltype_all198
+```
+
+Tier sizes: 198 matched, 578 same-biosample, 2,158 same-tissue, 36,270
+different-tissue **directed** (model *i* on experiment *j*) pairs. The
+differential and ceiling tables are **undirected** and report half as many —
+289 same-biosample, 1,079 same-tissue, 18,135 different-tissue. Both are
+correct; they count different objects, and the factor of two is not a bug.
+
+#### How the lineage split fixed the tier ordering
+
+Under the old 18-group map the pooled level correlation **inverted**: same
+tissue 0.3959 fell below different tissue 0.4047. The cause was single and
+identifiable — `blood_immune` held 41 experiments and so generated 46% of all
+same-tissue pairs (1,518 of 3,332) at the lowest model same-tissue agreement
+of any group, while 15 of 17 groups ordered correctly. Splitting it into four
+haematopoietic lineages resolves it:
+
+```text
+tier               18 groups   21 groups   group-balanced (21)
+matched               0.4605      0.4605                0.4624
+same biosample        0.4308      0.4308                0.4322
+same tissue           0.3959      0.4368                0.4387
+different tissue      0.4047      0.4017                0.4019
+```
+
+The pooled and group-balanced same-tissue medians now agree (0.4368 vs
+0.4387), which is the signature of a tier that is no longer
+composition-distorted. See [the grouping
+rationale](#haematopoietic-lineages-are-split-not-pooled).
+
+**A smaller inversion remains**: `same biosample` (0.4308) sits just below
+`same tissue` (0.4368). That tier has its own composition problem — 578
+directed pairs drawn from only 14 replicated biosamples, with HCT116 (15
+experiments) contributing 210 of them. Do not read the same-biosample tier as
+a tier; read it as the ceiling estimate it feeds.
+
+#### The dissociation, which is the finding
+
+With the default 0.5 RPM signal floor, 9,613 peaks per decile:
+
+```text
+stratum      matched  same biosample  same tissue  different  matched/diff
+specific       0.090           0.087        0.056      0.019         4.7x
+ubiquitous     0.725           0.690        0.720      0.701         1.03x
+```
+
+Per-stratum sign tests over models, the statistic to quote since pooled pairs
+share models:
+
+```text
+specific     187/198 models beat their median different-tissue pair  p = 1.8e-42
+ubiquitous   128/198                                                 p = 4.5e-05
+```
+
+At ubiquitous peaks the models are accurate (r ~ 0.72) and effectively
+interchangeable — cell-type identity buys 1.03x — so that accuracy reflects a
+shared core-promoter program rather than cell-type knowledge. At specific
+peaks they are weak absolutely (r ~ 0.09) but discriminating at 4.7x, and the
+tiers order correctly (0.090 / 0.056 / 0.019) so transfer degrades with
+lineage distance rather than falling off a cliff.
+
+Both strata are significant by sign test even at 1.03x: the test is sensitive
+to direction, not size. Quote the ratios.
+
+#### Tissue naming: the strongest result
+
+```text
+tau quantile   n_peaks   median rank   top-1   x chance   top-5
+0.00            96,121             5   0.190       3.8x   0.524
+0.50            48,061             4   0.219       4.4x   0.565
+0.80            19,225             4   0.253       5.1x   0.603
+0.90             9,613             3   0.283       5.7x   0.633
+0.95             4,807             3   0.315       6.3x   0.672
+0.99               962             3   0.334       6.7x   0.728
+```
+
+20 groups have >=2 experiments, so chance is 0.05. **The over-chance ratio is
+invariant to the regrouping**: at tau >= 0.99 it was 0.392/0.0588 = 6.67x over
+17 groups and is 0.334/0.05 = 6.67x over 20. Splitting adds categories without
+changing discriminative power, which is the strongest available evidence that
+the split is not inflating anything. At low tau it improves (3.02x -> 3.80x).
+
+The median rank of the true group is 3rd of 20 at high tau, and monotonicity
+in tau is the internal control — a metric tracking depth or batch structure
+would not follow tau.
+
+#### Differential prediction and its ceiling
+
+```text
+tier               n_pairs   median   frac positive
+same biosample         289   0.0638           0.979
+same tissue          1,079   0.1279           0.998
+different tissue    18,135   0.1764          >0.999
+```
+
+The ordering is the control and it holds: replicate pairs differ only by
+noise, so they are correctly lowest. 18,133 of 18,135 cross-tissue pairs are
+positive.
+
+Against the measured ceiling, from 1,058 quadruples over 30 replicated
+biosamples:
+
+```text
+tier               quadruples   ceiling   model   attained   IQR
+same tissue                57    0.4427  0.1012     20.5%    17-28%
+different tissue        1,001    0.6991  0.1800     26.7%    22-32%
+```
+
+The models recover roughly **27% of the reproducible cross-tissue
+difference**, and this number is insensitive to the regrouping (26.8% at 18
+groups). The earlier single-quadruple estimate (28.8%) sits inside the IQR, so
+it was imprecise rather than wrong. Do not reintroduce the claim that it is
+"notably close" to top-1 tissue naming — those are 27% and 33%, and the
+closer match at 50 experiments was a coincidence.
+
+The same-tissue ceiling is much lower (0.443 vs 0.699) because what remains in
+that tier after the split are genuinely similar samples, whose differences are
+small and therefore noise-dominated. That is the metric behaving correctly.
+
+#### Where the models fail: homogenization
+
+Predicted-vs-predicted should be no more similar across cell types than
+measured-vs-measured. At tissue-specific peaks it is far more similar:
+
+```text
+                    measured   predicted
+specific peaks
+  replicate            0.821        ----
+  same tissue          0.198        ----
+  different tissue     0.016       0.574
+ubiquitous peaks
+  different tissue     0.786       0.894
+```
+
+Measured signal at specific peaks is essentially **uncorrelated** across
+tissues (0.016) while predictions stay at 0.574 — the models compress the
+cell-type axis. At ubiquitous peaks the two nearly agree (0.786 vs 0.894) and
+the failure is invisible, which is why the specific stratum has to be shown.
+
+A consensus of *other experiments' measurements* also beats the matched model
+at specific peaks (0.235 vs 0.090; the model wins only 32/198, p = 5.1e-23).
+That belongs in the text — it is the strongest single caveat on the analysis.
+
+#### Confounds reported, not assumed away
+
+Matched accuracy vs `log10` read depth is Spearman **0.404** over 198 models
+(0.366 over the 50-experiment subset). Depth also differs by tissue group, so
+any tier gap quoted from the level correlations needs a depth-matched check
+first — another reason to lead with tissue naming and the ceiling-normalized
+differential, neither of which is a level correlation.
+
+#### Harmless numerical warnings
+
+Running `correlation_matrix` under `np.seterr(all="warn")` emits "divide by
+zero / overflow / invalid encountered in matmul". These are spurious FPE flags
+set by padded SIMD lanes in the BLAS kernel, not a numerical problem: the
+diagonal returns 1.0 to within 1e-12 and every off-diagonal entry is finite
+and in range. `_standardize` already guards zero-variance rows. The script's
+own run does not emit them.
+
+### What the correlations measure, and against what ceiling
+
+Each cell of the matrix is the Pearson correlation **across peaks** between
+log1p of model *i*'s predicted total counts and log1p of experiment *j*'s
+observed RPM counts. So it asks: *does this model get which promoters are
+strong and which are weak, in this cell type?*
+
+Three consequences:
+
+- **Counts, not shape.** Predictions are summed over both strands and all
+  1000 output positions, so all positional information is discarded. A model
+  could place the TSS wrongly and still score well. ProCapNet's cross-cell-type
+  work was substantially profile-based; this is the counts analogue.
+- **Scale-free.** Pearson on log1p is invariant to a multiplicative factor, so
+  systematic over- or under-prediction of overall level is invisible. Only the
+  relative pattern across loci is measured.
+- **Dominated by the active/inactive contrast.** Peaks are the atlas-wide
+  union, so for any one experiment many are inactive, and much of a high r is
+  "this locus is a promoter at all" rather than cell-type-specific
+  quantitation.
+
+The numbers are uninterpretable without the observed-vs-observed baseline,
+which the run prints and writes to `cross_celltype_baseline.tsv`:
+
+```text
+stratum      tier              observed  predicted
+specific     same biosample       0.874      0.149
+specific     same tissue          0.279      0.046
+specific     different tissue    -0.009      0.010
+ubiquitous   same biosample       0.955      0.762
+ubiquitous   same tissue          0.888      0.719
+ubiquitous   different tissue     0.821      0.714
+```
+
+It gives two reference points:
+
+**The reproducible fraction.** Replicate agreement is 0.874 at specific peaks
+and 0.955 at ubiquitous ones, so there is ample reproducible signal at specific
+peaks that the models do not predict. Treat this as context, **not as a
+ceiling**: a replicate shares the entire non-sequence cell state, while the
+genome is identical across every cell type, so a sequence model has no route
+to that information and was never going to match it. The cell-type-agnostic
+benchmark below is the fair test.
+
+**The cell-type-agnostic benchmark**, written by `consensus_benchmark()`, is
+the fair test of whether a model's own weights encode anything
+cell-type-specific:
+
+```text
+stratum      matched  consensus model  matched wins   consensus observed  wins
+specific       0.086            0.011  48/50 p=2e-12               0.144  18/50
+ubiquitous     0.735            0.750   9/50                       0.919   0/50
+```
+
+At specific peaks a matched model beats the mean of all 50 models 48/50 — the
+cleanest evidence that cell-type identity is in the weights. At ubiquitous
+peaks the **ensemble wins**, which is what should happen when cell identity is
+irrelevant and averaging only reduces variance.
+
+`consensus observed` -- the mean measurement across all experiments -- is a
+practical benchmark rather than a test of the model, and it wins in both
+strata. Worth knowing before claiming utility: for estimating activity in a new
+sample, measuring almost anything beats these models.
+
+The within-experiment dynamic range also differs 6.6-fold between strata
+(median log1p sd 0.225 specific vs 1.487 ubiquitous), which is the mechanical
+part of why absolute r is so much lower among specific peaks.
+
+**Do not compare absolute r across strata.** Within the specific stratum most
+peaks are near-zero for any given experiment, since they are specific to
+*other* tissues, so there is little variance to explain and r is compressed
+mechanically. Tier comparisons *within* a stratum are the interpretable part.
+
+Two limits on the claim as it stands. `same biosample` is only 4 pairs and
+sits *above* matched (0.149 vs 0.087), so matched and replicate-level transfer
+cannot currently be separated. And matched accuracy correlates with read depth
+at Spearman 0.366, which concerns between-model spread rather than the
+within-model tier ordering, but means a depth-matched check is needed before
+the pooled numbers are quoted.
+
+### Confounds reported rather than assumed away
+
+- **Read depth.** Deeper experiments are predicted better and depth differs by
+  tissue group (Kruskal-Wallis `p = 1.2e-4`), so the run prints the Spearman
+  correlation between matched accuracy and `log10(reads)`. A non-trivial value
+  means the tier gap needs a depth-matched check before being quoted.
+- **Pooling.** `cross_celltype_per_model.tsv` gives one row per model and an
+  exact sign test against 50%, because pooling all pairs treats pairs sharing a
+  model as independent and lets a few well-predicted experiments carry the
+  result.
+- **Counts only.** This compares summed counts. ProCapNet's cross-cell-type
+  work was substantially profile-based, and a profile version (per-peak
+  Jensen-Shannon distance) would need its own extraction.
+
 ## Warning Flags
 
 Generates read-depth, perturbation, uncapped-library, and manual warning flags

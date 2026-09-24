@@ -58,8 +58,26 @@ data/processed/
 +-- peaks/{experiment}_{biosample}.bed.gz
 +-- peaks/{experiment}_{biosample}_filtered.bed.gz
 +-- peaks/union_peaks.bed.gz
++-- peaks/union_peaks_experiments.txt
 +-- negatives/{experiment}_{biosample}_gc_negatives.bed.gz
 ```
+
+`union_peaks.bed.gz` carries five columns: `chrom`, `start`, `end`, then the
+number of experiments whose own peak calls overlap that union peak and a hex
+bitset of which ones. Readers taking only the first three columns (as
+`src/analysis/count_correlation.py` does) are unaffected. The bit order is
+written alongside as `union_peaks_experiments.txt`, one experiment per line;
+emitting the bitset rather than a tissue-group count keeps this script free of
+any dependency on the grouping in [`src/analysis/`](../analysis/README.md),
+which changes independently.
+
+The run prints how many union peaks were called in a single experiment, the
+median breadth, and how many were called in half or more — useful for judging
+whether call-breadth is a usable specificity measure at all. On this atlas it
+largely is not: with 224 experiments a promoter with modest lineage-biased
+activity is still called nearly everywhere, which is why
+[Cross-Cell-Type Prediction](../analysis/README.md#cross-cell-type-prediction)
+scores specificity from signal instead.
 
 ## Notes
 

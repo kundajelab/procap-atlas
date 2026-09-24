@@ -26,8 +26,9 @@ defaults, outputs, and caveats belong in the relevant subdirectory README.
   benchmarking, Apptainer notes, and architecture sweeps.
 - [`src/hub/`](src/hub/README.md): UCSC hub generation, bigBed conversion,
   hosted track upload, and validation.
-- [`src/analysis/`](src/analysis/README.md): atlas-level count correlations and
-  model warning flags.
+- [`src/analysis/`](src/analysis/README.md): atlas-level count correlations,
+  cross-experiment motif panels behind the manuscript's motif figure (see its
+  Manuscript Panels section), and model warning flags.
 - [`src/metaplot/`](src/metaplot/README.md): TSS-centered metaplots and
   heatmaps.
 - [`src/metaformer/`](src/metaformer/README.md): experimental PromoterAI /
