@@ -136,7 +136,7 @@ contrast confounds head with clustering algorithm.
 | Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
 | Supp — concentration at JASPAR-name level | `plot_figure2.py --collapse-concentration` | done, `figure2_count_s_concentration_jaspar_name.pdf` |
 | Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
-| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure** |
+| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure**; `--peak-class` adds a candidate-promoter-vs-enhancer stratification of the top-k and ceiling panels, not yet run at atlas scale |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
 
 Figure 1e already shows a neuron-specific gene carrying neuron-specific
@@ -2408,6 +2408,103 @@ figures/cross_celltype/cross_celltype_tiers.tsv       # per-tier summary
 figures/cross_celltype/cross_celltype_per_model.tsv   # one row per model
 figures/cross_celltype/cross_celltype_{matrix,tiers}.pdf
 ```
+
+### Stratifying by candidate promoter vs. candidate enhancer
+
+`--peak-class` reports top-k tissue-naming accuracy and the differential
+ceiling separately for peaks that are candidate promoters versus candidate
+enhancers, by ENCODE SCREEN Registry V4 classification
+(`data/GRCh38-cCREs.bed.gz`, see `src/download/download_genome.sh`): a peak's
+**midpoint** counts as a candidate promoter if it falls in a PLS
+(promoter-like signature) cCRE, a candidate enhancer if it falls in a
+pELS/dELS (proximal/distal enhancer-like signature) cCRE, and is left
+unclassified if it falls in neither or, at the same base pair, in both. The
+midpoint decides class membership rather than the full peak interval, matching
+how peaks are treated everywhere else in this pipeline (`extract_observed
+_counts` centers a fixed window on the midpoint; `fit_bpnet.py`'s GC-matched
+negatives are midpoint-based too) — the full interval would double-count
+peaks wide enough to span both a promoter- and an enhancer-like cCRE.
+
+```bash
+python src/analysis/cross_celltype_prediction.py --peak-class \
+    --union-peaks data/processed/peaks/union_peaks.bed.gz \
+    --ccre-bed data/GRCh38-cCREs.bed.gz
+```
+
+Both flags default to the paths above, so `--peak-class` alone is usually
+enough once both files exist locally; it exits with an error naming whichever
+is missing rather than silently skipping the stratification.
+
+Off by default (unlike `--specificity-quantile`), since it needs two files
+most runs of this script do not: the union peaks bed (present for every run
+of `count_correlation.py` already) and the cCRE bed (a separate download, only
+otherwise used as a GC-matched negative-sampling background in
+`fit_bpnet.py`).
+
+The join is peak-index alignment, the same footgun `--variable-peaks`/
+`take_columns` already rely on: `classify_peaks_by_cre` returns a Series
+indexed by 0-based position into `--union-peaks`, and that only lines up with
+`observed`/`predicted`'s columns if those were extracted from that exact
+union-peaks file, in that row order. `count_correlation.py` guarantees this
+for any one run (it never reorders `union_peaks.bed.gz`, and `extract_loci`'s
+blacklist/N filtering depends only on the peaks, the FASTA and the blacklist —
+see its `held_out_folds` length-mismatch check) — but two counts matrices from
+*different* union-peaks files, or a stale cached one, would silently
+mis-join. If class counts look implausible (e.g. far fewer than the roughly
+5-10% of the genome SCREEN assigns to PLS/ELS classes), check that
+`--union-peaks` is the exact file `count_correlation.py` extracted from.
+
+Outputs, in addition to the ones above:
+
+```text
+figures/cross_celltype/cross_celltype_topk_by_peak_class.tsv           # both classes, one table
+figures/cross_celltype/cross_celltype_topk_{promoter,enhancer}.pdf
+figures/cross_celltype/cross_celltype_differential_ceiling_by_peak_class.tsv
+figures/cross_celltype/cross_celltype_ceiling_summary_by_peak_class.tsv
+figures/cross_celltype/cross_celltype_differential_ceiling_{promoter,enhancer}.pdf
+```
+
+Both panel types write one PDF per class rather than one combined figure —
+pulling "the promoter panel" for the manuscript should not mean cropping a
+two-class one. The numbers behind both classes still live in one TSV each
+(`_by_peak_class.tsv`), so the per-class split is presentation-only.
+
+The top-k panel (`draw_topk_by_peak_class`) is grouped bars, not `draw_topk`'s
+line-over-tau-threshold, even restricted to one class's single row: there is
+no specificity sweep here, top-1/3/5 are simply three bars for that class.
+Passing it the full two-class table instead of a one-row slice is also valid
+(it groups by however many rows it is given) and is what
+`test_plot_topk_by_peak_class_writes_a_pdf` exercises directly. The two
+ceiling panels reuse `draw_differential_ceiling`/`plot_differential_ceiling`
+unmodified, one call per class — the panel design (scatter against the
+diagonal, through-origin fit, tiers by relatedness) does not change with what
+peaks feed it, so there was nothing peak-class-specific to write there.
+
+**Label vocabulary, verified against the live file.** Registry V4 (what
+`download_genome.sh` downloads) uses flat, mutually exclusive labels, never
+comma-compounded the way V3 modifiers were (e.g. the no-longer-used
+"PLS,CTCF-bound" form) — confirmed 2026-09 by fetching
+`https://downloads.wenglab.org/Registry-V4/GRCh38-cCREs.bed` directly rather
+than assuming the schema:
+
+```text
+label         count (906k-row sample, chr1-17)
+dELS          569,312
+pELS          106,334
+CA             86,861
+CA-CTCF        45,714
+TF             40,692
+CA-H3K4me3     27,975
+PLS            19,952
+CA-TF           9,584
+```
+
+`classify_peaks_by_cre` matches `PLS` and `{pELS, dELS}` by **exact** label
+equality, not substring — now that the real vocabulary is verified rather
+than assumed, exact matching is the more precise choice, and it is what keeps
+the four V4-only "chromatin accessible, otherwise unclassified" categories
+(`CA`, `CA-CTCF`, `CA-TF`, `CA-H3K4me3`) out of both classes without having to
+special-case each one.
 
 ### `--held-out-folds` is not optional for this comparison
 

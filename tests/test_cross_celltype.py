@@ -1692,3 +1692,170 @@ def test_homogenization_figure_keeps_one_legend_for_the_pair(tmp_path):
     path = tmp_path / "hom.pdf"
     ccp.plot_homogenization(spec, ubiq, path)
     assert path.exists() and path.stat().st_size > 1000
+
+
+# --- peak-class stratification (candidate promoter vs enhancer) ------------
+
+
+def peak_class_frames(n_peaks=300, seed=0):
+    """topk_frames() plus a peak_class Series, half promoter/half enhancer.
+
+    Peaks alternate class by position so both classes see the same tissue
+    signal by construction -- any accuracy gap between them in a test would
+    have to come from the split logic, not from one class happening to draw
+    easier peaks.
+    """
+    obs, pred, groups = topk_frames(n_peaks=n_peaks, seed=seed)
+    labels = np.where(np.arange(n_peaks) % 2 == 0, "promoter", "enhancer")
+    classes = pd.Series(labels, index=obs.columns)
+    return obs, pred, groups, classes
+
+
+def test_restrict_by_peak_class_splits_columns_by_label():
+    obs, pred, _groups, classes = peak_class_frames()
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    assert set(restricted) == {"promoter", "enhancer"}
+    for name, (oc, pc) in restricted.items():
+        assert list(oc.columns) == list(pc.columns)
+        assert set(classes[oc.columns]) == {name}
+    assert len(restricted["promoter"][0].columns) + len(restricted["enhancer"][0].columns) == len(obs.columns)
+
+
+def test_restrict_by_peak_class_drops_unclassified_peaks():
+    obs, pred, _groups, classes = peak_class_frames()
+    classes.iloc[:] = np.nan
+    classes.iloc[:40] = "promoter"  # only promoter clears min_peaks
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    assert set(restricted) == {"promoter"}
+
+
+def test_restrict_by_peak_class_respects_min_peaks():
+    obs, pred, _groups, classes = peak_class_frames()
+    classes.iloc[2:] = "promoter"  # only 1 enhancer peak left
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes, min_peaks=20)
+    assert "enhancer" not in restricted
+
+
+def test_topk_by_peak_class_reports_one_row_per_class():
+    obs, pred, groups, classes = peak_class_frames()
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    out = ccp.topk_by_peak_class(restricted, groups)
+    assert set(out["peak_class"]) == {"promoter", "enhancer"}
+    assert "tau_quantile" not in out.columns
+    assert (out["top1"] > 0.9).all(), "both classes see the same easy signal"
+
+
+def test_topk_by_peak_class_is_empty_when_nothing_survives_restriction():
+    _obs, _pred, groups, _classes = peak_class_frames()
+    out = ccp.topk_by_peak_class({}, groups)
+    assert out.empty
+
+
+def test_differential_ceiling_by_peak_class_tags_and_concatenates():
+    exps = ["a1", "a2", "b1", "b2"]
+    groups = {"a1": "ga", "a2": "ga", "b1": "gb", "b2": "gb"}
+    bios = {"a1": "A", "a2": "A", "b1": "B", "b2": "B"}
+    obs = counts_frame(exps, n_peaks=60)
+    obs.columns = [str(i) for i in range(60)]
+    classes = pd.Series(
+        np.where(np.arange(60) % 2 == 0, "promoter", "enhancer"),
+        index=obs.columns,
+    )
+    restricted = ccp.restrict_by_peak_class(obs, obs, classes, min_peaks=20)
+    out = ccp.differential_ceiling_by_peak_class(restricted, groups, bios)
+    assert set(out["peak_class"]) == set(restricted)
+    assert {"ceiling", "model", "attained", "tier"} <= set(out.columns)
+
+
+def test_draw_topk_by_peak_class_labels_both_categories():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    obs, pred, groups, classes = peak_class_frames()
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    topk = ccp.topk_by_peak_class(restricted, groups)
+    fig, ax = plt.subplots()
+    present = ccp.draw_topk_by_peak_class(ax, topk)
+    labels = [t.get_text().split("\n")[0] for t in ax.get_xticklabels()]
+    plt.close(fig)
+    assert present == [1, 3, 5] or present == [1, 3]
+    assert set(labels) == {"promoter", "enhancer"}
+
+
+def test_plot_topk_by_peak_class_writes_a_pdf(tmp_path):
+    obs, pred, groups, classes = peak_class_frames()
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    topk = ccp.topk_by_peak_class(restricted, groups)
+    path = tmp_path / "topk_by_class.pdf"
+    ccp.plot_topk_by_peak_class(topk, path)
+    assert path.exists() and path.stat().st_size > 1000
+
+
+def peak_class_bed_inputs(tmp_path, n_peaks=300):
+    """union_peaks.bed + a matching cCRE bed with alternating PLS/dELS calls,
+    one per peak, so every peak lands squarely in one class or the other."""
+    union = tmp_path / "union_peaks.bed"
+    ccre = tmp_path / "ccres.bed"
+    with open(union, "w") as f:
+        for i in range(n_peaks):
+            start = i * 1000
+            f.write(f"chr1\t{start}\t{start + 200}\n")
+    with open(ccre, "w") as f:
+        for i in range(n_peaks):
+            mid = i * 1000 + 100
+            label = "PLS" if i % 2 == 0 else "dELS"
+            f.write(f"chr1\t{mid - 50}\t{mid + 50}\tEH38D{i}\tEH38E{i}\t{label}\n")
+    return union, ccre
+
+
+def run_cli_with_positional_peak_ids(tmp_path, *extra, n_peaks=300):
+    """Like run_cli, but with "0", "1", ... peak columns.
+
+    tiered_inputs names peaks "p0", "p1", ... for readability, but real
+    observed/predicted_counts.tsv columns are the bare 0-based position in
+    union_peaks.bed.gz (see count_correlation.py's extract_observed_counts
+    docstring) -- --peak-class relies on that to join classify_peaks_by_cre's
+    output back onto the count matrices, so this test needs the real format.
+    """
+    o, p = tiered_inputs(tmp_path, n_peaks=n_peaks)
+    obs_df = pd.read_csv(o, sep="\t", index_col=0)
+    pred_df = pd.read_csv(p, sep="\t", index_col=0)
+    obs_df.columns = [str(i) for i in range(obs_df.shape[1])]
+    pred_df.columns = [str(i) for i in range(pred_df.shape[1])]
+    obs_df.to_csv(o, sep="\t")
+    pred_df.to_csv(p, sep="\t")
+    return subprocess.run(
+        [sys.executable, str(REPO_ROOT / "src/analysis/cross_celltype_prediction.py"),
+         "--observed", str(o), "--predicted", str(p),
+         "--out-dir", str(tmp_path / "out"), *extra],
+        capture_output=True, text=True, env=env(),
+    )
+
+
+def test_cli_reports_peak_class_topk_and_ceiling(tmp_path):
+    union, ccre = peak_class_bed_inputs(tmp_path)
+    result = run_cli_with_positional_peak_ids(
+        tmp_path, "--peak-class",
+        "--union-peaks", str(union), "--ccre-bed", str(ccre),
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Naming the most-active tissue per peak, candidate" in result.stderr
+    out = tmp_path / "out"
+    topk = pd.read_csv(out / "cross_celltype_topk_by_peak_class.tsv", sep="\t")
+    assert set(topk["peak_class"]) == {"promoter", "enhancer"}
+    assert (out / "cross_celltype_topk_promoter.pdf").exists()
+    assert (out / "cross_celltype_topk_enhancer.pdf").exists()
+
+
+def test_cli_peak_class_requires_both_files(tmp_path):
+    result = run_cli(tmp_path, "--peak-class")
+    assert result.returncode == 1
+    assert "--peak-class needs" in result.stderr
+
+
+def test_cli_without_peak_class_does_not_write_its_outputs(tmp_path):
+    result = run_cli(tmp_path)
+    assert result.returncode == 0, result.stderr
+    out = tmp_path / "out"
+    assert not (out / "cross_celltype_topk_by_peak_class.tsv").exists()
