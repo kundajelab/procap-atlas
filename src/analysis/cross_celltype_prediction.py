@@ -576,28 +576,31 @@ def restrict_by_peak_class(
 def topk_by_peak_class(
     restricted: dict[str, tuple[pd.DataFrame, pd.DataFrame]],
     groups: dict[str, str],
-    ks=(1, 3, 5),
-) -> pd.DataFrame:
-    """One `dominant_tissue_accuracy` row per peak class, over all of its peaks.
+    specificity_index: str = "tau",
+    min_peak_signal: float = 0.5,
+) -> dict[str, pd.DataFrame]:
+    """The same tau-quantile sweep `dominant_tissue_accuracy` does for the
+    unstratified panel, run separately within each peak class.
 
-    `quantiles=(0.0,)` disables the tau-threshold sweep that function does for
-    the main analysis: the promoter/enhancer split is itself the
-    stratification here, so every peak in a class is used once rather than
-    cut further by specificity.
+    One table per class, not one concatenated table: each keeps its own
+    tau_quantile sweep and x-axis, meant for `plot_topk` unmodified (one line
+    plot per class) rather than a class-vs-class comparison at a single
+    threshold. Specificity is recomputed *within* each class's own peaks,
+    matching the unstratified panel's own `peak_specificity`/`min_peak_signal`
+    pipeline exactly (see `main`) -- tau is relative to the peak set it is
+    computed over, so a promoter's tau needs to be measured among promoters,
+    not diluted by pooling with enhancers first.
     """
-    rows = []
+    out = {}
     for name, (oc, pc) in restricted.items():
-        # dominant_tissue_accuracy never reads the values of `specificity`
-        # when quantiles=(0.0,) (threshold is -inf, not a quantile of it) --
-        # only its index, to know which columns are eligible.
-        dummy_spec = pd.Series(0.0, index=oc.columns)
-        row = dominant_tissue_accuracy(oc, pc, groups, dummy_spec, quantiles=(0.0,), ks=ks)
-        if len(row):
-            rows.append(row.drop(columns="tau_quantile").assign(peak_class=name))
-    if not rows:
-        return pd.DataFrame()
-    out = pd.concat(rows, ignore_index=True)
-    return out[["peak_class"] + [c for c in out.columns if c != "peak_class"]]
+        spec = peak_specificity(oc, groups, specificity_index)
+        if min_peak_signal > 0:
+            signal = top_group_signal(oc, groups)
+            spec = spec.loc[signal[signal >= min_peak_signal].index]
+        topk = dominant_tissue_accuracy(oc, pc, groups, spec)
+        if len(topk):
+            out[name] = topk
+    return out
 
 
 def differential_ceiling_by_peak_class(
@@ -1172,64 +1175,6 @@ def plot_topk(topk: pd.DataFrame, path: Path) -> list[int]:
     return present
 
 
-def draw_topk_by_peak_class(ax, topk: pd.DataFrame, ks=(1, 3, 5)) -> list[int]:
-    """Tissue-naming accuracy, candidate promoter peaks against candidate
-    enhancer peaks.
-
-    Grouped bars rather than `draw_topk`'s line-over-threshold, since there
-    are exactly two categories here (not a specificity sweep) and a two-point
-    line implies an ordering between "promoter" and "enhancer" that is not
-    there. Chance is drawn as a dashed line per k rather than a third bar,
-    matching `draw_topk`'s convention that the multiple-over-chance is what is
-    annotated, not chance itself as a bar.
-    """
-    present = [k for k in ks if f"top{k}" in topk.columns]
-    classes = list(topk["peak_class"])
-    n_groups = len(classes)
-    width = 0.8 / max(len(present), 1)
-    x = np.arange(n_groups)
-    for i, k in enumerate(present):
-        offset = (i - (len(present) - 1) / 2) * width
-        color = K_COLOR.get(k, "#333333")
-        ax.bar(x + offset, topk[f"top{k}"], width=width * 0.92, color=color,
-               label=f"top-{k}")
-        for xi, chance, acc, over in zip(
-            x, topk[f"top{k}_chance"], topk[f"top{k}"], topk[f"top{k}_over_chance"]
-        ):
-            ax.plot([xi + offset - width * 0.46, xi + offset + width * 0.46],
-                    [chance, chance], color="black", lw=1.0, zorder=4)
-            ax.annotate(f"{over:.1f}x", xy=(xi + offset, acc),
-                        xytext=(0, 2), textcoords="offset points",
-                        fontsize=6, ha="center", va="bottom")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(
-        [f"{c}\nn={n:,}" for c, n in zip(classes, topk["n_peaks"])], fontsize=7,
-    )
-    ax.set_xlim(x[0] - 0.5, x[-1] + 0.5)
-    ax.set_ylim(0, 1.12)
-    ax.set_ylabel("accuracy naming the most-active tissue", fontsize=8)
-    title = (f"Naming the dominant tissue ({classes[0]} peaks)" if n_groups == 1
-             else "Naming the dominant tissue, by cCRE class")
-    ax.set_title(title, fontsize=9.5, loc="left", fontweight="bold")
-    # Below the axes, not "upper left": with only two categories the bars
-    # routinely reach the top of the panel, so an in-panel legend sits right
-    # on top of them (and the per-bar annotations) at every accuracy level
-    # worth plotting.
-    ax.legend(frameon=False, fontsize=6.5, loc="upper center",
-              bbox_to_anchor=(0.5, -0.16), ncol=max(len(present), 1))
-    ax.spines[["top", "right"]].set_visible(False)
-    return present
-
-
-def plot_topk_by_peak_class(topk: pd.DataFrame, path: Path) -> list[int]:
-    fig, ax = plt.subplots(figsize=(4.0, 3.1))
-    present = draw_topk_by_peak_class(ax, topk)
-    fig.savefig(path, dpi=300, bbox_inches="tight")
-    plt.close(fig)
-    return present
-
-
 def draw_homogenization(ax, table: pd.DataFrame, title: str,
                         annotate_gap: bool = False) -> None:
     """Measured vs predicted similarity across tiers, for one peak stratum.
@@ -1709,30 +1654,29 @@ def main():
                 file=sys.stderr,
             )
 
-        topk_pc = topk_by_peak_class(restricted, groups)
-        if len(topk_pc):
-            topk_pc.to_csv(
-                args.out_dir / "cross_celltype_topk_by_peak_class.tsv",
+        # Same tau-quantile sweep and plot as the unstratified panel above
+        # (cross_celltype_topk.{tsv,pdf}), run once per class rather than
+        # once over the pooled peak set -- one table and one `plot_topk`
+        # figure per class, not a combined one, so a manuscript pulling "the
+        # promoter panel" gets that as its own file.
+        topk_by_class = topk_by_peak_class(
+            restricted, groups, args.specificity_index, args.min_peak_signal
+        )
+        for name, topk in topk_by_class.items():
+            topk.to_csv(
+                args.out_dir / f"cross_celltype_topk_{name}.tsv",
                 sep="\t", index=False,
             )
-            # One PDF per class, matching the ceiling panels below, rather
-            # than one grouped-bar figure: a manuscript pulling "the promoter
-            # panel" needs that as its own file, not a crop of a two-class one.
-            for name in restricted:
-                row = topk_pc[topk_pc["peak_class"] == name]
-                if len(row):
-                    plot_topk_by_peak_class(
-                        row, args.out_dir / f"cross_celltype_topk_{name}.pdf"
-                    )
+            plot_topk(topk, args.out_dir / f"cross_celltype_topk_{name}.pdf")
             with pd.option_context("display.width", 220):
                 print(
-                    "\nNaming the most-active tissue per peak, candidate "
-                    "promoters against candidate enhancers (ENCODE SCREEN "
-                    "PLS vs pELS/dELS):",
+                    f"\nNaming the most-active tissue per peak, by "
+                    f"specificity threshold, among candidate {name} peaks "
+                    "(ENCODE SCREEN):",
                     file=sys.stderr,
                 )
-                cols = [c for c in topk_pc.columns if not c.endswith("_chance")]
-                print(topk_pc[cols].to_string(index=False), file=sys.stderr)
+                cols = [c for c in topk.columns if not c.endswith("_chance")]
+                print(topk[cols].to_string(index=False), file=sys.stderr)
 
         ceiling_pc = differential_ceiling_by_peak_class(restricted, groups, biosamples)
         if len(ceiling_pc):

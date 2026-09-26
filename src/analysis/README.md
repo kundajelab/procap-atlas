@@ -2457,24 +2457,29 @@ mis-join. If class counts look implausible (e.g. far fewer than the roughly
 Outputs, in addition to the ones above:
 
 ```text
-figures/cross_celltype/cross_celltype_topk_by_peak_class.tsv           # both classes, one table
+figures/cross_celltype/cross_celltype_topk_{promoter,enhancer}.tsv
 figures/cross_celltype/cross_celltype_topk_{promoter,enhancer}.pdf
 figures/cross_celltype/cross_celltype_differential_ceiling_by_peak_class.tsv
 figures/cross_celltype/cross_celltype_ceiling_summary_by_peak_class.tsv
 figures/cross_celltype/cross_celltype_differential_ceiling_{promoter,enhancer}.pdf
 ```
 
-Both panel types write one PDF per class rather than one combined figure —
-pulling "the promoter panel" for the manuscript should not mean cropping a
-two-class one. The numbers behind both classes still live in one TSV each
-(`_by_peak_class.tsv`), so the per-class split is presentation-only.
+Both panel types write one table and one PDF per class rather than one
+combined figure — pulling "the promoter panel" for the manuscript should not
+mean cropping a two-class one.
 
-The top-k panel (`draw_topk_by_peak_class`) is grouped bars, not `draw_topk`'s
-line-over-tau-threshold, even restricted to one class's single row: there is
-no specificity sweep here, top-1/3/5 are simply three bars for that class.
-Passing it the full two-class table instead of a one-row slice is also valid
-(it groups by however many rows it is given) and is what
-`test_plot_topk_by_peak_class_writes_a_pdf` exercises directly. The two
+**The top-k panel is the exact same tau-quantile sweep as the unstratified
+`cross_celltype_topk.pdf`, run twice** — once restricted to promoter peaks,
+once to enhancer peaks — and rendered with `draw_topk`/`plot_topk`
+unmodified. `topk_by_peak_class` recomputes `peak_specificity` (and applies
+`--min-peak-signal`) *within* each class's own peaks before calling
+`dominant_tissue_accuracy` with its default quantile sweep, rather than
+slicing a specificity computed on the pooled set: tau is relative to the peak
+set it is measured over, so a promoter's tau has to come from ranking it
+against other promoters, not from a computation diluted by enhancers. (An
+earlier version of this panel used a bespoke grouped-bar chart, one bar per
+k per class, with no tau sweep at all — replaced because it answered a
+narrower question than the unstratified panel's own sweep did.) The two
 ceiling panels reuse `draw_differential_ceiling`/`plot_differential_ceiling`
 unmodified, one call per class — the panel design (scatter against the
 diagonal, through-origin fit, tiers by relatedness) does not change with what

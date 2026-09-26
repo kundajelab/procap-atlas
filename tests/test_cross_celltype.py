@@ -1736,19 +1736,41 @@ def test_restrict_by_peak_class_respects_min_peaks():
     assert "enhancer" not in restricted
 
 
-def test_topk_by_peak_class_reports_one_row_per_class():
+def test_topk_by_peak_class_sweeps_tau_separately_per_class():
+    """One full tau-quantile sweep per class, the same shape dominant_tissue
+    _accuracy gives the unstratified panel -- not a single pooled row."""
     obs, pred, groups, classes = peak_class_frames()
     restricted = ccp.restrict_by_peak_class(obs, pred, classes)
     out = ccp.topk_by_peak_class(restricted, groups)
-    assert set(out["peak_class"]) == {"promoter", "enhancer"}
-    assert "tau_quantile" not in out.columns
-    assert (out["top1"] > 0.9).all(), "both classes see the same easy signal"
+    assert set(out) == {"promoter", "enhancer"}
+    for name, topk in out.items():
+        assert "tau_quantile" in topk.columns
+        assert len(topk) > 1, f"{name} should sweep multiple thresholds"
+        assert (topk["top1"] > 0.8).all(), "both classes see the same easy signal"
+
+
+def test_topk_by_peak_class_threads_min_peak_signal():
+    """A high enough min_peak_signal should filter every peak in a class,
+    dropping it from the result -- confirms the argument actually reaches
+    each class's own top_group_signal/peak_specificity call rather than
+    being accepted and ignored."""
+    obs, pred, groups, classes = peak_class_frames()
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    out = ccp.topk_by_peak_class(restricted, groups, min_peak_signal=1e6)
+    assert out == {}
+
+
+def test_topk_by_peak_class_threads_specificity_index():
+    obs, pred, groups, classes = peak_class_frames()
+    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
+    out = ccp.topk_by_peak_class(restricted, groups, specificity_index="entropy")
+    assert set(out) == {"promoter", "enhancer"}
 
 
 def test_topk_by_peak_class_is_empty_when_nothing_survives_restriction():
     _obs, _pred, groups, _classes = peak_class_frames()
     out = ccp.topk_by_peak_class({}, groups)
-    assert out.empty
+    assert out == {}
 
 
 def test_differential_ceiling_by_peak_class_tags_and_concatenates():
@@ -1767,29 +1789,19 @@ def test_differential_ceiling_by_peak_class_tags_and_concatenates():
     assert {"ceiling", "model", "attained", "tier"} <= set(out.columns)
 
 
-def test_draw_topk_by_peak_class_labels_both_categories():
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
+def test_topk_by_peak_class_tables_plot_with_the_unstratified_plotter(tmp_path):
+    """The point of sweeping tau per class is reusing draw_topk/plot_topk
+    unmodified -- draw_topk's own behavior is already covered where it is
+    defined; this just confirms a class-restricted table has the shape it
+    expects (tau_quantile, n_peaks, n_groups, top{k}/_chance/_over_chance)."""
     obs, pred, groups, classes = peak_class_frames()
     restricted = ccp.restrict_by_peak_class(obs, pred, classes)
-    topk = ccp.topk_by_peak_class(restricted, groups)
-    fig, ax = plt.subplots()
-    present = ccp.draw_topk_by_peak_class(ax, topk)
-    labels = [t.get_text().split("\n")[0] for t in ax.get_xticklabels()]
-    plt.close(fig)
-    assert present == [1, 3, 5] or present == [1, 3]
-    assert set(labels) == {"promoter", "enhancer"}
-
-
-def test_plot_topk_by_peak_class_writes_a_pdf(tmp_path):
-    obs, pred, groups, classes = peak_class_frames()
-    restricted = ccp.restrict_by_peak_class(obs, pred, classes)
-    topk = ccp.topk_by_peak_class(restricted, groups)
-    path = tmp_path / "topk_by_class.pdf"
-    ccp.plot_topk_by_peak_class(topk, path)
-    assert path.exists() and path.stat().st_size > 1000
+    out = ccp.topk_by_peak_class(restricted, groups)
+    for name, topk in out.items():
+        path = tmp_path / f"{name}.pdf"
+        present = ccp.plot_topk(topk, path)
+        assert present
+        assert path.exists() and path.stat().st_size > 1000
 
 
 def peak_class_bed_inputs(tmp_path, n_peaks=300):
@@ -1840,12 +1852,13 @@ def test_cli_reports_peak_class_topk_and_ceiling(tmp_path):
         "--union-peaks", str(union), "--ccre-bed", str(ccre),
     )
     assert result.returncode == 0, result.stderr
-    assert "Naming the most-active tissue per peak, candidate" in result.stderr
+    assert "among candidate promoter peaks" in result.stderr
+    assert "among candidate enhancer peaks" in result.stderr
     out = tmp_path / "out"
-    topk = pd.read_csv(out / "cross_celltype_topk_by_peak_class.tsv", sep="\t")
-    assert set(topk["peak_class"]) == {"promoter", "enhancer"}
-    assert (out / "cross_celltype_topk_promoter.pdf").exists()
-    assert (out / "cross_celltype_topk_enhancer.pdf").exists()
+    for name in ("promoter", "enhancer"):
+        topk = pd.read_csv(out / f"cross_celltype_topk_{name}.tsv", sep="\t")
+        assert "tau_quantile" in topk.columns
+        assert (out / f"cross_celltype_topk_{name}.pdf").exists()
 
 
 def test_cli_peak_class_requires_both_files(tmp_path):
