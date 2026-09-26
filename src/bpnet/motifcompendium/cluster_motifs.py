@@ -12,6 +12,7 @@ import MotifCompendium
 import MotifCompendium.utils.analysis as utils_analysis
 import MotifCompendium.utils.motif as utils_motif
 import MotifCompendium.utils.plotting as utils_plotting
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -278,6 +279,49 @@ def weighted_cluster_on(mc, similarity_threshold, save_name, cluster_on,
                  **cluster_kwargs)
 
 
+def force_merge_clusters(mc, threshold, density=1.0, max_iter=50, seed=100):
+    """Iteratively merge cluster_final centroids above a similarity threshold.
+
+    Each iteration averages motifs per cluster_final into centroids, finds
+    centroid cliques above threshold via DCC (density=1.0 requires every pair
+    in a merged group to be above threshold), merges those clusters, then
+    refines individual motif assignments with k_centroids.
+    """
+    membership = np.array(mc["cluster_final"])
+    convergence = {}
+
+    for iteration in range(max_iter):
+        dcc_kwargs = {
+            "similarity_threshold": threshold,
+            "cluster_on": "cluster_final",
+            "save_name": "cluster_final",
+            "largest_clusters_first": True,
+            "seed": seed,
+            "density": density,
+        }
+        if "weight_col" in inspect.signature(mc.cluster).parameters:
+            dcc_kwargs["weight_col"] = "num_seqlets"
+        else:
+            dcc_kwargs["cluster_on_weight"] = "num_seqlets"
+        cluster_with(mc, ["dcc"], **dcc_kwargs)
+
+        with record_convergence(f"force-merge-{iteration}", convergence):
+            cluster_with(
+                mc, ["k_centroids"],
+                init_clustering_col="cluster_final",
+                weight_col="num_seqlets",
+                save_name="cluster_final",
+                largest_clusters_first=True,
+            )
+
+        new_membership = np.array(mc["cluster_final"])
+        if np.array_equal(membership, new_membership):
+            break
+        membership = new_membership
+
+    return convergence
+
+
 def export_pattern_to_cluster_mapping(mc, head, out_dir=MC_DIR):
     """Map each experiment's own per-pattern Fi-NeMo motif_name (from calling
     hits directly against that experiment's own modisco.h5, the default
@@ -538,6 +582,10 @@ def process_head(
     out_dir=MC_DIR,
     algorithm=None,
     algorithm_kwargs=None,
+    force_merge_threshold=None,
+    force_merge_density=1.0,
+    force_merge_max_iter=50,
+    force_merge_seed=100,
 ):
     if not h5_paths:
         print(f"{head}: no modisco h5 files found, skipping")
@@ -578,6 +626,21 @@ def process_head(
             algorithm=algorithm,
             algorithm_kwargs=algorithm_kwargs,
         )
+
+    if force_merge_threshold is not None:
+        n_before_merge = max(mc["cluster_final"]) + 1
+        print(f"{head}: force-merging centroids above {force_merge_threshold} "
+              f"(density={force_merge_density})")
+        fm_convergence = force_merge_clusters(
+            mc, force_merge_threshold,
+            density=force_merge_density,
+            max_iter=force_merge_max_iter,
+            seed=force_merge_seed,
+        )
+        convergence.update(fm_convergence)
+        n_after_merge = max(mc["cluster_final"]) + 1
+        print(f"{head}: force-merge {n_before_merge} -> {n_after_merge} clusters")
+
     convergence_label = format_convergence(convergence)
     print(f"{head}: clustering convergence -- {convergence_label}")
     mc.save(str(out_dir / f"motifcompendium_{head}_all_clustered.mc"))
@@ -588,6 +651,80 @@ def process_head(
         f"(within_threshold={within_threshold}, across_threshold={across_threshold})"
     )
 
+    provenance = {
+        "mc_version": mc_version(),
+        "cluster_algorithm": algorithm_label,
+        "cluster_reference": cluster_reference(mc),
+        "cluster_convergence": convergence_label,
+        "within_threshold": within_threshold,
+        "across_threshold": across_threshold,
+    }
+    if force_merge_threshold is not None:
+        provenance["force_merge_threshold"] = force_merge_threshold
+        provenance["force_merge_density"] = force_merge_density
+
+    _export_outputs(
+        mc, head, logo_report_top_n, per_cluster_html,
+        export_svg_logos, svg_logo_batch_size, out_dir, provenance,
+    )
+
+
+def process_from_mc(
+    mc_path,
+    head,
+    force_merge_threshold,
+    force_merge_density,
+    force_merge_max_iter,
+    force_merge_seed,
+    logo_report_top_n,
+    per_cluster_html,
+    export_svg_logos,
+    svg_logo_batch_size,
+    out_dir=MC_DIR,
+):
+    """Load a previously clustered .mc file and apply force-merge + re-export."""
+    print(f"{head}: loading MotifCompendium from {mc_path}")
+    mc = MotifCompendium.load(str(mc_path))
+
+    n_before = max(mc["cluster_final"]) + 1
+    print(f"{head}: {n_before} clusters before force-merge")
+
+    print(f"{head}: force-merging centroids above {force_merge_threshold} "
+          f"(density={force_merge_density})")
+    convergence = {}
+    fm_convergence = force_merge_clusters(
+        mc, force_merge_threshold,
+        density=force_merge_density,
+        max_iter=force_merge_max_iter,
+        seed=force_merge_seed,
+    )
+    convergence.update(fm_convergence)
+    convergence_label = format_convergence(convergence)
+
+    n_after = max(mc["cluster_final"]) + 1
+    print(f"{head}: force-merge {n_before} -> {n_after} clusters")
+    print(f"{head}: force-merge convergence -- {convergence_label}")
+
+    mc.save(str(out_dir / f"motifcompendium_{head}_all_clustered.mc"))
+
+    provenance = {
+        "mc_version": mc_version(),
+        "cluster_reference": cluster_reference(mc),
+        "cluster_convergence": convergence_label,
+        "force_merge_threshold": force_merge_threshold,
+        "force_merge_density": force_merge_density,
+    }
+
+    _export_outputs(
+        mc, head, logo_report_top_n, per_cluster_html,
+        export_svg_logos, svg_logo_batch_size, out_dir, provenance,
+    )
+
+
+def _export_outputs(mc, head, logo_report_top_n, per_cluster_html,
+                    export_svg_logos, svg_logo_batch_size, out_dir,
+                    provenance):
+    """Export all downstream outputs from a clustered MotifCompendium."""
     export_pattern_to_cluster_mapping(mc, head, out_dir=out_dir)
 
     utils_analysis.export_compendium_clustered_modisco(
@@ -616,14 +753,7 @@ def process_head(
 
     cluster_metadata = write_cluster_metadata(
         mc, head, logo_paths=logo_paths, out_dir=out_dir,
-        provenance={
-            "mc_version": mc_version(),
-            "cluster_algorithm": algorithm_label,
-            "cluster_reference": cluster_reference(mc),
-            "cluster_convergence": convergence_label,
-            "within_threshold": within_threshold,
-            "across_threshold": across_threshold,
-        },
+        provenance=provenance,
     )
 
     if logo_report_top_n > 0:
@@ -685,6 +815,19 @@ def main():
             "Cluster all modisco motifs across experiments using MotifCompendium "
             "without motif quality filtering."
         )
+    )
+    parser.add_argument(
+        "--from-mc",
+        type=Path,
+        default=None,
+        metavar="MC_FILE",
+        help=(
+            "load a previously clustered .mc file and apply force-merge + "
+            "re-export, skipping the build-from-h5 and initial clustering "
+            "steps. Requires --head (exactly one) and "
+            "--force-merge-threshold. Typical use: iterate on the merge "
+            "threshold without rerunning the full pipeline."
+        ),
     )
     parser.add_argument(
         "--out-dir",
@@ -769,6 +912,40 @@ def main():
         help="Similarity threshold for cross-experiment clustering (default: 0.90)",
     )
     parser.add_argument(
+        "--force-merge-threshold",
+        type=float,
+        default=None,
+        metavar="THRESH",
+        help=(
+            "similarity threshold for post-clustering centroid merging. When "
+            "set, iteratively merges cluster_final centroids whose similarity "
+            "exceeds this threshold using DCC (density=1.0 by default, "
+            "requiring a full clique), then refines with k_centroids. "
+            "Suggested range: 0.92-0.95. Disabled by default."
+        ),
+    )
+    parser.add_argument(
+        "--force-merge-density",
+        type=float,
+        default=1.0,
+        help=(
+            "DCC density for centroid merging (default: 1.0). All clusters in "
+            "a merged group must have pairwise similarity above the threshold."
+        ),
+    )
+    parser.add_argument(
+        "--force-merge-max-iter",
+        type=int,
+        default=50,
+        help="Maximum iterations for centroid merging convergence (default: 50).",
+    )
+    parser.add_argument(
+        "--force-merge-seed",
+        type=int,
+        default=100,
+        help="Random seed for DCC in centroid merging (default: 100).",
+    )
+    parser.add_argument(
         "--max-cpus",
         type=int,
         default=4,
@@ -827,6 +1004,27 @@ def main():
     )
 
     heads = args.head or ["count", "profile"]
+
+    if args.from_mc:
+        if len(heads) != 1:
+            parser.error("--from-mc requires exactly one --head")
+        if args.force_merge_threshold is None:
+            parser.error("--force-merge-threshold is required with --from-mc")
+        process_from_mc(
+            args.from_mc,
+            heads[0],
+            args.force_merge_threshold,
+            args.force_merge_density,
+            args.force_merge_max_iter,
+            args.force_merge_seed,
+            args.logo_report_top_n,
+            args.per_cluster_html,
+            not args.skip_svg_logos,
+            args.svg_logo_batch_size,
+            out_dir=args.out_dir,
+        )
+        return
+
     experiments = load_experiments(args.min_reads, set(args.blacklist))
     print(f"Using {len(experiments)} experiments after experiment-level filtering")
 
@@ -844,6 +1042,10 @@ def main():
             out_dir=args.out_dir,
             algorithm=args.algorithm,
             algorithm_kwargs=parse_algorithm_kwargs(args.algorithm_kwarg),
+            force_merge_threshold=args.force_merge_threshold,
+            force_merge_density=args.force_merge_density,
+            force_merge_max_iter=args.force_merge_max_iter,
+            force_merge_seed=args.force_merge_seed,
         )
 
 
