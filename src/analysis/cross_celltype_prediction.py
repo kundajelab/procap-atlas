@@ -53,12 +53,15 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _biosample_groups import load_group_map  # noqa: E402
+from _peak_classes import classify_peaks_by_cre  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
 DEFAULT_DIR = REPO_ROOT / "figures" / "count_correlation"
 OUT_DIR = REPO_ROOT / "figures" / "cross_celltype"
+DEFAULT_UNION_PEAKS = REPO_ROOT / "data" / "processed" / "peaks" / "union_peaks.bed.gz"
+DEFAULT_CCRE_BED = REPO_ROOT / "data" / "GRCh38-cCREs.bed.gz"
 
 TIERS = ("matched", "same biosample", "same tissue", "different tissue")
 
@@ -549,6 +552,77 @@ def summarize_ceiling(quads: pd.DataFrame) -> pd.DataFrame:
             "attained_q75": round(float(att.quantile(0.75)), 4) if len(att) else np.nan,
         })
     return pd.DataFrame(rows)
+
+
+def restrict_by_peak_class(
+    observed: pd.DataFrame, predicted: pd.DataFrame, classes: pd.Series,
+    min_peaks: int = 20,
+) -> dict[str, tuple[pd.DataFrame, pd.DataFrame]]:
+    """observed/predicted restricted to each peak class with enough peaks.
+
+    Peaks `classify_peaks_by_cre` left unclassified (NaN -- overlapping
+    neither a PLS nor an ELS cCRE, or ambiguously both) are in neither
+    output, the same way `peak_specificity`'s NaNs are dropped by
+    `stratify_by_specificity` rather than assigned a stratum.
+    """
+    out = {}
+    for name in ("promoter", "enhancer"):
+        cols = [c for c in classes.index[classes == name] if c in observed.columns]
+        if len(cols) >= min_peaks:
+            out[name] = (take_columns(observed, cols), take_columns(predicted, cols))
+    return out
+
+
+def topk_by_peak_class(
+    restricted: dict[str, tuple[pd.DataFrame, pd.DataFrame]],
+    groups: dict[str, str],
+    specificity_index: str = "tau",
+    min_peak_signal: float = 0.5,
+) -> dict[str, pd.DataFrame]:
+    """The same tau-quantile sweep `dominant_tissue_accuracy` does for the
+    unstratified panel, run separately within each peak class.
+
+    One table per class, not one concatenated table: each keeps its own
+    tau_quantile sweep and x-axis, meant for `plot_topk` unmodified (one line
+    plot per class) rather than a class-vs-class comparison at a single
+    threshold. Specificity is recomputed *within* each class's own peaks,
+    matching the unstratified panel's own `peak_specificity`/`min_peak_signal`
+    pipeline exactly (see `main`) -- tau is relative to the peak set it is
+    computed over, so a promoter's tau needs to be measured among promoters,
+    not diluted by pooling with enhancers first.
+    """
+    out = {}
+    for name, (oc, pc) in restricted.items():
+        spec = peak_specificity(oc, groups, specificity_index)
+        if min_peak_signal > 0:
+            signal = top_group_signal(oc, groups)
+            spec = spec.loc[signal[signal >= min_peak_signal].index]
+        topk = dominant_tissue_accuracy(oc, pc, groups, spec)
+        if len(topk):
+            out[name] = topk
+    return out
+
+
+def differential_ceiling_by_peak_class(
+    restricted: dict[str, tuple[pd.DataFrame, pd.DataFrame]],
+    groups: dict[str, str],
+    biosamples: dict[str, str],
+) -> pd.DataFrame:
+    """One `differential_ceiling` table per peak class, tagged and concatenated.
+
+    Kept as one long table with a `peak_class` column, matching how
+    `differential_prediction`'s `tier` column already lets one table serve
+    both per-tier and pooled summaries, rather than returning a dict of
+    frames that every caller would have to know to iterate.
+    """
+    rows = []
+    for name, (oc, pc) in restricted.items():
+        quads = differential_ceiling(oc, pc, groups, biosamples)
+        if len(quads):
+            rows.append(quads.assign(peak_class=name))
+    if not rows:
+        return pd.DataFrame()
+    return pd.concat(rows, ignore_index=True)
 
 
 def homogenization(
@@ -1224,6 +1298,20 @@ def main():
                         help="restrict to the N most variable peaks across "
                              "experiments; 0 uses all (default: 0)")
     parser.add_argument(
+        "--peak-class", action="store_true",
+        help="also report top-k tissue-naming accuracy and the differential "
+             "ceiling separately for candidate promoter (ENCODE SCREEN PLS) "
+             "and candidate enhancer (pELS/dELS) peaks, via --union-peaks and "
+             "--ccre-bed. Off by default since it needs both files.",
+    )
+    parser.add_argument("--union-peaks", type=Path, default=DEFAULT_UNION_PEAKS,
+                        metavar="PATH", help="only used by --peak-class")
+    parser.add_argument("--ccre-bed", type=Path, default=DEFAULT_CCRE_BED,
+                        metavar="PATH",
+                        help="ENCODE SCREEN Registry V4 cCRE bed(.gz), only "
+                             "used by --peak-class (see "
+                             "src/download/download_genome.sh)")
+    parser.add_argument(
         "--i-know-these-are-fold-averaged", action="store_true",
         help="proceed with counts from the default (all-folds-averaged) "
              "extraction. The matched diagonal will be inflated because six of "
@@ -1242,6 +1330,16 @@ def main():
                 file=sys.stderr,
             )
             sys.exit(1)
+
+    if args.peak_class:
+        for path, hint in (
+            (args.union_peaks, "Run src/preprocess/make_union_peaks.py first."),
+            (args.ccre_bed, "Run src/download/download_genome.sh first."),
+        ):
+            if not path.exists():
+                print(f"ERROR: --peak-class needs {path}, not found", file=sys.stderr)
+                print(hint, file=sys.stderr)
+                sys.exit(1)
 
     if not args.i_know_these_are_fold_averaged:
         print(
@@ -1535,6 +1633,86 @@ def main():
                     .to_string(index=False),
                     file=sys.stderr,
                 )
+
+    if args.peak_class:
+        classes = classify_peaks_by_cre(args.union_peaks, args.ccre_bed)
+        counts = classes.value_counts()
+        print(
+            f"\nPeak class from {args.ccre_bed.name}: "
+            f"{counts.get('promoter', 0):,} candidate promoter, "
+            f"{counts.get('enhancer', 0):,} candidate enhancer, "
+            f"{classes.isna().sum():,} unclassified "
+            f"(of {len(classes):,} union peaks)",
+            file=sys.stderr,
+        )
+        restricted = restrict_by_peak_class(observed, predicted, classes)
+        missing = {"promoter", "enhancer"} - set(restricted)
+        if missing:
+            print(
+                f"WARNING: too few peaks to report {', '.join(sorted(missing))} "
+                "(need at least 20 after intersecting with the shared peak set)",
+                file=sys.stderr,
+            )
+
+        # Same tau-quantile sweep and plot as the unstratified panel above
+        # (cross_celltype_topk.{tsv,pdf}), run once per class rather than
+        # once over the pooled peak set -- one table and one `plot_topk`
+        # figure per class, not a combined one, so a manuscript pulling "the
+        # promoter panel" gets that as its own file.
+        topk_by_class = topk_by_peak_class(
+            restricted, groups, args.specificity_index, args.min_peak_signal
+        )
+        for name, topk in topk_by_class.items():
+            topk.to_csv(
+                args.out_dir / f"cross_celltype_topk_{name}.tsv",
+                sep="\t", index=False,
+            )
+            plot_topk(topk, args.out_dir / f"cross_celltype_topk_{name}.pdf")
+            with pd.option_context("display.width", 220):
+                print(
+                    f"\nNaming the most-active tissue per peak, by "
+                    f"specificity threshold, among candidate {name} peaks "
+                    "(ENCODE SCREEN):",
+                    file=sys.stderr,
+                )
+                cols = [c for c in topk.columns if not c.endswith("_chance")]
+                print(topk[cols].to_string(index=False), file=sys.stderr)
+
+        ceiling_pc = differential_ceiling_by_peak_class(restricted, groups, biosamples)
+        if len(ceiling_pc):
+            ceiling_pc.to_csv(
+                args.out_dir / "cross_celltype_differential_ceiling_by_peak_class.tsv",
+                sep="\t", index=False,
+            )
+            summary_rows = []
+            for name in restricted:
+                sub = ceiling_pc[ceiling_pc["peak_class"] == name]
+                if len(sub):
+                    summary_rows.append(summarize_ceiling(sub).assign(peak_class=name))
+            summary_pc = pd.concat(summary_rows, ignore_index=True)
+            summary_pc = summary_pc[
+                ["peak_class"] + [c for c in summary_pc.columns if c != "peak_class"]
+            ]
+            summary_pc.to_csv(
+                args.out_dir / "cross_celltype_ceiling_summary_by_peak_class.tsv",
+                sep="\t", index=False,
+            )
+            print(
+                "\nDifferential ceiling, by peak class -- median attained "
+                "fraction should be similar across classes if the model is "
+                "recovering a fixed share of whatever is reproducible rather "
+                "than doing better on one class of element than the other:",
+                file=sys.stderr,
+            )
+            print(summary_pc.to_string(index=False), file=sys.stderr)
+            for name in restricted:
+                sub = ceiling_pc[ceiling_pc["peak_class"] == name]
+                if len(sub):
+                    plot_differential_ceiling(
+                        sub,
+                        args.out_dir
+                        / f"cross_celltype_differential_ceiling_{name}.pdf",
+                    )
 
     depth = load_read_depth()
     if depth and len(per_model) > 2:
