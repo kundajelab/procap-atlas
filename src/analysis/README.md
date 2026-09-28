@@ -3177,6 +3177,52 @@ the pooled numbers are quoted.
   work was substantially profile-based, and a profile version (per-peak
   Jensen-Shannon distance) would need its own extraction.
 
+## GATA Investigation (Supplementary Note 1)
+
+Supplementary Note 1 investigates why GATA motifs were absent from the original
+ProCapNet K562 models. Two hypotheses are tested: (1) DHS-based negatives
+confound GATA's chromatin-opening role, and (2) shallow sequencing causes
+disproportionate enhancer dropout, reducing GATA training examples.
+
+`compare_k562_peak_classes.py` classifies peaks and negative regions against
+ENCODE SCREEN Registry V4 cCREs (promoter-like PLS, enhancer-like pELS/dELS)
+using the `_peak_classes.py` helper. Run on the cluster where peak BED files
+exist:
+
+```bash
+python src/analysis/compare_k562_peak_classes.py
+```
+
+Outputs:
+
+```text
+figures/gata_investigation/peak_class_breakdown.csv
+```
+
+`plot_gata_investigation.py` generates Supplementary Fig S4 from the peak class
+CSV and MoDISco reports. Panel (a) shows GATA CWMs across model variants with
+seqlet counts; panel (b) shows peak/negative class composition:
+
+```bash
+python src/analysis/plot_gata_investigation.py \
+    --modisco-dirs modisco/bpnet/ENCSR220XSM_count.modisco \
+                   modisco/bpnet/ENCSR261KBXtracks_ENCSR220XSMpeaks_count.modisco \
+                   modisco/bpnet/ENCSR220XSMtracks_ENCSR261KBXpeaks_count.modisco \
+                   modisco/bpnet/ENCSR261KBX_count.modisco \
+                   modisco/bpnet/ENCSR261KBX_dnase_count.modisco \
+    --peak-class-csv figures/gata_investigation/peak_class_breakdown.csv
+```
+
+Outputs:
+
+```text
+figures/gata_investigation/fig_gata_investigation.pdf
+figures/gata_investigation/fig_gata_investigation.png
+```
+
+The attribution and MoDISco SLURM launchers for the five model variants live in
+[`src/bpnet/`](../bpnet/README.md#gata-investigation-supplementary-note-1).
+
 ## Warning Flags
 
 Generates read-depth, perturbation, uncapped-library, and manual warning flags

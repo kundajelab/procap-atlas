@@ -163,6 +163,7 @@ python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head count
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --head orientation
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --model-dir models/bpnet/ENCSR882DWM_gc0.1
 python src/bpnet/attribute/attribute_bpnet.py -e ENCSR882DWM --reference-mode dinucleotide
+python src/bpnet/attribute/attribute_bpnet.py -e ENCSR261KBX --model-prefix ENCSR220XSMtracks_ENCSR261KBXpeaks
 
 python src/bpnet/attribute/launch.py --dry-run
 python src/bpnet/attribute/launch.py --head profile --head count --head orientation
@@ -174,6 +175,11 @@ Outputs:
 attributions/bpnet/{model_dir_name}_{head}.npz
 attributions/bpnet/{experiment}_ohe.npz
 ```
+
+Use `--model-prefix` for cross-trained models where the model directory name
+differs from the experiment ID (e.g. `ENCSR220XSMtracks_ENCSR261KBXpeaks`).
+The prefix determines which model weights to load and names the output `.npz`;
+the experiment ID (`-e`) still selects the OHE and peak set.
 
 `attribute_bpnet.py` defaults to the DeepLIFT genomic nucleotide-frequency null:
 one soft PFM reference per input sequence with the sequence's observed A/C/G/T
@@ -254,6 +260,23 @@ modisco/bpnet/{experiment}_{head}.modisco/
 logs/bpnet_modisco/
 ```
 
+### GATA investigation (Supplementary Note 1)
+
+Standalone SLURM launchers for the K562 GATA recovery factorial experiment,
+which attributes and runs MoDISco on five model variants (standard XSM, standard
+KBX, KBX with DHS negatives, and two cross-trained models):
+
+```bash
+sbatch src/bpnet/attribute/attribute_gata_investigation.sh models/bpnet/ENCSR261KBX_dnase ENCSR261KBX ENCSR261KBX_dnase
+sbatch src/bpnet/modisco/modisco_gata_investigation.sh ENCSR261KBX_dnase ENCSR261KBX
+```
+
+`attribute_gata_investigation.sh` takes three positional arguments: model
+directory, peak experiment, and model prefix. `modisco_gata_investigation.sh`
+takes the model name (used as the attribution file prefix) and peak experiment
+(determines which OHE file to use). Reports use `--lite` for built-in
+tomtom-lite matching instead of external MEME suite.
+
 ## Motif Clustering
 
 [MotifCompendium](https://github.com/kundajelab/MotifCompendium) collapses the
@@ -291,7 +314,16 @@ python src/bpnet/motifcompendium/cluster_motifs.py
 python src/bpnet/motifcompendium/cluster_motifs.py --head profile
 python src/bpnet/motifcompendium/cluster_motifs.py --min-reads 20000000 --blacklist ENCSR973QQI ENCSR882DWM
 python src/bpnet/motifcompendium/cluster_motifs.py --across-threshold 0.85 --logo-report-top-n 0
+python src/bpnet/motifcompendium/cluster_motifs.py --from-mc motifcompendium/bpnet/motifcompendium_count_all_clustered.mc --force-merge-threshold 0.7
 ```
+
+Use `--from-mc` to reload a previously saved `.mc` file and re-cluster without
+re-reading every experiment's MoDISco h5. `--force-merge-threshold` applies a
+second merging pass at a lower similarity threshold, collapsing near-duplicate
+motif families (e.g. multiple SP/KLF or ETS clusters) that the default
+`--across-threshold` leaves separate. The force-merge pass runs after the
+standard within/across clustering and updates all downstream outputs
+(pattern-to-cluster TSV, cluster averages, reports).
 
 `cluster_motifs_filtered.py` is unused/exploration-only (its entropy-based
 motif-quality filter killed too many real motifs) and kept for reference only;
