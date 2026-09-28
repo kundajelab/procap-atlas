@@ -133,9 +133,11 @@ contrast confounds head with clustering algorithm.
 | Fig 2 — tissue concentration of motif discovery | `motif_group_concentration.py` | done, `count` head |
 | Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
 | Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
-| Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
-| Supp — concentration at JASPAR-name level | `plot_figure2.py --collapse-concentration` | done, `figure2_count_s_concentration_jaspar_name.pdf` |
-| Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
+| Supp — tissue concentration scatter (merged) | `motif_group_concentration.py --group-level tissue` | done, on force-merged compendium |
+| Supp — biosample concentration scatter (merged) | `motif_group_concentration.py --group-level biosample` | done, on force-merged compendium |
+| ~~Supp — lexicon-size bracket~~ | ~~`plot_figure2.py --collapse-curves`~~ | **dropped**: force-merging addresses the near-duplicate question this panel anticipated |
+| ~~Supp — concentration at JASPAR-name level~~ | ~~`plot_figure2.py --collapse-concentration`~~ | **dropped**: force-merging addresses cluster-splitting concern directly |
+| ~~Supp — compendium redundancy~~ | ~~`motif_redundancy.py`~~ | **dropped**: force-merging removes the near-duplicates this panel cataloged |
 | Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure**; `--peak-class` adds a candidate-promoter-vs-enhancer stratification of the top-k and ceiling panels, not yet run at atlas scale |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
 
@@ -186,6 +188,86 @@ python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experim
 python src/analysis/motif_redundancy.py --head count --modisco-h5 auto \
     --trim-threshold 0.5 --drop-untrimmable --report-threshold 1e-6
 ```
+
+#### Force-merged compendium pipeline
+
+After force-merging redundant cluster centroids (see
+[`cluster_motifs.py --from-mc`](../bpnet/README.md)), regenerate the
+quantitative panels (rarefaction, concentration) from the deduplicated
+compendium. Exemplar logos and metaplots are reused from the unmerged
+compendium — the underlying CWMs and signal are the same; only the cluster
+count changes.
+
+All scripts below accept `--compendium-dir` to override the default
+`motifcompendium/bpnet/` path. `MC` below is the force-merged output
+directory.
+
+```bash
+MC=motifcompendium/bpnet
+FIG=figures/motif_atlas/merged0.92
+
+# 0. Force-merge (if not already done). Threshold 0.92 is the recommended
+#    starting point; iterate with --from-mc without rerunning the full build.
+uv run python src/bpnet/motifcompendium/cluster_motifs.py \
+    --from-mc motifcompendium/bpnet/motifcompendium_count_all_clustered.mc \
+    --head count --force-merge-threshold 0.92 \
+    --out-dir $MC
+
+# 1. Rarefaction from merged clusters (main figure panel b).
+uv run python src/analysis/plot_motif_rarefaction.py --head count \
+    --compendium-dir $MC --min-cluster-experiments 2 --sweep \
+    --out-dir $FIG
+
+# 2. Concentration from merged clusters, both group levels.
+#    Tissue level feeds the main figure (panel c); biosample level is
+#    the supplemental replicate-artifact control.
+#    --save-null-draws is REQUIRED for the histogram in panel c.
+uv run python src/analysis/motif_group_concentration.py --head count \
+    --compendium-dir $MC --group-level tissue --save-null-draws \
+    --out-dir $FIG
+uv run python src/analysis/motif_group_concentration.py --head count \
+    --compendium-dir $MC --group-level biosample --save-null-draws \
+    --out-dir $FIG
+
+# 3. Exemplars: reuse unmerged logos (--max-groups 2 matches the original).
+uv run python src/analysis/select_motif_exemplars.py --head count \
+    --max-groups 2 --per-group 3 \
+    --modisco-h5 motifcompendium/bpnet/motifcompendium_count_cluster_averages.h5 \
+    --logo-paths motifcompendium/bpnet/motifcompendium_count_cluster_logo_paths.tsv \
+    --logo-root motifcompendium/bpnet/ \
+    --out-dir $FIG
+
+# 4. Profile exemplars (unmerged; --include-unmatched for Inr/TATA/DPE).
+uv run python src/analysis/select_motif_exemplars.py --head profile \
+    --include-unmatched \
+    --logo-root motifcompendium/bpnet/ \
+    --out-dir $FIG
+
+# 5. Assemble figure 2. Merged h5 for the cluster-average logos in the
+#    rarefaction/concentration panels; unmerged exemplars and profile row.
+uv run python src/analysis/plot_figure2.py --head count \
+    --in-dir $FIG --compendium-dir $MC --modisco-h5 auto --n-restricted 14 \
+    --profile-exemplars $FIG/motif_exemplars_profile_restricted.tsv \
+    --profile-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5 \
+    --profile-names configs/core_promoter_names.tsv \
+    --with-metaplots --metaplot-min-trim-len 6
+```
+
+**Supplemental panels (two, replacing three):**
+
+- **Tissue concentration scatter** — prevalence vs distinct tissue groups on the
+  force-merged compendium, showing tissue restriction survives deduplication.
+  Already generated by step 2 (`motif_concentration_count_tissue.pdf`).
+- **Biosample concentration scatter** — same layout at biosample level, showing
+  concentration is lineage-level biology (motifs span multiple biosamples within
+  one tissue) rather than replicate redundancy from heavily-sequenced cell lines.
+  Already generated by step 2 (`motif_concentration_count_biosample.pdf`).
+
+These replace the lexicon-size bracket, JASPAR-name concentration collapse, and
+redundancy report. Force-merging addresses the near-duplicate and
+cluster-splitting concerns those panels anticipated; the two scatter plots
+carry the remaining biological claim (tissue restriction) and its control
+(not replicate artifacts) directly.
 
 #### Results the figure rests on
 

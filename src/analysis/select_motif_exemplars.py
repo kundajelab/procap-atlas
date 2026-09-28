@@ -496,6 +496,12 @@ def main():
         help="directory the logo paths are relative to (default: their own parent)",
     )
     parser.add_argument(
+        "--compendium-dir", type=Path, default=None, metavar="DIR",
+        help="override the compendium directory (default: motifcompendium/bpnet/). "
+             "Sets the default --logo-root. Use to point at a force-merged "
+             "compendium. --logo-root takes precedence.",
+    )
+    parser.add_argument(
         "--max-groups", type=int, default=1, metavar="N",
         help="a candidate may span at most this many tissue groups (default: 1)",
     )
@@ -648,8 +654,9 @@ def main():
             restricted = restricted[restricted["dup_of"].isna()]
 
     logo_paths = args.logo_paths
+    mc_dir = args.compendium_dir or MC_DIR
     logo_root = args.logo_root or (
-        Path(logo_paths).parent if logo_paths else MC_DIR
+        Path(logo_paths).parent if logo_paths else mc_dir
     )
     logos = resolve_logos(d, logo_paths, logo_root)
 
