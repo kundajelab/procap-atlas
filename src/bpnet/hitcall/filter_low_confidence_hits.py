@@ -489,6 +489,17 @@ def main():
         ),
     )
     parser.add_argument(
+        "--compendium-dir",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help=(
+            "override the compendium directory (default: motifcompendium/bpnet/). "
+            "Use to point at a force-merged compendium. "
+            "--compendium-mapping-tsv takes precedence."
+        ),
+    )
+    parser.add_argument(
         "--seqlet-background-excess-only",
         action="store_true",
         help=(
@@ -825,7 +836,7 @@ def main():
             mapping_path = (
                 Path(args.compendium_mapping_tsv)
                 if args.compendium_mapping_tsv
-                else REPO_ROOT / "motifcompendium" / "bpnet" / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
+                else (args.compendium_dir or REPO_ROOT / "motifcompendium" / "bpnet") / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
             )
             if not compressed_io.exists(mapping_path):
                 print(

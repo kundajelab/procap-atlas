@@ -73,6 +73,17 @@ def main():
         ),
     )
     parser.add_argument(
+        "--compendium-dir",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help=(
+            "override the compendium directory (default: motifcompendium/bpnet/). "
+            "Use to point at a force-merged compendium without specifying "
+            "individual file paths. --mapping-tsv takes precedence."
+        ),
+    )
+    parser.add_argument(
         "--min-trim-len",
         type=int,
         default=None,
@@ -102,12 +113,8 @@ def main():
     if args.mapping_tsv:
         mapping_path = Path(args.mapping_tsv)
     else:
-        mapping_path = (
-            REPO_ROOT
-            / "motifcompendium"
-            / "bpnet"
-            / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
-        )
+        mc_dir = args.compendium_dir or (REPO_ROOT / "motifcompendium" / "bpnet")
+        mapping_path = mc_dir / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
 
     if hits_path is None:
         print(f"Error: no hits found in {hits_dir}", file=sys.stderr)

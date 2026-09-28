@@ -593,6 +593,13 @@ def main():
              "and JASPAR labels are lost",
     )
     parser.add_argument(
+        "--compendium-dir", type=Path, default=None, metavar="DIR",
+        help="override motifcompendium/bpnet/ as the default compendium "
+             "directory. Use to point at a force-merged compendium without "
+             "passing individual file paths. --cluster-metadata and "
+             "--pattern-to-cluster take precedence.",
+    )
+    parser.add_argument(
         "--min-reads", type=float, default=10_000_000, metavar="N",
         help="drop experiments below N total reads, holding discovery power "
              "roughly fixed (default: 10000000, matching cluster_motifs.py)",
@@ -689,8 +696,9 @@ def main():
         sys.exit(1)
     keep = {e for e in experiments_cfg if read_counts.get(e, 0) >= args.min_reads}
 
-    default_metadata = MC_DIR / f"motifcompendium_{args.head}_cluster_metadata.tsv"
-    default_mapping = MC_DIR / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
+    mc_dir = args.compendium_dir if args.compendium_dir is not None else MC_DIR
+    default_metadata = mc_dir / f"motifcompendium_{args.head}_cluster_metadata.tsv"
+    default_mapping = mc_dir / f"motifcompendium_{args.head}_pattern_to_cluster.tsv"
 
     if args.pattern_to_cluster is not None:
         source, from_mapping = args.pattern_to_cluster, True
@@ -709,7 +717,7 @@ def main():
             file=sys.stderr,
         )
     else:
-        print(f"ERROR: no compendium input found in {MC_DIR}", file=sys.stderr)
+        print(f"ERROR: no compendium input found in {mc_dir}", file=sys.stderr)
         print(
             "Expected either "
             f"{default_metadata.name} or {default_mapping.name}. Run "

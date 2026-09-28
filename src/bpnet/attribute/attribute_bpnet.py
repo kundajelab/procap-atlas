@@ -88,6 +88,13 @@ def main():
         choices=["profile", "count", "orientation"],
         help="type of prediction to attribute (profile, count, or orientation)",
     )
+    parser.add_argument(
+        "--model-prefix",
+        type=str,
+        default=None,
+        help="override model filename prefix (default: experiment ID). "
+        "Model files are {prefix}.fold{N}.torch inside --model-dir.",
+    )
     parser.add_argument("-b", "--batch-size", type=int, default=64)
     parser.add_argument(
         "--reference-mode",
@@ -144,8 +151,9 @@ def main():
         model_dir = Path(args.model_dir)
     else:
         model_dir = REPO_ROOT / "models" / "bpnet" / args.experiment
+    model_prefix = args.model_prefix if args.model_prefix else args.experiment
     model_paths = [
-        model_dir / f"{args.experiment}.fold{fold}.torch" for fold in range(n_folds)
+        model_dir / f"{model_prefix}.fold{fold}.torch" for fold in range(n_folds)
     ]
     for model_path in model_paths:
         if not model_path.exists():
