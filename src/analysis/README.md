@@ -133,10 +133,12 @@ contrast confounds head with clustering algorithm.
 | Fig 2 — tissue concentration of motif discovery | `motif_group_concentration.py` | done, `count` head |
 | Fig 2 — lexicon rarefaction by sampling scheme | `plot_motif_rarefaction.py` | done, `count` head |
 | Fig 2 — motif × experiment hit density | `motif_hit_density.py` | **blocked**: needs `hitcall/launch_link.py --head count`, and has never run on real data |
-| Supp — lexicon-size bracket (cluster vs JASPAR name) | `plot_figure2.py --collapse-curves` | done, `figure2_count_s_lexicon_bracket.pdf` |
-| Supp — concentration at JASPAR-name level | `plot_figure2.py --collapse-concentration` | done, `figure2_count_s_concentration_jaspar_name.pdf` |
-| Supp — compendium redundancy | `motif_redundancy.py` | done, merges reviewed by eye |
-| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure** |
+| Supp — tissue concentration scatter (merged) | `motif_group_concentration.py --group-level tissue` | done, on force-merged compendium |
+| Supp — biosample concentration scatter (merged) | `motif_group_concentration.py --group-level biosample` | done, on force-merged compendium |
+| ~~Supp — lexicon-size bracket~~ | ~~`plot_figure2.py --collapse-curves`~~ | **dropped**: force-merging addresses the near-duplicate question this panel anticipated |
+| ~~Supp — concentration at JASPAR-name level~~ | ~~`plot_figure2.py --collapse-concentration`~~ | **dropped**: force-merging addresses cluster-splitting concern directly |
+| ~~Supp — compendium redundancy~~ | ~~`motif_redundancy.py`~~ | **dropped**: force-merging removes the near-duplicates this panel cataloged |
+| Supp — cross-cell-type prediction (4 panels) | `cross_celltype_prediction.py` | numbers final on all 198; all 4 plotters written, **not yet assembled into one figure**; `--peak-class` adds a candidate-promoter-vs-enhancer stratification of the top-k and ceiling panels, not yet run at atlas scale |
 | Supp — non-JASPAR cluster annotation | `make_annotation_scaffold.py` | built, deliberately not used (see [the decision](#decision-the-non-jaspar-class-is-not-analyzed-further-sep-2026)) |
 
 Figure 1e already shows a neuron-specific gene carrying neuron-specific
@@ -186,6 +188,86 @@ python src/analysis/plot_motif_rarefaction.py --head count --min-cluster-experim
 python src/analysis/motif_redundancy.py --head count --modisco-h5 auto \
     --trim-threshold 0.5 --drop-untrimmable --report-threshold 1e-6
 ```
+
+#### Force-merged compendium pipeline
+
+After force-merging redundant cluster centroids (see
+[`cluster_motifs.py --from-mc`](../bpnet/README.md)), regenerate the
+quantitative panels (rarefaction, concentration) from the deduplicated
+compendium. Exemplar logos and metaplots are reused from the unmerged
+compendium — the underlying CWMs and signal are the same; only the cluster
+count changes.
+
+All scripts below accept `--compendium-dir` to override the default
+`motifcompendium/bpnet/` path. `MC` below is the force-merged output
+directory.
+
+```bash
+MC=motifcompendium/bpnet
+FIG=figures/motif_atlas/merged0.92
+
+# 0. Force-merge (if not already done). Threshold 0.92 is the recommended
+#    starting point; iterate with --from-mc without rerunning the full build.
+uv run python src/bpnet/motifcompendium/cluster_motifs.py \
+    --from-mc motifcompendium/bpnet/motifcompendium_count_all_clustered.mc \
+    --head count --force-merge-threshold 0.92 \
+    --out-dir $MC
+
+# 1. Rarefaction from merged clusters (main figure panel b).
+uv run python src/analysis/plot_motif_rarefaction.py --head count \
+    --compendium-dir $MC --min-cluster-experiments 2 --sweep \
+    --out-dir $FIG
+
+# 2. Concentration from merged clusters, both group levels.
+#    Tissue level feeds the main figure (panel c); biosample level is
+#    the supplemental replicate-artifact control.
+#    --save-null-draws is REQUIRED for the histogram in panel c.
+uv run python src/analysis/motif_group_concentration.py --head count \
+    --compendium-dir $MC --group-level tissue --save-null-draws \
+    --out-dir $FIG
+uv run python src/analysis/motif_group_concentration.py --head count \
+    --compendium-dir $MC --group-level biosample --save-null-draws \
+    --out-dir $FIG
+
+# 3. Exemplars: reuse unmerged logos (--max-groups 2 matches the original).
+uv run python src/analysis/select_motif_exemplars.py --head count \
+    --max-groups 2 --per-group 3 \
+    --modisco-h5 motifcompendium/bpnet/motifcompendium_count_cluster_averages.h5 \
+    --logo-paths motifcompendium/bpnet/motifcompendium_count_cluster_logo_paths.tsv \
+    --logo-root motifcompendium/bpnet/ \
+    --out-dir $FIG
+
+# 4. Profile exemplars (unmerged; --include-unmatched for Inr/TATA/DPE).
+uv run python src/analysis/select_motif_exemplars.py --head profile \
+    --include-unmatched \
+    --logo-root motifcompendium/bpnet/ \
+    --out-dir $FIG
+
+# 5. Assemble figure 2. Merged h5 for the cluster-average logos in the
+#    rarefaction/concentration panels; unmerged exemplars and profile row.
+uv run python src/analysis/plot_figure2.py --head count \
+    --in-dir $FIG --compendium-dir $MC --modisco-h5 auto --n-restricted 14 \
+    --profile-exemplars $FIG/motif_exemplars_profile_restricted.tsv \
+    --profile-h5 motifcompendium/bpnet/motifcompendium_profile_cluster_averages.h5 \
+    --profile-names configs/core_promoter_names.tsv \
+    --with-metaplots --metaplot-min-trim-len 6
+```
+
+**Supplemental panels (two, replacing three):**
+
+- **Tissue concentration scatter** — prevalence vs distinct tissue groups on the
+  force-merged compendium, showing tissue restriction survives deduplication.
+  Already generated by step 2 (`motif_concentration_count_tissue.pdf`).
+- **Biosample concentration scatter** — same layout at biosample level, showing
+  concentration is lineage-level biology (motifs span multiple biosamples within
+  one tissue) rather than replicate redundancy from heavily-sequenced cell lines.
+  Already generated by step 2 (`motif_concentration_count_biosample.pdf`).
+
+These replace the lexicon-size bracket, JASPAR-name concentration collapse, and
+redundancy report. Force-merging addresses the near-duplicate and
+cluster-splitting concerns those panels anticipated; the two scatter plots
+carry the remaining biological claim (tissue restriction) and its control
+(not replicate artifacts) directly.
 
 #### Results the figure rests on
 
@@ -2409,6 +2491,108 @@ figures/cross_celltype/cross_celltype_per_model.tsv   # one row per model
 figures/cross_celltype/cross_celltype_{matrix,tiers}.pdf
 ```
 
+### Stratifying by candidate promoter vs. candidate enhancer
+
+`--peak-class` reports top-k tissue-naming accuracy and the differential
+ceiling separately for peaks that are candidate promoters versus candidate
+enhancers, by ENCODE SCREEN Registry V4 classification
+(`data/GRCh38-cCREs.bed.gz`, see `src/download/download_genome.sh`): a peak's
+**midpoint** counts as a candidate promoter if it falls in a PLS
+(promoter-like signature) cCRE, a candidate enhancer if it falls in a
+pELS/dELS (proximal/distal enhancer-like signature) cCRE, and is left
+unclassified if it falls in neither or, at the same base pair, in both. The
+midpoint decides class membership rather than the full peak interval, matching
+how peaks are treated everywhere else in this pipeline (`extract_observed
+_counts` centers a fixed window on the midpoint; `fit_bpnet.py`'s GC-matched
+negatives are midpoint-based too) — the full interval would double-count
+peaks wide enough to span both a promoter- and an enhancer-like cCRE.
+
+```bash
+python src/analysis/cross_celltype_prediction.py --peak-class \
+    --union-peaks data/processed/peaks/union_peaks.bed.gz \
+    --ccre-bed data/GRCh38-cCREs.bed.gz
+```
+
+Both flags default to the paths above, so `--peak-class` alone is usually
+enough once both files exist locally; it exits with an error naming whichever
+is missing rather than silently skipping the stratification.
+
+Off by default (unlike `--specificity-quantile`), since it needs two files
+most runs of this script do not: the union peaks bed (present for every run
+of `count_correlation.py` already) and the cCRE bed (a separate download, only
+otherwise used as a GC-matched negative-sampling background in
+`fit_bpnet.py`).
+
+The join is peak-index alignment, the same footgun `--variable-peaks`/
+`take_columns` already rely on: `classify_peaks_by_cre` returns a Series
+indexed by 0-based position into `--union-peaks`, and that only lines up with
+`observed`/`predicted`'s columns if those were extracted from that exact
+union-peaks file, in that row order. `count_correlation.py` guarantees this
+for any one run (it never reorders `union_peaks.bed.gz`, and `extract_loci`'s
+blacklist/N filtering depends only on the peaks, the FASTA and the blacklist —
+see its `held_out_folds` length-mismatch check) — but two counts matrices from
+*different* union-peaks files, or a stale cached one, would silently
+mis-join. If class counts look implausible (e.g. far fewer than the roughly
+5-10% of the genome SCREEN assigns to PLS/ELS classes), check that
+`--union-peaks` is the exact file `count_correlation.py` extracted from.
+
+Outputs, in addition to the ones above:
+
+```text
+figures/cross_celltype/cross_celltype_topk_{promoter,enhancer}.tsv
+figures/cross_celltype/cross_celltype_topk_{promoter,enhancer}.pdf
+figures/cross_celltype/cross_celltype_differential_ceiling_by_peak_class.tsv
+figures/cross_celltype/cross_celltype_ceiling_summary_by_peak_class.tsv
+figures/cross_celltype/cross_celltype_differential_ceiling_{promoter,enhancer}.pdf
+```
+
+Both panel types write one table and one PDF per class rather than one
+combined figure — pulling "the promoter panel" for the manuscript should not
+mean cropping a two-class one.
+
+**The top-k panel is the exact same tau-quantile sweep as the unstratified
+`cross_celltype_topk.pdf`, run twice** — once restricted to promoter peaks,
+once to enhancer peaks — and rendered with `draw_topk`/`plot_topk`
+unmodified. `topk_by_peak_class` recomputes `peak_specificity` (and applies
+`--min-peak-signal`) *within* each class's own peaks before calling
+`dominant_tissue_accuracy` with its default quantile sweep, rather than
+slicing a specificity computed on the pooled set: tau is relative to the peak
+set it is measured over, so a promoter's tau has to come from ranking it
+against other promoters, not from a computation diluted by enhancers. (An
+earlier version of this panel used a bespoke grouped-bar chart, one bar per
+k per class, with no tau sweep at all — replaced because it answered a
+narrower question than the unstratified panel's own sweep did.) The two
+ceiling panels reuse `draw_differential_ceiling`/`plot_differential_ceiling`
+unmodified, one call per class — the panel design (scatter against the
+diagonal, through-origin fit, tiers by relatedness) does not change with what
+peaks feed it, so there was nothing peak-class-specific to write there.
+
+**Label vocabulary, verified against the live file.** Registry V4 (what
+`download_genome.sh` downloads) uses flat, mutually exclusive labels, never
+comma-compounded the way V3 modifiers were (e.g. the no-longer-used
+"PLS,CTCF-bound" form) — confirmed 2026-09 by fetching
+`https://downloads.wenglab.org/Registry-V4/GRCh38-cCREs.bed` directly rather
+than assuming the schema:
+
+```text
+label         count (906k-row sample, chr1-17)
+dELS          569,312
+pELS          106,334
+CA             86,861
+CA-CTCF        45,714
+TF             40,692
+CA-H3K4me3     27,975
+PLS            19,952
+CA-TF           9,584
+```
+
+`classify_peaks_by_cre` matches `PLS` and `{pELS, dELS}` by **exact** label
+equality, not substring — now that the real vocabulary is verified rather
+than assumed, exact matching is the more precise choice, and it is what keeps
+the four V4-only "chromatin accessible, otherwise unclassified" categories
+(`CA`, `CA-CTCF`, `CA-TF`, `CA-H3K4me3`) out of both classes without having to
+special-case each one.
+
 ### `--held-out-folds` is not optional for this comparison
 
 `extract_predicted_counts` averages all seven fold models at every peak. A
@@ -2992,6 +3176,52 @@ the pooled numbers are quoted.
 - **Counts only.** This compares summed counts. ProCapNet's cross-cell-type
   work was substantially profile-based, and a profile version (per-peak
   Jensen-Shannon distance) would need its own extraction.
+
+## GATA Investigation (Supplementary Note 1)
+
+Supplementary Note 1 investigates why GATA motifs were absent from the original
+ProCapNet K562 models. Two hypotheses are tested: (1) DHS-based negatives
+confound GATA's chromatin-opening role, and (2) shallow sequencing causes
+disproportionate enhancer dropout, reducing GATA training examples.
+
+`compare_k562_peak_classes.py` classifies peaks and negative regions against
+ENCODE SCREEN Registry V4 cCREs (promoter-like PLS, enhancer-like pELS/dELS)
+using the `_peak_classes.py` helper. Run on the cluster where peak BED files
+exist:
+
+```bash
+python src/analysis/compare_k562_peak_classes.py
+```
+
+Outputs:
+
+```text
+figures/gata_investigation/peak_class_breakdown.csv
+```
+
+`plot_gata_investigation.py` generates Supplementary Fig S4 from the peak class
+CSV and MoDISco reports. Panel (a) shows GATA CWMs across model variants with
+seqlet counts; panel (b) shows peak/negative class composition:
+
+```bash
+python src/analysis/plot_gata_investigation.py \
+    --modisco-dirs modisco/bpnet/ENCSR220XSM_count.modisco \
+                   modisco/bpnet/ENCSR261KBXtracks_ENCSR220XSMpeaks_count.modisco \
+                   modisco/bpnet/ENCSR220XSMtracks_ENCSR261KBXpeaks_count.modisco \
+                   modisco/bpnet/ENCSR261KBX_count.modisco \
+                   modisco/bpnet/ENCSR261KBX_dnase_count.modisco \
+    --peak-class-csv figures/gata_investigation/peak_class_breakdown.csv
+```
+
+Outputs:
+
+```text
+figures/gata_investigation/fig_gata_investigation.pdf
+figures/gata_investigation/fig_gata_investigation.png
+```
+
+The attribution and MoDISco SLURM launchers for the five model variants live in
+[`src/bpnet/`](../bpnet/README.md#gata-investigation-supplementary-note-1).
 
 ## Warning Flags
 

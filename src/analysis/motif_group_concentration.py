@@ -410,6 +410,12 @@ def main():
         help="override motifcompendium_{head}_cluster_metadata.tsv",
     )
     parser.add_argument(
+        "--compendium-dir", type=Path, default=None, metavar="DIR",
+        help="override the compendium directory (default: motifcompendium/bpnet/). "
+             "Use to point at a force-merged compendium. "
+             "--cluster-metadata takes precedence.",
+    )
+    parser.add_argument(
         "--min-reads", type=float, default=10_000_000, metavar="N",
         help="drop experiments below N total reads (default: 10000000)",
     )
@@ -490,8 +496,9 @@ def main():
     read_counts = load_read_counts()
     keep = {e for e in experiments_cfg if read_counts.get(e, 0) >= args.min_reads}
 
+    mc_dir = args.compendium_dir or MC_DIR
     metadata_path = args.cluster_metadata or (
-        MC_DIR / f"motifcompendium_{args.head}_cluster_metadata.tsv"
+        mc_dir / f"motifcompendium_{args.head}_cluster_metadata.tsv"
     )
     if not metadata_path.exists():
         print(f"ERROR: cluster metadata not found: {metadata_path}", file=sys.stderr)

@@ -438,3 +438,125 @@ def test_a_clean_run_says_so():
     with cm.record_convergence("within-model", tally):
         pass
     assert cm.format_convergence(tally) == "within-model: converged"
+
+
+# --- force_merge_clusters -----------------------------------------------------
+
+
+class _ForceMergeFake:
+    """A stand-in for mc that returns scripted cluster_final memberships."""
+
+    def __init__(self, memberships):
+        self.calls = []
+        self._memberships = list(memberships)
+        self._read_idx = 0
+
+    def __getitem__(self, key):
+        assert key == "cluster_final"
+        idx = min(self._read_idx, len(self._memberships) - 1)
+        self._read_idx += 1
+        return list(self._memberships[idx])
+
+
+def _make_force_merge_fake(memberships, weight_col_name="weight_col"):
+    fake = _ForceMergeFake(memberships)
+    names = ["similarity_threshold", "save_name", "cluster_on",
+             "cluster_within", "algorithm", weight_col_name,
+             "algorithm_kwargs", "init_clustering_col"]
+    src_params = ", ".join(f"{n}=None" for n in names)
+    ns = {}
+    exec(f"def cluster(self, {src_params}, **kwargs):\n"
+         f"    self.calls.append(dict("
+         f"{', '.join(f'{n}={n}' for n in names)}, **kwargs))\n", ns)
+    fake.cluster = types.MethodType(ns["cluster"], fake)
+    return fake
+
+
+def test_force_merge_converges_immediately():
+    """When DCC + k_centroids don't change membership, loop exits after one pair."""
+    cm = load_module()
+    fake = _make_force_merge_fake([
+        [0, 0, 1, 1, 2],
+        [0, 0, 1, 1, 2],
+    ])
+    convergence = cm.force_merge_clusters(fake, threshold=0.93)
+    assert len(fake.calls) == 2
+
+
+def test_force_merge_iterates_until_stable():
+    """Membership changes after first iteration, stabilises on second."""
+    cm = load_module()
+    fake = _make_force_merge_fake([
+        [0, 0, 1, 1, 2],
+        [0, 0, 0, 1, 1],
+        [0, 0, 0, 1, 1],
+    ])
+    convergence = cm.force_merge_clusters(fake, threshold=0.93)
+    assert len(fake.calls) == 4
+
+
+def test_force_merge_dcc_step_kwargs():
+    cm = load_module()
+    fake = _make_force_merge_fake([[0, 1], [0, 1]])
+    cm.force_merge_clusters(fake, threshold=0.93, density=1.0, seed=42)
+    dcc_call = fake.calls[0]
+    assert dcc_call["algorithm"] == "dcc"
+    assert dcc_call["similarity_threshold"] == 0.93
+    assert dcc_call["cluster_on"] == "cluster_final"
+    assert dcc_call["weight_col"] == "num_seqlets"
+    assert dcc_call["density"] == 1.0
+    assert dcc_call["seed"] == 42
+
+
+def test_force_merge_k_centroids_step_kwargs():
+    cm = load_module()
+    fake = _make_force_merge_fake([[0, 1], [0, 1]])
+    cm.force_merge_clusters(fake, threshold=0.93)
+    kc_call = fake.calls[1]
+    assert kc_call["algorithm"] == "k_centroids"
+    assert kc_call["init_clustering_col"] == "cluster_final"
+    assert kc_call["weight_col"] == "num_seqlets"
+
+
+def test_force_merge_uses_cluster_on_weight_on_older_versions():
+    cm = load_module()
+    fake = _make_force_merge_fake(
+        [[0, 1], [0, 1]],
+        weight_col_name="cluster_on_weight",
+    )
+    cm.force_merge_clusters(fake, threshold=0.93)
+    dcc_call = fake.calls[0]
+    assert dcc_call["cluster_on_weight"] == "num_seqlets"
+    assert "weight_col" not in dcc_call
+
+
+def test_force_merge_returns_convergence_per_iteration():
+    cm = load_module()
+    fake = _make_force_merge_fake([
+        [0, 0, 1, 1, 2],
+        [0, 0, 0, 1, 1],
+        [0, 0, 0, 1, 1],
+    ])
+    convergence = cm.force_merge_clusters(fake, threshold=0.93)
+    assert "force-merge-0" in convergence
+    assert "force-merge-1" in convergence
+
+
+def test_force_merge_provenance_recorded(tmp_path):
+    cm = load_module()
+    cm.write_cluster_metadata(
+        MetadataMC(), "count", out_dir=tmp_path,
+        provenance={
+            "mc_version": "1.1.0",
+            "cluster_algorithm": "cpm_leiden+k_centroids",
+            "within_threshold": 0.95,
+            "across_threshold": 0.90,
+            "force_merge_threshold": 0.93,
+            "force_merge_density": 1.0,
+        },
+    )
+    written = pd.read_csv(
+        tmp_path / "motifcompendium_count_cluster_metadata.tsv", sep="\t")
+    assert "force_merge_threshold" in written.columns
+    assert written["force_merge_threshold"].iloc[0] == pytest.approx(0.93)
+    assert written["force_merge_density"].iloc[0] == pytest.approx(1.0)

@@ -991,7 +991,13 @@ def main():
                         help="where the other scripts wrote their tables")
     parser.add_argument("--modisco-h5", type=Path, required=True, metavar="PATH",
                         help="motifcompendium_{head}_cluster_averages.h5, or "
-                             "'auto' to look under motifcompendium/bpnet/")
+                             "'auto' to look under --compendium-dir")
+    parser.add_argument(
+        "--compendium-dir", type=Path, default=None, metavar="DIR",
+        help="override the compendium directory (default: motifcompendium/bpnet/). "
+             "Affects --modisco-h5 auto resolution. Use to point at a "
+             "force-merged compendium.",
+    )
     parser.add_argument("--group-level", default="tissue",
                         choices=["tissue", "biosample"])
     parser.add_argument(
@@ -1211,9 +1217,10 @@ def main():
     if args.with_metaplots and not category_label_explicit:
         args.category_label = "header"
 
+    mc_dir = args.compendium_dir or MC_DIR
     h5_path = args.modisco_h5
     if str(h5_path) == "auto":
-        h5_path = MC_DIR / f"motifcompendium_{args.head}_cluster_averages.h5"
+        h5_path = mc_dir / f"motifcompendium_{args.head}_cluster_averages.h5"
 
     needed = {
         "curves": args.in_dir / f"motif_rarefaction_{args.head}.tsv",

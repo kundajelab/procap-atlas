@@ -72,6 +72,17 @@ def main():
         help="skip experiments with fewer total reads than this (default: 0, disabled)",
     )
     parser.add_argument(
+        "--compendium-dir",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help=(
+            "override the compendium directory, forwarded to "
+            "link_hits_to_compendium.py (default: motifcompendium/bpnet/). "
+            "Use to point at a force-merged compendium."
+        ),
+    )
+    parser.add_argument(
         "--link-args",
         type=str,
         default="",
@@ -137,6 +148,8 @@ def main():
             )
             if args.min_trim_len is not None:
                 link_cmd += f" --min-trim-len {args.min_trim_len}"
+            if args.compendium_dir is not None:
+                link_cmd += f" --compendium-dir {args.compendium_dir}"
             link_cmd += f" {args.link_args}"
 
             sbatch_script = textwrap.dedent(f"""\
