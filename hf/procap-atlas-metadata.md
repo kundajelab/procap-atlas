@@ -22,13 +22,14 @@ This dataset contains metadata and configuration files for the ENCODE PRO-cap at
 
 This repository is intended to be used together with:
 
-- BPNet models: https://huggingface.co/adamyhe/procap-atlas
+- BPNet models: https://huggingface.co/adamyhe/procap-atlas-bpnet
 - Track assets and UCSC hub files: https://huggingface.co/datasets/adamyhe/procap-atlas-tracks
+- Motif discovery results: https://huggingface.co/datasets/adamyhe/procap-atlas-motifs
 - Code repository: https://github.com/kundajelab/procap-atlas
 
 ## Dataset Details
 
-- **Curated by:** Adam Y. He and collaborators
+- **Curated by:** Adam Y. He, Claire Tian, Anshul Kundaje
 - **Source project:** ENCODE PRO-cap atlas
 - **Assay:** PRO-cap
 - **Organism:** Homo sapiens

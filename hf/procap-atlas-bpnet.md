@@ -3,6 +3,7 @@ license: mit
 datasets:
 - adamyhe/procap-atlas-tracks
 - adamyhe/procap-atlas-metadata
+- adamyhe/procap-atlas-motifs
 metrics:
 - pearsonr
 tags:
@@ -30,16 +31,17 @@ Each model takes a 2,114 bp one-hot-encoded DNA sequence window as input and pre
 
 ## Model Details
 
-- **Developed by:** Adam Y. He and collaborators
+- **Developed by:** Adam Y. He, Claire Tian, Anshul Kundaje
 - **Model type:** BPNet
 - **Library:** `bpnet-lite`
 - **Assay:** PRO-cap
 - **Organism:** Homo sapiens
 - **Genome assembly:** GRCh38/hg38
 - **License:** MIT
-- **Model repo:** https://huggingface.co/adamyhe/procap-atlas
+- **Model repo:** https://huggingface.co/adamyhe/procap-atlas-bpnet
 - **Atlas metadata:** https://huggingface.co/datasets/adamyhe/procap-atlas-metadata
 - **Companion track dataset:** https://huggingface.co/datasets/adamyhe/procap-atlas-tracks
+- **Motif discovery results:** https://huggingface.co/datasets/adamyhe/procap-atlas-motifs
 - **Code repository:** https://github.com/kundajelab/procap-atlas
 - **UCSC track hub:** https://mitra.stanford.edu/kundaje/oak/ayhe/procap-atlas/hub/hub.txt
 
@@ -90,7 +92,7 @@ Exact per-experiment results are written by the project benchmark workflow to `p
 
 ## Interpretability
 
-The project includes workflows for DeepLIFT/SHAP-style BPNet attributions, observed-nucleotide attribution BigWig conversion, and TF-MoDISco motif discovery. Attribution outputs are generated per experiment and prediction head and can be viewed alongside PRO-cap signal tracks in genome browsers.
+The project includes workflows for DeepLIFT/SHAP-style BPNet attributions, observed-nucleotide attribution BigWig conversion, and TF-MoDISco motif discovery. Attribution outputs are generated per experiment and prediction head and can be viewed alongside PRO-cap signal tracks in genome browsers. Per-experiment MoDISco results and the atlas-wide MotifCompendium are available at [`adamyhe/procap-atlas-motifs`](https://huggingface.co/datasets/adamyhe/procap-atlas-motifs).
 
 See the attribution and MoDISco workflows in the [`src/bpnet`](https://github.com/kundajelab/procap-atlas/tree/main/src/bpnet) directory for details.
 
