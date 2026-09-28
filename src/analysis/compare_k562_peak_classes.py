@@ -115,13 +115,19 @@ def main():
     col_order = ["total", "promoter", "enhancer", "ambiguous", "other", "pct_promoter", "pct_enhancer"]
     df = df[[c for c in col_order if c in df.columns]]
 
+    out_dir = ROOT / "figures" / "gata_investigation"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "peak_class_breakdown.csv"
+    df.to_csv(csv_path)
+    print(f"Saved to {csv_path}")
+
     print("\n=== Peak class breakdown (ENCODE SCREEN V4 cCREs) ===\n")
     print(df.to_string())
 
     if len(rows) >= 2:
         print("\n=== Key comparisons ===\n")
-        xsm = next((r for r in rows if "XSM" in r["experiment"]), None)
-        kbx = next((r for r in rows if "KBX" in r["experiment"] and "DNase" not in r["experiment"]), None)
+        xsm = next((r for r in rows if r["experiment"] == "XSM (44M reads, GC neg)"), None)
+        kbx = next((r for r in rows if r["experiment"] == "KBX (19M reads, GC neg)"), None)
         if xsm and kbx:
             enh_ratio = xsm["enhancer"] / kbx["enhancer"] if kbx["enhancer"] else float("inf")
             pro_ratio = xsm["promoter"] / kbx["promoter"] if kbx["promoter"] else float("inf")
@@ -130,10 +136,9 @@ def main():
             print(f"XSM/KBX total peaks:    {xsm['total']:,} / {kbx['total']:,} = {xsm['total']/kbx['total']:.1f}x")
             if enh_ratio > pro_ratio:
                 print(f"\nEnhancer peaks scale {enh_ratio/pro_ratio:.1f}x faster than promoter peaks with depth")
-                print("→ Shallow KBX disproportionately loses enhancer peaks (where GATA resides)")
 
-        gc_neg = next((r for r in rows if "GC neg" in r["experiment"]), None)
-        dnase = next((r for r in rows if "DNase" in r["experiment"]), None)
+        gc_neg = next((r for r in rows if r["experiment"] == "KBX GC negatives"), None)
+        dnase = next((r for r in rows if r["experiment"] == "KBX DNase negatives"), None)
         if dnase:
             print(f"\nDNase negatives: {dnase['pct_enhancer']:.1f}% enhancer, {dnase['pct_promoter']:.1f}% promoter")
         if gc_neg:
@@ -141,7 +146,7 @@ def main():
         if dnase and gc_neg:
             enh_fold = dnase["pct_enhancer"] / gc_neg["pct_enhancer"] if gc_neg["pct_enhancer"] else float("inf")
             print(f"\nDHS negatives are {enh_fold:.1f}x enriched for enhancer cCREs vs GC negatives")
-            print("→ DHS negatives include GATA-bound enhancers, teaching the model GATA is non-predictive")
+            print("→ All DHS negatives are accessible chromatin, confounding GATA's chromatin-opening role")
 
 
 if __name__ == "__main__":

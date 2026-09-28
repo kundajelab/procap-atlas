@@ -64,4 +64,5 @@ time uv run --project "$REPO_ROOT" --extra sherlock --frozen modisco motifs \
 time uv run --project "$REPO_ROOT" --extra sherlock --frozen modisco report \
     -i "$OUT_DIR/${MODEL_NAME}_count.modisco.h5" \
     -o "$OUT_DIR/${MODEL_NAME}_count.modisco" \
-    -m "$JASPAR"
+    -m "$JASPAR" \
+    --lite
