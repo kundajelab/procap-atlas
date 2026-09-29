@@ -46,15 +46,18 @@ apptainer build cherimoya.sif cherimoya.def
 ```
 
 `cherimoya.def` installs Cherimoya from an exact upstream commit
-(`8e4283fe56db4a29418c1d8119da3240d7c709ba`) rather than a git tag or the
+(`73ce51841b6af672bcd423b969ce6f06dd40fc9d`) rather than a git tag or the
 PyPI wheel. These turned out *not* to be equivalent: PyPI's `0.2.0` release
 predates a since-landed rewrite (EMA weight averaging, checkpoint selection
 switched from a combined loss to `valid_count_corr`), and the upstream
 `v0.2.0` git tag was force-moved to include that rewrite -- so a tag
 reference can silently change what gets installed, while an exact commit
-can't. `src/cherimoya/sherlock_native/setup_env.sh` and the root
-`pyproject.toml`'s `cherimoya` extra are pinned to this same commit so all
-three install paths train under identical code.
+can't. This commit also includes DeepLIFT/SHAP attribution support
+(`attribution_ops()` for `FusedDilatedConvNorm` and `_ProfileLogitScaling`,
+plus the `cherimoya attribute` CLI), which requires tangermeme >= 1.5.0.
+`src/cherimoya/sherlock_native/setup_env.sh` and the root `pyproject.toml`'s
+`cherimoya` extra are pinned to this same commit so all three install paths
+run identical code.
 
 `cherimoya-0.1.0.def` is kept as an archived definition for the previous
 `cherimoya==0.1.0` release (still on the old `nvcr.io/nvidia/pytorch:26.05-py3`

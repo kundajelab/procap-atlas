@@ -184,6 +184,66 @@ prints one runnable command per experiment instead of running them, which you
 can pipe into something like `simple_gpu_scheduler` to fan a personal
 multi-GPU box out in parallel.
 
+## Attributions
+
+```bash
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM --head count
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM --reference-mode dinucleotide
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM --model-dir models/cherimoya/ENCSR882DWM_gc0.1
+```
+
+`attribute_cherimoya.py` is a wrapper around tangermeme's `deep_lift_shap`
+and cherimoya's `attribution_ops()`, analogous to `attribute_bpnet.py`. It
+loads all fold models, computes hypothetical attributions on all peaks
+genome-wide, averages across folds, and saves the result. The wrapper exists
+instead of using `cherimoya attribute` directly because the CLI does not
+support custom reference callables, attributes a single model rather than
+averaging across folds, and crops attributions to 400bp rather than saving
+full-width.
+
+`attribute_cherimoya.py` defaults to the genomic nucleotide-frequency
+reference (one soft PFM reference per input sequence with the sequence's
+observed A/C/G/T frequencies repeated at every position), matching
+`attribute_bpnet.py`'s default — see the [BPNet Attributions
+section](../bpnet/README.md#attributions) for why. Use `--reference-mode
+dinucleotide` and `--n-shuffles` for dinucleotide-shuffled references.
+
+`cherimoya.deep_lift_shap.attribution_ops()` registers closed-form DeepLIFT
+rules for `FusedDilatedConvNorm` (the fused depthwise-conv + layernorm
+Triton kernel) and `_ProfileLogitScaling`, built on tangermeme >= 1.5.0's
+closed-form layernorm rule. Without these rules the attributions do not sum
+to the change in the prediction. Models are loaded with `compile=False`
+because DeepLIFT's backward hooks cause graph breaks under `torch.compile`.
+
+Outputs:
+
+```text
+attributions/cherimoya/{model_dir_name}_{head}.npz
+attributions/cherimoya/{experiment}_ohe.npz
+```
+
+Submit attribution jobs through SLURM:
+
+```bash
+python src/cherimoya/attribute/launch.py --dry-run
+python src/cherimoya/attribute/launch.py --head profile --head count
+python src/cherimoya/attribute/launch.py --min-reads 20000000
+python src/cherimoya/attribute/launch.py --local
+python src/cherimoya/attribute/launch.py --local --dry-run | simple_gpu_scheduler --gpus 0 1 2 3
+```
+
+`launch.py` submits one SLURM job per (experiment, head) pair. Experiments
+with any missing fold model are skipped, as are experiments with an existing
+attribution output (override with `--force`). By default, jobs run via
+`apptainer exec --nv` against the Cherimoya Apptainer image (see
+[`apptainer/`](apptainer/README.md)); `--native` uses SRCC's
+`py-pytorch`/`py-triton` modules instead (see
+[`sherlock_native/`](sherlock_native/README.md)). `--local` bypasses SLURM
+entirely and runs each experiment directly in the foreground (still via
+Apptainer by default; add `--native` for a `uv run --extra cherimoya`
+invocation instead).
+
 ## Architecture Sweep (deprecated)
 
 **Deprecated**: this sweep predates the current Cherimoya v0.2.0 models and

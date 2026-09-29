@@ -24,7 +24,7 @@ From: pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
     # Install non-PyTorch Cherimoya dependencies while preserving the
     # base image's own torch/torchvision build (torch 2.13.0, CUDA 12.6).
     python -m pip install --break-system-packages pynvml \
-        numpy scipy pandas h5py tqdm seaborn modisco tangermeme \
+        numpy scipy pandas h5py tqdm seaborn modisco "tangermeme>=1.5.0" \
         bam2bw joblib
 
     # bpnet-lite declares an unconditional macs3 dependency that nothing in
@@ -35,13 +35,12 @@ From: pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
 
     # Cherimoya + likely genomics/CLI dependencies. --no-deps avoids replacing
     # the base image's torch 2.13.0 build with a fresh PyPI resolve. Pinned to
-    # an exact commit rather than the "v0.2.0" tag or the PyPI wheel: the
-    # v0.2.0 tag was force-moved upstream to this commit (adds EMA weight
-    # averaging and switches checkpoint selection to valid_count_corr instead
-    # of a combined loss), but the PyPI 0.2.0 release predates that rewrite
-    # and still has the old behavior -- a tag can move again, so pin the
-    # commit directly for reproducibility.
-    python -m pip install --break-system-packages --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba"
+    # an exact commit: the PyPI 0.2.0 wheel predates the EMA/checkpoint rewrite
+    # and the "v0.2.0" tag was force-moved, so neither is stable. This commit
+    # adds DeepLIFT/SHAP attribution support (attribution_ops() for
+    # FusedDilatedConvNorm and _ProfileLogitScaling, plus `cherimoya attribute`)
+    # on top of the earlier changes. Requires tangermeme>=1.5.0 above.
+    python -m pip install --break-system-packages --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@73ce51841b6af672bcd423b969ce6f06dd40fc9d"
 
     # Optional but useful for source/debugging
     python -m pip install --break-system-packages pytest ipython jupyter pandas polars pyBigWig pysam
