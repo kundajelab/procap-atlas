@@ -319,7 +319,7 @@ def main():
                     f'python3 "$ATTRIBUTE_SCRIPT" -e {shlex.quote(exp_id)} '
                     f"--head {head} -v{extra_attr_args}"
                 )
-            setup_block = "\n            ".join(setup_lines)
+            setup_block = "\n                ".join(setup_lines)
 
             sbatch_script = textwrap.dedent(f"""\
                 #!/bin/bash -l
