@@ -103,8 +103,8 @@ def main():
         "-l",
         "--leiden",
         type=int,
-        default=50,
-        help="number of leiden clusters to use (default: 50)",
+        default=2,
+        help="number of leiden clusters to use (default: 2)",
     )
     parser.add_argument(
         "-w",
