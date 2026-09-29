@@ -211,11 +211,6 @@ def main():
     np.savez_compressed(out_path, np.stack(attributions).mean(axis=0))
     print(f"\nAttributions saved to {out_path}")
 
-    ohe_path = out_dir / f"{args.experiment}_ohe.npz"
-    if not ohe_path.exists():
-        np.savez_compressed(ohe_path, X.numpy())
-        print(f"OHE saved to {ohe_path}")
-
 
 if __name__ == "__main__":
     main()

@@ -220,8 +220,20 @@ Outputs:
 
 ```text
 attributions/cherimoya/{model_dir_name}_{head}.npz
+```
+
+One-hot-encoded sequences (needed by MoDISco) are saved separately:
+
+```bash
+python src/cherimoya/attribute/save_ohe.py -e ENCSR882DWM
+```
+
+```text
 attributions/cherimoya/{experiment}_ohe.npz
 ```
+
+`save_ohe.py` does not need a GPU or the Cherimoya environment — it runs
+under the base `uv` project.
 
 Submit attribution jobs through SLURM:
 
