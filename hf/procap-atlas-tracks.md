@@ -30,13 +30,14 @@ https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main/ucsc/hu
 
 This repository is intended to be used together with:
 
-- BPNet models: https://huggingface.co/adamyhe/procap-atlas
+- BPNet models: https://huggingface.co/adamyhe/procap-atlas-bpnet
 - Atlas metadata: https://huggingface.co/datasets/adamyhe/procap-atlas-metadata
+- Motif discovery results: https://huggingface.co/datasets/adamyhe/procap-atlas-motifs
 - Code repository: https://github.com/kundajelab/procap-atlas
 
 ## Dataset Details
 
-- **Curated by:** Adam Y. He and collaborators
+- **Curated by:** Adam Y. He, Claire Tian, Anshul Kundaje
 - **Source project:** ENCODE PRO-cap atlas
 - **Assay:** PRO-cap
 - **Organism:** Homo sapiens
