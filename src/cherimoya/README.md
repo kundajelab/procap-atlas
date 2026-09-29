@@ -256,6 +256,44 @@ entirely and runs each experiment directly in the foreground (still via
 Apptainer by default; add `--native` for a `uv run --extra cherimoya`
 invocation instead).
 
+## MoDISco
+
+Run motif discovery after attribution and OHE files exist:
+
+```bash
+python src/cherimoya/modisco/launch.py
+python src/cherimoya/modisco/launch.py --head profile --head count
+python src/cherimoya/modisco/launch.py --dry-run
+python src/cherimoya/modisco/launch.py --min-reads 20000000
+python src/cherimoya/modisco/launch.py -n 500000 -l 30 -w 500
+```
+
+By default, `launch.py` submits the 30 experiments with the largest processed
+peak sets using the timeout-relaunch SLURM defaults (`--partition akundaje` and
+`--time 6-23:00:00`). Remaining jobs use the standard launch defaults
+(`--partition normal,akundaje,owners` and `--time 2-00:00:00`). Override the
+large-job split with `--large-peak-top-n`, `--large-peak-partition`, or
+`--large-peak-time`; use `--large-peak-top-n 0` to disable it.
+
+Generate motif reports after `.h5` files are complete:
+
+```bash
+python src/cherimoya/modisco/launch_report.py
+python src/cherimoya/modisco/launch_report.py --head profile
+python src/cherimoya/modisco/launch_report.py --dry-run
+```
+
+MoDISco is CPU-only and runs under the base `uv` project environment (not
+the `cherimoya` extra).
+
+Outputs:
+
+```text
+modisco/cherimoya/{experiment}_{head}.modisco.h5
+modisco/cherimoya/{experiment}_{head}.modisco/
+logs/cherimoya_modisco/
+```
+
 ## Architecture Sweep (deprecated)
 
 **Deprecated**: this sweep predates the current Cherimoya v0.2.0 models and
