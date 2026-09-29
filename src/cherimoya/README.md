@@ -265,7 +265,7 @@ python src/cherimoya/modisco/launch.py
 python src/cherimoya/modisco/launch.py --head profile --head count
 python src/cherimoya/modisco/launch.py --dry-run
 python src/cherimoya/modisco/launch.py --min-reads 20000000
-python src/cherimoya/modisco/launch.py -n 500000 -l 30 -w 500
+python src/cherimoya/modisco/launch.py -n 500000 -w 500
 ```
 
 By default, `launch.py` submits the 30 experiments with the largest processed
