@@ -82,14 +82,13 @@ python3 -m pip install \
 # provided torch/triton with PyPI builds.
 #
 # cherimoya is pinned to an exact commit rather than PyPI's 0.2.0 release:
-# the upstream "v0.2.0" git tag was force-moved to a commit that adds EMA
-# weight averaging and switches checkpoint selection to valid_count_corr
-# instead of a combined loss, but the PyPI 0.2.0 wheel predates that rewrite
-# and still has the old behavior. Pinning the commit directly (matching
-# src/cherimoya/apptainer/cherimoya.def) keeps this path on the same
-# algorithm instead of silently training under different code.
+# Pinned to an exact commit (matching src/cherimoya/apptainer/cherimoya.def
+# and the root pyproject.toml's cherimoya extra). The PyPI 0.2.0 wheel
+# predates the EMA/checkpoint rewrite and the "v0.2.0" tag was force-moved,
+# so neither is stable. This commit adds DeepLIFT/SHAP attribution support
+# (attribution_ops(), `cherimoya attribute` CLI) on top of the earlier changes.
 python3 -m pip install --no-deps bpnet-lite
-python3 -m pip install --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@8e4283fe56db4a29418c1d8119da3240d7c709ba"
+python3 -m pip install --no-deps "cherimoya @ git+https://github.com/jmschrei/cherimoya.git@73ce51841b6af672bcd423b969ce6f06dd40fc9d"
 
 echo "Cherimoya native Sherlock environment ready at $VENV_DIR"
 echo "Activate it in future sessions with:"
