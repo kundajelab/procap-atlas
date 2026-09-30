@@ -234,6 +234,7 @@ def main():
                 ml biology
                 ml htslib
                 ml ucsc-utils
+                ml gcc/14.2.0
 
                 mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
                 export NUMBA_NUM_THREADS={args.cpus_per_task}
