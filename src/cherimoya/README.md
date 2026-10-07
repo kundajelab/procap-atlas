@@ -294,6 +294,98 @@ modisco/cherimoya/{experiment}_{head}.modisco/
 logs/cherimoya_modisco/
 ```
 
+## Motif Compendium
+
+Cluster per-experiment MoDISco motifs into atlas-wide motif families using
+MotifCompendium, after MoDISco h5 files exist:
+
+```bash
+python src/cherimoya/motifcompendium/cluster_motifs.py
+python src/cherimoya/motifcompendium/cluster_motifs.py --head count
+python src/cherimoya/motifcompendium/cluster_motifs.py --head count --head profile
+python src/cherimoya/motifcompendium/cluster_motifs.py --force-merge-threshold 0.93
+python src/cherimoya/motifcompendium/cluster_motifs.py --from-mc motifcompendium/cherimoya/motifcompendium_count_all_clustered.mc --head count --force-merge-threshold 0.93
+```
+
+`cluster_motifs.py` imports the shared clustering logic from
+`src/bpnet/motifcompendium/cluster_motifs.py` (model-family-agnostic) and
+points it at `modisco/cherimoya/` inputs and `motifcompendium/cherimoya/`
+outputs.
+
+Outputs:
+
+```text
+motifcompendium/cherimoya/motifcompendium_{head}_all_raw.mc
+motifcompendium/cherimoya/motifcompendium_{head}_all_clustered.mc
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_averages.h5
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_averages.meme
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_metadata.tsv
+motifcompendium/cherimoya/motifcompendium_{head}_pattern_to_cluster.tsv
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_report.html
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_summary.html
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_logos/
+```
+
+## Fi-NeMo Hit Calling
+
+Call motif instances in Cherimoya attributions with Fi-NeMo, after attribution
+and MoDISco files exist:
+
+```bash
+python src/cherimoya/hitcall/call_hits_cherimoya.py -e ENCSR882DWM
+python src/cherimoya/hitcall/call_hits_cherimoya.py -e ENCSR882DWM --head count
+python src/cherimoya/hitcall/call_hits_cherimoya.py -e ENCSR882DWM --global-lambda 0.6
+```
+
+Hits are called against each experiment's own per-experiment MoDISco motif set
+(matching the BPNet workflow). A hit's `motif_name` is only meaningful within
+that experiment; run `link_hits_to_compendium.py` afterward to relabel hits
+with the atlas-wide MotifCompendium cluster ID for cross-experiment
+comparability.
+
+Submit hit-calling jobs through SLURM:
+
+```bash
+python src/cherimoya/hitcall/launch.py --dry-run
+python src/cherimoya/hitcall/launch.py --head profile
+python src/cherimoya/hitcall/launch.py --head profile --head count
+python src/cherimoya/hitcall/launch.py --min-reads 20000000
+```
+
+Outputs:
+
+```text
+hitcalls/cherimoya/{experiment}_{head}/hits.tsv
+hitcalls/cherimoya/{experiment}_{head}/hits_unique.tsv
+hitcalls/cherimoya/{experiment}_{head}/regions.npz
+hitcalls/cherimoya/{experiment}_{head}/peaks.narrowPeak.gz
+logs/cherimoya_hitcall/
+```
+
+### Linking Hits to Compendium
+
+Relabel per-experiment hits with atlas-wide MotifCompendium cluster identities:
+
+```bash
+python src/cherimoya/hitcall/link_hits_to_compendium.py -e ENCSR882DWM
+python src/cherimoya/hitcall/link_hits_to_compendium.py -e ENCSR882DWM --head count
+```
+
+Submit link jobs through SLURM:
+
+```bash
+python src/cherimoya/hitcall/launch_link.py --dry-run
+python src/cherimoya/hitcall/launch_link.py --head profile --head count
+python src/cherimoya/hitcall/launch_link.py --min-reads 20000000
+```
+
+Outputs:
+
+```text
+hitcalls/cherimoya/{experiment}_{head}/hits_linked.tsv.gz
+logs/cherimoya_hitcall_link/
+```
+
 ## Architecture Sweep (deprecated)
 
 **Deprecated**: this sweep predates the current Cherimoya v0.2.0 models and
