@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Submit SLURM jobs to relabel per-experiment Fi-NeMo hits with their
+atlas-wide MotifCompendium cluster identity.
+
+Cherimoya-specific counterpart to src/bpnet/hitcall/launch_link.py.
+Reads experiment IDs from configs/experiment_config.yaml and submits one
+sbatch job per (experiment, head) pair via link_hits_to_compendium.py.
+
+Jobs are skipped if hits_linked.tsv already exists or if neither
+hits_filtered.tsv nor hits_unique.tsv exists yet (run
+call_hits_cherimoya.py/hitcall/launch.py first).
+
+Usage:
+    python src/cherimoya/hitcall/launch_link.py                    # submit all experiments, profile head
+    python src/cherimoya/hitcall/launch_link.py --dry-run           # print sbatch scripts without submitting
+    python src/cherimoya/hitcall/launch_link.py --head profile --head count
+    python src/cherimoya/hitcall/launch_link.py --min-reads 20000000
+    python src/cherimoya/hitcall/launch_link.py --min-trim-len 6
+"""
+
+import argparse
+import subprocess
+import sys
+import textwrap
+from pathlib import Path
+
+import pandas as pd
+import yaml
+
+from call_hits_cherimoya import resolve_experiment_paths
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+
+_BPNET_HITCALL_DIR = str(REPO_ROOT / "src" / "bpnet" / "hitcall")
+if _BPNET_HITCALL_DIR not in sys.path:
+    sys.path.insert(0, _BPNET_HITCALL_DIR)
+
+import compressed_io
+
+CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
+N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
+LINK_SCRIPT = (
+    REPO_ROOT / "src" / "cherimoya" / "hitcall" / "link_hits_to_compendium.py"
+)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print sbatch scripts without submitting",
+    )
+    parser.add_argument(
+        "--head",
+        type=str,
+        action="append",
+        choices=["profile", "count"],
+        default=None,
+        metavar="HEAD",
+        help="attribution/motif head(s) to link; repeatable (default: profile)",
+    )
+    parser.add_argument("--partition", type=str, default="normal,akundaje,owners")
+    parser.add_argument("--cpus-per-task", type=int, default=1)
+    parser.add_argument("--mem", type=str, default="16G")
+    parser.add_argument("--time", type=str, default="30:00")
+    parser.add_argument(
+        "--min-reads",
+        type=int,
+        default=0,
+        help="skip experiments with fewer total reads than this (default: 0, disabled)",
+    )
+    parser.add_argument(
+        "--compendium-dir",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help="override the compendium directory (default: motifcompendium/cherimoya/)",
+    )
+    parser.add_argument(
+        "--link-args",
+        type=str,
+        default="",
+        help="extra arguments forwarded to link_hits_to_compendium.py",
+    )
+    parser.add_argument(
+        "--min-trim-len",
+        type=int,
+        default=None,
+        metavar="BP",
+        help="must match the value hitcall/launch.py was run with, if any",
+    )
+    args = parser.parse_args()
+
+    heads = args.head if args.head is not None else ["profile"]
+
+    with open(CONFIG_PATH) as f:
+        config = yaml.safe_load(f)
+    experiments = list(config["experiments"].keys())
+
+    read_counts_df = pd.read_csv(
+        N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
+    )
+    read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
+
+    log_dir = REPO_ROOT / "logs" / "cherimoya_hitcall_link"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    submitted = 0
+    skipped_done = 0
+    skipped_missing = 0
+    skipped_reads = 0
+    for exp_id in experiments:
+        n_reads = read_counts.get(exp_id, 0)
+        if n_reads < args.min_reads:
+            skipped_reads += 1
+            continue
+
+        for head in heads:
+            _, hits_dir, _, suffix = resolve_experiment_paths(
+                exp_id, head, args.min_trim_len
+            )
+
+            hits_filtered = hits_dir / "hits_filtered.tsv"
+            hits_unique = hits_dir / "hits_unique.tsv"
+            if not compressed_io.exists(hits_filtered) and not compressed_io.exists(hits_unique):
+                skipped_missing += 1
+                continue
+
+            hits_linked = hits_dir / "hits_linked.tsv"
+            if compressed_io.exists(hits_linked):
+                skipped_done += 1
+                continue
+
+            job_name = f"cherimoya_hitcall_link_{exp_id}_{head}{suffix}"
+            link_cmd = (
+                f"uv run --project {REPO_ROOT} --extra sherlock --frozen python {LINK_SCRIPT} "
+                f"-e {exp_id} --head {head} -v"
+            )
+            if args.min_trim_len is not None:
+                link_cmd += f" --min-trim-len {args.min_trim_len}"
+            if args.compendium_dir is not None:
+                link_cmd += f" --compendium-dir {args.compendium_dir}"
+            link_cmd += f" {args.link_args}"
+
+            sbatch_script = textwrap.dedent(f"""\
+                #!/bin/bash -l
+                #SBATCH --job-name={job_name}
+                #SBATCH --ntasks=1
+                #SBATCH --ntasks-per-node=1
+                #SBATCH --nodes=1
+                #SBATCH --cpus-per-task={args.cpus_per_task}
+                #SBATCH --mem={args.mem}
+                #SBATCH --partition={args.partition}
+                #SBATCH --time={args.time}
+                #SBATCH --output={log_dir}/{job_name}.out
+                #SBATCH --error={log_dir}/{job_name}.err
+                #SBATCH -C NO_GPU
+                #SBATCH --requeue
+
+                ml biology
+                ml htslib
+
+                mamba activate "${{PROCAP_ATLAS_ENV:-procap-atlas}}"
+                {link_cmd}
+            """)
+
+            if args.dry_run:
+                print(f"--- {job_name} ---")
+                print(sbatch_script)
+                submitted += 1
+                continue
+
+            result = subprocess.run(
+                ["sbatch"], input=sbatch_script, capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                print(f"{job_name}: {result.stdout.strip()}")
+                submitted += 1
+            else:
+                print(
+                    f"ERROR submitting {job_name}: {result.stderr.strip()}",
+                    file=sys.stderr,
+                )
+
+    action = "Would submit" if args.dry_run else "Submitted"
+    total = len(experiments) * len(heads)
+    print(
+        f"\n{action} {submitted} jobs, skipped {skipped_reads} experiments "
+        f"with <{args.min_reads:,} reads, skipped {skipped_missing} missing "
+        f"hits_filtered.tsv/hits_unique.tsv, skipped {skipped_done} already "
+        f"linked ({total} total)"
+    )
+
+
+if __name__ == "__main__":
+    main()
