@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software or the PRO-cap atlas resources, please cite the preprint below."
+title: "PRO-cap Atlas"
+type: software
+authors:
+  - family-names: He
+    given-names: Adam Youlin
+    affiliation: Stanford University
+license: MIT
+repository-code: "https://github.com/kundajelab/procap-atlas"
+preferred-citation:
+  type: article
+  title: "A comprehensive map of the sequence basis of transcription initiation in humans"
+  authors:
+    - family-names: He
+      given-names: Adam Y.
+    - family-names: Tian
+      given-names: Claire
+    - family-names: Kundaje
+      given-names: Anshul
+      affiliation: Stanford University
+  journal: bioRxiv
+  year: 2026
+  month: 10
+  doi: "10.64898/2026.10.29.762743"
+  url: "https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1"

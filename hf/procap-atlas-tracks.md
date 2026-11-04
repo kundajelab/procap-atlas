@@ -63,7 +63,7 @@ Use this dataset to:
 
 ### Out-of-Scope Use
 
-This dataset does not contain raw sequencing reads, raw ENCODE analysis files, trained model checkpoints, or full experiment metadata tables. Model checkpoints are hosted in [`adamyhe/procap-atlas`](https://huggingface.co/adamyhe/procap-atlas), and metadata/configuration files are hosted in [`adamyhe/procap-atlas-metadata`](https://huggingface.co/datasets/adamyhe/procap-atlas-metadata). These tracks are research resources and should not be used for clinical or diagnostic decision-making.
+This dataset does not contain raw sequencing reads, raw ENCODE analysis files, trained model checkpoints, or full experiment metadata tables. Model checkpoints are hosted in [`adamyhe/procap-atlas-bpnet`](https://huggingface.co/adamyhe/procap-atlas-bpnet), and metadata/configuration files are hosted in [`adamyhe/procap-atlas-metadata`](https://huggingface.co/datasets/adamyhe/procap-atlas-metadata). These tracks are research resources and should not be used for clinical or diagnostic decision-making.
 
 ## Dataset Structure
 
@@ -119,7 +119,7 @@ The `ucsc/` directory contains the track hub configuration. Experiments are grou
 
 ### Source Data
 
-The source experiments are ENCODE PRO-cap datasets. Observed signal tracks and peak calls are downloaded from ENCODE using curated manifests in the companion [`procap-atlas`](https://github.com/kundajelab/procap-atlas) repository.
+The source experiments are ENCODE PRO-cap datasets. Observed signal tracks and peak calls are downloaded from ENCODE using curated manifests in the companion [`procap-atlas`](https://github.com/kundajelab/procap-atlas) repository. The original data producers are ENCODE consortium laboratories that generated and released these PRO-cap experiments; the majority of these datasets are described in the preprint: [Shah et al., 2025](https://www.biorxiv.org/content/10.1101/2025.09.24.676871).
 
 ### Processing
 
@@ -161,7 +161,22 @@ Programmatic users should pair these tracks with `configs/experiment_config.yaml
 
 ## Citation
 
-If you use these tracks, please cite the PRO-cap atlas repository and the underlying ENCODE experiments ([Shah et al., 2025](https://www.biorxiv.org/content/10.1101/2025.09.24.676871)). For model-derived contribution score tracks, also cite the companion BPNet model repository and relevant attribution tooling.
+If you use these tracks, please cite the PRO-cap atlas preprint:
+
+> He, A. Y., Tian, C. & Kundaje, A. A comprehensive map of the sequence basis of transcription initiation in humans. *bioRxiv* (2026). [doi:10.64898/2026.10.29.762743](https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1)
+
+```bibtex
+@article{he2026procapatlas,
+  title   = {A comprehensive map of the sequence basis of transcription initiation in humans},
+  author  = {He, Adam Y. and Tian, Claire and Kundaje, Anshul},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.10.29.762743},
+  url     = {https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1}
+}
+```
+
+Please also reference this Hugging Face repository by URL: <https://huggingface.co/datasets/adamyhe/procap-atlas-tracks>.
 
 ## Contact
 

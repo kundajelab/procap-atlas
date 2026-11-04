@@ -62,7 +62,7 @@ Use this dataset to:
 
 ### Out-of-Scope Use
 
-This dataset does not contain trained model checkpoints, raw sequencing data, or processed signal tracks. Models are hosted in [`adamyhe/procap-atlas`](https://huggingface.co/adamyhe/procap-atlas), and track assets are hosted in [`adamyhe/procap-atlas-tracks`](https://huggingface.co/datasets/adamyhe/procap-atlas-tracks). CWMs are attribution-derived motif representations, not position frequency matrices (PFMs); they reflect model-learned sequence contributions and should not be treated as binding affinity measurements. These are research artifacts and should not be used for clinical or diagnostic decision-making.
+This dataset does not contain trained model checkpoints, raw sequencing data, or processed signal tracks. Models are hosted in [`adamyhe/procap-atlas-bpnet`](https://huggingface.co/adamyhe/procap-atlas-bpnet), and track assets are hosted in [`adamyhe/procap-atlas-tracks`](https://huggingface.co/datasets/adamyhe/procap-atlas-tracks). CWMs are attribution-derived motif representations, not position frequency matrices (PFMs); they reflect model-learned sequence contributions and should not be treated as binding affinity measurements. These are research artifacts and should not be used for clinical or diagnostic decision-making.
 
 ## Dataset Structure
 
@@ -113,7 +113,7 @@ Key files:
 
 ### Source Data
 
-MoDISco results are generated from DeepLIFT attribution scores computed on trained BPNet models from the companion model repository. Each experiment's attribution scores are computed over its processed peak regions and GC-matched negative regions across all seven chromosome folds.
+MoDISco results are generated from DeepLIFT attribution scores computed on trained BPNet models from the companion model repository. Each experiment's attribution scores are computed over its processed peak regions and GC-matched negative regions across all seven chromosome folds. The models are trained on ENCODE PRO-cap experiments generated and released by ENCODE consortium laboratories; the majority of these datasets are described in the preprint: [Shah et al., 2025](https://www.biorxiv.org/content/10.1101/2025.09.24.676871).
 
 ### Processing
 
@@ -126,7 +126,7 @@ The compendium excludes uncapped-library experiments and experiments below a min
 ## Bias, Risks, and Limitations
 
 - CWMs are model-derived attribution summaries, not direct measurements of TF binding affinity. They reflect what the model learned and are subject to model limitations and training data biases.
-- ENCODE biosample coverage is uneven across cell types, tissues, and conditions. Motif recovery depends on sequencing depth, peak set size, and negative training set composition (see Supplementary Note 1 in the companion paper for an example with GATA motifs).
+- ENCODE biosample coverage is uneven across cell types, tissues, and conditions. Motif recovery depends on sequencing depth, peak set size, and negative training set composition (see Supplementary Note 1 in the [companion paper](https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1) for an example with GATA motifs).
 - Compendium cluster identities (`cluster_final` IDs) are specific to the clustering run and its parameters. Different clustering thresholds, experiment subsets, or MotifCompendium versions produce different cluster IDs. The `pattern_to_cluster.tsv` mapping is the authoritative link between per-experiment motifs and atlas clusters.
 - The `.modisco.tar` report archives can be large. Extract individual archives as needed rather than unpacking all at once.
 
@@ -177,11 +177,22 @@ See `src/bpnet/README.md` in the companion repository for full hit calling, comp
 
 ## Citation
 
-If you use these motif results, please cite the PRO-cap atlas repository and the underlying ENCODE experiments ([Shah et al., 2025](https://www.biorxiv.org/content/10.1101/2025.09.24.676871)). Please also cite the software dependencies used for motif discovery and clustering:
+If you use these motif results, please cite the PRO-cap atlas preprint:
 
-- [tfmodisco-lite](https://github.com/jmschrei/tfmodisco-lite)
-- [tangermeme](https://github.com/jmschrei/tangermeme) (Fi-NeMo hit calling)
-- [MotifCompendium](https://github.com/kundajelab/MotifCompendium) (atlas-wide clustering)
+> He, A. Y., Tian, C. & Kundaje, A. A comprehensive map of the sequence basis of transcription initiation in humans. *bioRxiv* (2026). [doi:10.64898/2026.10.29.762743](https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1)
+
+```bibtex
+@article{he2026procapatlas,
+  title   = {A comprehensive map of the sequence basis of transcription initiation in humans},
+  author  = {He, Adam Y. and Tian, Claire and Kundaje, Anshul},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.10.29.762743},
+  url     = {https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1}
+}
+```
+
+Please also reference this Hugging Face repository by URL: <https://huggingface.co/datasets/adamyhe/procap-atlas-motifs>.
 
 ## Contact
 

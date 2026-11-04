@@ -1,5 +1,6 @@
 # PRO-cap Atlas
 
+[![bioRxiv](https://img.shields.io/badge/bioRxiv-10.64898%2F2026.10.29.762743-b31b1b)](https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1)
 [![Weights](https://img.shields.io/badge/%F0%9F%A4%97-Weights-yellow)](https://huggingface.co/collections/adamyhe/procap-atlas)
 [![Open locus viewer in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kundajelab/procap-atlas/blob/main/notebooks/procap_atlas_bpnet_locus_viewer.ipynb)
 
@@ -152,3 +153,23 @@ peaks, and GC-matched negatives. See
   - TF-MoDISco motif calls
 - [UCSC track hub](https://genome.ucsc.edu/cgi-bin/hgHubConnect):
   `https://huggingface.co/datasets/adamyhe/procap-atlas-tracks/resolve/main/ucsc/hub.txt`
+
+## Citation
+
+If you use this repository, the PRO-cap atlas models, or derived resources,
+please cite the preprint:
+
+> He, A. Y., Tian, C. & Kundaje, A. A comprehensive map of the sequence basis of transcription initiation in humans. *bioRxiv* (2026). [doi:10.64898/2026.10.29.762743](https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1)
+
+```bibtex
+@article{he2026procapatlas,
+  title   = {A comprehensive map of the sequence basis of transcription initiation in humans},
+  author  = {He, Adam Y. and Tian, Claire and Kundaje, Anshul},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.10.29.762743},
+  url     = {https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1}
+}
+```
+
+A machine-readable citation is in [`CITATION.cff`](CITATION.cff).

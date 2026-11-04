@@ -124,7 +124,22 @@ See the repository README and `src/bpnet/README.md` for the additional details.
 
 ## Citation
 
-If you use these models, please cite the PRO-cap atlas model repository and the underlying software dependencies used for training and interpretation, including `bpnet-lite`, `tangermeme`, and `tfmodisco`.
+If you use these models, please cite the PRO-cap atlas preprint:
+
+> He, A. Y., Tian, C. & Kundaje, A. A comprehensive map of the sequence basis of transcription initiation in humans. *bioRxiv* (2026). [doi:10.64898/2026.10.29.762743](https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1)
+
+```bibtex
+@article{he2026procapatlas,
+  title   = {A comprehensive map of the sequence basis of transcription initiation in humans},
+  author  = {He, Adam Y. and Tian, Claire and Kundaje, Anshul},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.10.29.762743},
+  url     = {https://www.biorxiv.org/content/10.64898/2026.10.29.762743v1}
+}
+```
+
+Please also reference this Hugging Face repository by URL: <https://huggingface.co/adamyhe/procap-atlas-bpnet>.
 
 ## Contact
 
