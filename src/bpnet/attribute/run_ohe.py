@@ -62,7 +62,7 @@ async def main_async(args):
         N_READS_PATH, sep="\t", usecols=["experiment", "total_reads"]
     )
     read_counts = dict(zip(read_counts_df["experiment"], read_counts_df["total_reads"]))
-    out_dir = REPO_ROOT / "attributions" / "bpnet"
+    out_dir = REPO_ROOT / "attributions" / "ohe"
 
     to_run = []
     skipped_reads = 0

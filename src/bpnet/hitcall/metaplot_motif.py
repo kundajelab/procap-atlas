@@ -151,7 +151,7 @@ from metaplot_tss import collect_windows  # noqa: E402
 
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 N_READS_PATH = REPO_ROOT / "configs" / "n_reads.txt"
-ATTR_DIR = REPO_ROOT / "attributions" / "bpnet"
+OHE_DIR = REPO_ROOT / "attributions" / "ohe"
 MODISCO_DIR = REPO_ROOT / "modisco" / "bpnet"
 MC_DIR = REPO_ROOT / "motifcompendium" / "bpnet"
 DEFAULT_WINDOW = 200
@@ -287,7 +287,7 @@ def region_geometry(
             "extract_regions_bpnet.py first"
         )
 
-    ohe_path = ATTR_DIR / f"{experiment}_ohe.npz"
+    ohe_path = OHE_DIR / f"{experiment}_ohe.npz"
     if not ohe_path.exists():
         raise SystemExit(f"Error: {ohe_path} missing")
     raw_width = npz_array_shape(str(ohe_path))[-1]

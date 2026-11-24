@@ -130,7 +130,7 @@ def main():
             continue
 
         model_dir_name = exp_id
-        ohe_path = attr_dir / f"{exp_id}_ohe.npz"
+        ohe_path = REPO_ROOT / "attributions" / "ohe" / f"{exp_id}_ohe.npz"
 
         for head in heads:
             # Unlike the shared atlas-wide MotifCompendium h5 this used to

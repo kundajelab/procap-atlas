@@ -56,7 +56,7 @@ mkdir -p "$REPO_ROOT/logs/bpnet_modisco"
 cd "$OUT_DIR"
 
 time uv run --project "$REPO_ROOT" --extra sherlock --frozen modisco motifs \
-    -s "$ATTR_DIR/${PEAK_EXP}_ohe.npz" \
+    -s "$REPO_ROOT/attributions/ohe/${PEAK_EXP}_ohe.npz" \
     -a "$ATTR_DIR/${MODEL_NAME}_count.npz" \
     -o "$OUT_DIR/${MODEL_NAME}_count.modisco.h5" \
     -n 1000000 -l 50 -w 1000 -v

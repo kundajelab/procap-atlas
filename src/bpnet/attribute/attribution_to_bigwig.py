@@ -35,6 +35,7 @@ DEFAULT_FASTA = REPO_ROOT / "data" / "hg38.fa"
 DEFAULT_BLACKLIST = REPO_ROOT / "data" / "hg38.blacklist.bed.gz"
 DEFAULT_CHROM_SIZES = REPO_ROOT / "data" / "hg38.chrom.sizes"
 DEFAULT_ATTR_DIR = REPO_ROOT / "attributions" / "bpnet"
+DEFAULT_OHE_DIR = REPO_ROOT / "attributions" / "ohe"
 DEFAULT_OUTPUT_DIR = DEFAULT_ATTR_DIR / "bigwigs"
 
 
@@ -139,7 +140,7 @@ def resolve_default_paths(args: argparse.Namespace) -> argparse.Namespace:
         if args.attr_npz is None:
             args.attr_npz = DEFAULT_ATTR_DIR / f"{args.experiment}_{args.head}.npz"
         if args.ohe_npz is None:
-            args.ohe_npz = DEFAULT_ATTR_DIR / f"{args.experiment}_ohe.npz"
+            args.ohe_npz = DEFAULT_OHE_DIR / f"{args.experiment}_ohe.npz"
         if args.peaks_bed is None:
             with open(args.config) as f:
                 config = yaml.safe_load(f)
