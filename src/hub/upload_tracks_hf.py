@@ -4,6 +4,7 @@
 Usage:
     python src/hub/upload_tracks_hf.py --dry-run
     python src/hub/upload_tracks_hf.py --include observed --include predictions --include attributions --include peaks
+    python src/hub/upload_tracks_hf.py --include hub   # hub/ucsc/ text files only, after generate_hub.py
 """
 
 import argparse
@@ -21,7 +22,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = REPO_ROOT / "configs" / "experiment_config.yaml"
 DEFAULT_REPO_ID = "adamyhe/procap-atlas-tracks"
 DEFAULT_REVISION = "main"
-INCLUDES = ("observed", "predictions", "attributions", "peaks")
+INCLUDES = ("observed", "predictions", "attributions", "peaks", "hub")
+# generate_hub.py's output; hosted at ucsc/ so the hub URL is
+# {base_url}/resolve/{revision}/ucsc/hub.txt
+DEFAULT_HUB_DIR = REPO_ROOT / "hub" / "ucsc"
+HUB_FILES = ("hub.txt", "genomes.txt", "hg38/trackDb.txt")
 
 
 def sanitize_name(s):
@@ -49,9 +54,18 @@ def validate_range_url(url: str):
         return status, accept_ranges, content_range
 
 
-def collect_uploads(experiments, includes, heads):
+def collect_uploads(experiments, includes, heads, hub_dir=DEFAULT_HUB_DIR):
     uploads = []
     missing = []
+
+    if "hub" in includes:
+        for name in HUB_FILES:
+            local = hub_dir / name
+            dest = f"ucsc/{name}"
+            if local.exists():
+                uploads.append((local, dest))
+            else:
+                missing.append((local, dest))
 
     for exp_id, exp in experiments.items():
         processed = exp.get("processed", {})
@@ -161,6 +175,12 @@ def main():
         help="attribution head(s) to upload; repeatable (default: profile count)",
     )
     parser.add_argument(
+        "--hub-dir",
+        type=Path,
+        default=DEFAULT_HUB_DIR,
+        help="generate_hub.py output to upload as ucsc/ (default: hub/ucsc)",
+    )
+    parser.add_argument(
         "-j",
         "--n-workers",
         type=int,
@@ -180,7 +200,9 @@ def main():
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
-    uploads, missing = collect_uploads(config["experiments"], includes, heads)
+    uploads, missing = collect_uploads(
+        config["experiments"], includes, heads, args.hub_dir
+    )
 
     print(
         f"Found {len(uploads)} files to upload; {len(missing)} expected files missing"

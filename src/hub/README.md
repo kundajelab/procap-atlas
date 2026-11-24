@@ -42,7 +42,8 @@ python src/hub/generate_hub.py --email you@example.com --no-predictions
 python src/hub/generate_hub.py --email you@example.com --no-attributions
 ```
 
-Output: `hub/hub.txt`, `hub/genomes.txt`, `hub/hg38/trackDb.txt`
+Output: `hub/ucsc/hub.txt`, `hub/ucsc/genomes.txt`, `hub/ucsc/hg38/trackDb.txt`
+(tracked in git, and hosted at `ucsc/` in the HF tracks dataset)
 
 Before regenerating the hub with attribution tracks, convert BPNet attribution NPZ files to BigWigs:
 
@@ -76,7 +77,19 @@ python src/hub/upload_tracks_hf.py --dry-run
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks
 python src/hub/upload_tracks_hf.py --repo-id adamyhe/procap-atlas-tracks -j 16
 python src/hub/generate_hub.py --email you@example.com
+python src/hub/upload_tracks_hf.py --include hub  # re-upload the regenerated hub files
 ```
+
+`upload_tracks_hf.py` needs `huggingface_hub`, which is in the `hf` extra
+rather than `sherlock`. On Sherlock select both, e.g.
+`uv run --extra sherlock --extra hf --frozen python src/hub/upload_tracks_hf.py ...`:
+`uv run` syncs the venv to exactly the extras given, so `--extra hf` alone would
+uninstall the pinned Sherlock Torch.
+The default (no `--include`) uploads every class, including `hub`, which sends
+`hub/ucsc/{hub.txt,genomes.txt,hg38/trackDb.txt}` to `ucsc/` so the hub URL
+stays `{base_url}/resolve/{revision}/ucsc/hub.txt`. Since `generate_hub.py`
+runs after the track upload above, pass `--include hub` once more to publish
+its output; `--hub-dir` overrides the local source directory.
 
 `--base-url` defaults to
 `https://huggingface.co/datasets/adamyhe/procap-atlas-tracks`. This URL is used
@@ -90,6 +103,7 @@ HF dataset layout:
 - `peaks/bed/{exp_id}_{biosample}.bed.gz`
 - `peaks/bigbed/{exp_id}_{biosample}_peaks.bb`
 - `attributions/bpnet/{exp_id}_{head}.bigWig`
+- `ucsc/hub.txt`, `ucsc/genomes.txt`, `ucsc/hg38/trackDb.txt`
 
 Uploads are staged into a temporary repo-shaped directory and sent with
 Hugging Face `upload_large_folder`, which is resumable and designed for large
@@ -128,7 +142,7 @@ The 8-column BED format used for peak files (defined in `hub/hg38/bigbed/procap_
 ## Validating the hub
 
 ```bash
-hubCheck hub/hub.txt
+hubCheck hub/ucsc/hub.txt
 ```
 
 Requires `hubCheck` from UCSC Kent tools.
@@ -139,10 +153,9 @@ from the configured conda channels.
 ## File layout
 
 ```
-hub/
+hub/ucsc/                      # generate_hub.py output; hosted at ucsc/ on HF
 +-- hub.txt                    # Hub descriptor
 +-- genomes.txt                # Genome assembly reference
-+-- procap_peak.as             # AutoSQL schema for bigBed tracks
 +-- hg38/
     +-- trackDb.txt            # Track definitions (generated)
 
