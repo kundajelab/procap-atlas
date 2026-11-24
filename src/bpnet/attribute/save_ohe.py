@@ -55,7 +55,7 @@ def main():
     peaks_path = str(REPO_ROOT / processed["filtered_peaks"])
 
     # Output directory
-    out_dir = REPO_ROOT / "attributions" / "bpnet"
+    out_dir = REPO_ROOT / "attributions" / "ohe"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Verify data files exist

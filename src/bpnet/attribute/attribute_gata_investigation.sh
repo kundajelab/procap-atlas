@@ -29,7 +29,7 @@
 #      models/bpnet/ENCSR220XSMtracks_ENCSR261KBXpeaks/
 #
 # 1. Verify OHE files exist (needed for modisco):
-#      ls attributions/bpnet/ENCSR261KBX_ohe.npz attributions/bpnet/ENCSR220XSM_ohe.npz
+#      ls attributions/ohe/ENCSR261KBX_ohe.npz attributions/ohe/ENCSR220XSM_ohe.npz
 #      # If ENCSR220XSM_ohe.npz missing:
 #      uv run --extra sherlock --frozen python src/bpnet/attribute/save_ohe.py -e ENCSR220XSM
 #

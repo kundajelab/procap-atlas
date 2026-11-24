@@ -173,7 +173,7 @@ Outputs:
 
 ```text
 attributions/bpnet/{model_dir_name}_{head}.npz
-attributions/bpnet/{experiment}_ohe.npz
+attributions/ohe/{experiment}_ohe.npz  # shared by BPNet and Cherimoya
 ```
 
 Use `--model-prefix` for cross-trained models where the model directory name

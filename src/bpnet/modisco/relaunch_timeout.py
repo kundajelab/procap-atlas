@@ -113,7 +113,7 @@ def main():
             skipped_done += 1
             continue
 
-        ohe_path = attr_dir / f"{exp_id}_ohe.npz"
+        ohe_path = REPO_ROOT / "attributions" / "ohe" / f"{exp_id}_ohe.npz"
         attr_path = attr_dir / f"{exp_id}_{head}.npz"
         if not ohe_path.exists() or not attr_path.exists():
             print(
