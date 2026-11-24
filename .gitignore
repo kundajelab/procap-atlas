@@ -5,7 +5,7 @@ tmp/
 # Large workflow outputs and local scratch copies of cluster results
 hitcalls/
 figures/
-motifcompendium/
+/motifcompendium/
 notebooks/plots/
 /attributions/
 /data/
