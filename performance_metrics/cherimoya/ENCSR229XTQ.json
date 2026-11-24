@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR229XTQ",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5495439767837524,
-            "profile_jsd": 0.3105732202529907,
-            "log_counts_pearson": 0.7212483286857605,
-            "counts_spearman": 0.7403728365898132
+            "profile_pearson": 0.6296902298927307,
+            "profile_jsd": 0.29281774163246155,
+            "log_counts_pearson": 0.6876833438873291,
+            "counts_spearman": 0.7093583345413208,
+            "orientation_index_pearson": 0.452890008687973
         },
         "1": {
-            "profile_pearson": 0.5512391328811646,
-            "profile_jsd": 0.31181925535202026,
-            "log_counts_pearson": 0.7212419509887695,
-            "counts_spearman": 0.7337163686752319
+            "profile_pearson": 0.6124458312988281,
+            "profile_jsd": 0.3019169867038727,
+            "log_counts_pearson": 0.689504086971283,
+            "counts_spearman": 0.6943607330322266,
+            "orientation_index_pearson": 0.4217759966850281
         },
         "2": {
-            "profile_pearson": 0.5427554249763489,
-            "profile_jsd": 0.31837737560272217,
-            "log_counts_pearson": 0.7284217476844788,
-            "counts_spearman": 0.7381059527397156
+            "profile_pearson": 0.6146208047866821,
+            "profile_jsd": 0.30091267824172974,
+            "log_counts_pearson": 0.6919550895690918,
+            "counts_spearman": 0.6988198161125183,
+            "orientation_index_pearson": 0.44121891260147095
         },
         "3": {
-            "profile_pearson": 0.5603440403938293,
-            "profile_jsd": 0.3148815631866455,
-            "log_counts_pearson": 0.715191125869751,
-            "counts_spearman": 0.7277957201004028
+            "profile_pearson": 0.6353861689567566,
+            "profile_jsd": 0.29343461990356445,
+            "log_counts_pearson": 0.6952540278434753,
+            "counts_spearman": 0.711260974407196,
+            "orientation_index_pearson": 0.4616769254207611
         },
         "4": {
-            "profile_pearson": 0.5170172452926636,
-            "profile_jsd": 0.32682013511657715,
-            "log_counts_pearson": 0.7139911651611328,
-            "counts_spearman": 0.7256693840026855
+            "profile_pearson": 0.6013062000274658,
+            "profile_jsd": 0.30840837955474854,
+            "log_counts_pearson": 0.675263524055481,
+            "counts_spearman": 0.6839324235916138,
+            "orientation_index_pearson": 0.41683220863342285
         },
         "5": {
-            "profile_pearson": 0.5452472567558289,
-            "profile_jsd": 0.31761741638183594,
-            "log_counts_pearson": 0.7205175757408142,
-            "counts_spearman": 0.7246188521385193
+            "profile_pearson": 0.628282904624939,
+            "profile_jsd": 0.29428067803382874,
+            "log_counts_pearson": 0.6781389713287354,
+            "counts_spearman": 0.6788738369941711,
+            "orientation_index_pearson": 0.4681336581707001
         },
         "6": {
-            "profile_pearson": 0.578257143497467,
-            "profile_jsd": 0.3150549530982971,
-            "log_counts_pearson": 0.641478419303894,
-            "counts_spearman": 0.6662857532501221
+            "profile_pearson": 0.6382495760917664,
+            "profile_jsd": 0.3031034469604492,
+            "log_counts_pearson": 0.6175628304481506,
+            "counts_spearman": 0.6315627694129944,
+            "orientation_index_pearson": 0.46532076597213745
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5476652383804321,
-        "profile_jsd": 0.31675824522972107,
-        "log_counts_pearson": 0.7107548117637634,
-        "counts_spearman": 0.7238414287567139
+        "profile_pearson": 0.6225988864898682,
+        "profile_jsd": 0.29957300424575806,
+        "log_counts_pearson": 0.6717339158058167,
+        "counts_spearman": 0.679840087890625,
+        "orientation_index_pearson": 0.4476054906845093
     }
 }

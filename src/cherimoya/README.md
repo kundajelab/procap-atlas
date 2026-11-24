@@ -184,6 +184,208 @@ prints one runnable command per experiment instead of running them, which you
 can pipe into something like `simple_gpu_scheduler` to fan a personal
 multi-GPU box out in parallel.
 
+## Attributions
+
+```bash
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM --head count
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM --reference-mode dinucleotide
+python src/cherimoya/attribute/attribute_cherimoya.py -e ENCSR882DWM --model-dir models/cherimoya/ENCSR882DWM_gc0.1
+```
+
+`attribute_cherimoya.py` is a wrapper around tangermeme's `deep_lift_shap`
+and cherimoya's `attribution_ops()`, analogous to `attribute_bpnet.py`. It
+loads all fold models, computes hypothetical attributions on all peaks
+genome-wide, averages across folds, and saves the result. The wrapper exists
+instead of using `cherimoya attribute` directly because the CLI does not
+support custom reference callables, attributes a single model rather than
+averaging across folds, and crops attributions to 400bp rather than saving
+full-width.
+
+`attribute_cherimoya.py` defaults to the genomic nucleotide-frequency
+reference (one soft PFM reference per input sequence with the sequence's
+observed A/C/G/T frequencies repeated at every position), matching
+`attribute_bpnet.py`'s default — see the [BPNet Attributions
+section](../bpnet/README.md#attributions) for why. Use `--reference-mode
+dinucleotide` and `--n-shuffles` for dinucleotide-shuffled references.
+
+`cherimoya.deep_lift_shap.attribution_ops()` registers closed-form DeepLIFT
+rules for `FusedDilatedConvNorm` (the fused depthwise-conv + layernorm
+Triton kernel) and `_ProfileLogitScaling`, built on tangermeme >= 1.5.0's
+closed-form layernorm rule. Without these rules the attributions do not sum
+to the change in the prediction. Models are loaded with `compile=False`
+because DeepLIFT's backward hooks cause graph breaks under `torch.compile`.
+
+Outputs:
+
+```text
+attributions/cherimoya/{model_dir_name}_{head}.npz
+```
+
+One-hot-encoded sequences (needed by MoDISco) are saved separately:
+
+```bash
+python src/cherimoya/attribute/save_ohe.py -e ENCSR882DWM
+```
+
+```text
+attributions/ohe/{experiment}_ohe.npz  # shared by BPNet and Cherimoya
+```
+
+`save_ohe.py` does not need a GPU or the Cherimoya environment — it runs
+under the base `uv` project.
+
+Submit attribution jobs through SLURM:
+
+```bash
+python src/cherimoya/attribute/launch.py --dry-run
+python src/cherimoya/attribute/launch.py --head profile --head count
+python src/cherimoya/attribute/launch.py --min-reads 20000000
+python src/cherimoya/attribute/launch.py --local
+python src/cherimoya/attribute/launch.py --local --dry-run | simple_gpu_scheduler --gpus 0 1 2 3
+```
+
+`launch.py` submits one SLURM job per (experiment, head) pair. Experiments
+with any missing fold model are skipped, as are experiments with an existing
+attribution output (override with `--force`). By default, jobs run via
+`apptainer exec --nv` against the Cherimoya Apptainer image (see
+[`apptainer/`](apptainer/README.md)); `--native` uses SRCC's
+`py-pytorch`/`py-triton` modules instead (see
+[`sherlock_native/`](sherlock_native/README.md)). `--local` bypasses SLURM
+entirely and runs each experiment directly in the foreground (still via
+Apptainer by default; add `--native` for a `uv run --extra cherimoya`
+invocation instead).
+
+## MoDISco
+
+Run motif discovery after attribution and OHE files exist:
+
+```bash
+python src/cherimoya/modisco/launch.py
+python src/cherimoya/modisco/launch.py --head profile --head count
+python src/cherimoya/modisco/launch.py --dry-run
+python src/cherimoya/modisco/launch.py --min-reads 20000000
+python src/cherimoya/modisco/launch.py -n 500000 -w 500
+```
+
+By default, `launch.py` submits the 30 experiments with the largest processed
+peak sets using the timeout-relaunch SLURM defaults (`--partition akundaje` and
+`--time 6-23:00:00`). Remaining jobs use the standard launch defaults
+(`--partition normal,akundaje,owners` and `--time 2-00:00:00`). Override the
+large-job split with `--large-peak-top-n`, `--large-peak-partition`, or
+`--large-peak-time`; use `--large-peak-top-n 0` to disable it.
+
+Generate motif reports after `.h5` files are complete:
+
+```bash
+python src/cherimoya/modisco/launch_report.py
+python src/cherimoya/modisco/launch_report.py --head profile
+python src/cherimoya/modisco/launch_report.py --dry-run
+```
+
+MoDISco is CPU-only and runs under the base `uv` project environment (not
+the `cherimoya` extra).
+
+Outputs:
+
+```text
+modisco/cherimoya/{experiment}_{head}.modisco.h5
+modisco/cherimoya/{experiment}_{head}.modisco/
+logs/cherimoya_modisco/
+```
+
+## Motif Compendium
+
+Cluster per-experiment MoDISco motifs into atlas-wide motif families using
+MotifCompendium, after MoDISco h5 files exist:
+
+```bash
+python src/cherimoya/motifcompendium/cluster_motifs.py
+python src/cherimoya/motifcompendium/cluster_motifs.py --head count
+python src/cherimoya/motifcompendium/cluster_motifs.py --head count --head profile
+python src/cherimoya/motifcompendium/cluster_motifs.py --force-merge-threshold 0.93
+python src/cherimoya/motifcompendium/cluster_motifs.py --from-mc motifcompendium/cherimoya/motifcompendium_count_all_clustered.mc --head count --force-merge-threshold 0.93
+```
+
+`cluster_motifs.py` imports the shared clustering logic from
+`src/bpnet/motifcompendium/cluster_motifs.py` (model-family-agnostic) and
+points it at `modisco/cherimoya/` inputs and `motifcompendium/cherimoya/`
+outputs.
+
+Outputs:
+
+```text
+motifcompendium/cherimoya/motifcompendium_{head}_all_raw.mc
+motifcompendium/cherimoya/motifcompendium_{head}_all_clustered.mc
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_averages.h5
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_averages.meme
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_metadata.tsv
+motifcompendium/cherimoya/motifcompendium_{head}_pattern_to_cluster.tsv
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_report.html
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_summary.html
+motifcompendium/cherimoya/motifcompendium_{head}_cluster_logos/
+```
+
+## Fi-NeMo Hit Calling
+
+Call motif instances in Cherimoya attributions with Fi-NeMo, after attribution
+and MoDISco files exist:
+
+```bash
+python src/cherimoya/hitcall/call_hits_cherimoya.py -e ENCSR882DWM
+python src/cherimoya/hitcall/call_hits_cherimoya.py -e ENCSR882DWM --head count
+python src/cherimoya/hitcall/call_hits_cherimoya.py -e ENCSR882DWM --global-lambda 0.6
+```
+
+Hits are called against each experiment's own per-experiment MoDISco motif set
+(matching the BPNet workflow). A hit's `motif_name` is only meaningful within
+that experiment; run `link_hits_to_compendium.py` afterward to relabel hits
+with the atlas-wide MotifCompendium cluster ID for cross-experiment
+comparability.
+
+Submit hit-calling jobs through SLURM:
+
+```bash
+python src/cherimoya/hitcall/launch.py --dry-run
+python src/cherimoya/hitcall/launch.py --head profile
+python src/cherimoya/hitcall/launch.py --head profile --head count
+python src/cherimoya/hitcall/launch.py --min-reads 20000000
+```
+
+Outputs:
+
+```text
+hitcalls/cherimoya/{experiment}_{head}/hits.tsv
+hitcalls/cherimoya/{experiment}_{head}/hits_unique.tsv
+hitcalls/cherimoya/{experiment}_{head}/regions.npz
+hitcalls/cherimoya/{experiment}_{head}/peaks.narrowPeak.gz
+logs/cherimoya_hitcall/
+```
+
+### Linking Hits to Compendium
+
+Relabel per-experiment hits with atlas-wide MotifCompendium cluster identities:
+
+```bash
+python src/cherimoya/hitcall/link_hits_to_compendium.py -e ENCSR882DWM
+python src/cherimoya/hitcall/link_hits_to_compendium.py -e ENCSR882DWM --head count
+```
+
+Submit link jobs through SLURM:
+
+```bash
+python src/cherimoya/hitcall/launch_link.py --dry-run
+python src/cherimoya/hitcall/launch_link.py --head profile --head count
+python src/cherimoya/hitcall/launch_link.py --min-reads 20000000
+```
+
+Outputs:
+
+```text
+hitcalls/cherimoya/{experiment}_{head}/hits_linked.tsv.gz
+logs/cherimoya_hitcall_link/
+```
+
 ## Architecture Sweep (deprecated)
 
 **Deprecated**: this sweep predates the current Cherimoya v0.2.0 models and

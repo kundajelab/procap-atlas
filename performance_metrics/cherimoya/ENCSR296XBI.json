@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR296XBI",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5287977457046509,
-            "profile_jsd": 0.3262748718261719,
-            "log_counts_pearson": 0.6973815560340881,
-            "counts_spearman": 0.7130392789840698
+            "profile_pearson": 0.5347512364387512,
+            "profile_jsd": 0.33682769536972046,
+            "log_counts_pearson": 0.6730042099952698,
+            "counts_spearman": 0.6874780058860779,
+            "orientation_index_pearson": 0.28938475251197815
         },
         "1": {
-            "profile_pearson": 0.5150593519210815,
-            "profile_jsd": 0.33370766043663025,
-            "log_counts_pearson": 0.6937869191169739,
-            "counts_spearman": 0.7146152257919312
+            "profile_pearson": 0.5330954790115356,
+            "profile_jsd": 0.342002272605896,
+            "log_counts_pearson": 0.6629513502120972,
+            "counts_spearman": 0.6814223527908325,
+            "orientation_index_pearson": 0.28309759497642517
         },
         "2": {
-            "profile_pearson": 0.522097647190094,
-            "profile_jsd": 0.33233702182769775,
-            "log_counts_pearson": 0.6733145713806152,
-            "counts_spearman": 0.7041658163070679
+            "profile_pearson": 0.5431676506996155,
+            "profile_jsd": 0.3386569023132324,
+            "log_counts_pearson": 0.6529852747917175,
+            "counts_spearman": 0.6734734773635864,
+            "orientation_index_pearson": 0.264690637588501
         },
         "3": {
-            "profile_pearson": 0.5250611305236816,
-            "profile_jsd": 0.3289535641670227,
-            "log_counts_pearson": 0.6896119713783264,
-            "counts_spearman": 0.7105079293251038
+            "profile_pearson": 0.5491942167282104,
+            "profile_jsd": 0.33643513917922974,
+            "log_counts_pearson": 0.6618933081626892,
+            "counts_spearman": 0.6876270174980164,
+            "orientation_index_pearson": 0.3029833137989044
         },
         "4": {
-            "profile_pearson": 0.5231113433837891,
-            "profile_jsd": 0.33166855573654175,
-            "log_counts_pearson": 0.6723883748054504,
-            "counts_spearman": 0.6943119764328003
+            "profile_pearson": 0.5312137603759766,
+            "profile_jsd": 0.34038227796554565,
+            "log_counts_pearson": 0.6470364928245544,
+            "counts_spearman": 0.6678396463394165,
+            "orientation_index_pearson": 0.2978535592556
         },
         "5": {
-            "profile_pearson": 0.5208751559257507,
-            "profile_jsd": 0.3290025591850281,
-            "log_counts_pearson": 0.6876476407051086,
-            "counts_spearman": 0.7102235555648804
+            "profile_pearson": 0.5371664762496948,
+            "profile_jsd": 0.3411143124103546,
+            "log_counts_pearson": 0.6589563488960266,
+            "counts_spearman": 0.6840153336524963,
+            "orientation_index_pearson": 0.30954283475875854
         },
         "6": {
-            "profile_pearson": 0.5311867594718933,
-            "profile_jsd": 0.3250405192375183,
-            "log_counts_pearson": 0.6407690048217773,
-            "counts_spearman": 0.6714299321174622
+            "profile_pearson": 0.5426385402679443,
+            "profile_jsd": 0.3361515402793884,
+            "log_counts_pearson": 0.6117281317710876,
+            "counts_spearman": 0.6391223669052124,
+            "orientation_index_pearson": 0.30763643980026245
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5232019424438477,
-        "profile_jsd": 0.32977813482284546,
-        "log_counts_pearson": 0.6785743832588196,
-        "counts_spearman": 0.7018951773643494
+        "profile_pearson": 0.5381685495376587,
+        "profile_jsd": 0.33896225690841675,
+        "log_counts_pearson": 0.6513267159461975,
+        "counts_spearman": 0.6728684306144714,
+        "orientation_index_pearson": 0.29389697313308716
     }
 }

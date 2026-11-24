@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR946MDO",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5331757664680481,
-            "profile_jsd": 0.3448007106781006,
-            "log_counts_pearson": 0.7006219029426575,
-            "counts_spearman": 0.7085344791412354
+            "profile_pearson": 0.5621541738510132,
+            "profile_jsd": 0.3286651074886322,
+            "log_counts_pearson": 0.7055638432502747,
+            "counts_spearman": 0.7252921462059021,
+            "orientation_index_pearson": 0.3343510627746582
         },
         "1": {
-            "profile_pearson": 0.5138608813285828,
-            "profile_jsd": 0.3531821370124817,
-            "log_counts_pearson": 0.7036727070808411,
-            "counts_spearman": 0.706841766834259
+            "profile_pearson": 0.5257562398910522,
+            "profile_jsd": 0.34914928674697876,
+            "log_counts_pearson": 0.7064490914344788,
+            "counts_spearman": 0.7189530730247498,
+            "orientation_index_pearson": 0.28357183933258057
         },
         "2": {
-            "profile_pearson": 0.5320748686790466,
-            "profile_jsd": 0.3420083522796631,
-            "log_counts_pearson": 0.7016704678535461,
-            "counts_spearman": 0.7114102244377136
+            "profile_pearson": 0.5488977432250977,
+            "profile_jsd": 0.3373342752456665,
+            "log_counts_pearson": 0.7096983194351196,
+            "counts_spearman": 0.7287148833274841,
+            "orientation_index_pearson": 0.29715046286582947
         },
         "3": {
-            "profile_pearson": 0.5522328615188599,
-            "profile_jsd": 0.33300936222076416,
-            "log_counts_pearson": 0.7135968208312988,
-            "counts_spearman": 0.7278733849525452
+            "profile_pearson": 0.5459285974502563,
+            "profile_jsd": 0.3410128951072693,
+            "log_counts_pearson": 0.7160772085189819,
+            "counts_spearman": 0.7317233681678772,
+            "orientation_index_pearson": 0.32601770758628845
         },
         "4": {
-            "profile_pearson": 0.5259689092636108,
-            "profile_jsd": 0.34414729475975037,
-            "log_counts_pearson": 0.7024503946304321,
-            "counts_spearman": 0.7103090286254883
+            "profile_pearson": 0.5615806579589844,
+            "profile_jsd": 0.33195775747299194,
+            "log_counts_pearson": 0.6999025940895081,
+            "counts_spearman": 0.7187427878379822,
+            "orientation_index_pearson": 0.33964329957962036
         },
         "5": {
-            "profile_pearson": 0.5313570499420166,
-            "profile_jsd": 0.3268449306488037,
-            "log_counts_pearson": 0.7333738803863525,
-            "counts_spearman": 0.75726318359375
+            "profile_pearson": 0.5712767243385315,
+            "profile_jsd": 0.32621365785598755,
+            "log_counts_pearson": 0.7216138243675232,
+            "counts_spearman": 0.7401266694068909,
+            "orientation_index_pearson": 0.36152589321136475
         },
         "6": {
-            "profile_pearson": 0.5577844977378845,
-            "profile_jsd": 0.3256714642047882,
-            "log_counts_pearson": 0.6616984605789185,
-            "counts_spearman": 0.6751697659492493
+            "profile_pearson": 0.5733329057693481,
+            "profile_jsd": 0.31862279772758484,
+            "log_counts_pearson": 0.6725988984107971,
+            "counts_spearman": 0.6895778179168701,
+            "orientation_index_pearson": 0.3570094704627991
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.534741997718811,
-        "profile_jsd": 0.3380250930786133,
-        "log_counts_pearson": 0.6815241575241089,
-        "counts_spearman": 0.6957946419715881
+        "profile_pearson": 0.5560073852539062,
+        "profile_jsd": 0.33304697275161743,
+        "log_counts_pearson": 0.7039831280708313,
+        "counts_spearman": 0.7221226096153259,
+        "orientation_index_pearson": 0.33022481203079224
     }
 }

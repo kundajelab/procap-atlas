@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR967RHN",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5363017916679382,
-            "profile_jsd": 0.32337093353271484,
-            "log_counts_pearson": 0.8244276642799377,
-            "counts_spearman": 0.8380170464515686
+            "profile_pearson": 0.5654870271682739,
+            "profile_jsd": 0.3209581673145294,
+            "log_counts_pearson": 0.8186785578727722,
+            "counts_spearman": 0.8293145895004272,
+            "orientation_index_pearson": 0.33696308732032776
         },
         "1": {
-            "profile_pearson": 0.5398337244987488,
-            "profile_jsd": 0.3298830986022949,
-            "log_counts_pearson": 0.8278706669807434,
-            "counts_spearman": 0.8466755151748657
+            "profile_pearson": 0.554039716720581,
+            "profile_jsd": 0.3364754021167755,
+            "log_counts_pearson": 0.8235548734664917,
+            "counts_spearman": 0.8390409350395203,
+            "orientation_index_pearson": 0.3008480668067932
         },
         "2": {
-            "profile_pearson": 0.519159734249115,
-            "profile_jsd": 0.33453524112701416,
-            "log_counts_pearson": 0.8125745058059692,
-            "counts_spearman": 0.8322532773017883
+            "profile_pearson": 0.5489839315414429,
+            "profile_jsd": 0.33708131313323975,
+            "log_counts_pearson": 0.8089585304260254,
+            "counts_spearman": 0.8245183825492859,
+            "orientation_index_pearson": 0.2976369857788086
         },
         "3": {
-            "profile_pearson": 0.531269371509552,
-            "profile_jsd": 0.32987135648727417,
-            "log_counts_pearson": 0.8233963847160339,
-            "counts_spearman": 0.8417400121688843
+            "profile_pearson": 0.5624446868896484,
+            "profile_jsd": 0.3309783339500427,
+            "log_counts_pearson": 0.8190815448760986,
+            "counts_spearman": 0.8354015946388245,
+            "orientation_index_pearson": 0.3231724202632904
         },
         "4": {
-            "profile_pearson": 0.5168502926826477,
-            "profile_jsd": 0.33770751953125,
-            "log_counts_pearson": 0.8067028522491455,
-            "counts_spearman": 0.8269811272621155
+            "profile_pearson": 0.5514348745346069,
+            "profile_jsd": 0.33539408445358276,
+            "log_counts_pearson": 0.8029473423957825,
+            "counts_spearman": 0.8170643448829651,
+            "orientation_index_pearson": 0.3317345678806305
         },
         "5": {
-            "profile_pearson": 0.5327651500701904,
-            "profile_jsd": 0.3286268711090088,
-            "log_counts_pearson": 0.8198548555374146,
-            "counts_spearman": 0.8364092707633972
+            "profile_pearson": 0.5545912384986877,
+            "profile_jsd": 0.328583300113678,
+            "log_counts_pearson": 0.8141832947731018,
+            "counts_spearman": 0.8270431756973267,
+            "orientation_index_pearson": 0.344571590423584
         },
         "6": {
-            "profile_pearson": 0.523468017578125,
-            "profile_jsd": 0.33424416184425354,
-            "log_counts_pearson": 0.7707046866416931,
-            "counts_spearman": 0.7954111695289612
+            "profile_pearson": 0.554524302482605,
+            "profile_jsd": 0.33287206292152405,
+            "log_counts_pearson": 0.7728233337402344,
+            "counts_spearman": 0.7903336882591248,
+            "orientation_index_pearson": 0.3263760805130005
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5285972356796265,
-        "profile_jsd": 0.33100834488868713,
-        "log_counts_pearson": 0.8121513724327087,
-        "counts_spearman": 0.8313761353492737
+        "profile_pearson": 0.5554360151290894,
+        "profile_jsd": 0.3317888379096985,
+        "log_counts_pearson": 0.8067159652709961,
+        "counts_spearman": 0.8219677209854126,
+        "orientation_index_pearson": 0.3248642086982727
     }
 }

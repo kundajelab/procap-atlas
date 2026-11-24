@@ -253,12 +253,11 @@ wheels = [
 [[package]]
 name = "cherimoya"
 version = "0.2.1"
-source = { git = "https://github.com/jmschrei/cherimoya.git?rev=8e4283fe56db4a29418c1d8119da3240d7c709ba#8e4283fe56db4a29418c1d8119da3240d7c709ba" }
+source = { git = "https://github.com/jmschrei/cherimoya.git?rev=73ce51841b6af672bcd423b969ce6f06dd40fc9d#73ce51841b6af672bcd423b969ce6f06dd40fc9d" }
 dependencies = [
     { name = "bam2bw", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "bpnet-lite", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "h5py", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
-    { name = "joblib", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "modisco", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "numpy", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "pandas", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
@@ -1836,7 +1835,7 @@ notebook = [
 [package.metadata]
 requires-dist = [
     { name = "bpnet-lite", specifier = ">=1.0.0" },
-    { name = "cherimoya", marker = "sys_platform == 'linux' and extra == 'cherimoya'", git = "https://github.com/jmschrei/cherimoya.git?rev=8e4283fe56db4a29418c1d8119da3240d7c709ba" },
+    { name = "cherimoya", marker = "sys_platform == 'linux' and extra == 'cherimoya'", git = "https://github.com/jmschrei/cherimoya.git?rev=73ce51841b6af672bcd423b969ce6f06dd40fc9d" },
     { name = "finemo", marker = "sys_platform == 'linux'" },
     { name = "huggingface-hub", marker = "extra == 'hf'" },
     { name = "joblib" },
@@ -1851,7 +1850,7 @@ requires-dist = [
     { name = "pyyaml" },
     { name = "scipy" },
     { name = "seaborn" },
-    { name = "tangermeme", specifier = ">=1.4.0" },
+    { name = "tangermeme", specifier = ">=1.5.0" },
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'sherlock'", specifier = "==2.6.0" },
     { name = "torch", marker = "sys_platform != 'linux' and extra == 'sherlock'" },
     { name = "tqdm" },
@@ -2317,7 +2316,7 @@ wheels = [
 
 [[package]]
 name = "tangermeme"
-version = "1.4.0"
+version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "joblib" },
@@ -2334,9 +2333,9 @@ dependencies = [
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' or extra == 'extra-18-procap-atlas-local-cherimoya' or extra != 'extra-18-procap-atlas-local-sherlock'" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/90/b3/85dc5b359439c57eaa9c198ccd5d6cee0b17f962535d709d4521ad54ded4/tangermeme-1.4.0.tar.gz", hash = "sha256:159d2f4d489928c355686c9ba39bbed408865fe43fa44771311a70f6f7540fa5", size = 124112, upload-time = "2026-06-25T18:05:56.604Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/6c/6f6c7be393ea2b4d37682a6f373d0ddcfd6e5c1d84e8237aaa0a0dc08f10/tangermeme-1.5.0.tar.gz", hash = "sha256:8461867f3e91d9810f8170e77a0cdd73720a2847a01aa99efe37ff75c2c46096", size = 150905, upload-time = "2026-09-25T00:53:10.175Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/fc/bce0cee69931919c34efa7c1304a99593be5ca1d4a61edc79b4845946021/tangermeme-1.4.0-py3-none-any.whl", hash = "sha256:45bebe7adf5e91394ed1cd7888e1c527ab771abfa6ca33c716d133f9335ab794", size = 157264, upload-time = "2026-06-25T18:05:55.336Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/8d/b086b68db3b01c03254d22fad886bda58451403905b8cd045847d155dfbb/tangermeme-1.5.0-py3-none-any.whl", hash = "sha256:f45c87e8a731b00be9f509248c9c52a1c85f28731d7eb2490813d074d0eb1c93", size = 185186, upload-time = "2026-09-25T00:53:08.851Z" },
 ]
 
 [[package]]

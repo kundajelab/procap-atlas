@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR997YHR",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5053051114082336,
-            "profile_jsd": 0.3558223843574524,
-            "log_counts_pearson": 0.7562779188156128,
-            "counts_spearman": 0.7485146522521973
+            "profile_pearson": 0.6007893681526184,
+            "profile_jsd": 0.33415937423706055,
+            "log_counts_pearson": 0.7529835104942322,
+            "counts_spearman": 0.7362440228462219,
+            "orientation_index_pearson": 0.41395309567451477
         },
         "1": {
-            "profile_pearson": 0.5468231439590454,
-            "profile_jsd": 0.3490009605884552,
-            "log_counts_pearson": 0.7579531073570251,
-            "counts_spearman": 0.7418255805969238
+            "profile_pearson": 0.6090150475502014,
+            "profile_jsd": 0.3326200842857361,
+            "log_counts_pearson": 0.7447453141212463,
+            "counts_spearman": 0.713080108165741,
+            "orientation_index_pearson": 0.399490624666214
         },
         "2": {
-            "profile_pearson": 0.5235990881919861,
-            "profile_jsd": 0.39168018102645874,
-            "log_counts_pearson": 0.7157127261161804,
-            "counts_spearman": 0.6782985925674438
+            "profile_pearson": 0.6022285223007202,
+            "profile_jsd": 0.34064239263534546,
+            "log_counts_pearson": 0.7308536767959595,
+            "counts_spearman": 0.7380447387695312,
+            "orientation_index_pearson": 0.36180517077445984
         },
         "3": {
-            "profile_pearson": 0.5320295095443726,
-            "profile_jsd": 0.3472539782524109,
-            "log_counts_pearson": 0.7296889424324036,
-            "counts_spearman": 0.7431296706199646
+            "profile_pearson": 0.6057692170143127,
+            "profile_jsd": 0.3272305727005005,
+            "log_counts_pearson": 0.718840479850769,
+            "counts_spearman": 0.7215590476989746,
+            "orientation_index_pearson": 0.3976256251335144
         },
         "4": {
-            "profile_pearson": 0.49514085054397583,
-            "profile_jsd": 0.3711458742618561,
-            "log_counts_pearson": 0.7082059383392334,
-            "counts_spearman": 0.7174285054206848
+            "profile_pearson": 0.5829809904098511,
+            "profile_jsd": 0.35071173310279846,
+            "log_counts_pearson": 0.6978216171264648,
+            "counts_spearman": 0.6919556856155396,
+            "orientation_index_pearson": 0.4081428050994873
         },
         "5": {
-            "profile_pearson": 0.542670726776123,
-            "profile_jsd": 0.3497144281864166,
-            "log_counts_pearson": 0.7362849712371826,
-            "counts_spearman": 0.7233904004096985
+            "profile_pearson": 0.6091138124465942,
+            "profile_jsd": 0.3334968090057373,
+            "log_counts_pearson": 0.718034565448761,
+            "counts_spearman": 0.6922306418418884,
+            "orientation_index_pearson": 0.3934163451194763
         },
         "6": {
-            "profile_pearson": 0.5258210897445679,
-            "profile_jsd": 0.36597079038619995,
-            "log_counts_pearson": 0.6952486038208008,
-            "counts_spearman": 0.7174836993217468
+            "profile_pearson": 0.5948260426521301,
+            "profile_jsd": 0.3432505130767822,
+            "log_counts_pearson": 0.6789102554321289,
+            "counts_spearman": 0.705808699131012,
+            "orientation_index_pearson": 0.37453770637512207
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5251474380493164,
-        "profile_jsd": 0.36081305146217346,
-        "log_counts_pearson": 0.6234117150306702,
-        "counts_spearman": 0.6298528909683228
+        "profile_pearson": 0.6013012528419495,
+        "profile_jsd": 0.3380711078643799,
+        "log_counts_pearson": 0.7168458700180054,
+        "counts_spearman": 0.7112027406692505,
+        "orientation_index_pearson": 0.3935149908065796
     }
 }

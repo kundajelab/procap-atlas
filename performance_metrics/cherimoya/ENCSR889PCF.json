@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR889PCF",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5553713440895081,
-            "profile_jsd": 0.3305571973323822,
-            "log_counts_pearson": 0.7510339617729187,
-            "counts_spearman": 0.765449047088623
+            "profile_pearson": 0.5677295327186584,
+            "profile_jsd": 0.3258531093597412,
+            "log_counts_pearson": 0.7629953026771545,
+            "counts_spearman": 0.7811304926872253,
+            "orientation_index_pearson": 0.3327487111091614
         },
         "1": {
-            "profile_pearson": 0.531853437423706,
-            "profile_jsd": 0.34535783529281616,
-            "log_counts_pearson": 0.7718307971954346,
-            "counts_spearman": 0.7806494235992432
+            "profile_pearson": 0.5543993711471558,
+            "profile_jsd": 0.3350638449192047,
+            "log_counts_pearson": 0.7713563442230225,
+            "counts_spearman": 0.7893023490905762,
+            "orientation_index_pearson": 0.29348471760749817
         },
         "2": {
-            "profile_pearson": 0.5247246026992798,
-            "profile_jsd": 0.3459279537200928,
-            "log_counts_pearson": 0.7600109577178955,
-            "counts_spearman": 0.7696030735969543
+            "profile_pearson": 0.5492501854896545,
+            "profile_jsd": 0.3412487208843231,
+            "log_counts_pearson": 0.7665910124778748,
+            "counts_spearman": 0.7816514372825623,
+            "orientation_index_pearson": 0.2882184386253357
         },
         "3": {
-            "profile_pearson": 0.5286440253257751,
-            "profile_jsd": 0.34362930059432983,
-            "log_counts_pearson": 0.7730514407157898,
-            "counts_spearman": 0.779236376285553
+            "profile_pearson": 0.5603958368301392,
+            "profile_jsd": 0.33232831954956055,
+            "log_counts_pearson": 0.7771793007850647,
+            "counts_spearman": 0.7958929538726807,
+            "orientation_index_pearson": 0.3170449435710907
         },
         "4": {
-            "profile_pearson": 0.5385023951530457,
-            "profile_jsd": 0.3350301682949066,
-            "log_counts_pearson": 0.7508813738822937,
-            "counts_spearman": 0.7613478302955627
+            "profile_pearson": 0.5557181239128113,
+            "profile_jsd": 0.33263832330703735,
+            "log_counts_pearson": 0.7489175796508789,
+            "counts_spearman": 0.7682528495788574,
+            "orientation_index_pearson": 0.3153696656227112
         },
         "5": {
-            "profile_pearson": 0.53147953748703,
-            "profile_jsd": 0.326915442943573,
-            "log_counts_pearson": 0.7732911705970764,
-            "counts_spearman": 0.7955678105354309
+            "profile_pearson": 0.559665322303772,
+            "profile_jsd": 0.3319184482097626,
+            "log_counts_pearson": 0.7675012946128845,
+            "counts_spearman": 0.784528374671936,
+            "orientation_index_pearson": 0.3447268605232239
         },
         "6": {
-            "profile_pearson": 0.5570564866065979,
-            "profile_jsd": 0.32477766275405884,
-            "log_counts_pearson": 0.7245179414749146,
-            "counts_spearman": 0.7408549189567566
+            "profile_pearson": 0.5599149465560913,
+            "profile_jsd": 0.32851770520210266,
+            "log_counts_pearson": 0.724112868309021,
+            "counts_spearman": 0.74489426612854,
+            "orientation_index_pearson": 0.343532532453537
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5380468368530273,
-        "profile_jsd": 0.3354431986808777,
-        "log_counts_pearson": 0.748900830745697,
-        "counts_spearman": 0.7642274498939514
+        "profile_pearson": 0.5581796765327454,
+        "profile_jsd": 0.33251452445983887,
+        "log_counts_pearson": 0.7563177943229675,
+        "counts_spearman": 0.7758946418762207,
+        "orientation_index_pearson": 0.3202184736728668
     }
 }

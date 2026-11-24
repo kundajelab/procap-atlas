@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR407CCJ",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.48898565769195557,
-            "profile_jsd": 0.3347132205963135,
-            "log_counts_pearson": 0.6790149211883545,
-            "counts_spearman": 0.7020018100738525
+            "profile_pearson": 0.5720615386962891,
+            "profile_jsd": 0.318950355052948,
+            "log_counts_pearson": 0.6392555832862854,
+            "counts_spearman": 0.6733720898628235,
+            "orientation_index_pearson": 0.32240575551986694
         },
         "1": {
-            "profile_pearson": 0.4909623861312866,
-            "profile_jsd": 0.33805185556411743,
-            "log_counts_pearson": 0.6788754463195801,
-            "counts_spearman": 0.7135838866233826
+            "profile_pearson": 0.5718427896499634,
+            "profile_jsd": 0.3147505521774292,
+            "log_counts_pearson": 0.6448074579238892,
+            "counts_spearman": 0.6714714765548706,
+            "orientation_index_pearson": 0.33928748965263367
         },
         "2": {
-            "profile_pearson": 0.509116530418396,
-            "profile_jsd": 0.33275461196899414,
-            "log_counts_pearson": 0.6768051385879517,
-            "counts_spearman": 0.702019453048706
+            "profile_pearson": 0.5617595911026001,
+            "profile_jsd": 0.3200885057449341,
+            "log_counts_pearson": 0.6431390643119812,
+            "counts_spearman": 0.6602057814598083,
+            "orientation_index_pearson": 0.33000367879867554
         },
         "3": {
-            "profile_pearson": 0.49386823177337646,
-            "profile_jsd": 0.33148840069770813,
-            "log_counts_pearson": 0.6818313598632812,
-            "counts_spearman": 0.7246394157409668
+            "profile_pearson": 0.5715186595916748,
+            "profile_jsd": 0.31542208790779114,
+            "log_counts_pearson": 0.6421361565589905,
+            "counts_spearman": 0.6805974245071411,
+            "orientation_index_pearson": 0.3642238676548004
         },
         "4": {
-            "profile_pearson": 0.483361154794693,
-            "profile_jsd": 0.342268705368042,
-            "log_counts_pearson": 0.6577553749084473,
-            "counts_spearman": 0.6804070472717285
+            "profile_pearson": 0.5658273100852966,
+            "profile_jsd": 0.3202352821826935,
+            "log_counts_pearson": 0.6098426580429077,
+            "counts_spearman": 0.6264588832855225,
+            "orientation_index_pearson": 0.34774893522262573
         },
         "5": {
-            "profile_pearson": 0.4847710430622101,
-            "profile_jsd": 0.3386794626712799,
-            "log_counts_pearson": 0.6682199239730835,
-            "counts_spearman": 0.6990594863891602
+            "profile_pearson": 0.5777280330657959,
+            "profile_jsd": 0.31749969720840454,
+            "log_counts_pearson": 0.6258321404457092,
+            "counts_spearman": 0.6586126089096069,
+            "orientation_index_pearson": 0.36076927185058594
         },
         "6": {
-            "profile_pearson": 0.516197681427002,
-            "profile_jsd": 0.33024469017982483,
-            "log_counts_pearson": 0.6122586727142334,
-            "counts_spearman": 0.6353848576545715
+            "profile_pearson": 0.5952866673469543,
+            "profile_jsd": 0.31416231393814087,
+            "log_counts_pearson": 0.5949476957321167,
+            "counts_spearman": 0.6268764734268188,
+            "orientation_index_pearson": 0.35582444071769714
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.494878351688385,
-        "profile_jsd": 0.33558955788612366,
-        "log_counts_pearson": 0.663742184638977,
-        "counts_spearman": 0.6924017667770386
+        "profile_pearson": 0.5737543106079102,
+        "profile_jsd": 0.3173270523548126,
+        "log_counts_pearson": 0.624160885810852,
+        "counts_spearman": 0.651843249797821,
+        "orientation_index_pearson": 0.3464730978012085
     }
 }

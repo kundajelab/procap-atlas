@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR964OON",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5661618709564209,
-            "profile_jsd": 0.2966230511665344,
-            "log_counts_pearson": 0.777485728263855,
-            "counts_spearman": 0.7989867329597473
+            "profile_pearson": 0.6068093776702881,
+            "profile_jsd": 0.2909735441207886,
+            "log_counts_pearson": 0.7664183974266052,
+            "counts_spearman": 0.7806113958358765,
+            "orientation_index_pearson": 0.41544878482818604
         },
         "1": {
-            "profile_pearson": 0.5678771138191223,
-            "profile_jsd": 0.30313563346862793,
-            "log_counts_pearson": 0.7923920154571533,
-            "counts_spearman": 0.8159711360931396
+            "profile_pearson": 0.5979806184768677,
+            "profile_jsd": 0.3027805685997009,
+            "log_counts_pearson": 0.774267315864563,
+            "counts_spearman": 0.7963850498199463,
+            "orientation_index_pearson": 0.3595479130744934
         },
         "2": {
-            "profile_pearson": 0.5686802864074707,
-            "profile_jsd": 0.3007042109966278,
-            "log_counts_pearson": 0.7888407111167908,
-            "counts_spearman": 0.8118765950202942
+            "profile_pearson": 0.5994634628295898,
+            "profile_jsd": 0.3008761703968048,
+            "log_counts_pearson": 0.7694138288497925,
+            "counts_spearman": 0.7913248538970947,
+            "orientation_index_pearson": 0.3923248052597046
         },
         "3": {
-            "profile_pearson": 0.567676305770874,
-            "profile_jsd": 0.2986117899417877,
-            "log_counts_pearson": 0.789058268070221,
-            "counts_spearman": 0.811129093170166
+            "profile_pearson": 0.6017532348632812,
+            "profile_jsd": 0.2975199818611145,
+            "log_counts_pearson": 0.7751542925834656,
+            "counts_spearman": 0.7930147647857666,
+            "orientation_index_pearson": 0.40146544575691223
         },
         "4": {
-            "profile_pearson": 0.5538089275360107,
-            "profile_jsd": 0.30335158109664917,
-            "log_counts_pearson": 0.7737452387809753,
-            "counts_spearman": 0.7957035303115845
+            "profile_pearson": 0.5947625637054443,
+            "profile_jsd": 0.29772722721099854,
+            "log_counts_pearson": 0.760047435760498,
+            "counts_spearman": 0.7805147171020508,
+            "orientation_index_pearson": 0.3988530933856964
         },
         "5": {
-            "profile_pearson": 0.5691251158714294,
-            "profile_jsd": 0.29708027839660645,
-            "log_counts_pearson": 0.7928091287612915,
-            "counts_spearman": 0.810452401638031
+            "profile_pearson": 0.6041832566261292,
+            "profile_jsd": 0.2927319407463074,
+            "log_counts_pearson": 0.77882319688797,
+            "counts_spearman": 0.7942396998405457,
+            "orientation_index_pearson": 0.42221149802207947
         },
         "6": {
-            "profile_pearson": 0.5651007890701294,
-            "profile_jsd": 0.30158764123916626,
-            "log_counts_pearson": 0.7334864139556885,
-            "counts_spearman": 0.753872811794281
+            "profile_pearson": 0.6126434803009033,
+            "profile_jsd": 0.2948843538761139,
+            "log_counts_pearson": 0.7206779718399048,
+            "counts_spearman": 0.7389039397239685,
+            "orientation_index_pearson": 0.4300925135612488
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5656057596206665,
-        "profile_jsd": 0.30034732818603516,
-        "log_counts_pearson": 0.7787274122238159,
-        "counts_spearman": 0.8000725507736206
+        "profile_pearson": 0.6026518940925598,
+        "profile_jsd": 0.29640817642211914,
+        "log_counts_pearson": 0.7623031139373779,
+        "counts_spearman": 0.7804590463638306,
+        "orientation_index_pearson": 0.4044053256511688
     }
 }

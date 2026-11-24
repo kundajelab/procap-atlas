@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR386UFU",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5630062818527222,
-            "profile_jsd": 0.3497084379196167,
-            "log_counts_pearson": 0.7279157042503357,
-            "counts_spearman": 0.7313486337661743
+            "profile_pearson": 0.5403165817260742,
+            "profile_jsd": 0.3626522421836853,
+            "log_counts_pearson": 0.711239755153656,
+            "counts_spearman": 0.7135074138641357,
+            "orientation_index_pearson": 0.4198108911514282
         },
         "1": {
-            "profile_pearson": 0.5511977076530457,
-            "profile_jsd": 0.3662984371185303,
-            "log_counts_pearson": 0.7364099025726318,
-            "counts_spearman": 0.7263613343238831
+            "profile_pearson": 0.5311924815177917,
+            "profile_jsd": 0.3762205243110657,
+            "log_counts_pearson": 0.7342033982276917,
+            "counts_spearman": 0.724494457244873,
+            "orientation_index_pearson": 0.37123095989227295
         },
         "2": {
-            "profile_pearson": 0.5611635446548462,
-            "profile_jsd": 0.3541700541973114,
-            "log_counts_pearson": 0.6882666349411011,
-            "counts_spearman": 0.6885045170783997
+            "profile_pearson": 0.5356782674789429,
+            "profile_jsd": 0.37070631980895996,
+            "log_counts_pearson": 0.6888454556465149,
+            "counts_spearman": 0.6876905560493469,
+            "orientation_index_pearson": 0.4005642831325531
         },
         "3": {
-            "profile_pearson": 0.5533310174942017,
-            "profile_jsd": 0.3606494665145874,
-            "log_counts_pearson": 0.7467839121818542,
-            "counts_spearman": 0.745189905166626
+            "profile_pearson": 0.5368075370788574,
+            "profile_jsd": 0.3728765845298767,
+            "log_counts_pearson": 0.7255458831787109,
+            "counts_spearman": 0.7302254438400269,
+            "orientation_index_pearson": 0.4114682972431183
         },
         "4": {
-            "profile_pearson": 0.5424803495407104,
-            "profile_jsd": 0.3606896996498108,
-            "log_counts_pearson": 0.6840469837188721,
-            "counts_spearman": 0.6805209517478943
+            "profile_pearson": 0.5353960990905762,
+            "profile_jsd": 0.36987465620040894,
+            "log_counts_pearson": 0.6698039174079895,
+            "counts_spearman": 0.6669906377792358,
+            "orientation_index_pearson": 0.40481680631637573
         },
         "5": {
-            "profile_pearson": 0.5576183795928955,
-            "profile_jsd": 0.3545437157154083,
-            "log_counts_pearson": 0.7190380096435547,
-            "counts_spearman": 0.7138925194740295
+            "profile_pearson": 0.5442851185798645,
+            "profile_jsd": 0.36714816093444824,
+            "log_counts_pearson": 0.7045451402664185,
+            "counts_spearman": 0.7033047676086426,
+            "orientation_index_pearson": 0.4127407968044281
         },
         "6": {
-            "profile_pearson": 0.5301276445388794,
-            "profile_jsd": 0.3631812036037445,
-            "log_counts_pearson": 0.643790602684021,
-            "counts_spearman": 0.6493345499038696
+            "profile_pearson": 0.5201783776283264,
+            "profile_jsd": 0.3736342191696167,
+            "log_counts_pearson": 0.6339282989501953,
+            "counts_spearman": 0.6393579840660095,
+            "orientation_index_pearson": 0.3631848692893982
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.550957202911377,
-        "profile_jsd": 0.3584688901901245,
-        "log_counts_pearson": 0.7051813006401062,
-        "counts_spearman": 0.7046567797660828
+        "profile_pearson": 0.5348970890045166,
+        "profile_jsd": 0.37027353048324585,
+        "log_counts_pearson": 0.6939094066619873,
+        "counts_spearman": 0.69462651014328,
+        "orientation_index_pearson": 0.3975673317909241
     }
 }

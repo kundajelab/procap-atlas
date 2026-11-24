@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR482XCK",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5792118906974792,
-            "profile_jsd": 0.28711605072021484,
-            "log_counts_pearson": 0.7584126591682434,
-            "counts_spearman": 0.7775276899337769
+            "profile_pearson": 0.586034893989563,
+            "profile_jsd": 0.29723164439201355,
+            "log_counts_pearson": 0.7473618984222412,
+            "counts_spearman": 0.7631995677947998,
+            "orientation_index_pearson": 0.35282352566719055
         },
         "1": {
-            "profile_pearson": 0.5635741353034973,
-            "profile_jsd": 0.2967451512813568,
-            "log_counts_pearson": 0.7696064114570618,
-            "counts_spearman": 0.7887114882469177
+            "profile_pearson": 0.5742654204368591,
+            "profile_jsd": 0.3039013147354126,
+            "log_counts_pearson": 0.7554893493652344,
+            "counts_spearman": 0.7717434763908386,
+            "orientation_index_pearson": 0.34866198897361755
         },
         "2": {
-            "profile_pearson": 0.57628333568573,
-            "profile_jsd": 0.2943679690361023,
-            "log_counts_pearson": 0.7598806023597717,
-            "counts_spearman": 0.7798857092857361
+            "profile_pearson": 0.5640819072723389,
+            "profile_jsd": 0.30911189317703247,
+            "log_counts_pearson": 0.7474895119667053,
+            "counts_spearman": 0.7654685378074646,
+            "orientation_index_pearson": 0.33038800954818726
         },
         "3": {
-            "profile_pearson": 0.5764977335929871,
-            "profile_jsd": 0.2926064729690552,
-            "log_counts_pearson": 0.7612139582633972,
-            "counts_spearman": 0.7805659770965576
+            "profile_pearson": 0.5756924748420715,
+            "profile_jsd": 0.30127477645874023,
+            "log_counts_pearson": 0.7516229748725891,
+            "counts_spearman": 0.7689492702484131,
+            "orientation_index_pearson": 0.3644472658634186
         },
         "4": {
-            "profile_pearson": 0.5592252016067505,
-            "profile_jsd": 0.2946651577949524,
-            "log_counts_pearson": 0.7614806890487671,
-            "counts_spearman": 0.7811881303787231
+            "profile_pearson": 0.5705845355987549,
+            "profile_jsd": 0.30112022161483765,
+            "log_counts_pearson": 0.7510746717453003,
+            "counts_spearman": 0.768068790435791,
+            "orientation_index_pearson": 0.3776770830154419
         },
         "5": {
-            "profile_pearson": 0.572258472442627,
-            "profile_jsd": 0.2909364104270935,
-            "log_counts_pearson": 0.7757036685943604,
-            "counts_spearman": 0.7989161014556885
+            "profile_pearson": 0.5762170553207397,
+            "profile_jsd": 0.29860594868659973,
+            "log_counts_pearson": 0.7612180709838867,
+            "counts_spearman": 0.7800909876823425,
+            "orientation_index_pearson": 0.36836564540863037
         },
         "6": {
-            "profile_pearson": 0.5782783031463623,
-            "profile_jsd": 0.2840530276298523,
-            "log_counts_pearson": 0.7268754243850708,
-            "counts_spearman": 0.756343424320221
+            "profile_pearson": 0.5926468372344971,
+            "profile_jsd": 0.28761932253837585,
+            "log_counts_pearson": 0.7266655564308167,
+            "counts_spearman": 0.7502359747886658,
+            "orientation_index_pearson": 0.4065985083580017
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.571854829788208,
-        "profile_jsd": 0.29150986671447754,
-        "log_counts_pearson": 0.7596608400344849,
-        "counts_spearman": 0.7817471623420715
+        "profile_pearson": 0.5766713619232178,
+        "profile_jsd": 0.2998121380805969,
+        "log_counts_pearson": 0.7486924529075623,
+        "counts_spearman": 0.7672911882400513,
+        "orientation_index_pearson": 0.36485129594802856
     }
 }

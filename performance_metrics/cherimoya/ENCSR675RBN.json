@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR675RBN",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.40516066551208496,
-            "profile_jsd": 0.4407077431678772,
-            "log_counts_pearson": 0.4341425597667694,
-            "counts_spearman": 0.3953975737094879
+            "profile_pearson": 0.3129701018333435,
+            "profile_jsd": 0.5969087481498718,
+            "log_counts_pearson": 0.3486672341823578,
+            "counts_spearman": 0.26480138301849365,
+            "orientation_index_pearson": 0.10146991908550262
         },
         "1": {
-            "profile_pearson": 0.07520591467618942,
-            "profile_jsd": 0.676683783531189,
-            "log_counts_pearson": 0.1455778330564499,
-            "counts_spearman": 0.11594382673501968
+            "profile_pearson": 0.22090716660022736,
+            "profile_jsd": 0.6291714906692505,
+            "log_counts_pearson": 0.24732573330402374,
+            "counts_spearman": 0.20034676790237427,
+            "orientation_index_pearson": 0.016884777694940567
         },
         "2": {
-            "profile_pearson": 0.39420250058174133,
-            "profile_jsd": 0.43380528688430786,
-            "log_counts_pearson": 0.2862786650657654,
-            "counts_spearman": 0.27930787205696106
+            "profile_pearson": 0.33598947525024414,
+            "profile_jsd": 0.5913760662078857,
+            "log_counts_pearson": 0.21837009489536285,
+            "counts_spearman": 0.19142216444015503,
+            "orientation_index_pearson": 0.22903384268283844
         },
         "3": {
-            "profile_pearson": 0.4530225992202759,
-            "profile_jsd": 0.4222220778465271,
-            "log_counts_pearson": 0.35027000308036804,
-            "counts_spearman": 0.3544827401638031
+            "profile_pearson": 0.3240557014942169,
+            "profile_jsd": 0.5934003591537476,
+            "log_counts_pearson": 0.2982857823371887,
+            "counts_spearman": 0.26716357469558716,
+            "orientation_index_pearson": 0.20752590894699097
         },
         "4": {
-            "profile_pearson": 0.3955102562904358,
-            "profile_jsd": 0.43968430161476135,
-            "log_counts_pearson": 0.28161686658859253,
-            "counts_spearman": 0.329491525888443
+            "profile_pearson": 0.25970029830932617,
+            "profile_jsd": 0.6186334490776062,
+            "log_counts_pearson": 0.2109486311674118,
+            "counts_spearman": 0.23452100157737732,
+            "orientation_index_pearson": 0.12541434168815613
         },
         "5": {
-            "profile_pearson": 0.07059528678655624,
-            "profile_jsd": 0.6764479875564575,
-            "log_counts_pearson": 0.18689334392547607,
-            "counts_spearman": 0.19203223288059235
+            "profile_pearson": 0.28289201855659485,
+            "profile_jsd": 0.6082329750061035,
+            "log_counts_pearson": 0.2876776456832886,
+            "counts_spearman": 0.28103286027908325,
+            "orientation_index_pearson": 0.11390272527933121
         },
         "6": {
-            "profile_pearson": 0.5020362138748169,
-            "profile_jsd": 0.4051482081413269,
-            "log_counts_pearson": 0.18333223462104797,
-            "counts_spearman": 0.2602635324001312
+            "profile_pearson": 0.2439163327217102,
+            "profile_jsd": 0.6343536376953125,
+            "log_counts_pearson": 0.16697588562965393,
+            "counts_spearman": 0.1818968951702118,
+            "orientation_index_pearson": 0.19486728310585022
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.15686427056789398,
-        "profile_jsd": 0.5489932298660278,
-        "log_counts_pearson": 0.06634512543678284,
-        "counts_spearman": 0.12075646966695786
+        "profile_pearson": 0.2794322371482849,
+        "profile_jsd": 0.6117063164710999,
+        "log_counts_pearson": 0.20440328121185303,
+        "counts_spearman": 0.20091512799263,
+        "orientation_index_pearson": 0.12080419808626175
     }
 }
