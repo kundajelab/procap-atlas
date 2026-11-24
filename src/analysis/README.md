@@ -2210,6 +2210,22 @@ python src/analysis/count_correlation.py --model bpnet --device cuda \
     --out-dir figures/count_correlation_all198
 ```
 
+The Cherimoya counterpart uses the same flags with `--model cherimoya`, run
+inside the Cherimoya Apptainer image (its folds are state dicts that need the
+`cherimoya` package's `Cherimoya.load`, and Torch >= 2.9), with its own
+output directories:
+
+```bash
+apptainer exec --nv --bind "$PWD" cherimoya-0.2.1.sif \
+    python src/analysis/count_correlation.py --model cherimoya --device cuda \
+    --held-out-folds --min-reads 10000000 --max-peaks 100000 \
+    --out-dir figures/count_correlation_all198_cherimoya
+python src/analysis/cross_celltype_prediction.py \
+    --observed figures/count_correlation_all198_cherimoya/observed_counts.tsv \
+    --predicted figures/count_correlation_all198_cherimoya/predicted_counts.tsv \
+    --out-dir figures/cross_celltype_all198_cherimoya
+```
+
 `224 -> 219` (one blacklisted, four uncapped) `-> 198` above 10M reads. No
 `--balanced-per-group` or `--replicates-per-group`: both are superseded by
 running everything. Give it a distinct `--out-dir`, since the default
