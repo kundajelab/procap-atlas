@@ -287,12 +287,27 @@ def unassigned_chroms(union_peaks: pd.DataFrame, assignment: dict[str, int]) -> 
     return sorted(set(union_peaks["chrom"]) - set(assignment))
 
 
+def load_fold_model(model_path: Path, model_type: str) -> torch.nn.Module:
+    """Load one fold model onto the CPU; predict() moves it to the device.
+
+    BPNet folds are pickled whole modules, but Cherimoya folds are state dicts
+    that only Cherimoya.load can rebuild. compile=False for the same reason as
+    benchmark_cherimoya.py: one inference pass doesn't repay compile warmup.
+    """
+    if model_type == "cherimoya":
+        from cherimoya import Cherimoya
+
+        return Cherimoya.load(model_path, device="cpu", compile=False)
+    return torch.load(model_path, weights_only=False, map_location="cpu")
+
+
 def extract_heldout_counts(
     union_peaks: pd.DataFrame,
     pl_bw: str,
     mn_bw: str,
     total_reads: float,
     model_dir: Path,
+    model_type: str,
     exp_id: str,
     assignment: dict[str, int],
     batch_size: int,
@@ -317,7 +332,7 @@ def extract_heldout_counts(
         model_path = model_dir / f"{exp_id}.fold{fold}.torch"
         if not model_path.exists():
             return np.concatenate(obs_parts) if obs_parts else np.array([]), None
-        model = torch.load(model_path, weights_only=False, map_location="cpu")
+        model = load_fold_model(model_path, model_type)
         pred = predict(
             model=model, X=X, batch_size=batch_size, device=device, verbose=False
         )
@@ -334,6 +349,7 @@ def extract_heldout_counts(
 def extract_predicted_counts(
     X: torch.Tensor,
     model_dir: Path,
+    model_type: str,
     exp_id: str,
     batch_size: int,
     device: str,
@@ -355,7 +371,7 @@ def extract_predicted_counts(
         model_path = model_dir / f"{exp_id}.fold{fold}.torch"
         if not model_path.exists():
             continue
-        model = torch.load(model_path, weights_only=False, map_location="cpu")
+        model = load_fold_model(model_path, model_type)
         pred = predict(model=model, X=X, batch_size=batch_size, device=device, verbose=False)
         # pred: (profile_logits, log_counts)
         # scaled = softmax(profile) * exp(log_counts), shape (n_peaks, 2, 1000)
@@ -791,8 +807,8 @@ def main():
                 )
                 continue
             obs, pred = extract_heldout_counts(
-                union_peaks, pl_path, mn_path, total_reads, model_dir, exp_id,
-                fold_assignment, args.batch_size, args.device,
+                union_peaks, pl_path, mn_path, total_reads, model_dir, args.model,
+                exp_id, fold_assignment, args.batch_size, args.device,
             )
             if not len(obs):
                 print(f"WARNING: {exp_id}: no peaks survived, skipping", file=sys.stderr)
@@ -839,7 +855,7 @@ def main():
                 )
             else:
                 pred = extract_predicted_counts(
-                    X, model_dir, exp_id, args.batch_size, args.device
+                    X, model_dir, args.model, exp_id, args.batch_size, args.device
                 )
                 if pred is not None:
                     pred_rows[exp_id] = pred
