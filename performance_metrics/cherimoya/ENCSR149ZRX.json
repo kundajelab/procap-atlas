@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR149ZRX",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.41672831773757935,
-            "profile_jsd": 0.4220656752586365,
-            "log_counts_pearson": 0.6078293919563293,
-            "counts_spearman": 0.6685885787010193
+            "profile_pearson": 0.4278269410133362,
+            "profile_jsd": 0.4272227883338928,
+            "log_counts_pearson": 0.5926679968833923,
+            "counts_spearman": 0.6636173725128174,
+            "orientation_index_pearson": 0.32606562972068787
         },
         "1": {
-            "profile_pearson": 0.44177132844924927,
-            "profile_jsd": 0.4062812924385071,
-            "log_counts_pearson": 0.5674954056739807,
-            "counts_spearman": 0.640640139579773
+            "profile_pearson": 0.4693305194377899,
+            "profile_jsd": 0.40459370613098145,
+            "log_counts_pearson": 0.5431714057922363,
+            "counts_spearman": 0.5883672833442688,
+            "orientation_index_pearson": 0.176520437002182
         },
         "2": {
-            "profile_pearson": 0.31837964057922363,
-            "profile_jsd": 0.511471152305603,
-            "log_counts_pearson": 0.5172268152236938,
-            "counts_spearman": 0.5412625074386597
+            "profile_pearson": 0.21708939969539642,
+            "profile_jsd": 0.5597628355026245,
+            "log_counts_pearson": 0.5053719282150269,
+            "counts_spearman": 0.5303811430931091,
+            "orientation_index_pearson": -0.02170400321483612
         },
         "3": {
-            "profile_pearson": 0.31479284167289734,
-            "profile_jsd": 0.5094496011734009,
-            "log_counts_pearson": 0.5905368328094482,
-            "counts_spearman": 0.6234464049339294
+            "profile_pearson": 0.4119836091995239,
+            "profile_jsd": 0.4350700378417969,
+            "log_counts_pearson": 0.5921458601951599,
+            "counts_spearman": 0.6520465016365051,
+            "orientation_index_pearson": 0.24217857420444489
         },
         "4": {
-            "profile_pearson": 0.40200263261795044,
-            "profile_jsd": 0.4532032012939453,
-            "log_counts_pearson": 0.49808910489082336,
-            "counts_spearman": 0.5295786261558533
+            "profile_pearson": 0.4410192370414734,
+            "profile_jsd": 0.42270830273628235,
+            "log_counts_pearson": 0.49777042865753174,
+            "counts_spearman": 0.5546804666519165,
+            "orientation_index_pearson": 0.29052409529685974
         },
         "5": {
-            "profile_pearson": 0.2038579136133194,
-            "profile_jsd": 0.5826728343963623,
-            "log_counts_pearson": 0.4118117094039917,
-            "counts_spearman": 0.4047394096851349
+            "profile_pearson": 0.21227097511291504,
+            "profile_jsd": 0.5777386426925659,
+            "log_counts_pearson": 0.4581034779548645,
+            "counts_spearman": 0.4558560252189636,
+            "orientation_index_pearson": 0.10606950521469116
         },
         "6": {
-            "profile_pearson": 0.33370357751846313,
-            "profile_jsd": 0.49493178725242615,
-            "log_counts_pearson": 0.41053953766822815,
-            "counts_spearman": 0.4537050127983093
+            "profile_pearson": 0.3719983696937561,
+            "profile_jsd": 0.4744197726249695,
+            "log_counts_pearson": 0.4141499996185303,
+            "counts_spearman": 0.46062204241752625,
+            "orientation_index_pearson": -0.015438796021044254
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.31545960903167725,
-        "profile_jsd": 0.5054686069488525,
-        "log_counts_pearson": 0.3154120147228241,
-        "counts_spearman": 0.3274625539779663
+        "profile_pearson": 0.30725574493408203,
+        "profile_jsd": 0.5119484663009644,
+        "log_counts_pearson": 0.355832040309906,
+        "counts_spearman": 0.3716717064380646,
+        "orientation_index_pearson": 0.15065352618694305
     }
 }

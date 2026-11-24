@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR294JPW",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5619227886199951,
-            "profile_jsd": 0.3205301761627197,
-            "log_counts_pearson": 0.7320205569267273,
-            "counts_spearman": 0.7456655502319336
+            "profile_pearson": 0.5918015241622925,
+            "profile_jsd": 0.3105020523071289,
+            "log_counts_pearson": 0.7424732446670532,
+            "counts_spearman": 0.7629050612449646,
+            "orientation_index_pearson": 0.33436134457588196
         },
         "1": {
-            "profile_pearson": 0.539086103439331,
-            "profile_jsd": 0.33150017261505127,
-            "log_counts_pearson": 0.7381063103675842,
-            "counts_spearman": 0.7475634217262268
+            "profile_pearson": 0.5820555090904236,
+            "profile_jsd": 0.3126417398452759,
+            "log_counts_pearson": 0.7492950558662415,
+            "counts_spearman": 0.76900714635849,
+            "orientation_index_pearson": 0.32938554883003235
         },
         "2": {
-            "profile_pearson": 0.48871397972106934,
-            "profile_jsd": 0.3673167824745178,
-            "log_counts_pearson": 0.715378999710083,
-            "counts_spearman": 0.7158433198928833
+            "profile_pearson": 0.5719441771507263,
+            "profile_jsd": 0.3181195557117462,
+            "log_counts_pearson": 0.7251356244087219,
+            "counts_spearman": 0.7420896887779236,
+            "orientation_index_pearson": 0.30934643745422363
         },
         "3": {
-            "profile_pearson": 0.5341188311576843,
-            "profile_jsd": 0.334436297416687,
-            "log_counts_pearson": 0.7228067517280579,
-            "counts_spearman": 0.7276256680488586
+            "profile_pearson": 0.5649619102478027,
+            "profile_jsd": 0.3199312090873718,
+            "log_counts_pearson": 0.7345991730690002,
+            "counts_spearman": 0.7466533184051514,
+            "orientation_index_pearson": 0.3110741078853607
         },
         "4": {
-            "profile_pearson": 0.5065469145774841,
-            "profile_jsd": 0.34581512212753296,
-            "log_counts_pearson": 0.7243648767471313,
-            "counts_spearman": 0.7288738489151001
+            "profile_pearson": 0.5210973620414734,
+            "profile_jsd": 0.3577951192855835,
+            "log_counts_pearson": 0.7324361801147461,
+            "counts_spearman": 0.7381158471107483,
+            "orientation_index_pearson": 0.25385236740112305
         },
         "5": {
-            "profile_pearson": 0.5411787629127502,
-            "profile_jsd": 0.3191389739513397,
-            "log_counts_pearson": 0.736283004283905,
-            "counts_spearman": 0.7683525681495667
+            "profile_pearson": 0.5867771506309509,
+            "profile_jsd": 0.30945155024528503,
+            "log_counts_pearson": 0.7313629984855652,
+            "counts_spearman": 0.7535686492919922,
+            "orientation_index_pearson": 0.3311564028263092
         },
         "6": {
-            "profile_pearson": 0.5713497400283813,
-            "profile_jsd": 0.30873703956604004,
-            "log_counts_pearson": 0.682640552520752,
-            "counts_spearman": 0.6962026953697205
+            "profile_pearson": 0.6059004068374634,
+            "profile_jsd": 0.2918069064617157,
+            "log_counts_pearson": 0.692186713218689,
+            "counts_spearman": 0.7181605696678162,
+            "orientation_index_pearson": 0.37136179208755493
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5364177227020264,
-        "profile_jsd": 0.331400066614151,
-        "log_counts_pearson": 0.6925820708274841,
-        "counts_spearman": 0.7054892778396606
+        "profile_pearson": 0.5742963552474976,
+        "profile_jsd": 0.31754469871520996,
+        "log_counts_pearson": 0.7190389037132263,
+        "counts_spearman": 0.7362924814224243,
+        "orientation_index_pearson": 0.3188932538032532
     }
 }

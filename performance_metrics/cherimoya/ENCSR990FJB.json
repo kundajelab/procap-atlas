@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR990FJB",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.6224408745765686,
-            "profile_jsd": 0.2680210769176483,
-            "log_counts_pearson": 0.7705248594284058,
-            "counts_spearman": 0.8092154860496521
+            "profile_pearson": 0.6682952642440796,
+            "profile_jsd": 0.2583351135253906,
+            "log_counts_pearson": 0.7528743743896484,
+            "counts_spearman": 0.7907247543334961,
+            "orientation_index_pearson": 0.4937101900577545
         },
         "1": {
-            "profile_pearson": 0.6423102021217346,
-            "profile_jsd": 0.2569637894630432,
-            "log_counts_pearson": 0.7759380340576172,
-            "counts_spearman": 0.8139886856079102
+            "profile_pearson": 0.6670099496841431,
+            "profile_jsd": 0.2512394189834595,
+            "log_counts_pearson": 0.7626771330833435,
+            "counts_spearman": 0.8013783097267151,
+            "orientation_index_pearson": 0.480699360370636
         },
         "2": {
-            "profile_pearson": 0.637215793132782,
-            "profile_jsd": 0.26748818159103394,
-            "log_counts_pearson": 0.7772095799446106,
-            "counts_spearman": 0.8147728443145752
+            "profile_pearson": 0.6729532480239868,
+            "profile_jsd": 0.26031482219696045,
+            "log_counts_pearson": 0.7552986145019531,
+            "counts_spearman": 0.7983005046844482,
+            "orientation_index_pearson": 0.47658783197402954
         },
         "3": {
-            "profile_pearson": 0.5686824321746826,
-            "profile_jsd": 0.305814266204834,
-            "log_counts_pearson": 0.7423430681228638,
-            "counts_spearman": 0.7495956420898438
+            "profile_pearson": 0.6777273416519165,
+            "profile_jsd": 0.25565287470817566,
+            "log_counts_pearson": 0.7433924078941345,
+            "counts_spearman": 0.7893784642219543,
+            "orientation_index_pearson": 0.4921611547470093
         },
         "4": {
-            "profile_pearson": 0.6371106505393982,
-            "profile_jsd": 0.26190799474716187,
-            "log_counts_pearson": 0.7482534646987915,
-            "counts_spearman": 0.7983056902885437
+            "profile_pearson": 0.6840486526489258,
+            "profile_jsd": 0.2527064085006714,
+            "log_counts_pearson": 0.738716185092926,
+            "counts_spearman": 0.7831228375434875,
+            "orientation_index_pearson": 0.49710407853126526
         },
         "5": {
-            "profile_pearson": 0.638201117515564,
-            "profile_jsd": 0.26048362255096436,
-            "log_counts_pearson": 0.7631080150604248,
-            "counts_spearman": 0.8061378598213196
+            "profile_pearson": 0.6770895719528198,
+            "profile_jsd": 0.2508441209793091,
+            "log_counts_pearson": 0.7389281988143921,
+            "counts_spearman": 0.7828088998794556,
+            "orientation_index_pearson": 0.4929821193218231
         },
         "6": {
-            "profile_pearson": 0.6437971591949463,
-            "profile_jsd": 0.26261386275291443,
-            "log_counts_pearson": 0.6788168549537659,
-            "counts_spearman": 0.6962385177612305
+            "profile_pearson": 0.6732284426689148,
+            "profile_jsd": 0.25104981660842896,
+            "log_counts_pearson": 0.6791462898254395,
+            "counts_spearman": 0.7233826518058777,
+            "orientation_index_pearson": 0.510720431804657
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.6292288303375244,
-        "profile_jsd": 0.26761898398399353,
-        "log_counts_pearson": 0.6700190305709839,
-        "counts_spearman": 0.7141184210777283
+        "profile_pearson": 0.6743997931480408,
+        "profile_jsd": 0.25406330823898315,
+        "log_counts_pearson": 0.737540602684021,
+        "counts_spearman": 0.7793650031089783,
+        "orientation_index_pearson": 0.49235621094703674
     }
 }

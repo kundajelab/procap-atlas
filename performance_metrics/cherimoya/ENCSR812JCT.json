@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR812JCT",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.4761626124382019,
-            "profile_jsd": 0.37866777181625366,
-            "log_counts_pearson": 0.7452445030212402,
-            "counts_spearman": 0.7657000422477722
+            "profile_pearson": 0.5037179589271545,
+            "profile_jsd": 0.37967967987060547,
+            "log_counts_pearson": 0.7489861249923706,
+            "counts_spearman": 0.7555294632911682,
+            "orientation_index_pearson": 0.16071967780590057
         },
         "1": {
-            "profile_pearson": 0.4717858135700226,
-            "profile_jsd": 0.3951018750667572,
-            "log_counts_pearson": 0.7317409515380859,
-            "counts_spearman": 0.7338337898254395
+            "profile_pearson": 0.4864819049835205,
+            "profile_jsd": 0.38722002506256104,
+            "log_counts_pearson": 0.7425261735916138,
+            "counts_spearman": 0.7426037192344666,
+            "orientation_index_pearson": 0.13202904164791107
         },
         "2": {
-            "profile_pearson": 0.4531245231628418,
-            "profile_jsd": 0.40632838010787964,
-            "log_counts_pearson": 0.7532903552055359,
-            "counts_spearman": 0.7552886605262756
+            "profile_pearson": 0.5054588913917542,
+            "profile_jsd": 0.37831616401672363,
+            "log_counts_pearson": 0.7637590169906616,
+            "counts_spearman": 0.7702190279960632,
+            "orientation_index_pearson": 0.1965453177690506
         },
         "3": {
-            "profile_pearson": 0.4943898916244507,
-            "profile_jsd": 0.37239885330200195,
-            "log_counts_pearson": 0.7690945267677307,
-            "counts_spearman": 0.7879043817520142
+            "profile_pearson": 0.5109093189239502,
+            "profile_jsd": 0.37594425678253174,
+            "log_counts_pearson": 0.7651472091674805,
+            "counts_spearman": 0.7795829176902771,
+            "orientation_index_pearson": 0.2207387387752533
         },
         "4": {
-            "profile_pearson": 0.47235578298568726,
-            "profile_jsd": 0.3787387013435364,
-            "log_counts_pearson": 0.7617325782775879,
-            "counts_spearman": 0.7793746590614319
+            "profile_pearson": 0.4958474636077881,
+            "profile_jsd": 0.376437783241272,
+            "log_counts_pearson": 0.7574996948242188,
+            "counts_spearman": 0.7654389142990112,
+            "orientation_index_pearson": 0.19119158387184143
         },
         "5": {
-            "profile_pearson": 0.4950404167175293,
-            "profile_jsd": 0.36843839287757874,
-            "log_counts_pearson": 0.7586849331855774,
-            "counts_spearman": 0.7834170460700989
+            "profile_pearson": 0.51710045337677,
+            "profile_jsd": 0.36614131927490234,
+            "log_counts_pearson": 0.7582038044929504,
+            "counts_spearman": 0.7715177536010742,
+            "orientation_index_pearson": 0.24027970433235168
         },
         "6": {
-            "profile_pearson": 0.5088350772857666,
-            "profile_jsd": 0.3541221618652344,
-            "log_counts_pearson": 0.7402920722961426,
-            "counts_spearman": 0.767837405204773
+            "profile_pearson": 0.5310887098312378,
+            "profile_jsd": 0.34853556752204895,
+            "log_counts_pearson": 0.7457173466682434,
+            "counts_spearman": 0.7667802572250366,
+            "orientation_index_pearson": 0.25249356031417847
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.48157423734664917,
-        "profile_jsd": 0.37774887681007385,
-        "log_counts_pearson": 0.741671085357666,
-        "counts_spearman": 0.7601500153541565
+        "profile_pearson": 0.5071300268173218,
+        "profile_jsd": 0.3726557493209839,
+        "log_counts_pearson": 0.7524709701538086,
+        "counts_spearman": 0.7638249397277832,
+        "orientation_index_pearson": 0.1998131275177002
     }
 }

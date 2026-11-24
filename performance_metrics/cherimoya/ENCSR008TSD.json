@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR008TSD",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5597328543663025,
-            "profile_jsd": 0.29705488681793213,
-            "log_counts_pearson": 0.749858558177948,
-            "counts_spearman": 0.7679257988929749
+            "profile_pearson": 0.5975132584571838,
+            "profile_jsd": 0.2963032126426697,
+            "log_counts_pearson": 0.7405823469161987,
+            "counts_spearman": 0.7551272511482239,
+            "orientation_index_pearson": 0.3979472815990448
         },
         "1": {
-            "profile_pearson": 0.5648403763771057,
-            "profile_jsd": 0.3087320923805237,
-            "log_counts_pearson": 0.7526607513427734,
-            "counts_spearman": 0.7603055834770203
+            "profile_pearson": 0.5924178957939148,
+            "profile_jsd": 0.29963022470474243,
+            "log_counts_pearson": 0.7535049319267273,
+            "counts_spearman": 0.7703490853309631,
+            "orientation_index_pearson": 0.3664063513278961
         },
         "2": {
-            "profile_pearson": 0.5540628433227539,
-            "profile_jsd": 0.3176506757736206,
-            "log_counts_pearson": 0.7231752276420593,
-            "counts_spearman": 0.7285900115966797
+            "profile_pearson": 0.5851019024848938,
+            "profile_jsd": 0.30216777324676514,
+            "log_counts_pearson": 0.729907214641571,
+            "counts_spearman": 0.7491124272346497,
+            "orientation_index_pearson": 0.36609742045402527
         },
         "3": {
-            "profile_pearson": 0.556721568107605,
-            "profile_jsd": 0.3114299774169922,
-            "log_counts_pearson": 0.7406756281852722,
-            "counts_spearman": 0.745613157749176
+            "profile_pearson": 0.5911531448364258,
+            "profile_jsd": 0.2972758412361145,
+            "log_counts_pearson": 0.7413617968559265,
+            "counts_spearman": 0.7575386762619019,
+            "orientation_index_pearson": 0.38099122047424316
         },
         "4": {
-            "profile_pearson": 0.5697200894355774,
-            "profile_jsd": 0.3074972629547119,
-            "log_counts_pearson": 0.7126399874687195,
-            "counts_spearman": 0.7208022475242615
+            "profile_pearson": 0.5972573757171631,
+            "profile_jsd": 0.30111217498779297,
+            "log_counts_pearson": 0.7140817046165466,
+            "counts_spearman": 0.7369183301925659,
+            "orientation_index_pearson": 0.3940207064151764
         },
         "5": {
-            "profile_pearson": 0.572221577167511,
-            "profile_jsd": 0.3049408197402954,
-            "log_counts_pearson": 0.7020589113235474,
-            "counts_spearman": 0.7185447216033936
+            "profile_pearson": 0.6035187244415283,
+            "profile_jsd": 0.297645628452301,
+            "log_counts_pearson": 0.7085802555084229,
+            "counts_spearman": 0.7372837066650391,
+            "orientation_index_pearson": 0.3962104022502899
         },
         "6": {
-            "profile_pearson": 0.5705206990242004,
-            "profile_jsd": 0.29966217279434204,
-            "log_counts_pearson": 0.6881237030029297,
-            "counts_spearman": 0.7116695642471313
+            "profile_pearson": 0.59952712059021,
+            "profile_jsd": 0.29631441831588745,
+            "log_counts_pearson": 0.6785794496536255,
+            "counts_spearman": 0.6908196806907654,
+            "orientation_index_pearson": 0.3955422639846802
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5651718378067017,
-        "profile_jsd": 0.30601081252098083,
-        "log_counts_pearson": 0.705767810344696,
-        "counts_spearman": 0.7200958132743835
+        "profile_pearson": 0.595321774482727,
+        "profile_jsd": 0.2984507083892822,
+        "log_counts_pearson": 0.7191842198371887,
+        "counts_spearman": 0.7378889322280884,
+        "orientation_index_pearson": 0.3859778046607971
     }
 }

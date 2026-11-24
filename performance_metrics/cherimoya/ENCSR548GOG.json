@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR548GOG",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.550324559211731,
-            "profile_jsd": 0.3169296085834503,
-            "log_counts_pearson": 0.7636123895645142,
-            "counts_spearman": 0.782282829284668
+            "profile_pearson": 0.5731787085533142,
+            "profile_jsd": 0.3255867660045624,
+            "log_counts_pearson": 0.7521514296531677,
+            "counts_spearman": 0.7682685256004333,
+            "orientation_index_pearson": 0.3336029350757599
         },
         "1": {
-            "profile_pearson": 0.5416693687438965,
-            "profile_jsd": 0.3410891890525818,
-            "log_counts_pearson": 0.7656806707382202,
-            "counts_spearman": 0.7717770934104919
+            "profile_pearson": 0.5645421147346497,
+            "profile_jsd": 0.3307648003101349,
+            "log_counts_pearson": 0.7725383639335632,
+            "counts_spearman": 0.7838371992111206,
+            "orientation_index_pearson": 0.285747766494751
         },
         "2": {
-            "profile_pearson": 0.5300726294517517,
-            "profile_jsd": 0.34458956122398376,
-            "log_counts_pearson": 0.7543241381645203,
-            "counts_spearman": 0.7583485841751099
+            "profile_pearson": 0.5656366944313049,
+            "profile_jsd": 0.3350391387939453,
+            "log_counts_pearson": 0.7613162994384766,
+            "counts_spearman": 0.7737717032432556,
+            "orientation_index_pearson": 0.27718600630760193
         },
         "3": {
-            "profile_pearson": 0.5459117293357849,
-            "profile_jsd": 0.3208138346672058,
-            "log_counts_pearson": 0.7753235697746277,
-            "counts_spearman": 0.7969343066215515
+            "profile_pearson": 0.5514551401138306,
+            "profile_jsd": 0.3373522162437439,
+            "log_counts_pearson": 0.7598000764846802,
+            "counts_spearman": 0.7740527987480164,
+            "orientation_index_pearson": 0.2602148950099945
         },
         "4": {
-            "profile_pearson": 0.5246239304542542,
-            "profile_jsd": 0.3454053997993469,
-            "log_counts_pearson": 0.73833167552948,
-            "counts_spearman": 0.7439060211181641
+            "profile_pearson": 0.5358707904815674,
+            "profile_jsd": 0.3432250916957855,
+            "log_counts_pearson": 0.7466552257537842,
+            "counts_spearman": 0.7555440068244934,
+            "orientation_index_pearson": 0.27758315205574036
         },
         "5": {
-            "profile_pearson": 0.5553416609764099,
-            "profile_jsd": 0.3294568955898285,
-            "log_counts_pearson": 0.7639537453651428,
-            "counts_spearman": 0.7740474343299866
+            "profile_pearson": 0.5754897594451904,
+            "profile_jsd": 0.32707059383392334,
+            "log_counts_pearson": 0.7651901245117188,
+            "counts_spearman": 0.7820218801498413,
+            "orientation_index_pearson": 0.33989930152893066
         },
         "6": {
-            "profile_pearson": 0.5443682670593262,
-            "profile_jsd": 0.33461546897888184,
-            "log_counts_pearson": 0.6977309584617615,
-            "counts_spearman": 0.7107883095741272
+            "profile_pearson": 0.5597587823867798,
+            "profile_jsd": 0.3264903128147125,
+            "log_counts_pearson": 0.7059770822525024,
+            "counts_spearman": 0.7254035472869873,
+            "orientation_index_pearson": 0.30914756655693054
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.542021632194519,
-        "profile_jsd": 0.3331897556781769,
-        "log_counts_pearson": 0.737097978591919,
-        "counts_spearman": 0.7495502233505249
+        "profile_pearson": 0.560642421245575,
+        "profile_jsd": 0.3320614695549011,
+        "log_counts_pearson": 0.7505651116371155,
+        "counts_spearman": 0.765148401260376,
+        "orientation_index_pearson": 0.2996971905231476
     }
 }

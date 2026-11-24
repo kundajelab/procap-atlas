@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR222JNI",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5925384163856506,
-            "profile_jsd": 0.2885785698890686,
-            "log_counts_pearson": 0.7688544988632202,
-            "counts_spearman": 0.7966636419296265
+            "profile_pearson": 0.6188305020332336,
+            "profile_jsd": 0.28597375750541687,
+            "log_counts_pearson": 0.7665801048278809,
+            "counts_spearman": 0.7913051247596741,
+            "orientation_index_pearson": 0.378339946269989
         },
         "1": {
-            "profile_pearson": 0.6008866429328918,
-            "profile_jsd": 0.2924649119377136,
-            "log_counts_pearson": 0.7703219056129456,
-            "counts_spearman": 0.7981342077255249
+            "profile_pearson": 0.6290494203567505,
+            "profile_jsd": 0.2863922417163849,
+            "log_counts_pearson": 0.7653146386146545,
+            "counts_spearman": 0.794578492641449,
+            "orientation_index_pearson": 0.37629181146621704
         },
         "2": {
-            "profile_pearson": 0.5825318098068237,
-            "profile_jsd": 0.2947492003440857,
-            "log_counts_pearson": 0.767175018787384,
-            "counts_spearman": 0.790699303150177
+            "profile_pearson": 0.6108440160751343,
+            "profile_jsd": 0.2946029007434845,
+            "log_counts_pearson": 0.7591032981872559,
+            "counts_spearman": 0.7821018099784851,
+            "orientation_index_pearson": 0.3546011745929718
         },
         "3": {
-            "profile_pearson": 0.6046779751777649,
-            "profile_jsd": 0.2885116934776306,
-            "log_counts_pearson": 0.7576179504394531,
-            "counts_spearman": 0.7880949974060059
+            "profile_pearson": 0.6386183500289917,
+            "profile_jsd": 0.28380319476127625,
+            "log_counts_pearson": 0.7563047409057617,
+            "counts_spearman": 0.7825554013252258,
+            "orientation_index_pearson": 0.39195966720581055
         },
         "4": {
-            "profile_pearson": 0.5889477133750916,
-            "profile_jsd": 0.2956353425979614,
-            "log_counts_pearson": 0.7581215500831604,
-            "counts_spearman": 0.7909701466560364
+            "profile_pearson": 0.6097337603569031,
+            "profile_jsd": 0.29588228464126587,
+            "log_counts_pearson": 0.746461808681488,
+            "counts_spearman": 0.7753798961639404,
+            "orientation_index_pearson": 0.36472088098526
         },
         "5": {
-            "profile_pearson": 0.6037072539329529,
-            "profile_jsd": 0.2881591022014618,
-            "log_counts_pearson": 0.772706151008606,
-            "counts_spearman": 0.8016951680183411
+            "profile_pearson": 0.6247448325157166,
+            "profile_jsd": 0.2880615293979645,
+            "log_counts_pearson": 0.7640945315361023,
+            "counts_spearman": 0.7937644720077515,
+            "orientation_index_pearson": 0.3870569169521332
         },
         "6": {
-            "profile_pearson": 0.6048478484153748,
-            "profile_jsd": 0.2814469337463379,
-            "log_counts_pearson": 0.7357833981513977,
-            "counts_spearman": 0.7668505311012268
+            "profile_pearson": 0.6249338388442993,
+            "profile_jsd": 0.279899001121521,
+            "log_counts_pearson": 0.7275283336639404,
+            "counts_spearman": 0.7546876668930054,
+            "orientation_index_pearson": 0.42285043001174927
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5966580510139465,
-        "profile_jsd": 0.2900184392929077,
-        "log_counts_pearson": 0.7623984217643738,
-        "counts_spearman": 0.7913926243782043
+        "profile_pearson": 0.6220448613166809,
+        "profile_jsd": 0.2880576252937317,
+        "log_counts_pearson": 0.7554674744606018,
+        "counts_spearman": 0.7828641533851624,
+        "orientation_index_pearson": 0.3815231919288635
     }
 }

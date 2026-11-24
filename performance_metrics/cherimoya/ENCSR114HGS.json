@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR114HGS",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.45236027240753174,
-            "profile_jsd": 0.43931305408477783,
-            "log_counts_pearson": 0.2339019626379013,
-            "counts_spearman": 0.22065876424312592
+            "profile_pearson": 0.4922643303871155,
+            "profile_jsd": 0.40872126817703247,
+            "log_counts_pearson": 0.25363579392433167,
+            "counts_spearman": 0.2348940223455429,
+            "orientation_index_pearson": 0.24140353500843048
         },
         "1": {
-            "profile_pearson": 0.3962569236755371,
-            "profile_jsd": 0.47375792264938354,
-            "log_counts_pearson": 0.15612690150737762,
-            "counts_spearman": 0.1454785317182541
+            "profile_pearson": 0.461104154586792,
+            "profile_jsd": 0.4297943711280823,
+            "log_counts_pearson": 0.2395700365304947,
+            "counts_spearman": 0.23681707680225372,
+            "orientation_index_pearson": 0.2987997233867645
         },
         "2": {
-            "profile_pearson": 0.5029787421226501,
-            "profile_jsd": 0.40366172790527344,
-            "log_counts_pearson": 0.19767428934574127,
-            "counts_spearman": 0.18862944841384888
+            "profile_pearson": 0.5104472041130066,
+            "profile_jsd": 0.397147536277771,
+            "log_counts_pearson": 0.22031866014003754,
+            "counts_spearman": 0.22511890530586243,
+            "orientation_index_pearson": 0.24203552305698395
         },
         "3": {
-            "profile_pearson": 0.480271577835083,
-            "profile_jsd": 0.4190199375152588,
-            "log_counts_pearson": 0.13293887674808502,
-            "counts_spearman": 0.11665184050798416
+            "profile_pearson": 0.48403769731521606,
+            "profile_jsd": 0.41643863916397095,
+            "log_counts_pearson": 0.16490834951400757,
+            "counts_spearman": 0.1776905506849289,
+            "orientation_index_pearson": 0.22332432866096497
         },
         "4": {
-            "profile_pearson": 0.4782252609729767,
-            "profile_jsd": 0.4159003496170044,
-            "log_counts_pearson": 0.19349229335784912,
-            "counts_spearman": 0.1839912086725235
+            "profile_pearson": 0.4761224389076233,
+            "profile_jsd": 0.4169902503490448,
+            "log_counts_pearson": 0.20011243224143982,
+            "counts_spearman": 0.2005971521139145,
+            "orientation_index_pearson": 0.26609736680984497
         },
         "5": {
-            "profile_pearson": 0.4651617109775543,
-            "profile_jsd": 0.4267365336418152,
-            "log_counts_pearson": 0.22967129945755005,
-            "counts_spearman": 0.21570464968681335
+            "profile_pearson": 0.4616817235946655,
+            "profile_jsd": 0.43171077966690063,
+            "log_counts_pearson": 0.23090797662734985,
+            "counts_spearman": 0.2217179387807846,
+            "orientation_index_pearson": 0.240309476852417
         },
         "6": {
-            "profile_pearson": 0.47409293055534363,
-            "profile_jsd": 0.4319939911365509,
-            "log_counts_pearson": 0.14491556584835052,
-            "counts_spearman": 0.1302611380815506
+            "profile_pearson": 0.48496392369270325,
+            "profile_jsd": 0.422284871339798,
+            "log_counts_pearson": 0.2128746062517166,
+            "counts_spearman": 0.21842317283153534,
+            "orientation_index_pearson": 0.24335134029388428
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.4664386212825775,
-        "profile_jsd": 0.4293472170829773,
-        "log_counts_pearson": 0.1465814709663391,
-        "counts_spearman": 0.1276191771030426
+        "profile_pearson": 0.48196303844451904,
+        "profile_jsd": 0.4172073006629944,
+        "log_counts_pearson": 0.21808135509490967,
+        "counts_spearman": 0.21837301552295685,
+        "orientation_index_pearson": 0.24954017996788025
     }
 }

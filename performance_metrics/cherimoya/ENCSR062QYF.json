@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR062QYF",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.5774725079536438,
-            "profile_jsd": 0.27295058965682983,
-            "log_counts_pearson": 0.7187706232070923,
-            "counts_spearman": 0.7426838874816895
+            "profile_pearson": 0.618869423866272,
+            "profile_jsd": 0.26204246282577515,
+            "log_counts_pearson": 0.7058332562446594,
+            "counts_spearman": 0.7285025715827942,
+            "orientation_index_pearson": 0.3913399577140808
         },
         "1": {
-            "profile_pearson": 0.5791046619415283,
-            "profile_jsd": 0.2771753668785095,
-            "log_counts_pearson": 0.7327724099159241,
-            "counts_spearman": 0.7567193508148193
+            "profile_pearson": 0.6061468124389648,
+            "profile_jsd": 0.2728511691093445,
+            "log_counts_pearson": 0.7173210978507996,
+            "counts_spearman": 0.7402811050415039,
+            "orientation_index_pearson": 0.3762318789958954
         },
         "2": {
-            "profile_pearson": 0.5710469484329224,
-            "profile_jsd": 0.27565276622772217,
-            "log_counts_pearson": 0.725745439529419,
-            "counts_spearman": 0.753793478012085
+            "profile_pearson": 0.6057668924331665,
+            "profile_jsd": 0.27287787199020386,
+            "log_counts_pearson": 0.7206596732139587,
+            "counts_spearman": 0.743484377861023,
+            "orientation_index_pearson": 0.3675025999546051
         },
         "3": {
-            "profile_pearson": 0.5728980302810669,
-            "profile_jsd": 0.27952855825424194,
-            "log_counts_pearson": 0.7267224788665771,
-            "counts_spearman": 0.7564296126365662
+            "profile_pearson": 0.6203944087028503,
+            "profile_jsd": 0.27115628123283386,
+            "log_counts_pearson": 0.7060887813568115,
+            "counts_spearman": 0.7287083268165588,
+            "orientation_index_pearson": 0.37103843688964844
         },
         "4": {
-            "profile_pearson": 0.5680139064788818,
-            "profile_jsd": 0.2794318199157715,
-            "log_counts_pearson": 0.7181491255760193,
-            "counts_spearman": 0.7387834787368774
+            "profile_pearson": 0.6148980855941772,
+            "profile_jsd": 0.2689877152442932,
+            "log_counts_pearson": 0.7030307650566101,
+            "counts_spearman": 0.7197415828704834,
+            "orientation_index_pearson": 0.39759838581085205
         },
         "5": {
-            "profile_pearson": 0.5658702850341797,
-            "profile_jsd": 0.27851012349128723,
-            "log_counts_pearson": 0.7230722904205322,
-            "counts_spearman": 0.7463788986206055
+            "profile_pearson": 0.6063795685768127,
+            "profile_jsd": 0.274166464805603,
+            "log_counts_pearson": 0.7147979736328125,
+            "counts_spearman": 0.7355178594589233,
+            "orientation_index_pearson": 0.3808670938014984
         },
         "6": {
-            "profile_pearson": 0.5755356550216675,
-            "profile_jsd": 0.27582189440727234,
-            "log_counts_pearson": 0.6914522051811218,
-            "counts_spearman": 0.7164112329483032
+            "profile_pearson": 0.6230244636535645,
+            "profile_jsd": 0.2627091109752655,
+            "log_counts_pearson": 0.6812263131141663,
+            "counts_spearman": 0.7011792063713074,
+            "orientation_index_pearson": 0.388933390378952
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.5721855759620667,
-        "profile_jsd": 0.2771104574203491,
-        "log_counts_pearson": 0.7190137505531311,
-        "counts_spearman": 0.7443593740463257
+        "profile_pearson": 0.6134516000747681,
+        "profile_jsd": 0.2695629298686981,
+        "log_counts_pearson": 0.7065258026123047,
+        "counts_spearman": 0.727902889251709,
+        "orientation_index_pearson": 0.38205596804618835
     }
 }

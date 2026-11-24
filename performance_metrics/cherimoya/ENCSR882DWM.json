@@ -4,52 +4,60 @@
     "model_dir": "/scratch/users/ayhe/procap-atlas/models/cherimoya/ENCSR882DWM",
     "per_fold": {
         "0": {
-            "profile_pearson": 0.49195215106010437,
-            "profile_jsd": 0.4191821217536926,
-            "log_counts_pearson": 0.20069408416748047,
-            "counts_spearman": 0.18477857112884521
+            "profile_pearson": 0.494296669960022,
+            "profile_jsd": 0.41577771306037903,
+            "log_counts_pearson": 0.19924765825271606,
+            "counts_spearman": 0.18032900989055634,
+            "orientation_index_pearson": 0.19197265803813934
         },
         "1": {
-            "profile_pearson": 0.4724161624908447,
-            "profile_jsd": 0.433405339717865,
-            "log_counts_pearson": 0.17124028503894806,
-            "counts_spearman": 0.16297011077404022
+            "profile_pearson": 0.4800521731376648,
+            "profile_jsd": 0.4235050082206726,
+            "log_counts_pearson": 0.1824960857629776,
+            "counts_spearman": 0.18632255494594574,
+            "orientation_index_pearson": 0.23968875408172607
         },
         "2": {
-            "profile_pearson": 0.4923388361930847,
-            "profile_jsd": 0.4141969680786133,
-            "log_counts_pearson": 0.12350933998823166,
-            "counts_spearman": 0.11835230141878128
+            "profile_pearson": 0.5028977394104004,
+            "profile_jsd": 0.40291526913642883,
+            "log_counts_pearson": 0.16926246881484985,
+            "counts_spearman": 0.20182690024375916,
+            "orientation_index_pearson": 0.24946865439414978
         },
         "3": {
-            "profile_pearson": 0.4836861789226532,
-            "profile_jsd": 0.4225948452949524,
-            "log_counts_pearson": 0.09910035878419876,
-            "counts_spearman": 0.09089186787605286
+            "profile_pearson": 0.49206000566482544,
+            "profile_jsd": 0.41419029235839844,
+            "log_counts_pearson": 0.11935030668973923,
+            "counts_spearman": 0.14100493490695953,
+            "orientation_index_pearson": 0.21704071760177612
         },
         "4": {
-            "profile_pearson": 0.4870638847351074,
-            "profile_jsd": 0.4162312150001526,
-            "log_counts_pearson": 0.16886816918849945,
-            "counts_spearman": 0.159060537815094
+            "profile_pearson": 0.48649221658706665,
+            "profile_jsd": 0.4184732735157013,
+            "log_counts_pearson": 0.13347899913787842,
+            "counts_spearman": 0.13907328248023987,
+            "orientation_index_pearson": 0.21777589619159698
         },
         "5": {
-            "profile_pearson": 0.4776269793510437,
-            "profile_jsd": 0.42337489128112793,
-            "log_counts_pearson": 0.22546318173408508,
-            "counts_spearman": 0.2077237069606781
+            "profile_pearson": 0.47576576471328735,
+            "profile_jsd": 0.423865407705307,
+            "log_counts_pearson": 0.18636183440685272,
+            "counts_spearman": 0.18479950726032257,
+            "orientation_index_pearson": 0.2634303867816925
         },
         "6": {
-            "profile_pearson": 0.48768800497055054,
-            "profile_jsd": 0.42455774545669556,
-            "log_counts_pearson": 0.15860018134117126,
-            "counts_spearman": 0.15084807574748993
+            "profile_pearson": 0.49654239416122437,
+            "profile_jsd": 0.42023420333862305,
+            "log_counts_pearson": 0.16865800321102142,
+            "counts_spearman": 0.1762065291404724,
+            "orientation_index_pearson": 0.2202998846769333
         }
     },
     "genome_wide": {
-        "profile_pearson": 0.48485425114631653,
-        "profile_jsd": 0.4214215576648712,
-        "log_counts_pearson": 0.12534920871257782,
-        "counts_spearman": 0.11237753927707672
+        "profile_pearson": 0.48986297845840454,
+        "profile_jsd": 0.4165457487106323,
+        "log_counts_pearson": 0.16362372040748596,
+        "counts_spearman": 0.17743746936321259,
+        "orientation_index_pearson": 0.22866547107696533
     }
 }
