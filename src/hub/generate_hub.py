@@ -2,9 +2,9 @@
 """Generate UCSC track hub files for the ENCODE PRO-cap atlas.
 
 Reads configs/experiment_config.yaml and writes:
-  hub/hub.txt
-  hub/genomes.txt
-  hub/hg38/trackDb.txt
+  hub/ucsc/hub.txt
+  hub/ucsc/genomes.txt
+  hub/ucsc/hg38/trackDb.txt
 
 Experiments are grouped into supertracks by biosample, sorted alphabetically.
 Each experiment gets a multiWig container for plus/minus strand BigWigs and a
@@ -28,7 +28,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "experiment_config.yaml"
-DEFAULT_OUTPUT_DIR = REPO_ROOT / "hub"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "hub" / "ucsc"
 DEFAULT_BASE_URL = "https://huggingface.co/datasets/adamyhe/procap-atlas-tracks"
 DEFAULT_REVISION = "main"
 

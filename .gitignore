@@ -7,6 +7,16 @@ hitcalls/
 figures/
 motifcompendium/
 notebooks/plots/
+/attributions/
+/data/
+/logs/
+/models/
+/modisco/
+/predictions/
+/performance_metrics/bpnet_bounds/
+/performance_metrics/test/
+/performance_metrics/cherimoya/v0.2.0_old/
+/*_similarity_distribution.html
 
 # Ad hoc debugging screenshots and cluster/exemplar report copies dropped at
 # the project root for review (regenerable via cluster_motifs.py/
