@@ -162,7 +162,7 @@ def main():
     model_dir_name = model_dir.name
 
     attr_dir = REPO_ROOT / "attributions" / "cherimoya"
-    ohe_path = attr_dir / f"{args.experiment}_ohe.npz"
+    ohe_path = REPO_ROOT / "attributions" / "ohe" / f"{args.experiment}_ohe.npz"
     attr_path = attr_dir / f"{model_dir_name}_{args.head}.npz"
     if args.modisco_h5:
         modisco_h5 = Path(args.modisco_h5)

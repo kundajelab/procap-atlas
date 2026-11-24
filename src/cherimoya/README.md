@@ -229,7 +229,7 @@ python src/cherimoya/attribute/save_ohe.py -e ENCSR882DWM
 ```
 
 ```text
-attributions/cherimoya/{experiment}_ohe.npz
+attributions/ohe/{experiment}_ohe.npz  # shared by BPNet and Cherimoya
 ```
 
 `save_ohe.py` does not need a GPU or the Cherimoya environment — it runs

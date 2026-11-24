@@ -74,7 +74,7 @@ def main():
         exclusion_lists=[BLACKLIST],
     )
 
-    out_dir = REPO_ROOT / "attributions" / "cherimoya"
+    out_dir = REPO_ROOT / "attributions" / "ohe"
     out_dir.mkdir(parents=True, exist_ok=True)
     ohe_path = out_dir / f"{args.experiment}_ohe.npz"
     np.savez_compressed(ohe_path, X.numpy())

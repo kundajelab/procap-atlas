@@ -179,7 +179,7 @@ def main():
             skipped_reads += 1
             continue
 
-        ohe_path = attr_dir / f"{exp_id}_ohe.npz"
+        ohe_path = REPO_ROOT / "attributions" / "ohe" / f"{exp_id}_ohe.npz"
         if not ohe_path.exists():
             skipped_no_attr += len(heads)
             continue
